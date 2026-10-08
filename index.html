@@ -868,16 +868,9 @@
   // ---- Catch insights: what was going on when fish were caught ----
   const PHASE_ORDER = ["new moon", "waxing crescent", "first quarter", "waxing gibbous", "full moon", "waning gibbous", "last quarter", "waning crescent"];
 
-  function timeOfDay(d) {
-    try {
-      const t = SunCalc.getTimes(d, LAT, LNG), H = 3600000;
-      if (Math.abs(d - t.sunrise) <= H) return "Dawn";
-      if (Math.abs(d - t.sunset) <= H) return "Dusk";
-      if (d < t.sunrise || d > t.sunset) return "Night";
-    } catch (e) {}
-    const h = d.getHours();
-    return h < 12 ? "Morning" : h < 15 ? "Midday" : "Afternoon";
-  }
+  // Eight equal 3-hour blocks, so every part of the day gets the same weight
+  const TIME_BLOCKS = ["12–3 AM", "3–6 AM", "6–9 AM", "9 AM–12 PM", "12–3 PM", "3–6 PM", "6–9 PM", "9 PM–12 AM"];
+  function timeOfDay(d) { return TIME_BLOCKS[Math.floor(d.getHours() / 3)]; }
   function windBand(mph) {
     if (mph == null) return null;
     return mph <= 5 ? "0–5 mph" : mph <= 10 ? "6–10 mph" : mph <= 15 ? "11–15 mph" : "16+ mph";
@@ -887,7 +880,7 @@
   const INSIGHT_CHARTS = [
     { title: "Tide stage", sub: "Saltwater & brackish catches", key: c => c.tide_stage && cap(c.tide_stage), order: ["Incoming", "High slack", "Outgoing", "Low slack"] },
     { title: "Pressure trend", sub: "Over the 3 hours before the catch", key: c => c.pressure_trend && cap(c.pressure_trend), order: ["Falling", "Steady", "Rising"] },
-    { title: "Time of day", sub: "Dawn and dusk = within an hour of sunrise / sunset", key: c => timeOfDay(new Date(c.caught_at)), order: ["Dawn", "Morning", "Midday", "Afternoon", "Dusk", "Night"] },
+    { title: "Time of day", sub: "Equal 3-hour blocks · dawn and dusk usually fall in 6–9", key: c => timeOfDay(new Date(c.caught_at)), order: TIME_BLOCKS },
     { title: "Moon phase", key: c => c.moon_phase && cap(c.moon_phase), order: PHASE_ORDER.map(cap) },
     { title: "Solunar period", sub: "Major = moon overhead/underfoot · minor = moonrise/moonset", key: c => c.moon_phase ? (c.solunar ? cap(c.solunar) : "Neither") : null, order: ["Major", "Minor", "Neither"] },
     { title: "Wind speed", key: c => windBand(c.wind_mph), order: ["0–5 mph", "6–10 mph", "11–15 mph", "16+ mph"] },
@@ -1478,14 +1471,14 @@
   const BASELINE = { // roughly how much of the time each condition happens
     tide:  { incoming: .42, outgoing: .42, "high slack": .08, "low slack": .08 },
     trend: { falling: 1/3, steady: 1/3, rising: 1/3 },
-    tod:   { Dawn: .083, Morning: .19, Midday: .125, Afternoon: .10, Dusk: .083, Night: .42 },
+    tod:   Object.fromEntries(TIME_BLOCKS.map(b => [b, 1 / 8])),
     sol:   { major: .167, minor: .083, none: .75 },
     moon:  { "new moon": .06, "waxing crescent": .19, "first quarter": .06, "waxing gibbous": .19,
              "full moon": .06, "waning gibbous": .19, "last quarter": .06, "waning crescent": .19 },
     wind:  { "0–5 mph": .25, "6–10 mph": .25, "11–15 mph": .25, "16+ mph": .25 }
   };
   const FACTOR_LABEL = {
-    tide: v => cap(v) + " tide", trend: v => cap(v) + " pressure", tod: v => v,
+    tide: v => cap(v) + " tide", trend: v => cap(v) + " pressure", tod: v => "Between " + v,
     sol: v => v === "none" ? "outside solunar periods" : cap(v) + " solunar period", moon: v => cap(v), wind: v => "wind " + v
   };
   function catchFactors(c) {
