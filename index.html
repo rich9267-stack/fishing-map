@@ -89,6 +89,30 @@
   #viewer img { max-width: 100%; max-height: 78vh; border-radius: 8px; }
   #viewer .vbar { display: flex; gap: 12px; margin-top: 14px; align-items: center; color: #ddd; font-size: .9rem; flex-wrap: wrap; justify-content: center; }
   #viewer button { appearance: none; border: 1px solid rgba(255,255,255,.35); background: transparent; color: #fff; border-radius: 10px; padding: 8px 14px; font: inherit; cursor: pointer; }
+  /* Seasons */
+  .sea-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .sea-month { font-size: 1.25rem; font-weight: 700; }
+  .sea-groups { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .sea-groups button { appearance: none; font: inherit; font-size: .82rem; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+  .sea-groups button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .sea-fish { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .sea-fish:last-child { border-bottom: 0; }
+  .sea-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .sea-name { font-weight: 700; }
+  .sea-badge { font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .sea-badge.peak { background: #d7191c22; color: #c0392b; }
+  .sea-badge.good { background: #1f7a3f22; color: var(--rising); }
+  .sea-badge.slow { background: var(--line); color: var(--muted); }
+  .sea-badge.closed { background: #a5521b22; color: var(--falling); }
+  .sea-months { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; margin-top: 6px; }
+  .sea-months span { font-size: .62rem; text-align: center; padding: 3px 0; border-radius: 3px; background: var(--line); color: var(--muted); }
+  .sea-months span.l1 { background: color-mix(in srgb, var(--accent) 35%, transparent); color: var(--text); }
+  .sea-months span.l2 { background: var(--accent); color: #fff; font-weight: 700; }
+  .sea-months span.x { text-decoration: line-through; background-image: repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--falling) 60%, transparent) 3px 5px); }
+  .sea-months span.cur { outline: 2px solid var(--text); outline-offset: -1px; }
+  .sea-rule { font-size: .85rem; margin-top: 6px; }
+  .sea-alert { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: .92rem; }
+  .sea-alert:last-child { border-bottom: 0; }
   .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
   .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
   .tile-num { font-size: 1.35rem; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
@@ -165,8 +189,8 @@
   .linkbtn { appearance: none; background: none; border: 0; padding: 4px 0; font: inherit; font-size: .85rem; color: var(--accent); cursor: pointer; }
   .linkbtn.danger { color: var(--falling); }
   /* List / Map tabs */
-  .tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; background: var(--line); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
-  .tabs button { appearance: none; border: 0; border-radius: 9px; padding: 9px; font: inherit; font-weight: 600; background: transparent; color: var(--muted); cursor: pointer; }
+  .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--line); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
+  .tabs button { appearance: none; border: 0; border-radius: 9px; padding: 9px 2px; font: inherit; font-size: .9rem; font-weight: 600; white-space: nowrap; background: transparent; color: var(--muted); cursor: pointer; }
   .tabs button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
   /* Map */
   #map { height: 62vh; min-height: 340px; border-radius: 12px; border: 1px solid var(--line); z-index: 0; }
@@ -269,6 +293,32 @@
     <button id="tab-list" class="on" type="button" role="tab">☰ List</button>
     <button id="tab-map" type="button" role="tab">🗺 Map</button>
     <button id="tab-insights" type="button" role="tab">📊 Insights</button>
+    <button id="tab-seasons" type="button" role="tab">📅 Seasons</button>
+  </div>
+
+  <div id="view-seasons" hidden>
+    <div class="card">
+      <div class="sea-head">
+        <button class="btn ghost small" id="sea-prev" type="button" aria-label="Previous month">◀</button>
+        <div style="text-align:center"><div class="sea-month" id="sea-month"></div><div class="spot-meta" id="sea-sub"></div></div>
+        <button class="btn ghost small" id="sea-next" type="button" aria-label="Next month">▶</button>
+      </div>
+      <div class="sea-groups" id="sea-groups"></div>
+    </div>
+    <div class="card" id="sea-alerts-card" hidden>
+      <div class="label">Coming up</div>
+      <div id="sea-alerts"></div>
+    </div>
+    <div class="card">
+      <div class="label" id="sea-list-title">What's biting</div>
+      <div class="spot-meta">Darker month = better fishing · striped = closed to keep</div>
+      <div id="sea-list"></div>
+    </div>
+    <p class="spot-meta" style="margin:0 0 14px">Runs are typical patterns for Southeast Florida (Palm Beach to Miami) — weather can shift them a few weeks.
+      Rules were checked October 8, 2026 and <strong>can change</strong> — always confirm before you keep a fish:
+      <a href="https://myfwc.com/fishing/saltwater/recreational/" target="_blank" rel="noopener">FWC saltwater rules</a> ·
+      <a href="https://myfwc.com/fishing/freshwater/regulations/" target="_blank" rel="noopener">FWC freshwater rules</a> ·
+      <a href="https://myfwc.com/bnp" target="_blank" rel="noopener">Biscayne National Park</a> (has its own rules).</p>
   </div>
 
   <div id="view-map" hidden>
@@ -1357,6 +1407,196 @@
     });
   }
   ["ins-spot", "ins-species", "ins-mine"].forEach(id => $(id).addEventListener("change", renderInsights));
+
+  // ---- Seasons calendar: typical runs + key season dates (hand-curated; rules checked Oct 8, 2026) ----
+  // runs: 12 numbers, Jan..Dec — 0 slow, 1 good, 2 peak (typical for Southeast Florida).
+  // closed: yearly closed windows ["MM-DD","MM-DD"] (may wrap past New Year).
+  // openOnly: the ONLY open windows; with a year ("2026-10-09") they apply to that year only.
+  // match: words that count a logged catch as this fish.
+  const SEASON_GROUPS = [["inshore", "Inshore"], ["beach", "Beach & pier"], ["offshore", "Offshore"], ["fresh", "Freshwater"]];
+  const SEASONS = [
+    { name: "Snook", group: "inshore", match: ["snook"], runs: [1,1,1,1,2,2,1,1,2,2,2,1],
+      closed: [["12-15", "01-31"], ["06-01", "08-31"]],
+      rule: "Harvest 1 per day, 28–32\" slot, snook permit needed. Catch-and-release is fine while closed.",
+      tip: "Spring: inlets and beaches as they gather to spawn. Fall: they follow the mullet run along the beach and inlets." },
+    { name: "Tarpon", group: "inshore", match: ["tarpon"], runs: [1,1,1,1,2,2,2,1,1,2,2,1],
+      rule: "Catch-and-release only (keeping one needs a $50 tag). Big fish stay in the water.",
+      tip: "Late spring–summer at inlets and bridges at night; fall during the mullet run; small ones in canals all year." },
+    { name: "Redfish (red drum)", group: "inshore", match: ["redfish", "red drum"], runs: [1,1,1,1,1,1,1,1,2,2,2,1],
+      rule: "Southeast region: open all year, 1 per person (2 per boat), 18–27\" slot.",
+      tip: "Not common this far south — Lake Worth Lagoon and Biscayne Bay flats are best bets." },
+    { name: "Spotted seatrout", group: "inshore", match: ["seatrout", "speckled trout", "trout"], runs: [2,2,2,1,1,1,1,1,1,1,2,2],
+      rule: "Southeast region: open all year, 3 per person, 15–19\" slot (one over 19\" per boat; per person from shore). New rules from April 2026.",
+      tip: "Grass flats in Lake Worth Lagoon and Biscayne Bay; best in the cooler months." },
+    { name: "Jack crevalle", group: "inshore", match: ["jack"], runs: [1,1,1,1,1,1,1,1,1,2,2,1],
+      rule: "No closed season.", tip: "Hits hard during the fall mullet run; around inlets and canals all year." },
+    { name: "Mangrove snapper", group: "inshore", match: ["mangrove", "gray snapper"], runs: [1,1,1,1,1,2,2,2,1,1,1,1],
+      rule: "Open all year.", tip: "Docks, bridges and seawalls; biggest fish move to the reefs to spawn in summer." },
+    { name: "Fall mullet run", group: "beach", match: ["mullet"], runs: [0,0,0,0,0,0,0,1,2,2,2,1],
+      rule: "Mullet: open all year.", tip: "Huge schools move south along the beach — snook, tarpon, jacks, bluefish and sharks follow them." },
+    { name: "Florida pompano", group: "beach", match: ["pompano"], runs: [2,2,2,1,0,0,0,0,0,0,1,2],
+      rule: "Open all year.", tip: "Surf and piers after a cold front; sand fleas, shrimp or pompano jigs." },
+    { name: "Spanish mackerel", group: "beach", match: ["spanish"], runs: [2,2,2,1,0,0,0,0,0,0,1,2],
+      rule: "Open all year.", tip: "Piers and beaches in winter; small shiny spoons." },
+    { name: "Bluefish", group: "beach", match: ["bluefish"], runs: [2,2,1,0,0,0,0,0,0,1,1,2],
+      rule: "Open all year.", tip: "Winter, often mixed with Spanish mackerel and following bait schools." },
+    { name: "Sheepshead", group: "beach", match: ["sheepshead"], runs: [2,2,2,1,0,0,0,0,0,0,1,1],
+      rule: "Open all year.", tip: "Spawning run late winter around pilings, jetties and bridges; fiddler crabs or shrimp." },
+    { name: "Whiting", group: "beach", match: ["whiting"], runs: [2,2,2,1,1,0,0,0,0,1,1,2],
+      rule: "Open all year.", tip: "Surf troughs close to shore on the cooler months; sand fleas or Fishbites." },
+    { name: "Sailfish", group: "offshore", match: ["sailfish"], runs: [2,2,1,1,0,0,0,0,0,1,1,2],
+      rule: "Catch-and-release is the norm (federal HMS permit needed to keep one).",
+      tip: "Winter cold fronts push them close to the edge of the reef off Pompano and Palm Beach." },
+    { name: "Kingfish (king mackerel)", group: "offshore", match: ["kingfish", "king mackerel"], runs: [1,1,2,2,1,1,0,0,1,1,2,1],
+      rule: "Open all year.", tip: "Spring and fall migrations; slow-trolled live bait off the reef and from the deep piers." },
+    { name: "Mahi (dolphin)", group: "offshore", match: ["mahi", "dolphin"], runs: [0,0,1,2,2,2,1,1,0,0,0,0],
+      rule: "Open all year.", tip: "Spring–early summer under weed lines and floating debris — check the 🟢 water clarity map for edges." },
+    { name: "Wahoo", group: "offshore", match: ["wahoo"], runs: [1,1,1,0,0,0,0,0,1,2,2,1],
+      rule: "Open all year.", tip: "Fall and early winter along the reef edge, especially around the full moon." },
+    { name: "Black & red grouper", group: "offshore", match: ["black grouper", "red grouper", "scamp", "hind", "coney", "graysby"], runs: [1,1,1,1,2,1,1,1,1,2,2,1],
+      closed: [["01-01", "04-30"]],
+      rule: "Atlantic: closed Jan 1–Apr 30 (also scamp, hinds, coney, graysby). Goliath and Nassau: no harvest.",
+      tip: "Reef ledges and wrecks; best right after it opens in May and again in late fall." },
+    { name: "Gag grouper", group: "offshore", match: ["gag"], runs: [1,1,1,1,2,2,1,1,1,1,1,1],
+      openOnly: [["05-01", "08-01"]],
+      rule: "Atlantic 2026: open May 1–Aug 1 only. Dates change most years — check FWC.",
+      tip: "Rock piles and wrecks; inshore around bridges and inlets in the cooler months." },
+    { name: "Red snapper", group: "offshore", match: ["red snapper"], runs: [0,0,0,0,0,0,0,0,0,1,0,0], // only worth targeting in its short open season
+      openOnly: [["2026-10-09", "2026-10-22"]],
+      rule: "Atlantic 2026: open Oct 9–22 only, 1 per person, and you must declare your trip first. Release with a descending device the rest of the year.",
+      tip: "More common north of Palm Beach; deep wrecks and ledges." },
+    { name: "Mutton snapper", group: "offshore", match: ["mutton"], runs: [1,1,1,2,2,2,1,1,1,1,1,1],
+      rule: "Open all year, 5 per person (within 10 snapper total), 18\" minimum.",
+      tip: "Spawning gatherings in late spring around the full moon; also on the beach and in inlets." },
+    { name: "Yellowtail snapper", group: "offshore", match: ["yellowtail"], runs: [1,1,1,1,2,2,2,2,1,1,1,1],
+      rule: "Open all year.", tip: "Chum on the reef; best in the warm months." },
+    { name: "Largemouth bass", group: "fresh", match: ["largemouth", "bass"], runs: [2,2,2,1,1,1,1,1,1,2,2,1],
+      rule: "Open all year.", tip: "Spawning in shallow water January–March; early and late in the day in summer." },
+    { name: "Peacock bass", group: "fresh", match: ["peacock"], runs: [0,1,2,2,2,2,2,2,2,1,1,0],
+      rule: "Open all year.", tip: "Daytime fish in the canals; they turn off when the water gets cold. Live shiners." },
+    { name: "Bullseye snakehead", group: "fresh", match: ["snakehead"], runs: [1,1,1,2,2,2,2,1,1,1,1,1],
+      rule: "Invasive: no limit. Never release one alive and never move them — it's illegal.",
+      tip: "Broward and Palm Beach canals, along weed edges; topwater frogs." },
+    { name: "Bluegill & panfish", group: "fresh", match: ["bluegill", "panfish", "sunfish", "shellcracker"], runs: [1,1,1,2,2,2,1,1,1,1,1,1],
+      rule: "Open all year.", tip: "Spawning beds in shallow water around the full moons of spring; worms or crickets." },
+    { name: "Mayan cichlid", group: "fresh", match: ["mayan", "cichlid"], runs: [1,1,2,2,2,1,1,1,1,1,1,1],
+      rule: "Invasive: no limit — keep them.", tip: "Canals and lake edges; small worms or bread." }
+  ];
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  let seaMonth = new Date().getMonth(), seaGroup = "";
+
+  const mmdd = d => `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const inWindow = (key, [a, b]) => a <= b ? key >= a && key <= b : key >= a || key <= b;
+  // Is this fish open to keep on this date? true / false / null (rules for that year unknown)
+  function seasonOpen(f, d) {
+    if (f.openOnly) {
+      const dated = f.openOnly.filter(w => w[0].length > 5);
+      if (dated.length) {
+        const ymd = `${d.getFullYear()}-${mmdd(d)}`;
+        if (!dated.some(w => w[0].slice(0, 4) === String(d.getFullYear()))) return null;
+        return dated.some(([a, b]) => ymd >= a && ymd <= b);
+      }
+      return f.openOnly.some(w => inWindow(mmdd(d), w));
+    }
+    if (f.closed) return !f.closed.some(w => inWindow(mmdd(d), w));
+    return true;
+  }
+  // Closed nearly all month (open under a week)? Used to strike through months on the little calendar.
+  function monthClosed(f, m, year) {
+    let open = 0, closed = 0, days = new Date(year, m + 1, 0).getDate();
+    for (let i = 1; i <= days; i++) { const o = seasonOpen(f, new Date(year, m, i)); if (o === true) open++; else if (o === false) closed++; }
+    return closed > 0 && open < 7;
+  }
+  const nice = d => d.toLocaleDateString([], { month: "short", day: "numeric" });
+
+  // Openings and closings in the next 45 days
+  function seasonAlerts(today) {
+    const out = [];
+    SEASONS.forEach(f => {
+      if (!f.closed && !f.openOnly) return;
+      let prev = seasonOpen(f, today);
+      if (prev === null) return;
+      for (let i = 1; i <= 45; i++) {
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+        const now = seasonOpen(f, d);
+        if (now !== null && now !== prev) {
+          out.push({ f, d, opens: now, days: i });
+          break;
+        }
+        prev = now;
+      }
+    });
+    return out.sort((a, b) => a.days - b.days);
+  }
+
+  // How many fish of this kind the group logged in a month (any year)
+  function groupCount(f, m) {
+    return Object.values(catchesBySpot).flat().filter(c => {
+      const sp = (c.species || "").toLowerCase();
+      if (!f.match.some(w => sp.includes(w))) return false;
+      if (f.name === "Largemouth bass" && sp.includes("peacock")) return false;
+      if (f.name === "Mangrove snapper" && !sp.includes("mangrove") && !sp.includes("gray")) return false;
+      return new Date(c.caught_at).getMonth() === m;
+    }).reduce((n, c) => n + (c.how_many || 1), 0);
+  }
+
+  function renderSeasons() {
+    if ($("view-seasons").hidden) return;
+    const today = new Date(), thisMonth = seaMonth === today.getMonth();
+    const year = today.getFullYear() + (seaMonth < today.getMonth() - 1 ? 1 : 0); // looking ahead past December
+    const ref = thisMonth ? today : new Date(year, seaMonth, 15);
+    $("sea-month").textContent = new Date(year, seaMonth, 1).toLocaleDateString([], { month: "long", year: "numeric" });
+    $("sea-sub").textContent = thisMonth ? "This month" : "Rules shown for mid-month";
+    const gb = $("sea-groups"); gb.innerHTML = "";
+    [["", "All"], ...SEASON_GROUPS].forEach(([k, label]) => {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = label;
+      b.classList.toggle("on", seaGroup === k);
+      b.addEventListener("click", () => { seaGroup = k; renderSeasons(); });
+      gb.appendChild(b);
+    });
+
+    // Coming up (only for the real current month)
+    const alerts = thisMonth ? seasonAlerts(today).filter(a => !seaGroup || a.f.group === seaGroup) : [];
+    $("sea-alerts-card").hidden = !alerts.length;
+    const al = $("sea-alerts"); al.innerHTML = "";
+    alerts.forEach(a => {
+      const div = document.createElement("div"); div.className = "sea-alert";
+      div.textContent = `${a.opens ? "🟢" : "⛔"} ${a.f.name} ${a.opens ? "opens" : "closes"} ${nice(a.d)} — in ${a.days} day${a.days === 1 ? "" : "s"}`;
+      al.appendChild(div);
+    });
+
+    const list = SEASONS.filter(f => !seaGroup || f.group === seaGroup)
+      .map((f, i) => ({ f, i, lvl: f.runs[seaMonth], open: seasonOpen(f, ref) }))
+      .sort((a, b) => (b.lvl - a.lvl) || (a.i - b.i));
+    $("sea-list-title").textContent = `What's biting in ${MONTHS[seaMonth]}`;
+    const box = $("sea-list"); box.innerHTML = "";
+    list.forEach(({ f, lvl, open }) => {
+      const div = document.createElement("div"); div.className = "sea-fish";
+      const top = document.createElement("div"); top.className = "sea-top";
+      const name = document.createElement("span"); name.className = "sea-name"; name.textContent = f.name;
+      const badges = document.createElement("span"); badges.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end";
+      const badge = (cls, text) => { const b = document.createElement("span"); b.className = "sea-badge " + cls; b.textContent = text; badges.appendChild(b); };
+      if (open === false) badge("closed", "⛔ Closed to keep");
+      badge(["slow", "good", "peak"][lvl], ["Slow", "Good", "🔥 Peak"][lvl]);
+      top.append(name, badges);
+      const months = document.createElement("div"); months.className = "sea-months";
+      MONTHS.forEach((m, i) => {
+        const sp = document.createElement("span"); sp.textContent = m[0];
+        if (f.runs[i]) sp.classList.add("l" + f.runs[i]);
+        if (monthClosed(f, i, i < today.getMonth() - 1 ? today.getFullYear() + 1 : today.getFullYear())) { sp.classList.add("x"); sp.title = "Mostly closed to keep"; }
+        if (i === seaMonth) sp.classList.add("cur");
+        months.appendChild(sp);
+      });
+      const tip = document.createElement("div"); tip.className = "sea-rule"; tip.textContent = f.tip;
+      const rule = document.createElement("div"); rule.className = "spot-meta"; rule.textContent = "📏 " + f.rule;
+      div.append(top, months, tip, rule);
+      const n = groupCount(f, seaMonth);
+      if (n) { const g = document.createElement("div"); g.className = "spot-meta"; g.textContent = `🎣 Your group has logged ${n} in ${MONTHS[seaMonth]}`; div.appendChild(g); }
+      box.appendChild(div);
+    });
+  }
+  $("sea-prev").addEventListener("click", () => { seaMonth = (seaMonth + 11) % 12; renderSeasons(); });
+  $("sea-next").addEventListener("click", () => { seaMonth = (seaMonth + 1) % 12; renderSeasons(); });
 
   // ---- Quick catch: snap a photo, the app does the rest ----
   const QC_NEAR_MI = 0.15;           // within ~800 ft counts as "at" a saved spot
@@ -2552,6 +2792,9 @@
     $("view-map").hidden = !isMap;
     $("view-list").hidden = which !== "list";
     $("view-insights").hidden = which !== "insights";
+    $("view-seasons").hidden = which !== "seasons";
+    $("tab-seasons").classList.toggle("on", which === "seasons");
+    if (which === "seasons") renderSeasons();
     $("tab-map").classList.toggle("on", isMap);
     $("tab-list").classList.toggle("on", which === "list");
     $("tab-insights").classList.toggle("on", which === "insights");
@@ -2566,6 +2809,7 @@
   $("tab-list").addEventListener("click", () => { stopPlacing(); showView("list"); });
   $("tab-map").addEventListener("click", () => showView("map"));
   $("tab-insights").addEventListener("click", () => { stopPlacing(); showView("insights"); });
+  $("tab-seasons").addEventListener("click", () => { stopPlacing(); showView("seasons"); });
 
   function initMap() {
     if (map || !window.L) return;
