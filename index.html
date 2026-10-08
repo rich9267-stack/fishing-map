@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fishing Map — Tides</title>
+<style>
+  :root {
+    --bg: #f4f7f8; --card: #ffffff; --text: #12262e; --muted: #5b6f78;
+    --accent: #0e7c86; --rising: #1f7a3f; --falling: #a5521b; --line: #dfe7ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1a1f; --card: #142a31; --text: #e6f0f2; --muted: #9db2ba;
+      --accent: #4fc3cc; --rising: #6fd28f; --falling: #f0a46a; --line: #23414a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 520px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 1.4rem; margin: 0 0 2px; }
+  .sub { color: var(--muted); margin: 0 0 18px; font-size: .95rem; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 16px; margin-bottom: 14px;
+  }
+  .label { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; }
+  .now { font-size: 1.6rem; font-weight: 700; margin: 4px 0 2px; }
+  .rising { color: var(--rising); }
+  .falling { color: var(--falling); }
+  .next { color: var(--muted); }
+  h2 { font-size: 1rem; margin: 18px 0 8px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--line);
+  }
+  li:last-child { border-bottom: 0; }
+  .kind { font-weight: 600; }
+  .ft { color: var(--muted); font-size: .9rem; margin-left: 8px; }
+  .past { opacity: .5; }
+  footer { color: var(--muted); font-size: .8rem; margin-top: 20px; }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>🎣 Fishing Map</h1>
+  <p class="sub">Tides at Hillsboro Inlet</p>
+
+  <div class="card" id="status">
+    <div class="label">Right now</div>
+    <div class="now" id="stage">Loading tides…</div>
+    <div class="next" id="next"></div>
+  </div>
+
+  <div id="days"></div>
+
+  <footer>
+    Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
+    Heights in feet above mean lower low water.
+    <br>Step 1 of the Fishing Map build.
+  </footer>
+</main>
+
+<script>
+  const STATION = "8722859";
+
+  function ymd(d) {
+    return d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+  }
+  function parseNoaa(t) {
+    // NOAA gives "2026-10-08 07:24" in local station time (Eastern)
+    const [date, time] = t.split(" ");
+    const [y, m, d] = date.split("-").map(Number);
+    const [hh, mm] = time.split(":").map(Number);
+    return new Date(y, m - 1, d, hh, mm);
+  }
+  function clock(d) {
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+  function dayName(d) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const that = new Date(d); that.setHours(0, 0, 0, 0);
+    const diff = Math.round((that - today) / 86400000);
+    if (diff === 0) return "Today";
+    if (diff === 1) return "Tomorrow";
+    return d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+  }
+  function untilText(ms) {
+    const mins = Math.round(ms / 60000);
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return h > 0 ? `${h} hr ${m} min` : `${m} min`;
+  }
+
+  async function load() {
+    const start = new Date(); start.setDate(start.getDate() - 1);
+    const url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter" +
+      `?product=predictions&application=fishing_map&begin_date=${ymd(start)}&range=96` +
+      `&datum=MLLW&station=${STATION}&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
+
+    const stage = document.getElementById("stage");
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data.predictions) throw new Error(data.error ? data.error.message : "No data");
+
+      const tides = data.predictions.map(p => ({
+        when: parseNoaa(p.t), high: p.type === "H", ft: parseFloat(p.v)
+      }));
+      const now = new Date();
+      const next = tides.find(t => t.when > now);
+
+      if (next) {
+        stage.textContent = next.high ? "⬆ Incoming (rising)" : "⬇ Outgoing (falling)";
+        stage.className = "now " + (next.high ? "rising" : "falling");
+        document.getElementById("next").textContent =
+          `Next ${next.high ? "high" : "low"} tide at ${clock(next.when)} — in ${untilText(next.when - now)}`;
+      } else {
+        stage.textContent = "No upcoming tides found";
+      }
+
+      // Group today and the next 2 days
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const groups = {};
+      tides.filter(t => t.when >= todayStart).forEach(t => {
+        const key = t.when.toDateString();
+        (groups[key] = groups[key] || []).push(t);
+      });
+
+      const days = document.getElementById("days");
+      Object.keys(groups).slice(0, 3).forEach(key => {
+        const list = groups[key];
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `<div class="label">${dayName(list[0].when)}</div><ul></ul>`;
+        const ul = card.querySelector("ul");
+        list.forEach(t => {
+          const li = document.createElement("li");
+          if (t.when < now) li.className = "past";
+          li.innerHTML = `<span class="kind ${t.high ? "rising" : "falling"}">${t.high ? "High" : "Low"}</span>` +
+            `<span>${clock(t.when)}<span class="ft">${t.ft.toFixed(1)} ft</span></span>`;
+          ul.appendChild(li);
+        });
+        days.appendChild(card);
+      });
+    } catch (err) {
+      stage.textContent = "Couldn't load tides right now";
+      document.getElementById("next").textContent = "Check your connection and refresh the page.";
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>
