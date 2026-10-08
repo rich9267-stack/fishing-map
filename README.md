@@ -51,3 +51,7 @@ A shared map to help pick where to fish in Pompano Beach / Broward County today:
 **Offline catch saving:** `sw.js` keeps a copy of the app (page + code libraries) on the phone so it opens without signal; the spots/catches list and membership are remembered per phone. Quick catches made offline (photo included) wait in the phone's storage (IndexedDB) and upload automatically when signal returns (on reconnect, when the app is reopened, or every minute while open); conditions are worked out for the catch time when they upload. Queued catches at the same new location share one new spot.
 
 **Refreshing on the home-screen app:** pull down from the top to refresh, a ↻ Refresh button in the top bar, and an automatic refresh when returning after 15+ minutes (never while a form, camera or photo viewer is open).
+
+## V3
+
+**Step 1 (current):** water temperature — per spot (saltwater/brackish), on the weather card, and saved with every catch (`water_temp_f`, `water_temp_source`). Source: nearest NOAA station with a trustworthy sensor within 20 mi (Lake Worth Pier, Virginia Key, Vaca Key, Key West; Port Everglades excluded — reads 92–98°F), otherwise the Open-Meteo marine model at the spot. Readings outside 45–93°F are discarded. New Insights chart: water temperature bands.

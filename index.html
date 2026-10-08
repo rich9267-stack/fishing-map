@@ -431,6 +431,7 @@
     <div class="now" id="wx-now">Loading weather…</div>
     <div class="next" id="wx-detail"></div>
     <div class="next" id="wx-pressure">Loading pressure…</div>
+    <div class="next" id="wx-water"></div>
     <ul id="wx-hours"></ul>
   </div>
 
@@ -450,7 +451,7 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>Offline catch saving. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>V3 step 1: water temperature. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
     <br><a href="privacy.html">Privacy</a>
   </footer>
 </main>
@@ -960,16 +961,94 @@
     return localWxCache[key];
   }
 
+  // ---- Water temperature ----
+  // NOAA stations whose water-temperature sensors read believable ocean values.
+  // (Port Everglades is left out: its sensor reads 92–98°F, far above the surrounding ocean.)
+  const WT_STATIONS = [
+    { id: "8722670", name: "Lake Worth Pier", lat: 26.6128, lng: -80.0342 },
+    { id: "8723214", name: "Virginia Key", lat: 25.7314, lng: -80.1618 },
+    { id: "8723970", name: "Vaca Key", lat: 24.711, lng: -81.1065 },
+    { id: "8724580", name: "Key West", lat: 24.5557, lng: -81.8079 }
+  ];
+  const WT_RANGE = [45, 93];            // anything outside this is a bad reading
+  const WT_STATION_MI = 20;             // use a station only if it's this close
+  const okTemp = v => typeof v === "number" && isFinite(v) && v >= WT_RANGE[0] && v <= WT_RANGE[1];
+
+  function wtSourceFor(lat, lng) {
+    const st = WT_STATIONS.map(t => ({ ...t, dist: miles(lat, lng, t.lat, t.lng) })).sort((a, b) => a.dist - b.dist)[0];
+    return st && st.dist <= WT_STATION_MI ? st : null;
+  }
+
+  // Current water temperature at a place: nearby NOAA station, otherwise an ocean model for that exact spot
+  const wtNowCache = {};
+  function waterTempNow(lat, lng) {
+    const st = wtSourceFor(lat, lng);
+    const key = st ? st.id : lat.toFixed(2) + "," + lng.toFixed(2);
+    if (wtNowCache[key]) return wtNowCache[key];
+    const job = (async () => {
+      if (st) {
+        try {
+          const d = await (await fetch("https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_temperature&application=fishing_map" +
+            `&date=latest&station=${st.id}&units=english&time_zone=lst_ldt&format=json`)).json();
+          const v = d.data && d.data[0] && parseFloat(d.data[0].v);
+          if (okTemp(v)) return { f: Math.round(v * 10) / 10, source: `${st.name} station`, label: `${st.name}, ${st.dist.toFixed(0)} mi` };
+        } catch (e) {}
+      }
+      const d = await (await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}` +
+        "&current=sea_surface_temperature&temperature_unit=fahrenheit&timezone=America%2FNew_York")).json();
+      const v = d.current && d.current.sea_surface_temperature;
+      if (!okTemp(v)) throw new Error("No water temperature here");
+      return { f: Math.round(v * 10) / 10, source: "ocean model", label: "ocean estimate" };
+    })();
+    wtNowCache[key] = job;
+    job.done = false;
+    job.then(v => { job.done = v; refreshConditions(); }, () => { job.done = "error"; });
+    return job;
+  }
+
+  // Water temperature at a past moment (for logging catches)
+  async function waterTempAt(lat, lng, when) {
+    const st = wtSourceFor(lat, lng);
+    const day = ymd(when);
+    if (st) {
+      try {
+        const d = await (await fetch("https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_temperature&application=fishing_map" +
+          `&begin_date=${day}&end_date=${day}&interval=h&station=${st.id}&units=english&time_zone=lst_ldt&format=json`)).json();
+        const best = (d.data || []).map(r => ({ t: parseNoaa(r.t), v: parseFloat(r.v) })).filter(r => okTemp(r.v))
+          .sort((a, b) => Math.abs(a.t - when) - Math.abs(b.t - when))[0];
+        if (best && Math.abs(best.t - when) <= 2 * 3600000) return { f: Math.round(best.v * 10) / 10, source: `${st.name} station` };
+      } catch (e) {}
+    }
+    const dd = ymdDash(when);
+    const d = await (await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}` +
+      `&hourly=sea_surface_temperature&temperature_unit=fahrenheit&timezone=America%2FNew_York&start_date=${dd}&end_date=${dd}`)).json();
+    const h = d.hourly || {};
+    const i = (h.time || []).indexOf(`${dd}T${pad2(when.getHours())}:00`);
+    const v = i >= 0 ? h.sea_surface_temperature[i] : null;
+    if (!okTemp(v)) throw new Error("No water temperature record");
+    return { f: Math.round(v * 10) / 10, source: "ocean model" };
+  }
+  function spotWaterTemp(s) {
+    if (!hasLoc(s) || s.water_type === "freshwater") return null; // ocean readings don't apply to fresh water
+    const w = waterTempNow(s.lat, s.lng);
+    return w.done && w.done !== "error" ? `🌊 ${Math.round(w.done.f)}°F water` : null;
+  }
+
   function spotConditions(s) {
     const first = s.water_type === "freshwater" ? spotWaterText(s) : spotTideText(s);
+    const wt = spotWaterTemp(s);
+    if (wt) return [first, wt, spotWindPressure(s)].filter(Boolean).join("  ·  ");
+    return [first, spotWindPressure(s)].filter(Boolean).join("  ·  ");
+  }
+  function spotWindPressure(s) {
     if (hasLoc(s) && miles(s.lat, s.lng, LAT, LNG) > 15) {
       const w = localWx(s);
       if (w.done && w.done !== "error") {
         const arrow = { rising: " ↗", falling: " ↘", steady: " →" }[w.done.trend] || "";
-        return [first, w.done.wind, `${w.done.pressure.toFixed(2)} inHg${arrow}`].join("  ·  ");
+        return [w.done.wind, `${w.done.pressure.toFixed(2)} inHg${arrow}`].join("  ·  ");
       }
     }
-    return [first, cond.wind, pressureShort()].filter(Boolean).join("  ·  ");
+    return [cond.wind, pressureShort()].filter(Boolean).join("  ·  ");
   }
   function pressureShort() {
     if (cond.pressure == null) return null;
@@ -1114,6 +1193,12 @@
   // Eight equal 3-hour blocks, so every part of the day gets the same weight
   const TIME_BLOCKS = ["12–3 AM", "3–6 AM", "6–9 AM", "9 AM–12 PM", "12–3 PM", "3–6 PM", "6–9 PM", "9 PM–12 AM"];
   function timeOfDay(d) { return TIME_BLOCKS[Math.floor(d.getHours() / 3)]; }
+  const WATER_BANDS = ["Under 70°F", "70–74°F", "75–79°F", "80–84°F", "85°F+"];
+  function waterBand(f) {
+    if (f == null) return null;
+    f = Number(f);
+    return f < 70 ? WATER_BANDS[0] : f < 75 ? WATER_BANDS[1] : f < 80 ? WATER_BANDS[2] : f < 85 ? WATER_BANDS[3] : WATER_BANDS[4];
+  }
   function windBand(mph) {
     if (mph == null) return null;
     return mph <= 5 ? "0–5 mph" : mph <= 10 ? "6–10 mph" : mph <= 15 ? "11–15 mph" : "16+ mph";
@@ -1127,6 +1212,7 @@
     { title: "Moon phase", key: c => c.moon_phase && cap(c.moon_phase), order: PHASE_ORDER.map(cap) },
     { title: "Solunar period", sub: "Major = moon overhead/underfoot · minor = moonrise/moonset", key: c => c.moon_phase ? (c.solunar ? cap(c.solunar) : "Neither") : null, order: ["Major", "Minor", "Neither"] },
     { title: "Wind speed", key: c => windBand(c.wind_mph), order: ["0–5 mph", "6–10 mph", "11–15 mph", "16+ mph"] },
+    { title: "Water temperature", sub: "Saltwater & brackish catches", key: c => waterBand(c.water_temp_f), order: WATER_BANDS },
     { title: "Top baits & lures", key: c => c.bait && cap(c.bait.trim().toLowerCase()), top: 6 },
     { title: "Top species", key: c => c.species && cap(c.species.trim()), top: 6, hideWhenSpecies: true },
     { title: "Top spots", key: c => { const s = (spots || []).find(x => x.id === c.spot_id); return s ? s.name : null; }, top: 6, hideWhenSpot: true }
@@ -1355,9 +1441,10 @@
   // All the automatic conditions for a spot at a moment (same sources as the regular catch form)
   async function conditionsFor(spot, when) {
     const fresh = spot.water_type === "freshwater";
-    const [tide, wx] = await Promise.allSettled([
+    const [tide, wx, wt] = await Promise.allSettled([
       fresh ? Promise.reject(new Error("freshwater")) : tideStageAt(when, stationFor(spot).id),
-      weatherAt(when, spot.lat, spot.lng)
+      weatherAt(when, spot.lat, spot.lng),
+      !fresh && hasLoc(spot) ? waterTempAt(spot.lat, spot.lng, when) : Promise.reject(new Error("no water temp"))
     ]);
     let w = wx.status === "fulfilled" ? wx.value : null;
     if (!w && cond.pressure != null) w = { pressure: cond.pressure, trend: cond.pressureTrend, windDir: cond.windDir, windMph: cond.windMph, tempF: cond.tempF, source: "nws" };
@@ -1369,7 +1456,9 @@
       pressure_inhg: w.pressure != null ? w.pressure : null, pressure_trend: w.trend || null,
       wind_dir: w.windDir || null, wind_mph: w.windMph != null ? w.windMph : null, air_temp_f: w.tempF != null ? w.tempF : null,
       moon_phase: moon ? moon.phase : null, moon_illum: moon ? moon.illum : null, solunar: sol || null,
-      conditions_source: w.source || null
+      conditions_source: w.source || null,
+      water_temp_f: wt.status === "fulfilled" ? wt.value.f : null,
+      water_temp_source: wt.status === "fulfilled" ? wt.value.source : null
     };
   }
 
@@ -1826,7 +1915,8 @@
     const spot = (spots || []).find(x => x.id === openCatchSpot);
     const fresh = spot && spot.water_type === "freshwater";
     const tideJob = fresh ? Promise.reject(new Error("freshwater")) : tideStageAt(when, spot ? stationFor(spot).id : STATION);
-    condPromise = Promise.allSettled([tideJob, weatherAt(when, spot && spot.lat, spot && spot.lng)]).then(([tide, wx]) => {
+    const wtJob = spot && hasLoc(spot) && !fresh ? waterTempAt(spot.lat, spot.lng, when) : Promise.reject(new Error("no water temp"));
+    condPromise = Promise.allSettled([tideJob, weatherAt(when, spot && spot.lat, spot && spot.lng), wtJob]).then(([tide, wx, wt]) => {
       if (id !== condRequest) return; // the time changed again; a newer lookup is running
       let w = wx.status === "fulfilled" ? wx.value : null;
       if (!w && recent && cond.pressure != null) {
@@ -1834,7 +1924,8 @@
         w = { pressure: cond.pressure, trend: cond.pressureTrend, windDir: cond.windDir, windMph: cond.windMph, tempF: cond.tempF, source: "nws" };
       }
       const stage = tide.status === "fulfilled" ? tide.value : (recent && !fresh ? cond.tideStage : null);
-      catchCond = { ...(w || {}), tideStage: stage || null, moon, solunar: sol };
+      catchCond = { ...(w || {}), tideStage: stage || null, moon, solunar: sol,
+        waterF: wt.status === "fulfilled" ? wt.value.f : null, waterSource: wt.status === "fulfilled" ? wt.value.source : null };
       const tideSel = catchForm.querySelector("#c-tide");
       if (!tideTouched) tideSel.value = stage || "";
       out.textContent = condSummary(catchCond) + (!w ? " (Weather record not available for that time.)" : "");
@@ -1846,7 +1937,8 @@
       c.tideStage && `tide ${c.tideStage}`,
       c.pressure != null && `${Number(c.pressure).toFixed(2)} inHg${c.trend ? " " + c.trend : ""}`,
       c.windDir && c.windMph != null && `wind ${c.windDir} ${c.windMph} mph`,
-      c.tempF != null && `${c.tempF}°F`,
+      c.tempF != null && `${c.tempF}°F air`,
+      c.waterF != null && `${Math.round(c.waterF)}°F water`,
       c.moon && `${c.moon.emoji} ${c.moon.phase} (${c.moon.illum}%)`,
       c.solunar && `${c.solunar} solunar period`
     ].filter(Boolean);
@@ -1915,6 +2007,7 @@
       catchCond = {
         tideStage: existing.tide_stage, pressure: existing.pressure_inhg != null ? Number(existing.pressure_inhg) : null,
         trend: existing.pressure_trend, windDir: existing.wind_dir, windMph: existing.wind_mph, tempF: existing.air_temp_f,
+        waterF: existing.water_temp_f != null ? Number(existing.water_temp_f) : null, waterSource: existing.water_temp_source,
         moon: existing.moon_phase ? { phase: existing.moon_phase, illum: existing.moon_illum, emoji: MOON_EMOJI[existing.moon_phase] } : null,
         solunar: existing.solunar, source: existing.conditions_source
       };
@@ -1979,7 +2072,9 @@
       moon_phase: c.moon ? c.moon.phase : null,
       moon_illum: c.moon ? c.moon.illum : null,
       solunar: c.solunar || null,
-      conditions_source: c.source || null
+      conditions_source: c.source || null,
+      water_temp_f: c.waterF != null ? c.waterF : null,
+      water_temp_source: c.waterSource || null
     };
     try {
       if (!db) throw new Error("Not connected to the database");
@@ -2032,6 +2127,7 @@
       c.wind_dir && c.wind_mph != null && `${c.wind_dir} ${c.wind_mph} mph`,
       c.moon_phase && `${MOON_EMOJI[c.moon_phase] || ""} ${c.moon_phase}`,
       c.solunar && `${c.solunar} solunar`,
+      c.water_temp_f != null && `${Math.round(c.water_temp_f)}°F water`,
       c.caught_by && `by ${c.caught_by}`
     ].filter(Boolean).join(" · ");
     const li = el("li", "catch");
@@ -2971,6 +3067,19 @@
     if (document.hidden) { hiddenAt = Date.now(); return; }
     if (hiddenAt && Date.now() - hiddenAt > 15 * 60000 && navigator.onLine && !busy()) refreshApp();
   });
+
+  // Home water temperature on the weather card
+  (function homeWater() {
+    const job = waterTempNow(LAT, LNG);
+    job.then(v => { $("wx-water").textContent = `🌊 Water ${Math.round(v.f)}°F (${v.label})`; }, () => {});
+    // the two nearest real sensors, for comparison
+    Promise.allSettled(WT_STATIONS.slice(0, 2).map(st => fetch("https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_temperature&application=fishing_map" +
+      `&date=latest&station=${st.id}&units=english&time_zone=lst_ldt&format=json`).then(r => r.json()).then(d => ({ st, v: parseFloat(d.data && d.data[0] && d.data[0].v) }))))
+      .then(rs => {
+        const ok = rs.filter(r => r.status === "fulfilled" && okTemp(r.value.v)).map(r => `${r.value.st.name} ${Math.round(r.value.v)}°F`);
+        if (ok.length) job.then(() => { $("wx-water").textContent += ` · ${ok.join(" · ")}`; }, () => { $("wx-water").textContent = "🌊 Water: " + ok.join(" · "); });
+      });
+  })();
 
   // Keep a copy of the app on the phone so it opens with no signal
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
