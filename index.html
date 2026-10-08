@@ -44,12 +44,119 @@
   .past { opacity: .5; }
   footer { color: var(--muted); font-size: .8rem; margin-top: 20px; }
   footer a { color: var(--accent); }
+
+  /* Spots */
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .btn {
+    appearance: none; border: 0; border-radius: 10px; padding: 10px 14px;
+    font: inherit; font-weight: 600; background: var(--accent); color: #fff; cursor: pointer;
+  }
+  .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+  .btn:disabled { opacity: .6; }
+  .spot { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .spot:last-child { border-bottom: 0; }
+  .spot-name { font-weight: 700; font-size: 1.05rem; }
+  .spot-meta { color: var(--muted); font-size: .85rem; margin-top: 2px; }
+  .spot-cond { font-size: .9rem; margin-top: 6px; }
+  .spot-notes { font-size: .9rem; margin-top: 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chip { font-size: .78rem; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .empty { color: var(--muted); padding: 8px 0; }
+  form label { display: block; font-size: .85rem; color: var(--muted); margin: 12px 0 4px; }
+  form input, form select, form textarea {
+    width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text); font: inherit;
+  }
+  form textarea { min-height: 70px; resize: vertical; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .msg { font-size: .9rem; margin-top: 10px; }
+  .msg.err { color: var(--falling); }
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <main>
   <h1>🎣 Fishing Map</h1>
-  <p class="sub">Tides at Hillsboro Inlet</p>
+  <p class="sub">Pompano Beach · Broward County</p>
+
+  <div class="card" id="spots-card">
+    <div class="row">
+      <div class="label">Your spots</div>
+      <button class="btn" id="add-btn" type="button">+ Add a spot</button>
+    </div>
+
+    <form id="spot-form" hidden>
+      <label for="f-name">Spot name *</label>
+      <input id="f-name" required maxlength="80" placeholder="e.g., Hillsboro Inlet north jetty">
+
+      <div class="two">
+        <div>
+          <label for="f-type">Type *</label>
+          <select id="f-type" required>
+            <option value="dock">Dock</option><option value="bridge">Bridge</option>
+            <option value="inlet">Inlet</option><option value="pier">Pier</option>
+            <option value="jetty">Jetty</option><option value="seawall">Seawall</option>
+            <option value="ramp">Ramp</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-water">Water *</label>
+          <select id="f-water" required>
+            <option value="saltwater">Saltwater</option>
+            <option value="brackish">Brackish / tidal canal</option>
+            <option value="freshwater">Freshwater</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="two">
+        <div>
+          <label for="f-access">Public access</label>
+          <select id="f-access">
+            <option value="unsure">Unsure</option><option value="yes">Yes</option><option value="no">No</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-parking">Parking</label>
+          <select id="f-parking">
+            <option value="">—</option><option value="free lot">Free lot</option>
+            <option value="paid">Paid</option><option value="street">Street</option><option value="none">None</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="f-getting">Getting to the water</label>
+      <select id="f-getting">
+        <option value="">—</option><option value="walk-up">Walk-up</option>
+        <option value="short walk">Short walk</option>
+        <option value="long walk on sand/gravel">Long walk on sand/gravel</option>
+        <option value="needs 4x4">Needs 4x4</option>
+      </select>
+
+      <label for="f-access-notes">Access notes</label>
+      <input id="f-access-notes" maxlength="500" placeholder="e.g., gate locks at sunset">
+
+      <label for="f-notes">Notes</label>
+      <textarea id="f-notes" maxlength="1000" placeholder="What's good here, best tide, etc."></textarea>
+
+      <label for="f-by">Added by *</label>
+      <input id="f-by" required maxlength="40" placeholder="Your name">
+
+      <label>Location</label>
+      <div class="row">
+        <span id="loc-text" class="spot-meta">Not set (optional for now)</span>
+        <button class="btn ghost" id="loc-btn" type="button">📍 Use where I am</button>
+      </div>
+
+      <div class="row" style="margin-top:16px">
+        <button class="btn ghost" id="cancel-btn" type="button">Cancel</button>
+        <button class="btn" id="save-btn" type="submit">Save spot</button>
+      </div>
+      <div class="msg" id="form-msg"></div>
+    </form>
+
+    <div id="spot-list"><div class="empty">Loading spots…</div></div>
+  </div>
 
   <div class="card" id="status">
     <div class="label">Right now</div>
@@ -71,12 +178,15 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Wind &amp; weather from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>Step 2 of the Fishing Map build.
+    <br>Step 3 of the Fishing Map build.
   </footer>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const STATION = "8722859";
+  // Today's conditions, shared by every spot for now (all spots are in the Hillsboro area)
+  const cond = { tide: null, wind: null };
 
   function ymd(d) {
     return d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
@@ -128,6 +238,8 @@
         stage.className = "now " + (next.high ? "rising" : "falling");
         document.getElementById("next").textContent =
           `Next ${next.high ? "high" : "low"} tide at ${clock(next.when)} — in ${untilText(next.when - now)}`;
+        cond.tide = `${next.high ? "⬆ Incoming" : "⬇ Outgoing"} · ${next.high ? "high" : "low"} ${clock(next.when)}`;
+        renderSpots();
       } else {
         stage.textContent = "No upcoming tides found";
       }
@@ -189,6 +301,8 @@
 
       const cur = periods[0];
       nowEl.textContent = `💨 ${cur.windDirection} ${cur.windSpeed}`;
+      cond.wind = `💨 ${cur.windDirection} ${cur.windSpeed} · ${cur.temperature}°`;
+      renderSpots();
       nowEl.className = "now";
       const rain = cur.probabilityOfPrecipitation && cur.probabilityOfPrecipitation.value;
       detailEl.textContent = `${cur.shortForecast}, ${cur.temperature}°${cur.temperatureUnit}` +
@@ -209,8 +323,145 @@
     }
   }
 
+  // ---- Shared spots (Supabase database) ----
+  const SUPABASE_URL = "https://euxcisnyansdrzzjyvsl.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_WzAISSZCvquNsRJ3iJEP-Q_GjtILF7p"; // public key, safe in the page
+  let db = null;
+  let spots = null;       // null = still loading
+  let spotsError = null;
+  let pickedLoc = null;
+
+  const WATER_LABEL = { saltwater: "Saltwater", brackish: "Brackish / tidal canal", freshwater: "Freshwater" };
+  const $ = id => document.getElementById(id);
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text; // textContent keeps typed text safe
+    return e;
+  }
+  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+  function spotConditions(s) {
+    if (s.water_type === "freshwater") {
+      return [cond.wind, "Water level: coming in a later step"].filter(Boolean).join(" · ");
+    }
+    return [cond.tide, cond.wind].filter(Boolean).join("  ·  ") || "Loading conditions…";
+  }
+
+  function renderSpots() {
+    const list = $("spot-list");
+    list.innerHTML = "";
+    if (spotsError) { list.appendChild(el("div", "empty", spotsError)); return; }
+    if (spots === null) { list.appendChild(el("div", "empty", "Loading spots…")); return; }
+    if (!spots.length) {
+      list.appendChild(el("div", "empty", "No spots yet. Tap “+ Add a spot” to save your first one."));
+      return;
+    }
+    spots.forEach(s => {
+      const item = el("div", "spot");
+      item.appendChild(el("div", "spot-name", s.name));
+      item.appendChild(el("div", "spot-meta",
+        `${cap(s.spot_type)} · ${WATER_LABEL[s.water_type] || s.water_type}` + (s.added_by ? ` · added by ${s.added_by}` : "")));
+      item.appendChild(el("div", "spot-cond", spotConditions(s)));
+
+      const chips = el("div", "chips");
+      const accessText = { yes: "Public access", no: "Not public", unsure: "Access unsure" }[s.public_access];
+      [accessText, s.parking && `Parking: ${s.parking}`, s.getting_there && cap(s.getting_there)]
+        .filter(Boolean).forEach(t => chips.appendChild(el("span", "chip", t)));
+      if (s.lat != null && s.lng != null) {
+        const a = el("a", "chip", "📍 Directions");
+        a.href = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
+        a.target = "_blank"; a.rel = "noopener";
+        chips.appendChild(a);
+      }
+      item.appendChild(chips);
+
+      if (s.access_notes) item.appendChild(el("div", "spot-notes", "🚗 " + s.access_notes));
+      if (s.notes) item.appendChild(el("div", "spot-notes", s.notes));
+      list.appendChild(item);
+    });
+  }
+
+  async function loadSpots() {
+    try {
+      if (!window.supabase) throw new Error("Database library didn't load");
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { data, error } = await db.from("spots").select("*").order("name");
+      if (error) throw error;
+      spots = data;
+      spotsError = null;
+    } catch (err) {
+      spotsError = "Couldn't load spots: " + (err.message || err);
+    }
+    renderSpots();
+  }
+
+  function openForm(show) {
+    $("spot-form").hidden = !show;
+    $("add-btn").hidden = show;
+    $("form-msg").textContent = "";
+    if (show) {
+      try { $("f-by").value = localStorage.getItem("fm-name") || ""; } catch (e) {}
+      $("f-name").focus();
+    }
+  }
+
+  $("add-btn").addEventListener("click", () => openForm(true));
+  $("cancel-btn").addEventListener("click", () => { $("spot-form").reset(); pickedLoc = null; $("loc-text").textContent = "Not set (optional for now)"; openForm(false); });
+
+  $("loc-btn").addEventListener("click", () => {
+    if (!navigator.geolocation) { $("loc-text").textContent = "Location not available on this device"; return; }
+    $("loc-text").textContent = "Finding you…";
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        pickedLoc = { lat: +pos.coords.latitude.toFixed(5), lng: +pos.coords.longitude.toFixed(5) };
+        $("loc-text").textContent = `Set ✓ (${pickedLoc.lat}, ${pickedLoc.lng})`;
+      },
+      () => { $("loc-text").textContent = "Couldn't get location — allow it in your browser and try again"; },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  });
+
+  $("spot-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = $("form-msg");
+    msg.className = "msg"; msg.textContent = "Saving…";
+    $("save-btn").disabled = true;
+    const val = id => { const v = $(id).value.trim(); return v === "" ? null : v; };
+    const row = {
+      name: val("f-name"),
+      spot_type: $("f-type").value,
+      water_type: $("f-water").value,
+      public_access: $("f-access").value,
+      parking: val("f-parking"),
+      getting_there: val("f-getting"),
+      access_notes: val("f-access-notes"),
+      notes: val("f-notes"),
+      added_by: val("f-by"),
+      lat: pickedLoc ? pickedLoc.lat : null,
+      lng: pickedLoc ? pickedLoc.lng : null
+    };
+    try {
+      if (!db) throw new Error("Not connected to the database");
+      const { error } = await db.from("spots").insert(row);
+      if (error) throw error;
+      try { localStorage.setItem("fm-name", row.added_by || ""); } catch (e2) {}
+      $("spot-form").reset(); pickedLoc = null;
+      $("loc-text").textContent = "Not set (optional for now)";
+      openForm(false);
+      await loadSpots();
+    } catch (err) {
+      msg.className = "msg err";
+      msg.textContent = "Couldn't save: " + (err.message || err);
+    } finally {
+      $("save-btn").disabled = false;
+    }
+  });
+
   load();
   loadWeather();
+  loadSpots();
 </script>
 </body>
 </html>
