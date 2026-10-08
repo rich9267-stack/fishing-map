@@ -2662,7 +2662,7 @@
       let out = data;
       if (error) {
         try { out = error.context && typeof error.context.json === "function" ? await error.context.json() : null; } catch (e) { out = null; }
-        throw new Error((out && out.error) || error.message || "Fish ID didn't answer");
+        throw new Error(((out && out.error) || error.message || "Fish ID didn't answer") + (out && out.detail ? ` (details: ${out.detail})` : ""));
       }
       if (!out || !out.fish_visible || !(out.suggestions || []).length) { msgEl.textContent = "Couldn't spot a fish clearly in this photo — try one with the whole fish showing."; return; }
       msgEl.textContent = "Tap the right one (or type your own):";

@@ -75,22 +75,46 @@ Deno.serve(async (req) => {
     };
 
     let lastErr = "";
-    for (const model of MODELS) {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    const tried = new Set<string>();
+    const call = async (model: string) => {
+      tried.add(model);
+      return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": key },
         body: JSON.stringify(body),
       });
+    };
+    // Ask Google which "flash" models this key can use (names change over time), newest first
+    const available = async (): Promise<string[]> => {
+      try {
+        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": key } });
+        if (!r.ok) { console.error("list models", r.status, (await r.text()).slice(0, 300)); return []; }
+        const j = await r.json();
+        return (j.models || [])
+          .filter((m: { name: string; supportedGenerationMethods?: string[] }) => (m.supportedGenerationMethods || []).includes("generateContent") &&
+            /flash/.test(m.name) && !/(image|tts|live|audio|thinking|embedding)/.test(m.name))
+          .map((m: { name: string }) => m.name.replace(/^models\//, ""))
+          .sort((a: string, b: string) => b.localeCompare(a, undefined, { numeric: true }));
+      } catch (e) { console.error("list models failed", e); return []; }
+    };
+    const queue = [...MODELS];
+    let listed = false;
+    while (queue.length || !listed) {
+      if (!queue.length) { listed = true; queue.push(...(await available()).filter((m) => !tried.has(m)).slice(0, 4)); if (!queue.length) break; }
+      const model = queue.shift()!;
+      const res = await call(model);
       if (!res.ok) {
-        lastErr = `${model}: ${res.status}`;
+        const detail = (await res.text()).slice(0, 400);
+        console.error("gemini", model, res.status, detail);
+        lastErr += (lastErr ? " | " : "") + `${model}: ${res.status} ${(detail.match(/"message":\s*"([^"]{0,160})/) || [])[1] || ""}`;
         if ([404, 429, 500, 503].includes(res.status)) continue; // not available / busy → try the next model
-        if (res.status === 400 || res.status === 403) return reply({ error: "Gemini rejected the request — the API key may be wrong." }, 502);
+        if (res.status === 403 || (res.status === 400 && /API key|API_KEY/i.test(detail))) return reply({ error: "Gemini rejected the key — check GEMINI_API_KEY in Supabase.", detail: lastErr }, 502);
         continue;
       }
       const data = await res.json();
       const text = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text || "").join("") || "";
       let out;
-      try { out = JSON.parse(text); } catch { lastErr = `${model}: unreadable answer`; continue; }
+      try { out = JSON.parse(text); } catch { lastErr += (lastErr ? " | " : "") + `${model}: unreadable answer`; continue; }
       const suggestions = (Array.isArray(out.suggestions) ? out.suggestions : []).slice(0, 3).map((s: Record<string, unknown>) => ({
         name: String(s.name || "").slice(0, 60),
         confidence: ["high", "medium", "low"].includes(String(s.confidence)) ? s.confidence : "low",
@@ -98,7 +122,7 @@ Deno.serve(async (req) => {
       })).filter((s: { name: string }) => s.name);
       return reply({ fish_visible: !!out.fish_visible, suggestions, model });
     }
-    return reply({ error: "Fish ID is busy right now (free daily limit may be used up) — try again later.", detail: lastErr }, 503);
+    return reply({ error: "Fish ID couldn't get an answer from Gemini right now — try again later.", detail: lastErr }, 503);
   } catch (e) {
     return reply({ error: "Fish ID failed: " + ((e as Error).message || e) }, 500);
   }
