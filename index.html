@@ -172,7 +172,7 @@
   .sat-title { font-weight: 600; font-size: .9rem; }
   .sat-bar { height: 10px; border-radius: 4px; margin: 8px 0 4px; }
   .sat-scale { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-  #map-sst.on, #map-chl.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #map-sst.on, #map-chl.on, #map-sight.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   .check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--text); cursor: pointer; }
   .check-row input { width: auto; margin-top: 3px; transform: scale(1.2); }
   .btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; padding: 12px;
@@ -335,6 +335,7 @@
       <button class="btn ghost small" id="map-sugg" type="button">☆ Show suggestions</button>
       <button class="btn ghost small" id="map-sst" type="button">🌡 Water temp</button>
       <button class="btn ghost small" id="map-chl" type="button">🟢 Water clarity</button>
+      <button class="btn ghost small" id="map-sight" type="button">👀 Sightings</button>
     </div>
     <div class="legend">
       <span><span class="dot" style="background:#1d6fd6"></span>Saltwater</span>
@@ -342,6 +343,7 @@
       <span><span class="dot" style="background:#b7791f"></span>Freshwater</span>
       <span><span class="dot" style="background:#fff;border-color:#888"></span>Suggested</span>
       <span><span class="dot" style="background:#1d6fd6;box-shadow:0 0 0 2px #222"></span>Private (yours)</span>
+      <span id="sight-key" hidden><span class="dot" style="background:#8e44ad"></span>Public sighting</span>
     </div>
     <div class="sat-legend" id="sat-legend" hidden>
       <div class="sat-title" id="sat-title"></div>
@@ -1428,7 +1430,7 @@
     { name: "Spotted seatrout", group: "inshore", match: ["seatrout", "speckled trout", "trout"], runs: [2,2,2,1,1,1,1,1,1,1,2,2],
       rule: "Southeast region: open all year, 3 per person, 15–19\" slot (one over 19\" per boat; per person from shore). New rules from April 2026.",
       tip: "Grass flats in Lake Worth Lagoon and Biscayne Bay; best in the cooler months." },
-    { name: "Jack crevalle", group: "inshore", match: ["jack"], runs: [1,1,1,1,1,1,1,1,1,2,2,1],
+    { name: "Jack crevalle", group: "inshore", match: ["jack"], sightMatch: ["crevalle"], runs: [1,1,1,1,1,1,1,1,1,2,2,1],
       rule: "No closed season.", tip: "Hits hard during the fall mullet run; around inlets and canals all year." },
     { name: "Mangrove snapper", group: "inshore", match: ["mangrove", "gray snapper"], runs: [1,1,1,1,1,2,2,2,1,1,1,1],
       rule: "Open all year.", tip: "Docks, bridges and seawalls; biggest fish move to the reefs to spawn in summer." },
@@ -1442,14 +1444,14 @@
       rule: "Open all year.", tip: "Winter, often mixed with Spanish mackerel and following bait schools." },
     { name: "Sheepshead", group: "beach", match: ["sheepshead"], runs: [2,2,2,1,0,0,0,0,0,0,1,1],
       rule: "Open all year.", tip: "Spawning run late winter around pilings, jetties and bridges; fiddler crabs or shrimp." },
-    { name: "Whiting", group: "beach", match: ["whiting"], runs: [2,2,2,1,1,0,0,0,0,1,1,2],
+    { name: "Whiting", group: "beach", match: ["whiting", "kingcroaker"], runs: [2,2,2,1,1,0,0,0,0,1,1,2],
       rule: "Open all year.", tip: "Surf troughs close to shore on the cooler months; sand fleas or Fishbites." },
     { name: "Sailfish", group: "offshore", match: ["sailfish"], runs: [2,2,1,1,0,0,0,0,0,1,1,2],
       rule: "Catch-and-release is the norm (federal HMS permit needed to keep one).",
       tip: "Winter cold fronts push them close to the edge of the reef off Pompano and Palm Beach." },
     { name: "Kingfish (king mackerel)", group: "offshore", match: ["kingfish", "king mackerel"], runs: [1,1,2,2,1,1,0,0,1,1,2,1],
       rule: "Open all year.", tip: "Spring and fall migrations; slow-trolled live bait off the reef and from the deep piers." },
-    { name: "Mahi (dolphin)", group: "offshore", match: ["mahi", "dolphin"], runs: [0,0,1,2,2,2,1,1,0,0,0,0],
+    { name: "Mahi (dolphin)", group: "offshore", match: ["mahi", "dolphin", "dolphinfish"], runs: [0,0,1,2,2,2,1,1,0,0,0,0],
       rule: "Open all year.", tip: "Spring–early summer under weed lines and floating debris — check the 🟢 water clarity map for edges." },
     { name: "Wahoo", group: "offshore", match: ["wahoo"], runs: [1,1,1,0,0,0,0,0,1,2,2,1],
       rule: "Open all year.", tip: "Fall and early winter along the reef edge, especially around the full moon." },
@@ -1470,7 +1472,7 @@
       tip: "Spawning gatherings in late spring around the full moon; also on the beach and in inlets." },
     { name: "Yellowtail snapper", group: "offshore", match: ["yellowtail"], runs: [1,1,1,1,2,2,2,2,1,1,1,1],
       rule: "Open all year.", tip: "Chum on the reef; best in the warm months." },
-    { name: "Largemouth bass", group: "fresh", match: ["largemouth", "bass"], runs: [2,2,2,1,1,1,1,1,1,2,2,1],
+    { name: "Largemouth bass", group: "fresh", match: ["largemouth", "bass"], sightMatch: ["largemouth"], runs: [2,2,2,1,1,1,1,1,1,2,2,1],
       rule: "Open all year.", tip: "Spawning in shallow water January–March; early and late in the day in summer." },
     { name: "Peacock bass", group: "fresh", match: ["peacock"], runs: [0,1,2,2,2,2,2,2,2,1,1,0],
       rule: "Open all year.", tip: "Daytime fish in the canals; they turn off when the water gets cold. Live shiners." },
@@ -1592,11 +1594,156 @@
       div.append(top, months, tip, rule);
       const n = groupCount(f, seaMonth);
       if (n) { const g = document.createElement("div"); g.className = "spot-meta"; g.textContent = `🎣 Your group has logged ${n} in ${MONTHS[seaMonth]}`; div.appendChild(g); }
+      const seen = thisMonth ? sightCountFor(f) : 0;
+      if (seen) { const g = document.createElement("div"); g.className = "spot-meta"; g.textContent = `👀 Seen ${seen} time${seen === 1 ? "" : "s"} near your spots in the last ${SIGHT_DAYS} days (public iNaturalist photos)`; div.appendChild(g); }
       box.appendChild(div);
     });
   }
   $("sea-prev").addEventListener("click", () => { seaMonth = (seaMonth + 11) % 12; renderSeasons(); });
   $("sea-next").addEventListener("click", () => { seaMonth = (seaMonth + 1) % 12; renderSeasons(); });
+
+  // ---- Public sightings: recent iNaturalist photos of game fish near your spots (free, no account) ----
+  // Only "research grade" observations (identity agreed by other iNaturalist users) with exact locations.
+  const SIGHT_DAYS = 60, SIGHT_NEAR_MI = 5, SIGHT_CACHE = "fm-sightings", SIGHT_TTL = 6 * 3600 * 1000;
+  const EXTRA_GAME = ["barracuda", "permit", "ladyfish", "grunt", "porgy", "triggerfish", "drum", "cobia", "bonefish", "hogfish",
+    "snapper", "grouper", "mackerel", "shark", "tilapia", "oscar", "knifefish", "bowfin", "gar", "crappie", "catfish", "sea bass"];
+  const FRESH_ONLY = ["largemouth", "peacock", "snakehead", "bluegill", "shellcracker", "redear", "mayan", "cichlid", "tilapia",
+    "oscar", "knifefish", "bowfin", "gar", "crappie", "panfish"];
+  // Whole-word match, so "jack" finds "Bar Jack" but not "Jackknife-fish"
+  const hasWord = (name, words) => words.some(w => new RegExp(`\\b${w}(s|es)?\\b`, "i").test(name));
+  const isGameFish = name => SEASONS.some(f => hasWord(name, f.match)) || hasWord(name, EXTRA_GAME);
+  let sightings = null, sightLayer = null, sightOn = false, sightErr = null;
+
+  // Group spots that are close together so one request covers each area
+  function sightAreas() {
+    const pts = (spots || []).filter(hasLoc);
+    if (!pts.length) return [{ lat: LAT, lng: LNG, km: 15 }];
+    const areas = [];
+    pts.forEach(p => {
+      const a = areas.find(a => miles(a.lat, a.lng, p.lat, p.lng) < 20);
+      if (a) a.pts.push(p); else areas.push({ lat: p.lat, lng: p.lng, pts: [p] });
+    });
+    return areas.map(a => {
+      const lat = a.pts.reduce((n, p) => n + p.lat, 0) / a.pts.length, lng = a.pts.reduce((n, p) => n + p.lng, 0) / a.pts.length;
+      const far = Math.max(...a.pts.map(p => miles(lat, lng, p.lat, p.lng)));
+      return { lat: +lat.toFixed(3), lng: +lng.toFixed(3), km: Math.min(60, Math.ceil((far + SIGHT_NEAR_MI + 1) * 1.609)) };
+    });
+  }
+
+  async function loadSightings(force) {
+    const areas = sightAreas(), key = JSON.stringify(areas);
+    try {
+      const c = JSON.parse(localStorage.getItem(SIGHT_CACHE) || "null");
+      if (c && c.key === key && Date.now() - c.at < SIGHT_TTL && !force) { sightings = c.list; sightingsChanged(); return; }
+      if (c && c.key === key && !sightings) { sightings = c.list; sightingsChanged(); } // show the old copy while refreshing
+    } catch (e) { /* no saved copy */ }
+    if (loadSightings.busy) return;
+    loadSightings.busy = true;
+    try {
+      const d1 = new Date(Date.now() - SIGHT_DAYS * 86400000).toISOString().slice(0, 10);
+      const seen = new Map();
+      for (const a of areas) {
+        for (let page = 1; page <= 3; page++) {
+          const url = `https://api.inaturalist.org/v1/observations?taxon_id=47178,47273&quality_grade=research&d1=${d1}` +
+            `&lat=${a.lat}&lng=${a.lng}&radius=${a.km}&per_page=200&page=${page}&order_by=observed_on&order=desc`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error("iNaturalist answered " + res.status);
+          const data = await res.json();
+          (data.results || []).forEach(o => {
+            const name = o.taxon && (o.taxon.preferred_common_name || o.taxon.name);
+            const ll = o.geojson && o.geojson.coordinates;
+            if (!name || !ll || o.obscured || (o.positional_accuracy || 0) > 2000 || !isGameFish(name)) return;
+            const ph = o.photos && o.photos[0] && o.photos[0].url;
+            seen.set(o.id, {
+              id: o.id, name: cap(name), sci: o.taxon.name, lat: ll[1], lng: ll[0], date: o.observed_on,
+              url: o.uri || `https://www.inaturalist.org/observations/${o.id}`,
+              photo: ph ? ph.replace("/square.", "/small.") : null,
+              by: o.user && (o.user.name || o.user.login) || "an iNaturalist user"
+            });
+          });
+          if (!data.results || data.results.length < 200) break;
+          await new Promise(r => setTimeout(r, 1100)); // iNaturalist asks for about one request a second
+        }
+      }
+      sightings = [...seen.values()].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      sightErr = null;
+      try { localStorage.setItem(SIGHT_CACHE, JSON.stringify({ key, at: Date.now(), list: sightings })); } catch (e) { /* storage full */ }
+    } catch (e) {
+      sightErr = "Couldn't reach iNaturalist right now";
+    }
+    loadSightings.busy = false;
+    sightingsChanged();
+  }
+
+  // Sightings within a few miles of a spot that fit its water (no peacock bass at the beach)
+  function sightsNear(s) {
+    if (!sightings || !hasLoc(s)) return [];
+    return sightings.filter(o => {
+      if (miles(s.lat, s.lng, o.lat, o.lng) > SIGHT_NEAR_MI) return false;
+      const fresh = hasWord(o.name, FRESH_ONLY);
+      return s.water_type === "freshwater" ? fresh : (s.water_type === "saltwater" ? !fresh : true);
+    });
+  }
+  function sightLine(s) {
+    const near = sightsNear(s);
+    if (!near.length) return "";
+    const counts = new Map();
+    near.forEach(o => counts.set(o.name, (counts.get(o.name) || 0) + 1));
+    const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([n, c]) => c > 1 ? `${n} (${c})` : n);
+    const more = counts.size > 4 ? ` +${counts.size - 4} more` : "";
+    return `👀 Seen within ${SIGHT_NEAR_MI} mi lately: ${top.join(", ")}${more} · latest ${shortDate(near[0].date)}`;
+  }
+  const shortDate = ymd => ymd ? new Date(ymd + "T12:00:00").toLocaleDateString([], { month: "short", day: "numeric" }) : "";
+  function sightCountFor(f) {
+    if (!sightings) return 0;
+    const pts = (spots || []).filter(hasLoc);
+    return sightings.filter(o => hasWord(o.name, f.sightMatch || f.match) &&
+      (pts.length ? pts.some(p => miles(p.lat, p.lng, o.lat, o.lng) <= SIGHT_NEAR_MI) : true)).length;
+  }
+
+  function sightingsChanged() {
+    document.querySelectorAll(".spot-sight").forEach(node => {
+      const s = (spots || []).find(x => x.id === node.dataset.spot);
+      node.textContent = s ? sightLine(s) : "";
+      node.hidden = !node.textContent;
+    });
+    if (!$("view-seasons").hidden) renderSeasons();
+    if (sightOn) renderSightPins();
+  }
+
+  function renderSightPins() {
+    if (!map) return;
+    if (!sightLayer) sightLayer = L.layerGroup();
+    sightLayer.clearLayers();
+    (sightings || []).forEach(o => {
+      L.circleMarker([o.lat, o.lng], { radius: 5, weight: 1.5, color: "#fff", fillColor: "#8e44ad", fillOpacity: 0.9 })
+        .bindPopup(() => {
+          const box = document.createElement("div");
+          box.appendChild(el("div", "pop-name", "👀 " + o.name));
+          box.appendChild(el("div", "pop-meta", `Seen ${shortDate(o.date)} · photo by ${o.by}`));
+          if (o.photo) {
+            const img = el("img"); img.src = o.photo; img.alt = o.name; img.loading = "lazy";
+            img.style.cssText = "display:block;width:100%;max-width:220px;border-radius:8px;margin-top:6px";
+            box.appendChild(img);
+          }
+          const a = el("a", null, "Open on iNaturalist ↗"); a.href = o.url; a.target = "_blank"; a.rel = "noopener";
+          a.style.cssText = "display:inline-block;margin-top:6px";
+          box.appendChild(a);
+          return box;
+        }).addTo(sightLayer);
+    });
+  }
+  function setSightOn(on) {
+    sightOn = on;
+    $("map-sight").classList.toggle("on", on);
+    $("sight-key").hidden = !on;
+    if (!map) return;
+    if (on) {
+      if (!sightings) { $("map-sight").textContent = "👀 Loading…"; loadSightings().then(() => { $("map-sight").textContent = "👀 Sightings"; if (sightErr && !sightings) alert(sightErr); }); }
+      renderSightPins(); sightLayer.addTo(map);
+    } else if (sightLayer) map.removeLayer(sightLayer);
+  }
+  $("map-sight").addEventListener("click", () => { initMap(); setSightOn(!sightOn); });
 
   // ---- Quick catch: snap a photo, the app does the rest ----
   const QC_NEAR_MI = 0.15;           // within ~800 ft counts as "at" a saved spot
@@ -2611,6 +2758,9 @@
       const condEl = el("div", "spot-cond", spotConditions(s));
       condEl.dataset.spot = s.id;
       item.appendChild(condEl);
+      const sightEl = el("div", "spot-meta spot-sight", sightLine(s));
+      sightEl.dataset.spot = s.id; sightEl.hidden = !sightEl.textContent;
+      item.appendChild(sightEl);
 
       const chips = el("div", "chips");
       const accessText = { yes: "Public access", no: "Not public", unsure: "Access unsure" }[s.public_access];
@@ -2651,6 +2801,7 @@
       loadPhotos();
       renderPins();
       if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); } // centred on your spots
+      loadSightings();
       if (typeof renderSuggestions === "function") renderSuggestions();
     } catch (err) {
       const copy = isNetErr(err) && loadCopy("spots");
