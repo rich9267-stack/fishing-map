@@ -121,6 +121,9 @@
   .qc-round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(0,0,0,.55); color: #fff; font-size: 18px; flex-shrink: 0; cursor: pointer; }
   .qc-bottom { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; }
   #qc-shutter { width: 76px; height: 76px; border-radius: 50%; border: 5px solid #fff; background: rgba(255,255,255,.25); cursor: pointer; }
+  .qc-gallery { width: 64px; height: 64px; border-radius: 14px; border: 2px solid rgba(255,255,255,.8); background: rgba(0,0,0,.55); color: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; }
+  .qc-gallery span { font-size: .68rem; margin-top: 2px; }
   .qc-small { color: #fff; background: rgba(0,0,0,.55); border: 0; border-radius: 999px; padding: 10px 14px; font: inherit; font-size: .88rem; cursor: pointer; }
   #qc-review { position: absolute; inset: 0; background: var(--bg); overflow-y: auto; }
   .qc-review-inner { max-width: 520px; margin: 0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px 40px; }
@@ -431,10 +434,10 @@
       <div id="qc-where" class="qc-pill">📍 Finding your location…</div>
     </div>
     <div class="qc-bottom">
-      <button type="button" id="qc-skip" class="qc-small">No photo</button>
-      <button type="button" id="qc-shutter" aria-label="Take photo"></button>
-      <label class="qc-small" for="qc-file">Library</label>
+      <label class="qc-gallery" for="qc-file" aria-label="Choose an old photo">🖼<span>Gallery</span></label>
       <input id="qc-file" type="file" accept="image/*" hidden>
+      <button type="button" id="qc-shutter" aria-label="Take photo"></button>
+      <button type="button" id="qc-skip" class="qc-small">No photo</button>
     </div>
     <div id="qc-camerr" class="qc-pill" hidden></div>
   </div>
@@ -446,6 +449,7 @@
         <button type="button" id="qc-back" class="linkbtn">Retake</button>
       </div>
       <img id="qc-shot" alt="" hidden>
+      <div class="spot-meta" id="qc-source" style="margin-top:8px"></div>
       <label for="qc-spot">Spot</label>
       <select id="qc-spot"></select>
       <div class="spot-meta" id="qc-spot-note"></div>
@@ -1124,7 +1128,8 @@
   function stopLocation() { if (qc.watch != null) navigator.geolocation.clearWatch(qc.watch); qc.watch = null; }
 
   function openQuickCatch() {
-    qc.blob = null; qc.when = null;
+    qc.blob = null; qc.when = null; qc.source = "";
+    $("qc-spot").innerHTML = ""; // start fresh — don't carry over the last catch's spot
     $("qc").hidden = false; $("qc-cam").hidden = false; $("qc-review").hidden = true;
     $("qc-where").textContent = "📍 Finding your location…";
     startLocation();
@@ -1145,6 +1150,7 @@
     c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
     qc.blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.8));
     qc.when = new Date();
+    qc.source = "";
     showReview();
   }
 
@@ -1179,6 +1185,7 @@
   function showReview() {
     stopCamera();
     $("qc-cam").hidden = true; $("qc-review").hidden = false;
+    $("qc-source").textContent = qc.source || "";
     if (qc.blob) { $("qc-shot").src = URL.createObjectURL(qc.blob); $("qc-shot").hidden = false; }
     else $("qc-shot").hidden = true;
     fillSpotChoices();
@@ -1276,7 +1283,7 @@
   $("qc-fab").addEventListener("click", openQuickCatch);
   $("qc-close").addEventListener("click", closeQuickCatch);
   $("qc-shutter").addEventListener("click", snap);
-  $("qc-skip").addEventListener("click", () => { qc.blob = null; qc.when = new Date(); showReview(); });
+  $("qc-skip").addEventListener("click", () => { qc.blob = null; qc.when = new Date(); qc.source = ""; showReview(); });
   $("qc-back").addEventListener("click", () => { $("qc-review").hidden = true; $("qc-cam").hidden = false; qc.blob = null; startCamera(); });
   $("qc-file").addEventListener("change", async () => {
     const f = $("qc-file").files[0];
@@ -1284,9 +1291,16 @@
     if (!f) return;
     const info = await photoInfo(f);
     qc.blob = await compressImage(f);
-    qc.when = info.when && Math.abs(Date.now() - info.when) < 7 * 86400000 ? info.when : new Date();
-    if (info.lat != null) { stopLocation(); qc.pos = { lat: info.lat, lng: info.lng }; }
-    else if (Date.now() - qc.when > 30 * 60000) { stopLocation(); qc.pos = null; } // older photo: where you are now isn't where it was taken
+    const validTime = info.when && info.when - Date.now() < 15 * 60000;
+    qc.when = validTime ? info.when : new Date();
+    const fmt = d => d.toLocaleString([], { month: "short", day: "numeric", year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined, hour: "numeric", minute: "2-digit" });
+    const parts = [validTime ? `🕒 Taken ${fmt(qc.when)} (from the photo)` : "🕒 No time in this photo — using now"];
+    if (info.lat != null) { stopLocation(); qc.pos = { lat: info.lat, lng: info.lng }; parts.push("📍 Location from the photo"); }
+    else if (Date.now() - qc.when > 30 * 60000) {
+      // older photo: where you are now isn't where it was taken
+      stopLocation(); qc.pos = null; parts.push("📍 No location in this photo — pick the spot below");
+    } else parts.push("📍 Using where you are now");
+    qc.source = parts.join("  ·  ");
     showReview();
   });
 
