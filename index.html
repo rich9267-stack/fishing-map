@@ -77,6 +77,9 @@
   .catch-form { margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
   .catch-list { margin-top: 6px; }
   .catch-list li { display: block; padding: 8px 0; font-size: .9rem; }
+  .catch-actions { display: flex; gap: 16px; margin-top: 4px; }
+  .linkbtn { appearance: none; background: none; border: 0; padding: 4px 0; font: inherit; font-size: .85rem; color: var(--accent); cursor: pointer; }
+  .linkbtn.danger { color: var(--falling); }
 </style>
 </head>
 <body>
@@ -191,7 +194,7 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>Step 4b of the Fishing Map build.
+    <br>Step 4c of the Fishing Map build.
   </footer>
 </main>
 
@@ -426,7 +429,7 @@
   const catchForm = document.createElement("form");
   catchForm.className = "catch-form";
   catchForm.innerHTML = `
-    <div class="label">Log a catch</div>
+    <div class="label" id="c-title">Log a catch</div>
     <label for="c-species">Species *</label>
     <input id="c-species" required maxlength="60" list="species-list" placeholder="e.g., Snook">
     <datalist id="species-list">
@@ -603,35 +606,79 @@
       catchCond = { ...(w || {}), tideStage: stage || null, moon, solunar: sol };
       const tideSel = catchForm.querySelector("#c-tide");
       if (!tideTouched) tideSel.value = stage || "";
-      const parts = [
-        stage && `tide ${stage}`,
-        w && w.pressure != null && `${w.pressure.toFixed(2)} inHg${w.trend ? " " + w.trend : ""}`,
-        w && w.windDir && w.windMph != null && `wind ${w.windDir} ${w.windMph} mph`,
-        w && w.tempF != null && `${w.tempF}°F`,
-        moon && `${moon.emoji} ${moon.phase} (${moon.illum}%)`,
-        sol && `${sol} solunar period`
-      ].filter(Boolean);
-      out.textContent = (parts.length ? "Saved with this catch: " + parts.join(" · ") : "Couldn't find conditions for that time.") +
-        (!w ? " (Weather record not available for that time.)" : "");
+      out.textContent = condSummary(catchCond) + (!w ? " (Weather record not available for that time.)" : "");
     });
+  }
+
+  function condSummary(c) {
+    const parts = [
+      c.tideStage && `tide ${c.tideStage}`,
+      c.pressure != null && `${Number(c.pressure).toFixed(2)} inHg${c.trend ? " " + c.trend : ""}`,
+      c.windDir && c.windMph != null && `wind ${c.windDir} ${c.windMph} mph`,
+      c.tempF != null && `${c.tempF}°F`,
+      c.moon && `${c.moon.emoji} ${c.moon.phase} (${c.moon.illum}%)`,
+      c.solunar && `${c.solunar} solunar period`
+    ].filter(Boolean);
+    return parts.length ? "Saved with this catch: " + parts.join(" · ") : "Couldn't find conditions for that time.";
   }
 
   catchForm.querySelector("#c-when").addEventListener("change", lookupCatchConditions);
   catchForm.querySelector("#c-tide").addEventListener("change", () => { tideTouched = true; });
 
-  function openCatchForm(spotId) {
+  let editingCatch = null;   // the catch being edited, or null when logging a new one
+
+  function openCatchForm(spotId, existing) {
+    const q = id => catchForm.querySelector(id);
     openCatchSpot = spotId;
+    editingCatch = existing || null;
     catchForm.reset();
     tideTouched = false;
-    catchForm.querySelector("#c-when").value = localInputValue(new Date());
-    catchForm.querySelector("#c-tide").value = cond.tideStage || "";
-    try { catchForm.querySelector("#c-by").value = localStorage.getItem("fm-name") || ""; } catch (e) {}
-    catchForm.querySelector("#c-msg").textContent = "";
-    renderSpots();
-    lookupCatchConditions();
-    catchForm.querySelector("#c-species").focus();
+    q("#c-msg").textContent = "";
+    q("#c-title").textContent = existing ? "Edit catch" : "Log a catch";
+    q("#c-save").textContent = existing ? "Save changes" : "Save catch";
+    if (existing) {
+      // Fill in what was saved; keep its conditions unless the time is changed
+      q("#c-species").value = existing.species || "";
+      q("#c-count").value = existing.how_many || 1;
+      q("#c-bait").value = existing.bait || "";
+      q("#c-when").value = localInputValue(new Date(existing.caught_at));
+      q("#c-tide").value = existing.tide_stage || "";
+      q("#c-by").value = existing.caught_by || "";
+      q("#c-notes").value = existing.notes || "";
+      condRequest++;
+      catchCond = {
+        tideStage: existing.tide_stage, pressure: existing.pressure_inhg != null ? Number(existing.pressure_inhg) : null,
+        trend: existing.pressure_trend, windDir: existing.wind_dir, windMph: existing.wind_mph, tempF: existing.air_temp_f,
+        moon: existing.moon_phase ? { phase: existing.moon_phase, illum: existing.moon_illum, emoji: MOON_EMOJI[existing.moon_phase] } : null,
+        solunar: existing.solunar, source: existing.conditions_source
+      };
+      condPromise = Promise.resolve();
+      q("#c-cond").textContent = condSummary(catchCond) + " — change the time to reload conditions.";
+      renderSpots();
+    } else {
+      q("#c-when").value = localInputValue(new Date());
+      q("#c-tide").value = cond.tideStage || "";
+      try { q("#c-by").value = localStorage.getItem("fm-name") || ""; } catch (e) {}
+      renderSpots();
+      lookupCatchConditions();
+    }
+    q("#c-species").focus();
   }
-  catchForm.querySelector("#c-cancel").addEventListener("click", () => { openCatchSpot = null; renderSpots(); });
+  function closeCatchForm() { openCatchSpot = null; editingCatch = null; renderSpots(); }
+  catchForm.querySelector("#c-cancel").addEventListener("click", closeCatchForm);
+
+  async function deleteCatch(c) {
+    const label = `${c.how_many > 1 ? c.how_many + " " : ""}${c.species}`;
+    if (!confirm(`Delete this catch (${label})?`)) return;
+    try {
+      // Soft delete: hidden from the app, but recoverable in Supabase if it was a mistake
+      const { error } = await db.from("catches").update({ deleted_at: new Date().toISOString() }).eq("id", c.id);
+      if (error) throw error;
+      await loadCatches();
+    } catch (err) {
+      alert("Couldn't delete: " + (err.message || err));
+    }
+  }
 
   catchForm.addEventListener("submit", async e => {
     e.preventDefault();
@@ -669,11 +716,14 @@
     };
     try {
       if (!db) throw new Error("Not connected to the database");
-      const { error } = await db.from("catches").insert(row);
+      const { error } = editingCatch
+        ? await db.from("catches").update(row).eq("id", editingCatch.id)
+        : await db.from("catches").insert(row);
       if (error) throw error;
       try { if (row.caught_by) localStorage.setItem("fm-name", row.caught_by); } catch (e2) {}
       expanded.add(openCatchSpot);
       openCatchSpot = null;
+      editingCatch = null;
       await loadCatches();
     } catch (err) {
       msg.className = "msg err";
@@ -685,7 +735,7 @@
 
   async function loadCatches() {
     try {
-      const { data, error } = await db.from("catches").select("*").order("caught_at", { ascending: false }).limit(1000);
+      const { data, error } = await db.from("catches").select("*").is("deleted_at", null).order("caught_at", { ascending: false }).limit(1000);
       if (error) throw error;
       catchesBySpot = {};
       data.forEach(c => (catchesBySpot[c.spot_id] = catchesBySpot[c.spot_id] || []).push(c));
@@ -710,6 +760,15 @@
     li.appendChild(el("div", null, `${when} — ${what}`));
     if (extra) li.appendChild(el("div", "spot-meta", extra));
     if (c.notes) li.appendChild(el("div", "spot-meta", c.notes));
+    const actions = el("div", "catch-actions");
+    const edit = el("button", "linkbtn", "Edit");
+    edit.type = "button";
+    edit.addEventListener("click", () => openCatchForm(c.spot_id, c));
+    const del = el("button", "linkbtn danger", "Delete");
+    del.type = "button";
+    del.addEventListener("click", () => deleteCatch(c));
+    actions.appendChild(edit); actions.appendChild(del);
+    li.appendChild(actions);
     return li;
   }
 
