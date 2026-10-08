@@ -2882,7 +2882,7 @@
   // Images are requested in thin north–south strips so they line up with the map's projection,
   // and colors are stretched across today's actual range so a 2-degree temperature break shows up.
   const ERDDAP = "https://coastwatch.pfeg.noaa.gov/erddap/griddap/";
-  const SAT_BOX = { s: 24.3, n: 27.6, w: -82.3, e: -79.6 }; // South Florida, both coasts and the Keys
+  const SAT_BOX = { s: 24.3, n: 31.0, w: -87.7, e: -79.6 }; // all of Florida: Keys to Jacksonville, Panhandle to the Gulf Stream
   const SAT_LAYERS = {
     sst: {
       title: "Water temperature (satellite, daily)",
@@ -3012,7 +3012,7 @@
       satLayer = L.layerGroup();
       if (p.rows) { satGridOverlay(def, p).addTo(satLayer); }
       else {
-      const STEP = 0.25;
+      const STEP = 0.5; // half-degree slices keep the picture lined up with the coastline
       for (let lat = SAT_BOX.s; lat < SAT_BOX.n - 1e-9; lat += STEP) {
         const top = Math.min(SAT_BOX.n, lat + STEP);
         const url = `${ERDDAP}${p.c.id}.transparentPng?${satQuery(p.c, lat.toFixed(2), top.toFixed(2), 0, p.c.desc)}&.colorBar=${bar}`;
