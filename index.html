@@ -144,6 +144,11 @@
   #ptr.pulling { transition: none; }
   #ptr-icon { display: inline-block; transition: transform .15s; }
   #ptr.ready #ptr-icon { transform: rotate(180deg); }
+  .sat-legend { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+  .sat-title { font-weight: 600; font-size: .9rem; }
+  .sat-bar { height: 10px; border-radius: 4px; margin: 8px 0 4px; }
+  .sat-scale { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #map-sst.on, #map-chl.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   .check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--text); cursor: pointer; }
   .check-row input { width: auto; margin-top: 3px; transform: scale(1.2); }
   .btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; padding: 12px;
@@ -278,6 +283,8 @@
       <button class="btn ghost small" id="map-me" type="button">◎ Show me</button>
       <button class="btn ghost small" id="map-layer" type="button">🛰 Satellite</button>
       <button class="btn ghost small" id="map-sugg" type="button">☆ Show suggestions</button>
+      <button class="btn ghost small" id="map-sst" type="button">🌡 Water temp</button>
+      <button class="btn ghost small" id="map-chl" type="button">🟢 Water clarity</button>
     </div>
     <div class="legend">
       <span><span class="dot" style="background:#1d6fd6"></span>Saltwater</span>
@@ -285,6 +292,12 @@
       <span><span class="dot" style="background:#b7791f"></span>Freshwater</span>
       <span><span class="dot" style="background:#fff;border-color:#888"></span>Suggested</span>
       <span><span class="dot" style="background:#1d6fd6;box-shadow:0 0 0 2px #222"></span>Private (yours)</span>
+    </div>
+    <div class="sat-legend" id="sat-legend" hidden>
+      <div class="sat-title" id="sat-title"></div>
+      <div class="sat-bar" id="sat-bar"></div>
+      <div class="sat-scale"><span id="sat-min"></span><span id="sat-max"></span></div>
+      <div class="spot-meta" id="sat-note"></div>
     </div>
     <div class="card" id="unplaced-card" style="margin-top:14px" hidden>
       <div class="label">Spots without a location</div>
@@ -451,7 +464,7 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>V3 step 1: water temperature. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>V3 step 2: satellite layers. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
     <br><a href="privacy.html">Privacy</a>
   </footer>
 </main>
@@ -2864,6 +2877,86 @@
     $("map-sugg").textContent = on ? "☆ Hide suggestions" : "☆ Show suggestions";
   }
   $("map-sugg").addEventListener("click", () => setSuggOnMap(!suggOnMap));
+
+  // ---- Satellite layers: water temperature and clarity (NOAA CoastWatch, free) ----
+  // Images are requested in thin north–south strips so they line up with the map's projection,
+  // and colors are stretched across today's actual range so a 2-degree temperature break shows up.
+  const ERDDAP = "https://coastwatch.pfeg.noaa.gov/erddap/griddap/";
+  const SAT_BOX = { s: 24.3, n: 27.6, w: -82.3, e: -79.6 }; // South Florida, both coasts and the Keys
+  const SAT_LAYERS = {
+    sst: {
+      title: "Water temperature (satellite, daily)",
+      candidates: [{ id: "jplMURSST41", v: "analysed_sst" }],
+      palette: "Rainbow", scale: "Linear",
+      gradient: "linear-gradient(90deg,#3b0f9f,#2c6bff,#22c3e6,#3fd36b,#f4e04d,#f08a24,#d7191c)",
+      fmt: c => `${Math.round(c * 9 / 5 + 32)}°F`,
+      note: "Warm and cool edges (temperature breaks) are worth checking — bait and predators often gather along them."
+    },
+    chl: {
+      title: "Water clarity (satellite chlorophyll)",
+      candidates: [{ id: "nesdisVHNSQchlaDaily", v: "chlor_a" }, { id: "nesdisVHNnoaa20chlaDaily", v: "chlor_a" }, { id: "erdMH1chla1day", v: "chlor_a" }],
+      palette: "Rainbow", scale: "Log",
+      gradient: "linear-gradient(90deg,#3b0f9f,#2c6bff,#22c3e6,#3fd36b,#f4e04d,#f08a24,#d7191c)",
+      fmt: (v, end) => end === "lo" ? "← clearer" : "murkier →",
+      note: "Blue = clear water, red = green/murky water. Gaps are clouds. Color changes (weed lines, edges) often hold fish."
+    }
+  };
+  let satLayer = null, satOn = null;
+
+  // Ask NOAA for a coarse sample of the latest image to learn its date and value range
+  async function satProbe(def) {
+    for (const c of def.candidates) {
+      try {
+        const q = `${ERDDAP}${c.id}.json?${c.v}[(last)][(${SAT_BOX.s}):20:(${SAT_BOX.n})][(${SAT_BOX.w}):20:(${SAT_BOX.e})]`;
+        const d = await (await fetch(q)).json();
+        const rows = (d.table && d.table.rows) || [];
+        const vals = rows.map(r => r[r.length - 1]).filter(v => typeof v === "number" && isFinite(v) && (def.scale !== "Log" || v > 0)).sort((a, b) => a - b);
+        if (vals.length < 10) continue;
+        const pct = q => vals[Math.min(vals.length - 1, Math.floor(q * vals.length))];
+        let lo = pct(0.05), hi = pct(0.95);
+        if (def.scale === "Linear" && hi - lo < 1) { lo -= 0.5; hi += 0.5; }
+        return { c, time: rows[0][0], lo, hi };
+      } catch (e) { /* try the next source */ }
+    }
+    throw new Error("No satellite image available right now");
+  }
+
+  async function showSat(kind) {
+    if (satLayer) { map.removeLayer(satLayer); satLayer = null; }
+    $("map-sst").classList.toggle("on", kind === "sst");
+    $("map-chl").classList.toggle("on", kind === "chl");
+    satOn = kind;
+    if (!kind) { $("sat-legend").hidden = true; return; }
+    const def = SAT_LAYERS[kind];
+    $("sat-legend").hidden = false;
+    $("sat-title").textContent = def.title;
+    $("sat-bar").style.background = def.gradient;
+    $("sat-min").textContent = ""; $("sat-max").textContent = "";
+    $("sat-note").textContent = "Loading satellite image…";
+    try {
+      const p = await satProbe(def);
+      if (satOn !== kind) return; // switched away while loading
+      const lo = def.scale === "Log" ? p.lo.toPrecision(2) : p.lo.toFixed(2);
+      const hi = def.scale === "Log" ? p.hi.toPrecision(2) : p.hi.toFixed(2);
+      const bar = encodeURIComponent(`${def.palette}|C|${def.scale}|${lo}|${hi}|`);
+      satLayer = L.layerGroup();
+      const STEP = 0.25;
+      for (let lat = SAT_BOX.s; lat < SAT_BOX.n - 1e-9; lat += STEP) {
+        const top = Math.min(SAT_BOX.n, lat + STEP);
+        const url = `${ERDDAP}${p.c.id}.transparentPng?${p.c.v}[(last)][(${lat.toFixed(2)}):(${top.toFixed(2)})][(${SAT_BOX.w}):(${SAT_BOX.e})]&.colorBar=${bar}`;
+        L.imageOverlay(url, [[lat, SAT_BOX.w], [top, SAT_BOX.e]], { opacity: 0.6, interactive: false }).addTo(satLayer);
+      }
+      satLayer.addTo(map);
+      const when = new Date(p.time);
+      $("sat-min").textContent = def.fmt(p.lo, "lo");
+      $("sat-max").textContent = def.fmt(p.hi, "hi");
+      $("sat-note").textContent = `${def.note} Image from ${isNaN(when) ? "the latest pass" : when.toLocaleDateString([], { month: "short", day: "numeric" })}.`;
+    } catch (e) {
+      if (satOn === kind) $("sat-note").textContent = "This satellite layer isn't available right now — try again later.";
+    }
+  }
+  $("map-sst").addEventListener("click", () => { initMap(); showSat(satOn === "sst" ? null : "sst"); });
+  $("map-chl").addEventListener("click", () => { initMap(); showSat(satOn === "chl" ? null : "chl"); });
 
   // ---- Sign-in (Supabase Auth) and the invite list ----
   const SITE = location.origin + location.pathname;
