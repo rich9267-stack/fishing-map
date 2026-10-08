@@ -45,3 +45,7 @@ A shared map to help pick where to fish in Pompano Beach / Broward County today:
 **Step 8:** Google sign-in (Google Auth Platform client → Supabase Google provider; links to existing accounts with the same email) and password-reset email sent through Gmail SMTP (app password) set in Supabase. Privacy page: `privacy.html`.
 
 **V2 complete — October 8, 2026.**
+
+## After V2
+
+**Offline catch saving:** `sw.js` keeps a copy of the app (page + code libraries) on the phone so it opens without signal; the spots/catches list and membership are remembered per phone. Quick catches made offline (photo included) wait in the phone's storage (IndexedDB) and upload automatically when signal returns (on reconnect, when the app is reopened, or every minute while open); conditions are worked out for the catch time when they upload. Queued catches at the same new location share one new spot.

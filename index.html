@@ -136,6 +136,9 @@
   #qc-review .stepper input { border-radius: 0; text-align: center; border-left: 0; border-right: 0; }
   #qc-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom)); background: #12262e; color: #fff;
     padding: 10px 16px; border-radius: 999px; z-index: 1200; font-size: .92rem; box-shadow: 0 4px 14px rgba(0,0,0,.3); max-width: 90vw; text-align: center; }
+  .offline-bar { background: #5b6f78; color: #fff; border-radius: 10px; padding: 8px 12px; font-size: .85rem; margin: -6px 0 12px; }
+  .pending-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--card);
+    border-radius: 10px; padding: 8px 12px; font-size: .88rem; margin: -6px 0 12px; }
   .check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--text); cursor: pointer; }
   .check-row input { width: auto; margin-top: 3px; transform: scale(1.2); }
   .btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; padding: 12px;
@@ -180,6 +183,12 @@
 <main>
   <h1>🎣 Fishing Map</h1>
   <p class="sub">South Florida · home waters: Pompano Beach</p>
+
+  <div class="offline-bar" id="offline-bar" hidden></div>
+  <div class="pending-bar" id="pending-bar" hidden>
+    <span id="pending-text"></span>
+    <button class="linkbtn" id="pending-send" type="button">Send now</button>
+  </div>
 
   <div class="userbar" id="userbar" hidden>
     <span id="who"></span>
@@ -435,7 +444,7 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>V2 step 7: beyond Broward. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>Offline catch saving. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
     <br><a href="privacy.html">Privacy</a>
   </footer>
 </main>
@@ -1374,35 +1383,142 @@
     return data;
   }
 
+  // Save one quick catch. Used right away when there's signal, and later for catches waiting in the queue.
+  // `item.choice` is updated once a new spot exists, so a retry never creates the spot twice.
+  async function saveQuickCatch(item, onSpotCreated) {
+    const when = new Date(item.when);
+    let spot;
+    if (item.choice === "__new") {
+      const near = item.pos && nearbySpots(item.pos)[0];
+      spot = near && near.d <= QC_NEAR_MI ? near.s : await createSpotHere(item.pos); // reuse a spot made since (e.g. by an earlier queued catch)
+      item.choice = spot.id;
+      if (onSpotCreated) await onSpotCreated(item);
+      if (!(spots || []).some(s => s.id === spot.id)) spots = (spots || []).concat(spot);
+    } else {
+      spot = (spots || []).find(s => s.id === item.choice);
+      if (!spot) throw new Error("That spot no longer exists");
+    }
+    const c = await conditionsFor(spot, when);
+    const { data: saved, error } = await db.from("catches").insert({
+      spot_id: spot.id, caught_at: when.toISOString(), species: item.species, how_many: item.count, bait: item.bait, caught_by: item.name, ...c
+    }).select("id").single();
+    if (error) throw error;
+    let photoOk = true;
+    if (item.blob) {
+      try { await uploadPhoto(new File([item.blob], "catch.jpg", { type: "image/jpeg" }), spot.id, saved.id, { when, lat: item.pos ? item.pos.lat : null, lng: item.pos ? item.pos.lng : null }); }
+      catch (pe) { photoOk = false; }
+    }
+    expanded.add(spot.id);
+    return { spot, c, photoOk };
+  }
+
   $("qc-save").addEventListener("click", async () => {
     const chip = $("qc-species").querySelector(".fchip.on");
     const species = ($("qc-species-other").value.trim() || (chip && chip.textContent) || "").trim();
     if (!species) { $("qc-msg").className = "msg err"; $("qc-msg").textContent = "Tap a species (or type one)."; return; }
     const choice = $("qc-spot").value;
     if (!choice) { $("qc-msg").className = "msg err"; $("qc-msg").textContent = "Pick a spot."; return; }
-    const when = qc.when || new Date(), pos = qc.pos, blob = qc.blob;
-    const count = Math.max(1, Math.min(500, parseInt($("qc-count").value, 10) || 1));
-    const bait = $("qc-bait").value.trim() || null;
+    const item = {
+      id: newId(), when: (qc.when || new Date()).toISOString(), pos: qc.pos || null, choice, species,
+      count: Math.max(1, Math.min(500, parseInt($("qc-count").value, 10) || 1)),
+      bait: $("qc-bait").value.trim() || null, name: me.name, blob: qc.blob || null, user: me.id
+    };
     closeQuickCatch();
+    if (!navigator.onLine) {
+      await queueCatch(item);
+      return;
+    }
     toast("Saving your catch…", 20000);
     try {
-      const spot = choice === "__new" ? await createSpotHere(pos) : (spots || []).find(s => s.id === choice);
-      const c = await conditionsFor(spot, when);
-      const { data: saved, error } = await db.from("catches").insert({
-        spot_id: spot.id, caught_at: when.toISOString(), species, how_many: count, bait, caught_by: me.name, ...c
-      }).select("id").single();
-      if (error) throw error;
-      if (blob) {
-        try { await uploadPhoto(new File([blob], "catch.jpg", { type: "image/jpeg" }), spot.id, saved.id, { when, lat: pos ? pos.lat : null, lng: pos ? pos.lng : null }); }
-        catch (pe) { toast("Catch saved, but the photo didn't upload."); }
-      }
-      expanded.add(spot.id);
+      const r = await saveQuickCatch(item);
       await loadSpots();
-      toast(`✓ ${count > 1 ? count + " " : ""}${species} logged at ${spot.name}${c.tide_stage ? " · " + c.tide_stage + " tide" : ""}`);
+      toast(`✓ ${item.count > 1 ? item.count + " " : ""}${item.species} logged at ${r.spot.name}${r.c.tide_stage ? " · " + r.c.tide_stage + " tide" : ""}` +
+            (r.photoOk ? "" : " (photo didn't upload)"));
     } catch (err) {
-      toast("Couldn't save the catch: " + (err.message || err), 8000);
+      if (isNetErr(err)) await queueCatch(item); // signal dropped mid-save — keep it for later
+      else toast("Couldn't save the catch: " + (err.message || err), 8000);
     }
   });
+
+  // ---- Offline: catches waiting to upload (kept in the phone's own storage, photos included) ----
+  function isNetErr(e) {
+    const m = String(e && (e.message || e) || "");
+    return !navigator.onLine || /failed to fetch|networkerror|load failed|network request failed|internet connection|timed out|offline/i.test(m);
+  }
+  function setOffline(on) {
+    $("offline-bar").hidden = !on;
+    if (on) $("offline-bar").textContent = "📶 No signal — showing the copy saved on this phone. Quick catches will upload when you're back online.";
+  }
+  function saveCopy(kind, data) {
+    try { if (me) localStorage.setItem(`fm-copy-${kind}-${me.id}`, JSON.stringify(data)); } catch (e) {}
+  }
+  function loadCopy(kind) {
+    try { return me ? JSON.parse(localStorage.getItem(`fm-copy-${kind}-${me.id}`) || "null") : null; } catch (e) { return null; }
+  }
+
+  function idb() {
+    if (idb.p) return idb.p;
+    idb.p = new Promise((res, rej) => {
+      const r = indexedDB.open("fishing-map", 1);
+      r.onupgradeneeded = () => r.result.createObjectStore("queue", { keyPath: "id" });
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    return idb.p;
+  }
+  async function qStore(mode) { return (await idb()).transaction("queue", mode).objectStore("queue"); }
+  const reqP = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  async function queuePut(item) { return reqP((await qStore("readwrite")).put(item)); }
+  async function queueDel(id) { return reqP((await qStore("readwrite")).delete(id)); }
+  async function queueAll() { try { return await reqP((await qStore("readonly")).getAll()); } catch (e) { return []; } }
+
+  async function queueCatch(item) {
+    try {
+      await queuePut(item);
+      toast(`📶 No signal — ${item.species} saved on this phone. It'll upload when you're back online.`, 5000);
+    } catch (e) {
+      toast("No signal, and this phone couldn't store the catch: " + (e.message || e), 8000);
+    }
+    updatePendingBar();
+  }
+
+  async function updatePendingBar() {
+    const mine = (await queueAll()).filter(i => !me || i.user === me.id);
+    $("pending-bar").hidden = !mine.length;
+    if (mine.length) $("pending-text").textContent = `⏳ ${mine.length} catch${mine.length === 1 ? "" : "es"} waiting to upload`;
+  }
+
+  let flushing = false;
+  async function flushQueue() {
+    if (flushing || !me || !navigator.onLine) return;
+    const items = (await queueAll()).filter(i => i.user === me.id).sort((a, b) => a.when.localeCompare(b.when));
+    if (!items.length) { updatePendingBar(); return; }
+    flushing = true;
+    $("pending-text").textContent = "⏳ Uploading saved catches…";
+    let sent = 0, stuck = null;
+    for (const item of items) {
+      try {
+        await saveQuickCatch(item, it => queuePut(it)); // remember the new spot before going further
+        await queueDel(item.id);
+        sent++;
+      } catch (err) {
+        if (isNetErr(err)) break;           // still no signal — try again later
+        stuck = err.message || String(err); // a real problem with this one — leave it, keep going
+      }
+    }
+    flushing = false;
+    if (sent) { setOffline(false); toast(`✓ ${sent} saved catch${sent === 1 ? "" : "es"} uploaded`); await loadSpots(); }
+    if (stuck) toast("One saved catch couldn't upload: " + stuck, 8000);
+    updatePendingBar();
+  }
+  $("pending-send").addEventListener("click", () => {
+    if (!navigator.onLine) return toast("Still no signal — it'll send automatically when you're back online.");
+    flushQueue();
+  });
+  window.addEventListener("online", () => { loadSpots(); flushQueue(); });
+  window.addEventListener("offline", () => setOffline(true));
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) flushQueue(); });
+  setInterval(() => flushQueue(), 60000);
 
   $("qc-fab").addEventListener("click", openQuickCatch);
   $("qc-close").addEventListener("click", closeQuickCatch);
@@ -1889,10 +2005,13 @@
       if (error) throw error;
       catchesBySpot = {};
       data.forEach(c => (catchesBySpot[c.spot_id] = catchesBySpot[c.spot_id] || []).push(c));
+      saveCopy("catches", data);
       renderInsights();
       renderBest();
     } catch (err) {
+      const copy = isNetErr(err) && loadCopy("catches");
       catchesBySpot = {}; // the spots list still works without catches
+      if (copy) copy.forEach(c => (catchesBySpot[c.spot_id] = catchesBySpot[c.spot_id] || []).push(c));
     }
     renderSpots();
   }
@@ -2126,13 +2245,21 @@
       if (error) throw error;
       spots = data;
       spotsError = null;
+      saveCopy("spots", data);
+      setOffline(false);
       loadCatches();
       loadPhotos();
       renderPins();
       if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); } // centred on your spots
       if (typeof renderSuggestions === "function") renderSuggestions();
     } catch (err) {
-      spotsError = "Couldn't load spots: " + (err.message || err);
+      const copy = isNetErr(err) && loadCopy("spots");
+      if (copy) {
+        spots = copy; spotsError = null; setOffline(true);
+        const cc = loadCopy("catches");
+        if (cc) { catchesBySpot = {}; cc.forEach(c => (catchesBySpot[c.spot_id] = catchesBySpot[c.spot_id] || []).push(c)); }
+        renderPins();
+      } else spotsError = "Couldn't load spots: " + (err.message || err);
     }
     renderSpots();
   }
@@ -2685,7 +2812,11 @@
     if (!session) { me = null; showAuth("signin"); return; }
     if (authMode === "newpw") { showAuth("newpw"); return; } // finish choosing a new password first
     const email = (session.user.email || "").toLowerCase();
-    const { data: member, error } = await db.from("members").select("email,display_name,is_admin").eq("email", email).maybeSingle();
+    let { data: member, error } = await db.from("members").select("email,display_name,is_admin").eq("email", email).maybeSingle();
+    if (error && isNetErr(error)) {
+      // No signal: trust the membership saved on this phone last time
+      try { const saved = JSON.parse(localStorage.getItem("fm-member") || "null"); if (saved && saved.email === email) { member = saved; error = null; setOffline(true); } } catch (e) {}
+    } else if (member) { try { localStorage.setItem("fm-member", JSON.stringify(member)); } catch (e) {} }
     if (error || !member) {
       $("auth-card").hidden = true; $("app").hidden = true; $("userbar").hidden = true;
       $("not-member").hidden = false;
@@ -2705,6 +2836,7 @@
     $("userbar").hidden = false; $("app").hidden = false; $("qc-fab").hidden = false;
     $("who").textContent = `Signed in as ${me.name}`;
     $("invite-btn").hidden = !me.isAdmin;
+    setTimeout(() => { updatePendingBar(); flushQueue(); }, 1500);
     if (!appStarted) {
       appStarted = true;
       loadSpots();
@@ -2786,6 +2918,9 @@
   loadPressure();
   loadMoon();
   gate();
+
+  // Keep a copy of the app on the phone so it opens with no signal
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
 </body>
 </html>
