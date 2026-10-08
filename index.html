@@ -143,6 +143,7 @@
     </div>
 
     <form id="spot-form" hidden>
+      <div class="label" id="f-title" style="margin-top:12px">New spot</div>
       <label for="f-name">Spot name *</label>
       <input id="f-name" required maxlength="80" placeholder="e.g., Hillsboro Inlet north jetty">
 
@@ -247,7 +248,7 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>Step 6 of the Fishing Map build. Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>Step 6b of the Fishing Map build. Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
   </footer>
 </main>
 
@@ -1027,6 +1028,10 @@
 
       if (s.access_notes) item.appendChild(el("div", "spot-notes", "🚗 " + s.access_notes));
       if (s.notes) item.appendChild(el("div", "spot-notes", s.notes));
+      const editSpot = el("button", "linkbtn", "✎ Edit spot");
+      editSpot.type = "button";
+      editSpot.addEventListener("click", () => openForm(true, s));
+      item.appendChild(editSpot);
       item.appendChild(catchSection(s));
       list.appendChild(item);
     });
@@ -1048,18 +1053,44 @@
     renderSpots();
   }
 
-  function openForm(show) {
+  let editingSpot = null;   // the spot being edited, or null when adding a new one
+
+  function openForm(show, existing) {
     $("spot-form").hidden = !show;
     $("add-btn").hidden = show;
     $("form-msg").textContent = "";
-    if (show) {
-      try { $("f-by").value = localStorage.getItem("fm-name") || ""; } catch (e) {}
-      $("f-name").focus();
+    if (!show) return;
+    if (existing) {
+      editingSpot = existing;
+      $("f-title").textContent = "Edit spot";
+      $("save-btn").textContent = "Save changes";
+      $("f-name").value = existing.name || "";
+      $("f-type").value = existing.spot_type;
+      $("f-water").value = existing.water_type;
+      $("f-access").value = existing.public_access || "unsure";
+      $("f-parking").value = existing.parking || "";
+      $("f-getting").value = existing.getting_there || "";
+      $("f-access-notes").value = existing.access_notes || "";
+      $("f-notes").value = existing.notes || "";
+      $("f-by").value = existing.added_by || "";
+      pickedLoc = hasLoc(existing) ? { lat: existing.lat, lng: existing.lng } : null;
+      $("loc-text").textContent = pickedLoc ? "Set ✓ (keep, or pick a new one)" : "Not set";
+      $("spots-card").scrollIntoView({ behavior: "smooth", block: "start" });
+    } else if (!editingSpot) {
+      $("f-title").textContent = "New spot";
+      $("save-btn").textContent = "Save spot";
+      if (!$("f-by").value) { try { $("f-by").value = localStorage.getItem("fm-name") || ""; } catch (e) {} }
     }
+    $("f-name").focus();
+  }
+  function closeSpotForm() {
+    $("spot-form").reset(); pickedLoc = null; editingSpot = null;
+    $("loc-text").textContent = "Not set";
+    openForm(false);
   }
 
-  $("add-btn").addEventListener("click", () => openForm(true));
-  $("cancel-btn").addEventListener("click", () => { $("spot-form").reset(); pickedLoc = null; $("loc-text").textContent = "Not set"; openForm(false); });
+  $("add-btn").addEventListener("click", () => { closeSpotForm(); openForm(true); });
+  $("cancel-btn").addEventListener("click", closeSpotForm);
 
   $("loc-btn").addEventListener("click", () => {
     if (!navigator.geolocation) { $("loc-text").textContent = "Location not available on this device"; return; }
@@ -1095,12 +1126,12 @@
     };
     try {
       if (!db) throw new Error("Not connected to the database");
-      const { error } = await db.from("spots").insert(row);
+      const { error } = editingSpot
+        ? await db.from("spots").update(row).eq("id", editingSpot.id)
+        : await db.from("spots").insert(row);
       if (error) throw error;
-      try { localStorage.setItem("fm-name", row.added_by || ""); } catch (e2) {}
-      $("spot-form").reset(); pickedLoc = null;
-      $("loc-text").textContent = "Not set";
-      openForm(false);
+      if (!editingSpot) { try { localStorage.setItem("fm-name", row.added_by || ""); } catch (e2) {} }
+      closeSpotForm();
       await loadSpots();
     } catch (err) {
       msg.className = "msg err";
@@ -1197,7 +1228,9 @@
     dir.target = "_blank"; dir.rel = "noopener";
     const move = el("button", null, "Move pin"); move.type = "button";
     move.addEventListener("click", () => { map.closePopup(); startPlacing({ mode: "move", spot: s }); });
-    [open, log, dir, move].forEach(b => actions.appendChild(b));
+    const edit = el("button", null, "Edit"); edit.type = "button";
+    edit.addEventListener("click", () => { map.closePopup(); showView("list"); openForm(true, s); });
+    [open, log, dir, move, edit].forEach(b => actions.appendChild(b));
     box.appendChild(actions);
     return box;
   }

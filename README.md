@@ -16,4 +16,6 @@ A shared map to help pick where to fish in Pompano Beach / Broward County today:
 
 **Step 5:** map view (Leaflet + OpenStreetMap, Esri satellite toggle). Pins colored by water type; tap a pin for conditions, catches, log a catch, directions, or move pin. Add a spot by tapping the map; place spots that have no location.
 
-**Step 6 (current):** each spot uses its nearest NOAA tide station (20 stations, Lake Worth to Virginia Key; Broward subordinate stations included) for live tide and logged catches. Freshwater spots show the nearest active USGS water-level gauge with its 24-hour change.
+**Step 6:** each spot uses its nearest NOAA tide station (20 stations, Lake Worth to Virginia Key; Broward subordinate stations included) for live tide and logged catches. Freshwater spots show the nearest active USGS water-level gauge with its 24-hour change.
+
+**Step 6b (current):** edit a spot's details (list or map popup).
