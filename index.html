@@ -120,7 +120,10 @@
   .sea-badge.good { background: #1f7a3f22; color: var(--rising); }
   .sea-badge.slow { background: var(--line); color: var(--muted); }
   .sea-badge.closed { background: #a5521b22; color: var(--falling); }
-  .sea-months { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; margin-top: 6px; }
+  .sea-strip { display: grid; grid-template-columns: 2.6em 1fr; align-items: center; gap: 6px; margin-top: 5px; }
+  .sea-strip-label { font-size: .68rem; color: var(--muted); }
+  .sea-months { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; }
+  .sea-months span.egg { box-shadow: inset 0 -3px 0 #e0a100; }
   .sea-months span { font-size: .62rem; text-align: center; padding: 3px 0; border-radius: 3px; background: var(--line); color: var(--muted); }
   .sea-months span.l1 { background: color-mix(in srgb, var(--accent) 35%, transparent); color: var(--text); }
   .sea-months span.l2 { background: var(--accent); color: #fff; font-weight: 700; }
@@ -327,7 +330,7 @@
     </div>
     <div class="card">
       <div class="label" id="sea-list-title">What's biting</div>
-      <div class="spot-meta">Darker month = better fishing · striped = closed to keep</div>
+      <div class="spot-meta">Darker = better fishing · striped = closed to keep · gold underline = spawning</div>
       <div id="sea-list"></div>
     </div>
     <p class="spot-meta" style="margin:0 0 14px">Runs are typical patterns for Southeast Florida (Palm Beach to Miami) — weather can shift them a few weeks.
@@ -1458,85 +1461,255 @@
   }
   ["ins-spot", "ins-species", "ins-mine"].forEach(id => $(id).addEventListener("change", renderInsights));
 
-  // ---- Seasons calendar: typical runs + key season dates (hand-curated; rules checked Oct 8, 2026) ----
-  // runs: 12 numbers, Jan..Dec — 0 slow, 1 good, 2 peak (typical for Southeast Florida).
+  // ---- Seasons calendar: researched for Southeast Florida (Oct 8, 2026; rules checked against FWC that day) ----
+  // shore / boat: 12 numbers, Jan..Dec — 0 slow, 1 decent, 2 peak. Our spots are all shore spots, so "shore" drives scoring.
+  // spawn: { m: months 1–12, away: adults leave shore spots to spawn, gather: they bunch up at shore-reachable places, where }
+  // temp: water °F — low/high = comfortable feeding range, cold = shuts down / at risk below this.
   // closed: yearly closed windows ["MM-DD","MM-DD"] (may wrap past New Year).
   // openOnly: the ONLY open windows; with a year ("2026-10-09") they apply to that year only.
   // match: words that count a logged catch as this fish.
   const SEASON_GROUPS = [["inshore", "Inshore"], ["beach", "Beach & pier"], ["offshore", "Offshore"], ["fresh", "Freshwater"]];
   const SEASONS = [
-    { name: "Snook", group: "inshore", match: ["snook"], runs: [1,1,1,1,2,2,1,1,2,2,2,1],
+    // ---- Inshore ----
+    { name: "Snook", group: "inshore", match: ["snook"],
+      shore: [1,1,1,1,2,2,2,2,2,2,2,1], boat: [1,1,1,1,2,2,2,2,2,2,2,1],
+      spawn: { m: [5,6,7,8,9], gather: true, where: "inlets and the beaches beside them, peaking Jun–Aug around full and new moons" },
+      temp: { low: 68, high: 90, cold: 60 },
       closed: [["12-15", "01-31"], ["06-01", "08-31"]],
       rule: "Harvest 1 per day, 28–32\" slot, snook permit needed. Catch-and-release is fine while closed.",
-      tip: "Spring: inlets and beaches as they gather to spawn. Fall: they follow the mullet run along the beach and inlets." },
-    { name: "Tarpon", group: "inshore", match: ["tarpon"], runs: [1,1,1,1,2,2,2,1,1,2,2,1],
+      tip: "Summer: inlet mouths, beaches and lit bridges at night on the outgoing tide. Fall: they follow the mullet run. Winter: deep, warm canals after a front." },
+    { name: "Tarpon", group: "inshore", match: ["tarpon"],
+      shore: [0,0,1,2,2,2,1,1,1,2,1,0], boat: [1,1,1,2,2,2,2,1,1,2,1,1],
+      spawn: { m: [5,6,7], away: true, where: "offshore around the full and new moons (the spring migration passes the beaches and inlets on the way)" },
+      temp: { low: 75, high: 92, cold: 65 },
       rule: "Catch-and-release only (keeping one needs a $50 tag). Big fish stay in the water.",
-      tip: "Late spring–summer at inlets and bridges at night; fall during the mullet run; small ones in canals all year." },
-    { name: "Redfish (red drum)", group: "inshore", match: ["redfish", "red drum"], runs: [1,1,1,1,1,1,1,1,2,2,2,1],
+      tip: "Spring migration along the beaches and past the inlets; best at night at lit bridges and inlets on a moving tide. Small ones live in warm canals all year." },
+    { name: "Redfish (red drum)", group: "inshore", match: ["redfish", "red drum"],
+      shore: [1,1,0,0,0,0,0,1,1,2,2,1], boat: [1,0,0,0,0,0,1,1,2,2,1,1],
+      spawn: { m: [8,9,10,11], gather: true, where: "inlet mouths and nearshore water" },
+      temp: { low: 65, high: 88, cold: 55 },
       rule: "Southeast region: open all year, 1 per person (2 per boat), 18–27\" slot.",
-      tip: "Not common this far south — Lake Worth Lagoon and Biscayne Bay flats are best bets." },
-    { name: "Spotted seatrout", group: "inshore", match: ["seatrout", "speckled trout", "trout"], runs: [2,2,2,1,1,1,1,1,1,1,2,2],
+      tip: "Scarce this far south — Lake Worth Lagoon and northern Biscayne Bay mangrove edges on a rising tide, best in fall." },
+    { name: "Spotted seatrout", group: "inshore", match: ["seatrout", "speckled trout", "trout"],
+      shore: [1,1,1,1,1,1,1,1,1,1,1,1], boat: [1,1,1,2,2,2,2,2,1,1,1,1],
+      spawn: { m: [4,5,6,7,8,9,10], where: "on the seagrass flats where they live — they don't leave" },
+      temp: { low: 65, high: 85, cold: 55 },
       rule: "Southeast region: open all year, 3 per person, 15–19\" slot (one over 19\" per boat; per person from shore). New rules from April 2026.",
-      tip: "Grass flats in Lake Worth Lagoon and Biscayne Bay; best in the cooler months." },
-    { name: "Jack crevalle", group: "inshore", match: ["jack"], sightMatch: ["crevalle"], runs: [1,1,1,1,1,1,1,1,1,2,2,1],
-      rule: "No closed season.", tip: "Hits hard during the fall mullet run; around inlets and canals all year." },
-    { name: "Mangrove snapper", group: "inshore", match: ["mangrove", "gray snapper"], runs: [1,1,1,2,2,0,0,0,1,2,2,1],
-      spawnOffshore: [5, 6, 7],
-      rule: "Open all year.", tip: "Docks, bridges and seawalls in spring and fall; in summer they leave for the reefs to spawn and are rarely inshore." },
-    { name: "Fall mullet run", group: "beach", match: ["mullet"], runs: [0,0,0,0,0,0,0,1,2,2,2,1],
-      rule: "Mullet: open all year.", tip: "Huge schools move south along the beach — snook, tarpon, jacks, bluefish and sharks follow them." },
-    { name: "Florida pompano", group: "beach", match: ["pompano"], runs: [2,2,2,1,0,0,0,0,0,0,1,2],
-      rule: "Open all year.", tip: "Surf and piers after a cold front; sand fleas, shrimp or pompano jigs." },
-    { name: "Spanish mackerel", group: "beach", match: ["spanish"], runs: [2,2,2,1,0,0,0,0,0,0,1,2],
-      rule: "Open all year.", tip: "Piers and beaches in winter; small shiny spoons." },
-    { name: "Bluefish", group: "beach", match: ["bluefish"], runs: [2,2,1,0,0,0,0,0,0,1,1,2],
-      rule: "Open all year.", tip: "Winter, often mixed with Spanish mackerel and following bait schools." },
-    { name: "Sheepshead", group: "beach", match: ["sheepshead"], runs: [2,2,2,1,0,0,0,0,0,0,1,1],
-      rule: "Open all year.", tip: "Spawning run late winter around pilings, jetties and bridges; fiddler crabs or shrimp." },
-    { name: "Whiting", group: "beach", match: ["whiting", "kingcroaker"], runs: [2,2,2,1,1,0,0,0,0,1,1,2],
-      rule: "Open all year.", tip: "Surf troughs close to shore on the cooler months; sand fleas or Fishbites." },
-    { name: "Sailfish", group: "offshore", match: ["sailfish"], runs: [2,2,1,1,0,0,0,0,0,1,1,2],
+      tip: "Needs seagrass — Lake Worth Lagoon and Biscayne Bay, not Pompano. Grass edges at first light on a moving tide; deep, dark basins in winter." },
+    { name: "Jack crevalle", group: "inshore", match: ["jack"], sightMatch: ["crevalle"],
+      shore: [1,1,2,2,2,2,2,2,2,2,2,1], boat: [1,1,2,2,2,2,2,2,2,2,2,1],
+      spawn: { m: [3,4,5,6,7,8,9], away: true, where: "offshore (plenty stay around the inlets)" },
+      temp: { low: 68, high: 90, cold: 58 },
+      rule: "No closed season.", tip: "Watch for birds and bait getting pushed at inlets, piers and beaches; first light on a strong tide. Big ones come with the mullet run." },
+    { name: "Mangrove snapper", group: "inshore", match: ["mangrove", "gray snapper"],
+      shore: [1,1,1,1,1,0,0,1,2,2,2,2], boat: [1,1,1,1,1,2,2,2,2,2,1,1],
+      spawn: { m: [6,7,8], away: true, where: "on offshore reefs around the full moon (peak Jun–Jul)" },
+      temp: { low: 72, high: 88, cold: 60 },
+      rule: "Open all year.", tip: "Fall and winter at night around lit docks, bridges and the inlet with live shrimp on light fluorocarbon. Summer is mostly small ones inshore." },
+    { name: "Ladyfish", group: "inshore", match: ["ladyfish"],
+      shore: [1,1,1,2,2,2,2,2,2,2,1,1], boat: [1,1,1,1,2,2,2,2,2,1,1,1],
+      spawn: { m: [5,6,7,8,9], away: true, where: "offshore" },
+      temp: { low: 65, high: 90, cold: 55 },
+      rule: "Open all year.", tip: "Small white jigs or gold spoons around lit docks, bridges and inlets on a moving tide — great fun, poor eating." },
+    { name: "Black drum", group: "inshore", match: ["black drum"],
+      shore: [1,1,1,0,0,0,0,0,0,0,0,1], boat: [1,1,1,0,0,0,0,0,0,0,0,1],
+      spawn: { m: [12,1,2,3], gather: true, where: "inlets and nearshore — big fish bunch up there" },
+      temp: { low: 60, high: 82, cold: 50 },
+      rule: "Open all year — check FWC for slot and bag.", tip: "Winter nights: shrimp or crab on the bottom by bridges and inlet edges; more common in Lake Worth Lagoon and north." },
+    { name: "Goliath grouper", group: "inshore", match: ["goliath"],
+      shore: [1,1,1,1,1,1,0,0,0,1,1,1], boat: [1,1,1,1,1,1,2,2,2,2,1,1],
+      spawn: { m: [7,8,9,10], away: true, where: "offshore reefs and wrecks around the full moon" },
+      temp: { low: 70, high: 88, cold: 55 },
+      rule: "Catch-and-release (harvest only by a special FWC lottery permit). Keep it in the water.",
+      tip: "Bridge pilings, inlets and docks; heavy tackle so the fight is short, and release it without lifting it out." },
+    { name: "Gulf toadfish", group: "inshore", match: ["toadfish"],
+      shore: [1,1,1,1,1,1,1,1,1,1,1,1], boat: [1,1,1,1,1,1,1,1,1,1,1,1],
+      spawn: { m: [3,4,5,6,9,10,11], where: "nests in holes and debris right where they live" },
+      temp: { low: 65, high: 90, cold: 55 },
+      rule: "No limits.", tip: "Bycatch around rocks and seawalls — it bites and has spines, so unhook it with pliers." },
+    // ---- Beach & pier ----
+    { name: "Fall mullet run", group: "beach", match: ["mullet"],
+      shore: [1,0,0,0,0,0,1,1,2,2,2,1], boat: [0,0,0,0,0,0,0,0,1,1,1,0],
+      spawn: { m: [10,11,12,1], away: true, gather: true, where: "offshore — the schools pour out of the canals and down the beach and inlets to get there" },
+      temp: { low: 68, high: 84, cold: 60 },
+      rule: "Mullet: open all year.", tip: "The first real cold front in Oct–Nov pushes the schools down the beach; snook, tarpon, jacks, bluefish and Spanish mackerel follow them." },
+    { name: "Florida pompano", group: "beach", match: ["pompano"],
+      shore: [2,2,2,1,0,0,0,0,0,1,2,2], boat: [1,1,1,1,0,0,0,0,0,0,1,1],
+      spawn: { m: [3,4,5,6,7,8,9], away: true, where: "offshore in deeper water" },
+      temp: { low: 68, high: 80, cold: 64 },
+      rule: "Open all year.", tip: "Cold months, from the first cool snap until the water passes ~75°F. Onshore wind and a little surf; fish the troughs and runouts, mid-pier over the bars." },
+    { name: "Spanish mackerel", group: "beach", match: ["spanish"],
+      shore: [2,2,2,1,0,0,0,0,0,0,1,2], boat: [2,2,2,1,1,0,0,0,0,0,1,2],
+      spawn: { m: [4,5,6,7,8,9], away: true, where: "offshore, mostly farther north" },
+      temp: { low: 68, high: 82, cold: 62 },
+      rule: "Open all year.", tip: "Arrive when the water drops below ~70°F; inlets, jetties and piers on clear days after a front — small spoons, fast." },
+    { name: "Bluefish", group: "beach", match: ["bluefish"],
+      shore: [1,1,1,0,0,0,0,0,0,0,0,1], boat: [1,1,1,0,0,0,0,0,0,0,0,1],
+      spawn: { m: [3,4], away: true, where: "offshore, far north of here" },
+      temp: { low: 60, high: 75, cold: 58 },
+      rule: "Open all year.", tip: "A bonus in cold snaps, mostly Palm Beach and north; use wire or heavy leader." },
+    { name: "Sheepshead", group: "beach", match: ["sheepshead"],
+      shore: [2,2,2,1,1,0,0,0,0,1,1,2], boat: [1,2,2,1,1,0,0,0,0,0,1,1],
+      spawn: { m: [2,3,4], away: true, gather: true, where: "offshore — big fish bunch up at jetties, bridges and inlets first, then leave for a few weeks" },
+      temp: { low: 55, high: 80, cold: 52 },
+      rule: "Open all year — check FWC for size and bag.", tip: "Barnacled pilings, bridges and jetties Dec–Mar with fiddler crab or shrimp; feel for the tap." },
+    { name: "Whiting", group: "beach", match: ["whiting", "kingcroaker"],
+      shore: [2,2,2,2,1,1,0,0,1,1,2,2], boat: [2,2,2,2,1,1,0,0,1,1,2,2],
+      spawn: { m: [3,4,5,6,7,8,9,10], where: "just off the beaches — they don't leave" },
+      temp: { low: 62, high: 80, cold: 58 },
+      rule: "Open all year.", tip: "Shrimp or sand fleas on the bottom in the first trough, Nov–Apr; a little surf beats flat calm." },
+    { name: "Great barracuda", group: "beach", match: ["barracuda"],
+      shore: [2,2,2,1,1,1,1,1,1,1,2,2], boat: [2,2,2,1,1,1,1,1,1,1,2,2],
+      spawn: { m: [4,5,6,7,8,9], away: true, where: "offshore reefs" },
+      temp: { low: 70, high: 88, cold: 62 },
+      rule: "Has bag and size limits in Southeast Florida — check FWC.", tip: "Winter brings big ones to the beach, piers and clear inlets; wire leader, fast lures. Don't eat big ones (ciguatera)." },
+    { name: "Permit", group: "beach", match: ["permit"],
+      shore: [1,1,1,1,1,0,0,1,1,1,1,1], boat: [2,2,2,2,2,2,2,1,1,1,1,2],
+      spawn: { m: [5,6,7,8,9], away: true, where: "offshore wrecks and reefs around full and new moons" },
+      temp: { low: 72, high: 88, cold: 62 },
+      rule: "Special rules in South Florida — check FWC.", tip: "Live crab or sand flea in clear surf near an inlet on a rising tide." },
+    { name: "Grunts", group: "beach", match: ["grunt"],
+      shore: [1,1,1,2,2,2,2,2,2,2,1,1], boat: [1,1,2,2,2,2,2,2,2,2,1,1],
+      spawn: { m: [4,5,6,7,8,9], where: "on the reefs; smaller fish stay on inshore structure" },
+      temp: { low: 70, high: 86, cold: 64 },
+      rule: "Check FWC for size and bag.", tip: "Shrimp near docks, bridges and jetties in the evening, spring through fall; a cold front shuts them off for a few days." },
+    { name: "Porgy", group: "beach", match: ["porgy"],
+      shore: [2,2,1,1,1,0,0,0,1,1,2,2], boat: [2,2,2,1,1,1,1,1,1,1,2,2],
+      spawn: { m: [1,2,3,4,5], away: true, where: "offshore reefs" },
+      temp: { low: 65, high: 82, cold: 60 },
+      rule: "Check FWC for size and bag.", tip: "A cooler-month bonus at deep jetty and inlet edges; shrimp or crab on the bottom." },
+    { name: "Gray triggerfish", group: "beach", match: ["triggerfish"],
+      shore: [0,0,0,0,0,1,1,1,1,1,0,0], boat: [2,2,2,2,1,1,1,1,1,1,2,2],
+      spawn: { m: [6,7,8], away: true, where: "nests on offshore hard bottom" },
+      temp: { low: 68, high: 84, cold: 62 },
+      rule: "Check FWC for size and bag.", tip: "Mostly a boat fish; from shore try a small hook and shrimp at deep pier ends and jetties." },
+    // ---- Offshore (a few reach the long ocean piers) ----
+    { name: "Sailfish", group: "offshore", match: ["sailfish"],
+      shore: [1,1,1,0,0,0,0,0,0,0,1,1], boat: [2,2,2,1,0,0,0,0,0,1,2,2],
+      spawn: { m: [5,6,7,8,9,10], where: "far offshore in the Gulf Stream" },
+      temp: { low: 70, high: 84, cold: 66 },
       rule: "Catch-and-release is the norm (federal HMS permit needed to keep one).",
-      tip: "Winter cold fronts push them close to the edge of the reef off Pompano and Palm Beach." },
-    { name: "Kingfish (king mackerel)", group: "offshore", match: ["kingfish", "king mackerel"], runs: [1,1,2,2,1,1,0,0,1,1,2,1],
-      rule: "Open all year.", tip: "Spring and fall migrations; slow-trolled live bait off the reef and from the deep piers." },
-    { name: "Mahi (dolphin)", group: "offshore", match: ["mahi", "dolphin", "dolphinfish"], runs: [0,0,1,2,2,2,1,1,0,0,0,0],
-      rule: "Open all year.", tip: "Spring–early summer under weed lines and floating debris — check the 🟢 water clarity map for edges." },
-    { name: "Wahoo", group: "offshore", match: ["wahoo"], runs: [1,1,1,0,0,0,0,0,1,2,2,1],
-      rule: "Open all year.", tip: "Fall and early winter along the reef edge, especially around the full moon." },
-    { name: "Black & red grouper", group: "offshore", match: ["black grouper", "red grouper", "scamp", "hind", "coney", "graysby"], runs: [1,1,1,1,2,1,1,1,1,2,2,1],
+      tip: "Nov–Mar, a day or two after a cold front with north wind; the occasional one is kite-fished off the ocean piers." },
+    { name: "Kingfish (king mackerel)", group: "offshore", match: ["kingfish", "king mackerel"],
+      shore: [2,2,2,1,1,0,0,0,1,2,2,2], boat: [2,2,2,2,1,1,0,1,1,2,2,2],
+      spawn: { m: [5,6,7,8,9], away: true, where: "offshore over the shelf in summer" },
+      temp: { low: 68, high: 82, cold: 64 },
+      rule: "Open all year.", tip: "Live bait off the long ocean piers (Pompano, Deerfield, Lake Worth, Juno) late fall to spring, first clean-water morning after a front." },
+    { name: "Mahi (dolphin)", group: "offshore", match: ["mahi", "dolphin", "dolphinfish"],
+      shore: [0,0,0,1,1,1,1,0,0,0,0,0], boat: [1,1,2,2,2,2,1,1,1,2,1,1],
+      spawn: { m: [3,4,5,6,7,8,9,10], where: "out in the Gulf Stream, many times a season" },
+      temp: { low: 72, high: 84, cold: 68 },
+      rule: "Open all year.", tip: "Weed lines and debris near blue water — check the 🟢 water clarity map; east winds sometimes bring small ones to the pier ends." },
+    { name: "Wahoo", group: "offshore", match: ["wahoo"],
+      shore: [0,0,0,0,0,0,0,0,0,0,0,0], boat: [2,2,2,1,0,0,0,0,0,1,2,2],
+      spawn: { m: [5,6,7,8,9], where: "offshore" },
+      temp: { low: 72, high: 82, cold: 68 },
+      rule: "Open all year.", tip: "A winter boat fish on the 120–300 ft drop-offs, best around full and new moons at first and last light." },
+    { name: "Cobia", group: "offshore", match: ["cobia"],
+      shore: [1,1,2,2,1,0,0,0,0,0,1,1], boat: [2,2,2,2,1,1,0,0,0,1,1,2],
+      spawn: { m: [4,5,6,7,8], away: true, where: "mostly farther north as they migrate" },
+      temp: { low: 68, high: 84, cold: 64 },
+      rule: "Check FWC for size and bag.", tip: "Winter–spring: watch the pier ends for rays and turtles with brown shapes following; keep a jig or live eel ready." },
+    { name: "Black & red grouper", group: "offshore", match: ["black grouper", "red grouper", "scamp", "hind", "coney", "graysby"],
+      shore: [0,0,0,0,0,0,0,0,0,0,0,0], boat: [1,1,1,1,2,2,2,2,2,2,2,1],
+      spawn: { m: [1,2,3,4], away: true, where: "deep ledges and reef edges around the full moon" },
+      temp: { low: 68, high: 82, cold: 60 },
       closed: [["01-01", "04-30"]],
       rule: "Atlantic: closed Jan 1–Apr 30 (also scamp, hinds, coney, graysby). Goliath and Nassau: no harvest.",
-      tip: "Reef ledges and wrecks; best right after it opens in May and again in late fall." },
-    { name: "Gag grouper", group: "offshore", match: ["gag"], runs: [1,1,1,1,2,2,1,1,1,1,1,1],
+      tip: "A boat fish on deeper ledges and wrecks; best right after it opens in May and again in late fall." },
+    { name: "Gag grouper", group: "offshore", match: ["gag"],
+      shore: [0,0,0,0,0,0,0,0,0,0,0,0], boat: [1,1,1,1,2,2,2,2,2,2,2,1],
+      spawn: { m: [12,1,2,3,4], away: true, where: "deep shelf-edge ledges, peak Feb–Mar" },
+      temp: { low: 64, high: 80, cold: 58 },
       openOnly: [["05-01", "08-01"]],
       rule: "Atlantic 2026: open May 1–Aug 1 only. Dates change most years — check FWC.",
-      tip: "Rock piles and wrecks; inshore around bridges and inlets in the cooler months." },
-    { name: "Red snapper", group: "offshore", match: ["red snapper"], runs: [0,0,0,0,0,0,0,0,0,1,0,0], // only worth targeting in its short open season
+      tip: "Offshore ledges and wrecks; the odd small one at an inlet or dock is usually undersized." },
+    { name: "Red snapper", group: "offshore", match: ["red snapper"],
+      shore: [0,0,0,0,0,0,0,0,0,0,0,0], boat: [0,0,0,0,0,0,0,0,0,2,0,0], // only worth targeting in its short open season
+      spawn: { m: [6,7,8,9,10], where: "deep offshore bottom" },
+      temp: { low: 60, high: 80, cold: 56 },
       openOnly: [["2026-10-09", "2026-10-22"]],
       rule: "Atlantic 2026: open Oct 9–22 only, 1 per person, and you must declare your trip first. Release with a descending device the rest of the year.",
-      tip: "More common north of Palm Beach; deep wrecks and ledges." },
-    { name: "Mutton snapper", group: "offshore", match: ["mutton"], runs: [1,1,1,2,2,2,1,1,1,1,1,1],
-      spawnOffshore: [3, 4, 5], // great offshore on the spawning gatherings, but they leave the inlets and beaches
+      tip: "Deep wrecks and ledges, more common north of Palm Beach — never a shore fish here." },
+    { name: "Mutton snapper", group: "offshore", match: ["mutton"],
+      shore: [0,0,1,1,1,0,0,0,1,1,1,0], boat: [1,1,2,2,2,1,1,2,2,2,2,1],
+      spawn: { m: [5,6,7], away: true, where: "on outer reef edges around the full moon" },
+      temp: { low: 70, high: 86, cold: 64 },
       rule: "Open all year, 5 per person (within 10 snapper total), 18\" minimum.",
-      tip: "Spawning gatherings in late spring around the full moon; also on the beach and in inlets." },
-    { name: "Yellowtail snapper", group: "offshore", match: ["yellowtail"], runs: [1,1,1,1,2,2,2,2,1,1,1,1],
-      rule: "Open all year.", tip: "Chum on the reef; best in the warm months." },
-    { name: "Largemouth bass", group: "fresh", match: ["largemouth", "bass"], sightMatch: ["largemouth"], runs: [2,2,2,1,1,1,1,1,1,2,2,1],
-      rule: "Open all year.", tip: "Spawning in shallow water January–March; early and late in the day in summer." },
-    { name: "Peacock bass", group: "fresh", match: ["peacock"], runs: [0,1,2,2,2,2,2,2,2,1,1,0],
-      rule: "Open all year.", tip: "Daytime fish in the canals; they turn off when the water gets cold. Live shiners." },
-    { name: "Bullseye snakehead", group: "fresh", match: ["snakehead"], runs: [1,1,1,2,2,2,2,1,1,1,1,1],
+      tip: "From shore: inlet and pier edges at night in spring and fall with live shrimp or pinfish — not during the May–July spawn." },
+    { name: "Yellowtail snapper", group: "offshore", match: ["yellowtail"],
+      shore: [0,0,0,1,1,1,2,2,2,1,1,0], boat: [2,2,2,2,2,2,1,1,2,2,2,2],
+      spawn: { m: [5,6,7,8,9], where: "on the reef tract — they don't migrate" },
+      temp: { low: 68, high: 86, cold: 64 },
+      rule: "Open all year.", tip: "Chum, light line and clean blue water; the Pompano and Deerfield pier ends are the best shore bet summer into fall." },
+    { name: "Lane snapper", group: "offshore", match: ["lane snapper"],
+      shore: [0,0,0,1,1,1,1,1,1,1,0,0], boat: [1,1,2,2,2,2,2,2,2,1,1,1],
+      spawn: { m: [4,5,6,7,8,9], away: true, where: "offshore hard bottom" },
+      temp: { low: 70, high: 86, cold: 62 },
+      rule: "Open all year — check FWC for size.", tip: "Mostly a boat fish; from shore, the far end of the long piers with small hooks and shrimp." },
+    // ---- Freshwater ----
+    { name: "Largemouth bass", group: "fresh", match: ["largemouth", "bass"], sightMatch: ["largemouth"],
+      shore: [2,2,2,1,1,0,0,0,1,1,1,2], boat: [2,2,2,1,1,1,1,1,1,1,1,2],
+      spawn: { m: [12,1,2,3,4], gather: true, where: "beds in 1–4 ft on hard bottom along banks and canal bends, around full and new moons" },
+      temp: { low: 60, high: 88, cold: 55 },
+      rule: "Open all year.", tip: "Dec–Mar on shallow banks and bends while they bed; in summer, shade, bridge shadows and flowing culverts at dawn and dusk." },
+    { name: "Peacock bass", group: "fresh", match: ["peacock"],
+      shore: [0,0,0,1,2,2,2,2,2,1,1,0], boat: [0,0,1,1,2,2,2,2,2,2,1,0],
+      spawn: { m: [4,5,6,7,8,9], gather: true, where: "nests on hard bottom along shady banks; pairs guard them (peak May–Jun)" },
+      temp: { low: 72, high: 92, cold: 66 },
+      rule: "2 per day, only 1 over 17\" — check FWC.", tip: "Daytime sight-feeders: shaded bridges, culverts and canal bends in the afternoon sun. Stay home after a winter cold snap." },
+    { name: "Bullseye snakehead", group: "fresh", match: ["snakehead"],
+      shore: [0,0,1,2,2,2,2,2,1,1,1,0], boat: [0,0,1,2,2,2,2,2,2,1,1,0],
+      spawn: { m: [3,4,5,8], gather: true, where: "shallow, weedy canal edges — parents herd the fry and strike anything near them" },
+      temp: { low: 68, high: 92, cold: 60 },
       rule: "Invasive: no limit. Never release one alive and never move them — it's illegal.",
-      tip: "Broward and Palm Beach canals, along weed edges; topwater frogs." },
-    { name: "Bluegill & panfish", group: "fresh", match: ["bluegill", "panfish", "sunfish", "shellcracker"], runs: [1,1,1,2,2,2,1,1,1,1,1,1],
-      rule: "Open all year.", tip: "Spawning beds in shallow water around the full moons of spring; worms or crickets." },
-    { name: "Mayan cichlid", group: "fresh", match: ["mayan", "cichlid"], runs: [1,1,2,2,2,1,1,1,1,1,1,1],
-      rule: "Invasive: no limit — keep them.", tip: "Canals and lake edges; small worms or bread." }
+      tip: "Weedless frogs and plastics along weedy, shaded banks spring to fall; watch for them gulping air." },
+    { name: "Bluegill & panfish", group: "fresh", match: ["bluegill", "panfish", "sunfish", "shellcracker"],
+      shore: [1,1,2,2,2,2,2,2,2,2,1,1], boat: [1,1,2,2,2,2,2,2,2,1,1,1],
+      spawn: { m: [3,4,5,6,7,8,9], gather: true, where: "clusters of round beds in 1–3 ft, peaking around full and new moons" },
+      temp: { low: 62, high: 90, cold: 55 },
+      rule: "Open all year.", tip: "Look for pale round beds in the shallows and drop a worm or cricket right on them." },
+    { name: "Mayan cichlid", group: "fresh", match: ["mayan", "cichlid"],
+      shore: [0,0,1,2,2,2,2,2,2,1,1,0], boat: [0,0,1,2,2,2,2,2,2,1,1,0],
+      spawn: { m: [4,5,6,7,8], gather: true, where: "nests in shallow pockets along banks; both parents guard" },
+      temp: { low: 70, high: 92, cold: 62 },
+      rule: "Invasive: no limit — keep them.", tip: "Small jigs or shrimp to shallow banks and culvert mouths, Apr–Sep; fish the sunny banks after a front." },
+    { name: "Clown knifefish", group: "fresh", match: ["knifefish"],
+      shore: [0,0,1,1,1,1,1,1,1,1,0,0], boat: [0,0,1,1,1,1,1,1,1,1,0,0],
+      spawn: { m: [3,4,5,6], where: "eggs on wood or bottom near shore, guarded by the male" },
+      temp: { low: 70, high: 92, cold: 62 },
+      rule: "Invasive: don't release alive — check FWC.", tip: "Only around Lakes Osborne and Ida (Lake Worth) — small baits by docks and overhanging brush in warm months." }
   ];
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  // How good a month is from shore (docks, bridges, inlets, piers…): fish that move offshore to spawn are slow there
-  const shoreLevel = (f, m) => (f.spawnOffshore && f.spawnOffshore.includes(m) ? 0 : f.runs[m]);
+  // How good a month (0–11) is from shore — all our spots are shore spots
+  const shoreLevel = (f, m) => f.shore[m];
+  const spawningIn = (f, m) => !!(f.spawn && f.spawn.m.includes(m + 1));
+  // One line about spawning this month, or ""
+  function spawnText(f, m) {
+    if (!spawningIn(f, m)) return "";
+    const s = f.spawn;
+    if (s.away && shoreLevel(f, m) === 0) return `🥚 Spawning ${s.where} — rarely around shore spots now`;
+    if (s.gather) return `🥚 Spawning — ${s.where}`;
+    if (s.away && shoreLevel(f, m) === 1) return `🥚 Spawning ${s.where}; fewer big ones around shore spots`;
+    return `🥚 Spawning ${s.where}`;
+  }
+  // Which Seasons fish a logged species is — the most specific name wins ("peacock bass" → Peacock bass, not Largemouth)
+  function seasonFor(species) {
+    let best = null, bestLen = 0;
+    SEASONS.forEach(f => f.match.forEach(w => {
+      if (w.length > bestLen && new RegExp(`\\b${w}(s|es)?\\b`, "i").test(species || "")) { best = f; bestLen = w.length; }
+    }));
+    return best;
+  }
+  // Water temperature vs. what this fish likes: { pen (0 to −0.5), text }
+  function tempFit(f, t) {
+    if (t == null || !f.temp) return { pen: 0, text: "" };
+    const r = Math.round(t);
+    if (t < f.temp.cold) return { pen: -0.5, text: `🥶 ${r}°F water — too cold for ${f.name} (they shut down below ~${f.temp.cold}°F)` };
+    if (t < f.temp.low) return { pen: -0.25, text: `🌡 ${r}°F water — on the cool side for ${f.name}` };
+    if (t > f.temp.high) return { pen: -0.25, text: `🌡 ${r}°F water — very warm for ${f.name}; they go deeper or quiet down` };
+    return { pen: 0, text: "" };
+  }
   let seaMonth = new Date().getMonth(), seaGroup = "";
 
   const mmdd = d => `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -1585,14 +1758,11 @@
 
   // How many fish of this kind the group logged in a month (any year)
   function groupCount(f, m) {
-    return Object.values(catchesBySpot).flat().filter(c => {
-      const sp = (c.species || "").toLowerCase();
-      if (!f.match.some(w => sp.includes(w))) return false;
-      if (f.name === "Largemouth bass" && sp.includes("peacock")) return false;
-      if (f.name === "Mangrove snapper" && !sp.includes("mangrove") && !sp.includes("gray")) return false;
-      return new Date(c.caught_at).getMonth() === m;
-    }).reduce((n, c) => n + (c.how_many || 1), 0);
+    return Object.values(catchesBySpot).flat()
+      .filter(c => seasonFor(c.species) === f && new Date(c.caught_at).getMonth() === m)
+      .reduce((n, c) => n + (c.how_many || 1), 0);
   }
+
 
   function renderSeasons() {
     if ($("view-seasons").hidden) return;
@@ -1620,7 +1790,7 @@
     });
 
     const list = SEASONS.filter(f => !seaGroup || f.group === seaGroup)
-      .map((f, i) => ({ f, i, lvl: f.runs[seaMonth], open: seasonOpen(f, ref) }))
+      .map((f, i) => ({ f, i, lvl: shoreLevel(f, seaMonth), open: seasonOpen(f, ref) }))
       .sort((a, b) => (b.lvl - a.lvl) || (a.i - b.i));
     $("sea-list-title").textContent = `What's biting in ${MONTHS[seaMonth]}`;
     const box = $("sea-list"); box.innerHTML = "";
@@ -1631,22 +1801,33 @@
       const badges = document.createElement("span"); badges.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end";
       const badge = (cls, text) => { const b = document.createElement("span"); b.className = "sea-badge " + cls; b.textContent = text; badges.appendChild(b); };
       if (open === false) badge("closed", "⛔ Closed to keep");
-      badge(["slow", "good", "peak"][lvl], ["Slow", "Good", "🔥 Peak"][lvl]);
+      badge(["slow", "good", "peak"][lvl], (["Slow", "Good", "🔥 Peak"][lvl]) + " from shore");
       top.append(name, badges);
-      const months = document.createElement("div"); months.className = "sea-months";
-      MONTHS.forEach((m, i) => {
-        const sp = document.createElement("span"); sp.textContent = m[0];
-        if (f.runs[i]) sp.classList.add("l" + f.runs[i]);
-        if (monthClosed(f, i, i < today.getMonth() - 1 ? today.getFullYear() + 1 : today.getFullYear())) { sp.classList.add("x"); sp.title = "Mostly closed to keep"; }
-        if (i === seaMonth) sp.classList.add("cur");
-        months.appendChild(sp);
-      });
+      const strip = (arr, label) => {
+        const row = document.createElement("div"); row.className = "sea-strip";
+        const lab = document.createElement("span"); lab.className = "sea-strip-label"; lab.textContent = label;
+        const months = document.createElement("div"); months.className = "sea-months";
+        MONTHS.forEach((m, i) => {
+          const sp = document.createElement("span"); sp.textContent = m[0];
+          if (arr[i]) sp.classList.add("l" + arr[i]);
+          if (monthClosed(f, i, i < today.getMonth() - 1 ? today.getFullYear() + 1 : today.getFullYear())) { sp.classList.add("x"); sp.title = "Mostly closed to keep"; }
+          if (spawningIn(f, i)) sp.classList.add("egg");
+          if (i === seaMonth) sp.classList.add("cur");
+          months.appendChild(sp);
+        });
+        row.append(lab, months);
+        return row;
+      };
       const tip = document.createElement("div"); tip.className = "sea-rule"; tip.textContent = f.tip;
-      const spawnNote = document.createElement("div"); spawnNote.className = "sea-rule";
-      if (f.spawnOffshore && f.spawnOffshore.includes(seaMonth)) spawnNote.textContent = "🥚 Spawning offshore this month — rarely inshore; from shore, expect it to be slow.";
+      const spawnNote = document.createElement("div"); spawnNote.className = "sea-rule"; spawnNote.textContent = spawnText(f, seaMonth);
       const rule = document.createElement("div"); rule.className = "spot-meta"; rule.textContent = "📏 " + f.rule;
-      div.append(top, months, tip);
+      div.append(top, strip(f.shore, "Shore"), strip(f.boat, "Boat"), tip);
       if (spawnNote.textContent) div.appendChild(spawnNote);
+      if (thisMonth && f.group !== "fresh") {
+        const w = waterTempNow(LAT, LNG);
+        const fit = tempFit(f, w.done && w.done !== "error" ? w.done.f : null);
+        if (fit.text) { const tn = document.createElement("div"); tn.className = "sea-rule"; tn.textContent = fit.text + " (Pompano area today)"; div.appendChild(tn); }
+      }
       div.appendChild(rule);
       const n = groupCount(f, seaMonth);
       if (n) { const g = document.createElement("div"); g.className = "spot-meta"; g.textContent = `🎣 Your group has logged ${n} in ${MONTHS[seaMonth]}`; div.appendChild(g); }
@@ -2960,7 +3141,7 @@
     // Season: what's been caught here (or by the group, for a new spot), weighted by fish
     const bySp = new Map();
     catches.forEach(c => {
-      const f = SEASONS.find(x => hasWord(c.species || "", x.match));
+      const f = seasonFor(c.species);
       if (f) bySp.set(f, (bySp.get(f) || 0) + (c.how_many || 1));
     });
     const m = new Date().getMonth();
@@ -2971,10 +3152,21 @@
       bonus += (avg - 1) * 0.5;
       const top = [...bySp.entries()].sort((a, b) => b[1] - a[1])[0][0];
       const lvl = shoreLevel(top, m);
-      const spawning = top.spawnOffshore && top.spawnOffshore.includes(m);
-      notes.push(spawning ? `🥚 ${top.name} spawning offshore — rarely inshore now`
-        : lvl === 2 ? `🔥 ${top.name} peak season` : lvl === 1 ? `📅 ${top.name}: decent month` : `📅 ${top.name}: slow month`);
-      if (seasonOpen(top, new Date()) === false) notes.push(`⛔ ${top.name} closed to keep`);
+      notes.push(lvl === 2 ? `🔥 ${top.name} peak season from shore` : lvl === 1 ? `📅 ${top.name}: decent month` : `📅 ${top.name}: slow month from shore`);
+      if (spawningIn(top, m)) {
+        const sp = top.spawn;
+        notes.push(sp.away && lvl === 0 ? `🥚 spawning offshore — rarely at shore spots now`
+          : sp.gather ? `🥚 spawning — they bunch up within reach of shore` : sp.away && lvl === 1 ? `🥚 spawning offshore — fewer big ones inshore` : `🥚 spawning season`);
+      }
+      if (seasonOpen(top, new Date()) === false) notes.push(`⛔ closed to keep`);
+      // Water temperature vs. what these fish like (salt and brackish spots — we don't have canal water temps)
+      let t = null;
+      if (hasLoc(s) && s.water_type !== "freshwater") { const w = waterTempNow(s.lat, s.lng); if (w.done && w.done !== "error") t = w.done.f; }
+      if (t != null) {
+        bonus += [...bySp.entries()].reduce((n, [f, k]) => n + tempFit(f, t).pen * k, 0) / tot;
+        const fit = tempFit(top, t);
+        if (fit.text) notes.push(fit.text);
+      }
     }
     // Public sightings within 5 mi (iNaturalist, last 60 days)
     const seen = typeof sightsNear === "function" ? sightsNear(s) : [];
