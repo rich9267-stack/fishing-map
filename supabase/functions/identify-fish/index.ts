@@ -12,7 +12,8 @@ const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
 // Tried in order; if one isn't on the free tier (or is busy), the next is used.
-const MODELS = (Deno.env.get("GEMINI_MODELS") || "gemini-2.5-flash,gemini-2.5-flash-lite,gemini-2.0-flash")
+// (Google retires names over time; if all of these fail it asks Google for the current list.)
+const MODELS = (Deno.env.get("GEMINI_MODELS") || "gemini-3.8-flash,gemini-3.5-flash-lite")
   .split(",").map((m) => m.trim()).filter(Boolean);
 
 const NAMES = "Snook, Tarpon, Jack crevalle, Bar jack, Horse-eye jack, Blue runner, Mangrove snapper, Lane snapper, Yellowtail snapper, " +
@@ -120,6 +121,7 @@ Deno.serve(async (req) => {
         confidence: ["high", "medium", "low"].includes(String(s.confidence)) ? s.confidence : "low",
         clue: String(s.clue || "").slice(0, 120),
       })).filter((s: { name: string }) => s.name);
+      console.log("identified with", model, lastErr ? `(after: ${lastErr})` : "");
       return reply({ fish_visible: !!out.fish_visible, suggestions, model });
     }
     return reply({ error: "Fish ID couldn't get an answer from Gemini right now — try again later.", detail: lastErr }, 503);
