@@ -74,6 +74,14 @@
   [hidden] { display: none !important; }
   .userbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: .85rem; color: var(--muted); margin: -8px 0 12px; }
   .userbar-links { display: flex; gap: 14px; }
+  #filter-panel { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
+  .fgroup { margin-bottom: 10px; }
+  .fgroup:last-of-type { margin-bottom: 4px; }
+  .fgroup-title { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .fchips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fchip { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--text); border-radius: 999px; padding: 6px 11px; font: inherit; font-size: .85rem; cursor: pointer; }
+  .fchip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .filter-status { margin-top: 10px; font-size: .85rem; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
   .check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--text); cursor: pointer; }
   .check-row input { width: auto; margin-top: 3px; transform: scale(1.2); }
   .auth-links { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
@@ -181,6 +189,7 @@
       <span id="place-text">Tap the map where the spot is</span>
       <button type="button" id="place-cancel">Cancel</button>
     </div>
+    <div class="filter-status" id="map-filter-note" style="margin:0 0 8px" hidden></div>
     <div id="map"></div>
     <div class="map-tools">
       <button class="btn small" id="map-add" type="button">+ Add a spot on the map</button>
@@ -206,8 +215,14 @@
   <div class="card" id="spots-card">
     <div class="row">
       <div class="label">Your spots</div>
-      <button class="btn" id="add-btn" type="button">+ Add a spot</button>
+      <span style="display:flex;gap:8px">
+        <button class="btn ghost small" id="filter-btn" type="button">⚙ Filter</button>
+        <button class="btn" id="add-btn" type="button">+ Add a spot</button>
+      </span>
     </div>
+
+    <div id="filter-panel" hidden></div>
+    <div class="filter-status" id="filter-status" hidden></div>
 
     <form id="spot-form" hidden>
       <div class="label" id="f-title" style="margin-top:12px">New spot</div>
@@ -328,7 +343,7 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>V2 step 2: private spots. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>V2 step 3: filters. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
   </footer>
 </main>
 
@@ -683,6 +698,97 @@
     const arrow = { rising: " ↗", falling: " ↘", steady: " →" }[cond.pressureTrend] || "";
     return `${cond.pressure.toFixed(2)} inHg${arrow}`;
   }
+
+  // ---- Filters (remembered on this phone) ----
+  // Within a group, any ticked option matches; across groups, all must match.
+  const FILTER_GROUPS = [
+    { key: "water", title: "Water", options: [["saltwater", "Saltwater"], ["brackish", "Brackish / canal"], ["freshwater", "Freshwater"]],
+      test: (s, v) => v.has(s.water_type) },
+    { key: "type", title: "Spot type", options: [["dock", "Dock"], ["bridge", "Bridge"], ["inlet", "Inlet"], ["pier", "Pier"], ["jetty", "Jetty"], ["seawall", "Seawall"], ["ramp", "Ramp"]],
+      test: (s, v) => v.has(s.spot_type) },
+    { key: "access", title: "Getting there", options: [["public", "Public access"], ["free", "Free parking"], ["anyparking", "Has parking"], ["nolongwalk", "No long walk"], ["no4x4", "No 4x4 needed"]],
+      all: true, // these are each requirements, so every ticked one must be true
+      test: (s, v) => [...v].every(o =>
+        o === "public" ? s.public_access === "yes" :
+        o === "free" ? s.parking === "free lot" :
+        o === "anyparking" ? !!s.parking && s.parking !== "none" :
+        o === "nolongwalk" ? s.getting_there === "walk-up" || s.getting_there === "short walk" :
+        o === "no4x4" ? s.getting_there !== "needs 4x4" : true) },
+    { key: "other", title: "Other", options: [["mine", "Only my spots"], ["private", "Private only"], ["catches", "Has catches"]],
+      all: true,
+      test: (s, v) => [...v].every(o =>
+        o === "mine" ? isMine(s) :
+        o === "private" ? !!s.is_private :
+        o === "catches" ? (catchesBySpot[s.id] || []).length > 0 : true) }
+  ];
+  const filters = {};
+  FILTER_GROUPS.forEach(g => { filters[g.key] = new Set(); });
+  try {
+    const saved = JSON.parse(localStorage.getItem("fm-filters") || "{}");
+    FILTER_GROUPS.forEach(g => (saved[g.key] || []).forEach(v => filters[g.key].add(v)));
+  } catch (e) {}
+  function saveFilters() {
+    try { const o = {}; FILTER_GROUPS.forEach(g => { o[g.key] = [...filters[g.key]]; }); localStorage.setItem("fm-filters", JSON.stringify(o)); } catch (e) {}
+  }
+  function activeFilterCount() { return FILTER_GROUPS.reduce((n, g) => n + filters[g.key].size, 0); }
+
+  function filteredSpots() {
+    return (spots || []).filter(s => FILTER_GROUPS.every(g => !filters[g.key].size || g.test(s, filters[g.key])));
+  }
+
+  function buildFilterPanel() {
+    const panel = $("filter-panel");
+    panel.innerHTML = "";
+    FILTER_GROUPS.forEach(g => {
+      const box = el("div", "fgroup");
+      box.appendChild(el("div", "fgroup-title", g.title));
+      const chips = el("div", "fchips");
+      g.options.forEach(([val, label]) => {
+        const b = el("button", "fchip" + (filters[g.key].has(val) ? " on" : ""), label);
+        b.type = "button";
+        b.addEventListener("click", () => {
+          filters[g.key].has(val) ? filters[g.key].delete(val) : filters[g.key].add(val);
+          b.classList.toggle("on");
+          saveFilters();
+          renderSpots(); renderPins();
+        });
+        chips.appendChild(b);
+      });
+      box.appendChild(chips);
+      panel.appendChild(box);
+    });
+    const row = el("div", "row");
+    const clear = el("button", "linkbtn", "Clear all"); clear.type = "button";
+    clear.addEventListener("click", clearFilters);
+    const done = el("button", "btn small", "Done"); done.type = "button";
+    done.addEventListener("click", () => { panel.hidden = true; });
+    row.appendChild(clear); row.appendChild(done);
+    panel.appendChild(row);
+  }
+  function clearFilters() {
+    FILTER_GROUPS.forEach(g => filters[g.key].clear());
+    saveFilters();
+    buildFilterPanel();
+    renderSpots(); renderPins();
+  }
+  function updateFilterStatus(shownCount) {
+    const n = activeFilterCount();
+    $("filter-btn").textContent = n ? `⚙ Filter (${n})` : "⚙ Filter";
+    $("filter-btn").classList.toggle("on", n > 0);
+    const st = $("filter-status");
+    st.hidden = !n;
+    if (!n) return;
+    st.innerHTML = "";
+    st.appendChild(el("span", null, `Showing ${shownCount} of ${(spots || []).length} spots`));
+    const clear = el("button", "linkbtn", "Clear filters"); clear.type = "button";
+    clear.addEventListener("click", clearFilters);
+    st.appendChild(clear);
+  }
+  $("filter-btn").addEventListener("click", () => {
+    const panel = $("filter-panel");
+    if (panel.hidden) buildFilterPanel();
+    panel.hidden = !panel.hidden;
+  });
 
   // ---- Catch log ----
   let catchesBySpot = {};        // spot id -> list of catches, newest first
@@ -1088,7 +1194,10 @@
       list.appendChild(el("div", "empty", "No spots yet. Tap “+ Add a spot” to save your first one."));
       return;
     }
-    spots.forEach(s => {
+    const shown = filteredSpots();
+    updateFilterStatus(shown.length);
+    if (!shown.length) list.appendChild(el("div", "empty", "No spots match these filters."));
+    shown.forEach(s => {
       const item = el("div", "spot");
       item.appendChild(el("div", "spot-name", (s.is_private ? "🔒 " : "") + s.name));
       item.appendChild(el("div", "spot-meta",
@@ -1326,12 +1435,15 @@
   function renderPins() {
     if (!map) return;
     pinLayer.clearLayers();
-    (spots || []).filter(s => s.lat != null && s.lng != null).forEach(s => {
+    filteredSpots().filter(s => s.lat != null && s.lng != null).forEach(s => {
       L.circleMarker([s.lat, s.lng], {
         radius: 9, weight: 3, color: s.is_private ? "#222222" : "#ffffff", dashArray: s.is_private ? "3 3" : null,
         fillColor: WATER_COLOR[s.water_type] || "#555", fillOpacity: 1
       }).bindPopup(() => popupFor(s)).addTo(pinLayer);
     });
+    const n = activeFilterCount();
+    $("map-filter-note").hidden = !n;
+    if (n) $("map-filter-note").textContent = `Filters on — showing ${filteredSpots().length} of ${(spots || []).length} spots. Change them in the list view.`;
     const unplaced = (spots || []).filter(s => s.lat == null || s.lng == null);
     $("unplaced-card").hidden = !unplaced.length;
     const ul = $("unplaced-list"); ul.innerHTML = "";

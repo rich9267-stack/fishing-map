@@ -26,4 +26,6 @@ A shared map to help pick where to fish in Pompano Beach / Broward County today:
 
 **Step 1:** invite-only logins (email + password). Admin "Invite friends" screen; everyone edits only their own spots and catches; nothing visible when signed out. See `setup/05-logins.sql`.
 
-**Step 2 (current):** private spots — "🔒 Private" checkbox when adding/editing; only the owner sees the spot and its catches (enforced by the database). Dark dashed pin outline on the map.
+**Step 2:** private spots — "🔒 Private" checkbox when adding/editing; only the owner sees the spot and its catches (enforced by the database). Dark dashed pin outline on the map.
+
+**Step 3 (current):** filters — water type, spot type, public access, free/any parking, no long walk, no 4x4, only my spots, private only, has catches. Applies to the list and map; remembered on each phone.
