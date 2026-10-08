@@ -110,6 +110,29 @@
   .best-why { font-size: .85rem; margin-top: 4px; }
   .rating { display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; vertical-align: 1px; }
   .rating.strong { border-color: var(--rising); color: var(--rising); }
+  #qc-fab { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom)); width: 64px; height: 64px; border-radius: 50%; border: 0;
+    background: var(--accent); color: #fff; font-size: 28px; box-shadow: 0 4px 14px rgba(0,0,0,.3); z-index: 900; cursor: pointer; }
+  #qc { position: fixed; inset: 0; z-index: 1100; background: #000; }
+  #qc-cam { position: absolute; inset: 0; }
+  #qc-video { width: 100%; height: 100%; object-fit: cover; }
+  .qc-top { position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; gap: 10px; align-items: center; }
+  .qc-pill { background: rgba(0,0,0,.55); color: #fff; padding: 8px 12px; border-radius: 999px; font-size: .88rem; }
+  #qc-camerr { position: absolute; left: 16px; right: 16px; top: 40%; text-align: center; border-radius: 14px; }
+  .qc-round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(0,0,0,.55); color: #fff; font-size: 18px; flex-shrink: 0; cursor: pointer; }
+  .qc-bottom { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; }
+  #qc-shutter { width: 76px; height: 76px; border-radius: 50%; border: 5px solid #fff; background: rgba(255,255,255,.25); cursor: pointer; }
+  .qc-small { color: #fff; background: rgba(0,0,0,.55); border: 0; border-radius: 999px; padding: 10px 14px; font: inherit; font-size: .88rem; cursor: pointer; }
+  #qc-review { position: absolute; inset: 0; background: var(--bg); overflow-y: auto; }
+  .qc-review-inner { max-width: 520px; margin: 0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px 40px; }
+  #qc-review label { display: block; font-size: .85rem; color: var(--muted); margin: 12px 0 6px; }
+  #qc-review input, #qc-review select { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; }
+  #qc-shot { width: 100%; max-height: 34vh; object-fit: cover; border-radius: 12px; margin-top: 10px; }
+  .stepper { display: flex; }
+  .stepper button { width: 44px; border: 1px solid var(--line); background: var(--card); color: var(--text); font-size: 20px; cursor: pointer; }
+  .stepper button:first-child { border-radius: 10px 0 0 10px; } .stepper button:last-child { border-radius: 0 10px 10px 0; }
+  #qc-review .stepper input { border-radius: 0; text-align: center; border-left: 0; border-right: 0; }
+  #qc-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom)); background: #12262e; color: #fff;
+    padding: 10px 16px; border-radius: 999px; z-index: 1200; font-size: .92rem; box-shadow: 0 4px 14px rgba(0,0,0,.3); max-width: 90vw; text-align: center; }
   .check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--text); cursor: pointer; }
   .check-row input { width: auto; margin-top: 3px; transform: scale(1.2); }
   .auth-links { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
@@ -394,9 +417,54 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>V2 step 6: best spot today. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>V2 step 6b: quick catch. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
   </footer>
 </main>
+
+<button id="qc-fab" type="button" aria-label="Quick catch" hidden>📸</button>
+
+<div id="qc" hidden>
+  <div id="qc-cam">
+    <video id="qc-video" playsinline muted autoplay></video>
+    <div class="qc-top">
+      <button type="button" id="qc-close" class="qc-round" aria-label="Close">✕</button>
+      <div id="qc-where" class="qc-pill">📍 Finding your location…</div>
+    </div>
+    <div class="qc-bottom">
+      <button type="button" id="qc-skip" class="qc-small">No photo</button>
+      <button type="button" id="qc-shutter" aria-label="Take photo"></button>
+      <label class="qc-small" for="qc-file">Library</label>
+      <input id="qc-file" type="file" accept="image/*" hidden>
+    </div>
+    <div id="qc-camerr" class="qc-pill" hidden></div>
+  </div>
+
+  <div id="qc-review" hidden>
+    <div class="qc-review-inner">
+      <div class="row">
+        <div class="label">Quick catch</div>
+        <button type="button" id="qc-back" class="linkbtn">Retake</button>
+      </div>
+      <img id="qc-shot" alt="" hidden>
+      <label for="qc-spot">Spot</label>
+      <select id="qc-spot"></select>
+      <div class="spot-meta" id="qc-spot-note"></div>
+      <label>Species</label>
+      <div class="fchips" id="qc-species"></div>
+      <input id="qc-species-other" maxlength="60" placeholder="Other species…" style="margin-top:8px" list="species-list">
+      <div class="two">
+        <div><label for="qc-count">How many</label>
+          <div class="stepper"><button type="button" id="qc-minus">−</button><input id="qc-count" type="number" min="1" max="500" value="1"><button type="button" id="qc-plus">+</button></div></div>
+        <div><label for="qc-bait">Bait / lure</label><input id="qc-bait" maxlength="80" list="bait-list"><datalist id="bait-list"></datalist></div>
+      </div>
+      <div class="spot-meta" style="margin-top:10px">Time, tide, pressure, wind, moon &amp; solunar are filled in automatically.</div>
+      <button class="btn" id="qc-save" type="button" style="width:100%;margin-top:14px;padding:14px">Save catch</button>
+      <div class="msg" id="qc-msg"></div>
+    </div>
+  </div>
+</div>
+
+<div id="qc-toast" hidden></div>
 
 <div id="viewer" hidden>
   <img id="viewer-img" alt="">
@@ -1003,6 +1071,224 @@
     });
   }
   ["ins-spot", "ins-species", "ins-mine"].forEach(id => $(id).addEventListener("change", renderInsights));
+
+  // ---- Quick catch: snap a photo, the app does the rest ----
+  const QC_NEAR_MI = 0.15;           // within ~800 ft counts as "at" a saved spot
+  const COMMON_SPECIES = ["Snook", "Mangrove snapper", "Jack crevalle", "Tarpon", "Sheepshead", "Spanish mackerel", "Mullet", "Ladyfish"];
+  const qc = { stream: null, blob: null, pos: null, when: null, watch: null };
+
+  function toast(text, ms) {
+    const t = $("qc-toast"); t.textContent = text; t.hidden = false;
+    clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, ms || 3500);
+  }
+
+  function nearbySpots(pos) {
+    return (spots || []).filter(hasLoc)
+      .map(s => ({ s, d: miles(pos.lat, pos.lng, s.lat, s.lng) }))
+      .sort((a, b) => a.d - b.d);
+  }
+  function fmtDist(mi) { return mi < 0.2 ? `${Math.round(mi * 5280)} ft` : `${mi.toFixed(1)} mi`; }
+
+  function updateWhere() {
+    const w = $("qc-where");
+    if (!qc.pos) return;
+    const near = nearbySpots(qc.pos)[0];
+    w.textContent = near && near.d <= QC_NEAR_MI ? `📍 At ${near.s.name}` : "📍 New spot here";
+  }
+
+  async function startCamera() {
+    $("qc-camerr").hidden = true;
+    try {
+      qc.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } }, audio: false });
+      $("qc-video").srcObject = qc.stream;
+      await $("qc-video").play().catch(() => {});
+    } catch (e) {
+      $("qc-camerr").hidden = false;
+      $("qc-camerr").textContent = "Camera not available — allow camera access for this site, or tap Library / No photo.";
+    }
+  }
+  function stopCamera() {
+    if (qc.stream) qc.stream.getTracks().forEach(t => t.stop());
+    qc.stream = null;
+  }
+  function startLocation() {
+    qc.pos = null;
+    if (!navigator.geolocation) { $("qc-where").textContent = "📍 Location not available"; return; }
+    qc.watch = navigator.geolocation.watchPosition(p => {
+      qc.pos = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: p.coords.accuracy };
+      updateWhere();
+      if (!$("qc-review").hidden) fillSpotChoices();
+    }, () => { $("qc-where").textContent = "📍 Couldn't get location — you can pick the spot"; },
+    { enableHighAccuracy: true, maximumAge: 30000, timeout: 20000 });
+  }
+  function stopLocation() { if (qc.watch != null) navigator.geolocation.clearWatch(qc.watch); qc.watch = null; }
+
+  function openQuickCatch() {
+    qc.blob = null; qc.when = null;
+    $("qc").hidden = false; $("qc-cam").hidden = false; $("qc-review").hidden = true;
+    $("qc-where").textContent = "📍 Finding your location…";
+    startLocation();
+    startCamera();
+  }
+  function closeQuickCatch() {
+    stopCamera(); stopLocation();
+    $("qc").hidden = true;
+    if ($("qc-shot").src) { URL.revokeObjectURL($("qc-shot").src); $("qc-shot").removeAttribute("src"); }
+  }
+
+  async function snap() {
+    const v = $("qc-video");
+    if (!qc.stream || !v.videoWidth) return;
+    const MAX = 1600, scale = Math.min(1, MAX / Math.max(v.videoWidth, v.videoHeight));
+    const c = document.createElement("canvas");
+    c.width = Math.round(v.videoWidth * scale); c.height = Math.round(v.videoHeight * scale);
+    c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+    qc.blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.8));
+    qc.when = new Date();
+    showReview();
+  }
+
+  function fillSpotChoices() {
+    const sel = $("qc-spot"), keep = sel.value;
+    sel.innerHTML = "";
+    const list = qc.pos ? nearbySpots(qc.pos) : (spots || []).map(s => ({ s, d: null }));
+    const nearest = list[0];
+    const atSpot = qc.pos && nearest && nearest.d <= QC_NEAR_MI;
+    if (qc.pos) {
+      const o = document.createElement("option"); o.value = "__new";
+      o.textContent = "➕ New spot right here"; sel.appendChild(o);
+    }
+    list.slice(0, 15).forEach(({ s, d }) => {
+      const o = document.createElement("option"); o.value = s.id;
+      o.textContent = s.name + (d != null ? ` — ${fmtDist(d)}` : ""); sel.appendChild(o);
+    });
+    (spots || []).filter(s => !hasLoc(s)).forEach(s => {
+      const o = document.createElement("option"); o.value = s.id; o.textContent = s.name + " (no location)"; sel.appendChild(o);
+    });
+    sel.value = keep && [...sel.options].some(o => o.value === keep) ? keep : (atSpot ? nearest.s.id : (qc.pos ? "__new" : (sel.options[0] && sel.options[0].value)));
+    spotNote();
+  }
+  function spotNote() {
+    const v = $("qc-spot").value;
+    $("qc-spot-note").textContent = v === "__new"
+      ? "A private spot will be created here — add its details later with ✎ Edit spot."
+      : !qc.pos ? "No location yet — pick the spot you're at." : "";
+  }
+  $("qc-spot").addEventListener("change", spotNote);
+
+  function showReview() {
+    stopCamera();
+    $("qc-cam").hidden = true; $("qc-review").hidden = false;
+    if (qc.blob) { $("qc-shot").src = URL.createObjectURL(qc.blob); $("qc-shot").hidden = false; }
+    else $("qc-shot").hidden = true;
+    fillSpotChoices();
+    // species chips: my recent species first, then common local ones
+    const mine = Object.values(catchesBySpot).flat().filter(isMine)
+      .sort((a, b) => new Date(b.caught_at) - new Date(a.caught_at)).map(c => cap((c.species || "").trim())).filter(Boolean);
+    const names = [...new Set(mine.concat(COMMON_SPECIES))].slice(0, 9);
+    const box = $("qc-species"); box.innerHTML = "";
+    names.forEach(n => {
+      const b = el("button", "fchip", n); b.type = "button";
+      b.addEventListener("click", () => {
+        box.querySelectorAll(".fchip").forEach(x => x.classList.remove("on"));
+        b.classList.add("on"); $("qc-species-other").value = "";
+      });
+      box.appendChild(b);
+    });
+    $("qc-species-other").value = ""; $("qc-count").value = 1; $("qc-msg").textContent = "";
+    const baits = [...new Set(Object.values(catchesBySpot).flat().filter(isMine).map(c => c.bait).filter(Boolean))];
+    $("bait-list").innerHTML = ""; baits.slice(0, 10).forEach(b => { const o = document.createElement("option"); o.value = b; $("bait-list").appendChild(o); });
+    const last = Object.values(catchesBySpot).flat().filter(c => isMine(c) && c.bait).sort((a, b) => new Date(b.caught_at) - new Date(a.caught_at))[0];
+    $("qc-bait").value = last ? last.bait : "";
+  }
+  $("qc-species-other").addEventListener("input", () => { if ($("qc-species-other").value) $("qc-species").querySelectorAll(".fchip").forEach(x => x.classList.remove("on")); });
+  $("qc-minus").addEventListener("click", () => { $("qc-count").value = Math.max(1, (+$("qc-count").value || 1) - 1); });
+  $("qc-plus").addEventListener("click", () => { $("qc-count").value = Math.min(500, (+$("qc-count").value || 1) + 1); });
+
+  // All the automatic conditions for a spot at a moment (same sources as the regular catch form)
+  async function conditionsFor(spot, when) {
+    const fresh = spot.water_type === "freshwater";
+    const [tide, wx] = await Promise.allSettled([
+      fresh ? Promise.reject(new Error("freshwater")) : tideStageAt(when, stationFor(spot).id),
+      weatherAt(when)
+    ]);
+    let w = wx.status === "fulfilled" ? wx.value : null;
+    if (!w && cond.pressure != null) w = { pressure: cond.pressure, trend: cond.pressureTrend, windDir: cond.windDir, windMph: cond.windMph, tempF: cond.tempF, source: "nws" };
+    let moon = null, sol = null;
+    try { moon = moonAt(when); sol = solunarAt(when); } catch (e) {}
+    w = w || {};
+    return {
+      tide_stage: tide.status === "fulfilled" ? tide.value : (fresh ? null : cond.tideStage || null),
+      pressure_inhg: w.pressure != null ? w.pressure : null, pressure_trend: w.trend || null,
+      wind_dir: w.windDir || null, wind_mph: w.windMph != null ? w.windMph : null, air_temp_f: w.tempF != null ? w.tempF : null,
+      moon_phase: moon ? moon.phase : null, moon_illum: moon ? moon.illum : null, solunar: sol || null,
+      conditions_source: w.source || null
+    };
+  }
+
+  async function createSpotHere(pos) {
+    // Name it after a public place right here if there is one; guess saltwater near a tide station
+    const sugg = (suggestions || []).map(g => ({ g, d: miles(pos.lat, pos.lng, g.lat, g.lng) })).sort((a, b) => a.d - b.d)[0];
+    const named = sugg && sugg.d < 0.08 && !/unnamed/.test(sugg.g.name) ? sugg.g : null;
+    const st = stationFor({ lat: pos.lat, lng: pos.lng });
+    const row = {
+      name: named ? named.name : `Quick spot · ${new Date().toLocaleDateString([], { month: "short", day: "numeric" })}`,
+      spot_type: named ? ({ ramp: "ramp", jetty: "jetty", bridge: "bridge", pier: "pier", dock: "dock" }[named.kind] || "dock") : "dock",
+      water_type: st.dist != null && st.dist < 1.5 ? "saltwater" : "brackish",
+      public_access: "unsure", added_by: me.name, lat: pos.lat, lng: pos.lng, is_private: true,
+      notes: "Created from a quick catch — check the type, water and access."
+    };
+    const { data, error } = await db.from("spots").insert(row).select("*").single();
+    if (error) throw error;
+    return data;
+  }
+
+  $("qc-save").addEventListener("click", async () => {
+    const chip = $("qc-species").querySelector(".fchip.on");
+    const species = ($("qc-species-other").value.trim() || (chip && chip.textContent) || "").trim();
+    if (!species) { $("qc-msg").className = "msg err"; $("qc-msg").textContent = "Tap a species (or type one)."; return; }
+    const choice = $("qc-spot").value;
+    if (!choice) { $("qc-msg").className = "msg err"; $("qc-msg").textContent = "Pick a spot."; return; }
+    const when = qc.when || new Date(), pos = qc.pos, blob = qc.blob;
+    const count = Math.max(1, Math.min(500, parseInt($("qc-count").value, 10) || 1));
+    const bait = $("qc-bait").value.trim() || null;
+    closeQuickCatch();
+    toast("Saving your catch…", 20000);
+    try {
+      const spot = choice === "__new" ? await createSpotHere(pos) : (spots || []).find(s => s.id === choice);
+      const c = await conditionsFor(spot, when);
+      const { data: saved, error } = await db.from("catches").insert({
+        spot_id: spot.id, caught_at: when.toISOString(), species, how_many: count, bait, caught_by: me.name, ...c
+      }).select("id").single();
+      if (error) throw error;
+      if (blob) {
+        try { await uploadPhoto(new File([blob], "catch.jpg", { type: "image/jpeg" }), spot.id, saved.id, { when, lat: pos ? pos.lat : null, lng: pos ? pos.lng : null }); }
+        catch (pe) { toast("Catch saved, but the photo didn't upload."); }
+      }
+      expanded.add(spot.id);
+      await loadSpots();
+      toast(`✓ ${count > 1 ? count + " " : ""}${species} logged at ${spot.name}${c.tide_stage ? " · " + c.tide_stage + " tide" : ""}`);
+    } catch (err) {
+      toast("Couldn't save the catch: " + (err.message || err), 8000);
+    }
+  });
+
+  $("qc-fab").addEventListener("click", openQuickCatch);
+  $("qc-close").addEventListener("click", closeQuickCatch);
+  $("qc-shutter").addEventListener("click", snap);
+  $("qc-skip").addEventListener("click", () => { qc.blob = null; qc.when = new Date(); showReview(); });
+  $("qc-back").addEventListener("click", () => { $("qc-review").hidden = true; $("qc-cam").hidden = false; qc.blob = null; startCamera(); });
+  $("qc-file").addEventListener("change", async () => {
+    const f = $("qc-file").files[0];
+    $("qc-file").value = "";
+    if (!f) return;
+    const info = await photoInfo(f);
+    qc.blob = await compressImage(f);
+    qc.when = info.when && Math.abs(Date.now() - info.when) < 7 * 86400000 ? info.when : new Date();
+    if (info.lat != null) { stopLocation(); qc.pos = { lat: info.lat, lng: info.lng }; }
+    else if (Date.now() - qc.when > 30 * 60000) { stopLocation(); qc.pos = null; } // older photo: where you are now isn't where it was taken
+    showReview();
+  });
 
   // ---- Filters (remembered on this phone) ----
   // Within a group, any ticked option matches; across groups, all must match.
@@ -2148,6 +2434,7 @@
 
   function showAuth(mode) {
     authMode = mode;
+    $("qc-fab").hidden = true;
     $("auth-card").hidden = false; $("app").hidden = true; $("userbar").hidden = true; $("not-member").hidden = true;
     const titles = { signin: "Sign in", signup: "Create an account", reset: "Reset your password", newpw: "Choose a new password", name: "One more thing" };
     const buttons = { signin: "Sign in", signup: "Create account", reset: "Send reset link", newpw: "Save new password", name: "Continue" };
@@ -2237,7 +2524,7 @@
     }
     me = { id: session.user.id, email, name: member.display_name, isAdmin: !!member.is_admin };
     $("auth-card").hidden = true; $("not-member").hidden = true;
-    $("userbar").hidden = false; $("app").hidden = false;
+    $("userbar").hidden = false; $("app").hidden = false; $("qc-fab").hidden = false;
     $("who").textContent = `Signed in as ${me.name}`;
     $("invite-btn").hidden = !me.isAdmin;
     if (!appStarted) {
