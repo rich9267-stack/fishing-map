@@ -175,7 +175,7 @@
 <body>
 <main>
   <h1>🎣 Fishing Map</h1>
-  <p class="sub">Pompano Beach · Broward County</p>
+  <p class="sub">South Florida · home waters: Pompano Beach</p>
 
   <div class="userbar" id="userbar" hidden>
     <span id="who"></span>
@@ -384,7 +384,10 @@
   </div>
 
   <div class="card" id="sugg-card">
-    <div class="label">Suggested spots nearby</div>
+    <div class="row">
+      <div class="label">Suggested spots nearby</div>
+      <button class="btn ghost small" id="sugg-near" type="button">◎ Near me</button>
+    </div>
     <div class="spot-meta" style="margin-top:4px">Public piers, ramps, jetties and fishing spots from OpenStreetMap that nobody has saved yet. Check access before you go.</div>
     <ul id="sugg-list"><li class="empty">Loading suggestions…</li></ul>
     <button class="btn ghost small" id="sugg-more" type="button" hidden>Show more</button>
@@ -420,7 +423,7 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>V2 step 6b: quick catch. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>V2 step 7: beyond Broward. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
   </footer>
 </main>
 
@@ -718,7 +721,63 @@
     { id: "8722977", name: "West Lake, north end", lat: 26.0433, lng: -80.1267 },
     { id: "8722979", name: "Hollywood Beach", lat: 26.04, lng: -80.115 },
     { id: "8722982", name: "West Lake, south end", lat: 26.0333, lng: -80.1233 },
-    { id: "8723214", name: "Virginia Key", lat: 25.7314, lng: -80.1618 }
+    { id: "8723214", name: "Virginia Key", lat: 25.7314, lng: -80.1618 },
+    // Palm Beach County
+    { id: "8722404", name: "Peck Lake, St. Lucie Inlet", lat: 27.1133, lng: -80.145 },
+    { id: "8722429", name: "Hobe Sound Bridge", lat: 27.065, lng: -80.1233 },
+    { id: "8722445", name: "Hobe Sound State Park", lat: 27.0367, lng: -80.1067 },
+    { id: "8722471", name: "Conch Bar, Jupiter Sound", lat: 26.9883, lng: -80.0933 },
+    { id: "8722472", name: "North Loxahatchee River", lat: 26.9867, lng: -80.1417 },
+    { id: "8722481", name: "Loxahatchee River", lat: 26.97, lng: -80.1267 },
+    { id: "8722486", name: "Tequesta, N. Fork Loxahatchee", lat: 26.96, lng: -80.105 },
+    { id: "8722491", name: "Jupiter Sound, south end", lat: 26.9517, lng: -80.08 },
+    { id: "8722492", name: "Jupiter West", lat: 26.9467, lng: -80.09 },
+    { id: "8722494", name: "SW Fork, Loxahatchee River", lat: 26.9433, lng: -80.12 },
+    { id: "8722495", name: "Jupiter Inlet", lat: 26.9433, lng: -80.0733 },
+    { id: "8722496", name: "Loxahatchee River Lock", lat: 26.935, lng: -80.1433 },
+    { id: "8722499", name: "Jupiter, ICWW", lat: 26.935, lng: -80.085 },
+    { id: "8722512", name: "Lake Worth Creek", lat: 26.9117, lng: -80.08 },
+    { id: "8722528", name: "Donald Ross Bridge", lat: 26.8817, lng: -80.07 },
+    { id: "8722548", name: "PGA Boulevard Bridge", lat: 26.8433, lng: -80.0667 },
+    { id: "8722557", name: "North Palm Beach", lat: 26.8267, lng: -80.055 },
+    { id: "8722588", name: "Port of West Palm Beach", lat: 26.77, lng: -80.0517 },
+    { id: "8722607", name: "Palm Beach", lat: 26.7333, lng: -80.0417 },
+    { id: "8722621", name: "Palm Beach (south)", lat: 26.705, lng: -80.045 },
+    { id: "8722654", name: "West Palm Beach", lat: 26.645, lng: -80.045 },
+    { id: "8722706", name: "Boynton Beach", lat: 26.5483, lng: -80.0533 },
+    { id: "8722718", name: "Ocean Ridge", lat: 26.5267, lng: -80.0533 },
+    { id: "8722746", name: "Delray Beach", lat: 26.4733, lng: -80.0617 },
+    { id: "8722761", name: "South Delray Beach", lat: 26.4467, lng: -80.065 },
+    { id: "8722784", name: "Yamato", lat: 26.4033, lng: -80.07 },
+    { id: "8722816", name: "Boca Raton", lat: 26.3433, lng: -80.0767 },
+    // Miami-Dade County
+    { id: "8723026", name: "Golden Beach", lat: 25.9667, lng: -80.125 },
+    { id: "8723044", name: "Dumfoundling Bay", lat: 25.9417, lng: -80.125 },
+    { id: "8723050", name: "North Miami Beach", lat: 25.93, lng: -80.12 },
+    { id: "8723073", name: "Haulover Inside", lat: 25.9033, lng: -80.125 },
+    { id: "8723080", name: "Haulover Pier", lat: 25.9033, lng: -80.12 },
+    { id: "8723087", name: "Sunny Isles, Biscayne Creek", lat: 25.9283, lng: -80.13 },
+    { id: "8723089", name: "Biscayne Creek, ICWW", lat: 25.88, lng: -80.1633 },
+    { id: "8723094", name: "Indian Creek Golf Club", lat: 25.875, lng: -80.1433 },
+    { id: "8723155", name: "Miami Ship Base", lat: 25.77, lng: -80.1683 },
+    { id: "8723156", name: "San Marino", lat: 25.7933, lng: -80.1633 },
+    { id: "8723165", name: "Miami, Biscayne Bay", lat: 25.7783, lng: -80.185 },
+    { id: "8723170", name: "Miami Beach", lat: 25.7683, lng: -80.1317 },
+    { id: "8723178", name: "Government Cut", lat: 25.7633, lng: -80.13 },
+    { id: "8723205", name: "Dinner Key Marina", lat: 25.7267, lng: -80.2367 },
+    { id: "8723232", name: "Key Biscayne Yacht Club", lat: 25.6983, lng: -80.17 },
+    { id: "8723251", name: "Cape Florida, Key Biscayne", lat: 25.6517, lng: -80.16 },
+    { id: "8723289", name: "Cutler, Biscayne Bay", lat: 25.615, lng: -80.305 },
+    { id: "8723303", name: "Soldier Key", lat: 25.59, lng: -80.1617 },
+    { id: "8723350", name: "Ragged Key #3", lat: 25.5333, lng: -80.1717 },
+    { id: "8723372", name: "Sands Key", lat: 25.5067, lng: -80.1883 },
+    { id: "8723393", name: "Elliott Key (outside)", lat: 25.4767, lng: -80.18 },
+    { id: "8723409", name: "Elliott Key Harbor", lat: 25.4533, lng: -80.1967 },
+    { id: "8723423", name: "Turkey Point", lat: 25.4367, lng: -80.33 },
+    { id: "8723453", name: "Adams Key", lat: 25.3967, lng: -80.2333 },
+    { id: "8723465", name: "East Arsenicker, Card Sound", lat: 25.3733, lng: -80.29 },
+    { id: "8723491", name: "Card Sound West", lat: 25.345, lng: -80.3317 },
+    { id: "8723506", name: "Pumpkin Key, Card Sound", lat: 25.325, lng: -80.2933 }
   ];
 
   function miles(aLat, aLng, bLat, bLng) {
@@ -729,14 +788,37 @@
   }
   function hasLoc(s) { return s && s.lat != null && s.lng != null; }
 
+  // Stations found by asking NOAA about places outside the built-in list (remembered on this phone)
+  let extraStations = [];
+  try { extraStations = JSON.parse(localStorage.getItem("fm-extra-stations") || "[]"); } catch (e) {}
+  const stationLookups = {};
+  function lookupStationsNear(lat, lng) {
+    const key = lat.toFixed(1) + "," + lng.toFixed(1);
+    if (stationLookups[key]) return;
+    stationLookups[key] = true;
+    fetch(`https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/tidepredstations.json?lat=${lat.toFixed(4)}&lon=${lng.toFixed(4)}&radius=25`)
+      .then(r => r.json())
+      .then(d => {
+        const list = (d.stationList || d.stations || []).map(x => ({ id: String(x.stationId || x.id), name: x.stationName || x.commonName || x.name, lat: +x.lat, lng: +(x.lon != null ? x.lon : x.lng) }))
+          .filter(x => x.id && isFinite(x.lat) && isFinite(x.lng) && !/^TEC/.test(x.id));
+        const known = new Set(TIDE_STATIONS.concat(extraStations).map(t => t.id));
+        const add = list.filter(x => !known.has(x.id));
+        if (!add.length) return;
+        extraStations = extraStations.concat(add).slice(-300);
+        try { localStorage.setItem("fm-extra-stations", JSON.stringify(extraStations)); } catch (e) {}
+        refreshConditions(); renderSpots();
+      }).catch(() => {});
+  }
+
   // The tide station a spot uses (Hillsboro for spots without a location)
   function stationFor(s) {
     if (!hasLoc(s)) return { ...TIDE_STATIONS.find(t => t.id === STATION), dist: null };
     let best = null;
-    TIDE_STATIONS.forEach(t => {
+    TIDE_STATIONS.concat(extraStations).forEach(t => {
       const d = miles(s.lat, s.lng, t.lat, t.lng);
       if (!best || d < best.dist) best = { ...t, dist: d };
     });
+    if (best && best.dist > 5) lookupStationsNear(s.lat, s.lng); // far from everything we know — ask NOAA
     return best;
   }
 
@@ -827,8 +909,37 @@
     return `💧 ${v.ft.toFixed(2)} ft${trend}${v.hours >= 6 ? " (24 hr)" : ""} · gauge ${v.dist.toFixed(1)} mi away`;
   }
 
+  // Spots more than ~15 miles from Pompano get their own current wind & pressure (Open-Meteo, cached per area)
+  const localWxCache = {};
+  function localWx(s) {
+    const key = s.lat.toFixed(1) + "," + s.lng.toFixed(1);
+    if (!localWxCache[key]) {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${s.lat.toFixed(2)}&longitude=${s.lng.toFixed(2)}` +
+        "&current=temperature_2m,wind_speed_10m,wind_direction_10m,pressure_msl&hourly=pressure_msl&past_hours=3&forecast_hours=1" +
+        "&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FNew_York";
+      const p = localWxCache[key] = fetch(url).then(r => r.json()).then(d => {
+        const c = d.current, h = d.hourly && d.hourly.pressure_msl;
+        const inHg = c.pressure_msl / 33.8639;
+        let trend = null;
+        if (h && h.length >= 4 && h[0] != null) { const ch = inHg - h[0] / 33.8639; trend = ch >= 0.03 ? "rising" : ch <= -0.03 ? "falling" : "steady"; }
+        return { wind: `💨 ${compass(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} mph · ${Math.round(c.temperature_2m)}°`,
+                 pressure: Math.round(inHg * 100) / 100, trend };
+      });
+      p.done = false;
+      p.then(v => { p.done = v; refreshConditions(); }, () => { p.done = "error"; });
+    }
+    return localWxCache[key];
+  }
+
   function spotConditions(s) {
     const first = s.water_type === "freshwater" ? spotWaterText(s) : spotTideText(s);
+    if (hasLoc(s) && miles(s.lat, s.lng, LAT, LNG) > 15) {
+      const w = localWx(s);
+      if (w.done && w.done !== "error") {
+        const arrow = { rising: " ↗", falling: " ↘", steady: " →" }[w.done.trend] || "";
+        return [first, w.done.wind, `${w.done.pressure.toFixed(2)} inHg${arrow}`].join("  ·  ");
+      }
+    }
     return [first, cond.wind, pressureShort()].filter(Boolean).join("  ·  ");
   }
   function pressureShort() {
@@ -1217,7 +1328,7 @@
     const fresh = spot.water_type === "freshwater";
     const [tide, wx] = await Promise.allSettled([
       fresh ? Promise.reject(new Error("freshwater")) : tideStageAt(when, stationFor(spot).id),
-      weatherAt(when)
+      weatherAt(when, spot.lat, spot.lng)
     ]);
     let w = wx.status === "fulfilled" ? wx.value : null;
     if (!w && cond.pressure != null) w = { pressure: cond.pressure, trend: cond.pressureTrend, windDir: cond.windDir, windMph: cond.windMph, tempF: cond.tempF, source: "nws" };
@@ -1485,9 +1596,10 @@
   }
 
   // Pressure (+3-hour trend), wind and temperature for a given hour, from Open-Meteo's free weather records
-  async function weatherAt(when) {
+  async function weatherAt(when, lat, lng) {
+    if (lat == null || lng == null) { lat = LAT; lng = LNG; }
     const day = ymdDash(when), dayBefore = ymdDash(new Date(when.getTime() - 86400000));
-    const params = `latitude=${LAT}&longitude=${LNG}` +
+    const params = `latitude=${(+lat).toFixed(3)}&longitude=${(+lng).toFixed(3)}` +
       "&hourly=pressure_msl,wind_speed_10m,wind_direction_10m,temperature_2m" +
       "&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FNew_York" +
       `&start_date=${dayBefore}&end_date=${day}`;
@@ -1578,7 +1690,7 @@
     const spot = (spots || []).find(x => x.id === openCatchSpot);
     const fresh = spot && spot.water_type === "freshwater";
     const tideJob = fresh ? Promise.reject(new Error("freshwater")) : tideStageAt(when, spot ? stationFor(spot).id : STATION);
-    condPromise = Promise.allSettled([tideJob, weatherAt(when)]).then(([tide, wx]) => {
+    condPromise = Promise.allSettled([tideJob, weatherAt(when, spot && spot.lat, spot && spot.lng)]).then(([tide, wx]) => {
       if (id !== condRequest) return; // the time changed again; a newer lookup is running
       let w = wx.status === "fulfilled" ? wx.value : null;
       if (!w && recent && cond.pressure != null) {
@@ -2004,6 +2116,7 @@
       loadCatches();
       loadPhotos();
       renderPins();
+      if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); } // centred on your spots
       if (typeof renderSuggestions === "function") renderSuggestions();
     } catch (err) {
       spotsError = "Couldn't load spots: " + (err.message || err);
@@ -2307,8 +2420,20 @@
   });
 
   // ---- Suggested spots (OpenStreetMap via the free Overpass API) ----
-  const SUGG_KEY = "fm-suggestions-v1";
-  const SUGG_BOX = "25.95,-80.45,26.40,-80.03"; // south, west, north, east — Broward plus a little margin
+  const SUGG_KEY = "fm-suggestions-v2";
+  let suggAnchor = null; // where suggestions are centred: "Near me", else the middle of your spots, else Pompano
+  function suggCenter() {
+    if (suggAnchor) return suggAnchor;
+    const placed = (spots || []).filter(hasLoc);
+    if (!placed.length) return { lat: LAT, lng: LNG };
+    // the middle of your spots (median, so one far-off spot doesn't drag it into the Everglades)
+    const med = arr => { const v = arr.slice().sort((a, b) => a - b), m = Math.floor(v.length / 2); return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; };
+    return { lat: med(placed.map(s => s.lat)), lng: med(placed.map(s => s.lng)) };
+  }
+  function suggBox(c) { // about 20 miles each way
+    const dLat = 0.3, dLng = 0.33;
+    return [c.lat - dLat, c.lng - dLng, c.lat + dLat, c.lng + dLng].map(v => v.toFixed(3)).join(",");
+  }
   const KIND_EMOJI = { pier: "🎣", ramp: "🚤", jetty: "🪨", bridge: "🌉", dock: "⚓" };
   let suggestions = null, suggError = null, suggShowAll = false, suggLayer = null, suggOnMap = false;
 
@@ -2332,10 +2457,14 @@
   }
 
   async function loadSuggestions() {
+    const center = suggCenter();
+    const area = (Math.round(center.lat * 4) / 4) + "," + (Math.round(center.lng * 4) / 4); // ~15-mile grid
     try {
       const cached = JSON.parse(localStorage.getItem(SUGG_KEY) || "null");
-      if (cached && Date.now() - cached.t < 7 * 86400000) { suggestions = cached.items; renderSuggestions(); return; }
+      if (cached && cached.area === area && Date.now() - cached.t < 7 * 86400000) { suggestions = cached.items; renderSuggestions(); return; }
     } catch (e) {}
+    const SUGG_BOX = suggBox(center);
+    suggestions = null; renderSuggestions();
     const q = `[out:json][timeout:25];(` +
       `nwr["man_made"="pier"](${SUGG_BOX});` +
       `nwr["leisure"="slipway"](${SUGG_BOX});` +
@@ -2352,7 +2481,7 @@
       const data = await res.json();
       const seen = new Set();
       suggestions = data.elements.map(osmToSpot).filter(x => x && !seen.has(x.key) && seen.add(x.key));
-      try { localStorage.setItem(SUGG_KEY, JSON.stringify({ t: Date.now(), items: suggestions })); } catch (e) {}
+      try { localStorage.setItem(SUGG_KEY, JSON.stringify({ t: Date.now(), area, items: suggestions })); } catch (e) {}
       suggError = null;
     } catch (err) {
       suggError = "Couldn't load suggestions right now — try again later.";
@@ -2364,9 +2493,7 @@
   function openSuggestions() {
     if (!suggestions) return [];
     const placed = (spots || []).filter(hasLoc);
-    const anchor = placed.length
-      ? { lat: placed.reduce((a, s) => a + s.lat, 0) / placed.length, lng: placed.reduce((a, s) => a + s.lng, 0) / placed.length }
-      : { lat: LAT, lng: LNG };
+    const anchor = suggCenter();
     return suggestions
       .filter(g => !placed.some(s => miles(s.lat, s.lng, g.lat, g.lng) < 0.1))
       .map(g => ({ ...g, dist: miles(anchor.lat, anchor.lng, g.lat, g.lng) }))
@@ -2413,6 +2540,16 @@
     if (suggOnMap) renderSuggPins();
   }
   $("sugg-more").addEventListener("click", () => { suggShowAll = !suggShowAll; renderSuggestions(); });
+  $("sugg-near").addEventListener("click", () => {
+    if (!navigator.geolocation) return alert("Location isn't available on this device.");
+    $("sugg-near").textContent = "◎ Finding you…";
+    navigator.geolocation.getCurrentPosition(p => {
+      suggAnchor = { lat: p.coords.latitude, lng: p.coords.longitude };
+      $("sugg-near").textContent = "◎ Near me ✓";
+      loadSuggestions();
+    }, () => { $("sugg-near").textContent = "◎ Near me"; alert("Couldn't get your location — allow it in your browser settings."); },
+    { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
+  });
 
   function renderSuggPins() {
     if (!map) return;
@@ -2544,7 +2681,6 @@
     if (!appStarted) {
       appStarted = true;
       loadSpots();
-      loadSuggestions();
     } else {
       loadSpots();
     }

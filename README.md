@@ -34,8 +34,10 @@ A shared map to help pick where to fish in Pompano Beach / Broward County today:
 
 **Step 5:** 📊 Insights tab — fish counts by tide stage, pressure trend, time of day (dawn/dusk from sunrise/sunset), moon phase, solunar period, wind speed, top baits, species and spots; filter by spot, species, or only my catches.
 
-**Step 6 (current):** 🏆 Best spots today — scores each hour of the next 12 per spot against that spot's catch history (tide stage from its station, pressure trend, time of day, solunar, moon, forecast wind), compared with how often each condition normally occurs; shows best time and the reasons. Spots with <3 fish use the group's catches.
+**Step 6:** 🏆 Best spots today — scores each hour of the next 12 per spot against that spot's catch history (tide stage from its station, pressure trend, time of day, solunar, moon, forecast wind), compared with how often each condition normally occurs; shows best time and the reasons. Spots with <3 fish use the group's catches.
 
 **Photo details:** catch photos set the catch time from the photo and warn if the photo was taken somewhere else; spot photos can place a spot that has no location; the add-spot form can take its location "📷 From a photo". Time/location also saved on the photo record. Uploaded image files themselves carry no hidden details (they are re-drawn when shrunk).
 
 **Quick catch (📸 button):** in-app camera + live GPS. Matches the nearest saved spot within ~800 ft, or creates a private "Quick spot" right there (named after a public place if one is right there). Species chips (recent first), count, bait (last used pre-filled); all conditions automatic; saves in the background so you can get back to fishing. Library and "No photo" options too.
+
+**Step 7 (current):** beyond Broward — 80+ built-in NOAA tide stations from St. Lucie Inlet to Card Sound; spots more than 5 mi from any of them look up the nearest station live from NOAA (remembered per phone). Spots more than 15 mi from Pompano get their own current wind and pressure; past-catch weather uses the spot's own location. Suggested spots follow the middle of your spots, or "◎ Near me".
