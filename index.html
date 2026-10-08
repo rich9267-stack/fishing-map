@@ -1480,8 +1480,9 @@
       tip: "Grass flats in Lake Worth Lagoon and Biscayne Bay; best in the cooler months." },
     { name: "Jack crevalle", group: "inshore", match: ["jack"], sightMatch: ["crevalle"], runs: [1,1,1,1,1,1,1,1,1,2,2,1],
       rule: "No closed season.", tip: "Hits hard during the fall mullet run; around inlets and canals all year." },
-    { name: "Mangrove snapper", group: "inshore", match: ["mangrove", "gray snapper"], runs: [1,1,1,1,1,2,2,2,1,1,1,1],
-      rule: "Open all year.", tip: "Docks, bridges and seawalls; biggest fish move to the reefs to spawn in summer." },
+    { name: "Mangrove snapper", group: "inshore", match: ["mangrove", "gray snapper"], runs: [1,1,1,2,2,0,0,0,1,2,2,1],
+      spawnOffshore: [5, 6, 7],
+      rule: "Open all year.", tip: "Docks, bridges and seawalls in spring and fall; in summer they leave for the reefs to spawn and are rarely inshore." },
     { name: "Fall mullet run", group: "beach", match: ["mullet"], runs: [0,0,0,0,0,0,0,1,2,2,2,1],
       rule: "Mullet: open all year.", tip: "Huge schools move south along the beach — snook, tarpon, jacks, bluefish and sharks follow them." },
     { name: "Florida pompano", group: "beach", match: ["pompano"], runs: [2,2,2,1,0,0,0,0,0,0,1,2],
@@ -1516,6 +1517,7 @@
       rule: "Atlantic 2026: open Oct 9–22 only, 1 per person, and you must declare your trip first. Release with a descending device the rest of the year.",
       tip: "More common north of Palm Beach; deep wrecks and ledges." },
     { name: "Mutton snapper", group: "offshore", match: ["mutton"], runs: [1,1,1,2,2,2,1,1,1,1,1,1],
+      spawnOffshore: [3, 4, 5], // great offshore on the spawning gatherings, but they leave the inlets and beaches
       rule: "Open all year, 5 per person (within 10 snapper total), 18\" minimum.",
       tip: "Spawning gatherings in late spring around the full moon; also on the beach and in inlets." },
     { name: "Yellowtail snapper", group: "offshore", match: ["yellowtail"], runs: [1,1,1,1,2,2,2,2,1,1,1,1],
@@ -1533,6 +1535,8 @@
       rule: "Invasive: no limit — keep them.", tip: "Canals and lake edges; small worms or bread." }
   ];
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  // How good a month is from shore (docks, bridges, inlets, piers…): fish that move offshore to spawn are slow there
+  const shoreLevel = (f, m) => (f.spawnOffshore && f.spawnOffshore.includes(m) ? 0 : f.runs[m]);
   let seaMonth = new Date().getMonth(), seaGroup = "";
 
   const mmdd = d => `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -1638,8 +1642,12 @@
         months.appendChild(sp);
       });
       const tip = document.createElement("div"); tip.className = "sea-rule"; tip.textContent = f.tip;
+      const spawnNote = document.createElement("div"); spawnNote.className = "sea-rule";
+      if (f.spawnOffshore && f.spawnOffshore.includes(seaMonth)) spawnNote.textContent = "🥚 Spawning offshore this month — rarely inshore; from shore, expect it to be slow.";
       const rule = document.createElement("div"); rule.className = "spot-meta"; rule.textContent = "📏 " + f.rule;
-      div.append(top, months, tip, rule);
+      div.append(top, months, tip);
+      if (spawnNote.textContent) div.appendChild(spawnNote);
+      div.appendChild(rule);
       const n = groupCount(f, seaMonth);
       if (n) { const g = document.createElement("div"); g.className = "spot-meta"; g.textContent = `🎣 Your group has logged ${n} in ${MONTHS[seaMonth]}`; div.appendChild(g); }
       const seen = thisMonth ? sightCountFor(f) : 0;
@@ -2958,11 +2966,14 @@
     const m = new Date().getMonth();
     const tot = [...bySp.values()].reduce((a, b) => a + b, 0);
     if (tot) {
-      const avg = [...bySp.entries()].reduce((n, [f, k]) => n + f.runs[m] * k, 0) / tot;
-      bonus += (avg - 1) * 0.25;
+      // Season counts about as much as a strong tide or solunar match: peak +0.5, slow −0.5
+      const avg = [...bySp.entries()].reduce((n, [f, k]) => n + shoreLevel(f, m) * k, 0) / tot;
+      bonus += (avg - 1) * 0.5;
       const top = [...bySp.entries()].sort((a, b) => b[1] - a[1])[0][0];
-      const lvl = top.runs[m];
-      notes.push(lvl === 2 ? `🔥 ${top.name} peak season` : lvl === 1 ? `📅 ${top.name}: decent month` : `📅 ${top.name}: slow month`);
+      const lvl = shoreLevel(top, m);
+      const spawning = top.spawnOffshore && top.spawnOffshore.includes(m);
+      notes.push(spawning ? `🥚 ${top.name} spawning offshore — rarely inshore now`
+        : lvl === 2 ? `🔥 ${top.name} peak season` : lvl === 1 ? `📅 ${top.name}: decent month` : `📅 ${top.name}: slow month`);
       if (seasonOpen(top, new Date()) === false) notes.push(`⛔ ${top.name} closed to keep`);
     }
     // Public sightings within 5 mi (iNaturalist, last 60 days)
