@@ -21,3 +21,7 @@ A shared map to help pick where to fish in Pompano Beach / Broward County today:
 **Step 6b:** edit a spot's details (list or map popup).
 
 **Step 7 (current):** suggested spots from OpenStreetMap (Overpass API): named/public piers, boat ramps, named jetties, fishing spots, and fishing bridges in Broward that nobody has saved; private backyard docks filtered out. Cached on the phone for 7 days. One-tap add pre-fills the spot form; shown on the map as white pins.
+
+## V2
+
+**Step 1 (current):** invite-only logins (email + password). Admin "Invite friends" screen; everyone edits only their own spots and catches; nothing visible when signed out. See `setup/05-logins.sql`.

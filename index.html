@@ -72,6 +72,9 @@
   .msg { font-size: .9rem; margin-top: 10px; }
   .msg.err { color: var(--falling); }
   [hidden] { display: none !important; }
+  .userbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: .85rem; color: var(--muted); margin: -8px 0 12px; }
+  .userbar-links { display: flex; gap: 14px; }
+  .auth-links { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .btn.small { padding: 7px 11px; font-size: .85rem; }
   .catches { margin-top: 10px; }
   .catch-form { margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
@@ -109,6 +112,62 @@
 <main>
   <h1>🎣 Fishing Map</h1>
   <p class="sub">Pompano Beach · Broward County</p>
+
+  <div class="userbar" id="userbar" hidden>
+    <span id="who"></span>
+    <span class="userbar-links">
+      <button class="linkbtn" id="invite-btn" type="button" hidden>👥 Invite friends</button>
+      <button class="linkbtn" id="signout-btn" type="button">Sign out</button>
+    </span>
+  </div>
+
+  <div class="card" id="auth-card" hidden>
+    <form id="auth-form">
+      <div class="label" id="auth-title">Sign in</div>
+      <p class="spot-meta" id="auth-help" style="margin:6px 0 0">This map is invite-only. Sign in with the email Richard added.</p>
+      <div id="auth-email-row">
+        <label for="a-email">Email</label>
+        <input id="a-email" type="email" autocomplete="email" required>
+      </div>
+      <div id="auth-name-row" hidden>
+        <label for="a-name">Your name (what friends will see)</label>
+        <input id="a-name" maxlength="40" autocomplete="name">
+      </div>
+      <div id="auth-pw-row">
+        <label for="a-pw" id="a-pw-label">Password</label>
+        <input id="a-pw" type="password" minlength="8" autocomplete="current-password">
+      </div>
+      <button class="btn" id="auth-submit" type="submit" style="width:100%;margin-top:16px">Sign in</button>
+      <div class="msg" id="auth-msg"></div>
+      <div class="auth-links" id="auth-links">
+        <button class="linkbtn" type="button" data-mode="signup">Create an account</button>
+        <button class="linkbtn" type="button" data-mode="reset">Forgot password?</button>
+        <button class="linkbtn" type="button" data-mode="signin" hidden>Back to sign in</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" id="not-member" hidden>
+    <div class="label">Not on the invite list yet</div>
+    <p id="not-member-text"></p>
+    <button class="btn ghost" id="not-member-out" type="button">Sign out</button>
+  </div>
+
+  <div class="card" id="invite-card" hidden>
+    <div class="row">
+      <div class="label">Invite friends</div>
+      <button class="linkbtn" id="invite-close" type="button">Close</button>
+    </div>
+    <p class="spot-meta" style="margin:6px 0 0">Add a friend's email, then send them the site link. They tap "Create an account" using that same email.</p>
+    <form id="invite-form" class="row" style="margin-top:10px;gap:8px">
+      <input id="i-email" type="email" required placeholder="friend@email.com" style="flex:1">
+      <button class="btn small" type="submit">Add</button>
+    </form>
+    <div class="msg" id="invite-msg"></div>
+    <ul id="member-list"></ul>
+  </div>
+
+  <div id="app" hidden>
 
   <div class="tabs" role="tablist">
     <button id="tab-list" class="on" type="button" role="tab">☰ List</button>
@@ -255,12 +314,13 @@
   <h2>Tide times</h2>
   <div id="days"></div>
   </div>
+  </div>
 
   <footer>
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>Step 7 of the Fishing Map build. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>V2 step 1: logins. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
   </footer>
 </main>
 
@@ -457,7 +517,9 @@
   // ---- Shared spots (Supabase database) ----
   const SUPABASE_URL = "https://euxcisnyansdrzzjyvsl.supabase.co";
   const SUPABASE_KEY = "sb_publishable_WzAISSZCvquNsRJ3iJEP-Q_GjtILF7p"; // public key, safe in the page
-  let db = null;
+  const db = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+  let me = null;           // { id, email, name, isAdmin } once signed in and on the invite list
+  const isMine = row => !!(me && row && row.created_by === me.id);
   let spots = null;       // null = still loading
   let spotsError = null;
   let pickedLoc = null;
@@ -858,7 +920,7 @@
       q("#c-when").value = localInputValue(new Date());
       const sp = (spots || []).find(x => x.id === spotId);
       q("#c-tide").value = sp && sp.water_type === "freshwater" ? "" : (cond.tideStage || "");
-      try { q("#c-by").value = localStorage.getItem("fm-name") || ""; } catch (e) {}
+      q("#c-by").value = (me && me.name) || "";
       renderSpots();
       lookupCatchConditions();
     }
@@ -960,6 +1022,7 @@
     li.appendChild(el("div", null, `${when} — ${what}`));
     if (extra) li.appendChild(el("div", "spot-meta", extra));
     if (c.notes) li.appendChild(el("div", "spot-meta", c.notes));
+    if (!isMine(c)) return li;
     const actions = el("div", "catch-actions");
     const edit = el("button", "linkbtn", "Edit");
     edit.type = "button";
@@ -1040,10 +1103,12 @@
 
       if (s.access_notes) item.appendChild(el("div", "spot-notes", "🚗 " + s.access_notes));
       if (s.notes) item.appendChild(el("div", "spot-notes", s.notes));
-      const editSpot = el("button", "linkbtn", "✎ Edit spot");
-      editSpot.type = "button";
-      editSpot.addEventListener("click", () => openForm(true, s));
-      item.appendChild(editSpot);
+      if (isMine(s)) {
+        const editSpot = el("button", "linkbtn", "✎ Edit spot");
+        editSpot.type = "button";
+        editSpot.addEventListener("click", () => openForm(true, s));
+        item.appendChild(editSpot);
+      }
       item.appendChild(catchSection(s));
       list.appendChild(item);
     });
@@ -1052,7 +1117,6 @@
   async function loadSpots() {
     try {
       if (!window.supabase) throw new Error("Database library didn't load");
-      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       const { data, error } = await db.from("spots").select("*").order("name");
       if (error) throw error;
       spots = data;
@@ -1092,7 +1156,7 @@
     } else if (!editingSpot) {
       $("f-title").textContent = "New spot";
       $("save-btn").textContent = "Save spot";
-      if (!$("f-by").value) { try { $("f-by").value = localStorage.getItem("fm-name") || ""; } catch (e) {} }
+      if (!$("f-by").value) $("f-by").value = (me && me.name) || "";
     }
     $("f-name").focus();
   }
@@ -1243,7 +1307,7 @@
     move.addEventListener("click", () => { map.closePopup(); startPlacing({ mode: "move", spot: s }); });
     const edit = el("button", null, "Edit"); edit.type = "button";
     edit.addEventListener("click", () => { map.closePopup(); showView("list"); openForm(true, s); });
-    [open, log, dir, move, edit].forEach(b => actions.appendChild(b));
+    [open, log, dir].concat(isMine(s) ? [move, edit] : []).forEach(b => actions.appendChild(b));
     box.appendChild(actions);
     return box;
   }
@@ -1262,9 +1326,11 @@
     unplaced.forEach(s => {
       const li = el("li");
       li.appendChild(el("span", null, s.name));
-      const b = el("button", "btn ghost small", "Place on map"); b.type = "button";
-      b.addEventListener("click", () => startPlacing({ mode: "move", spot: s }));
-      li.appendChild(b);
+      if (isMine(s)) {
+        const b = el("button", "btn ghost small", "Place on map"); b.type = "button";
+        b.addEventListener("click", () => startPlacing({ mode: "move", spot: s }));
+        li.appendChild(b);
+      }
       ul.appendChild(li);
     });
   }
@@ -1472,10 +1538,170 @@
   }
   $("map-sugg").addEventListener("click", () => setSuggOnMap(!suggOnMap));
 
-  loadSpots();
+  // ---- Sign-in (Supabase Auth) and the invite list ----
+  const SITE = location.origin + location.pathname;
+  // Arriving from a password-reset email: show "choose a new password" first
+  let authMode = /type=recovery/.test(location.hash) ? "newpw" : "signin", appStarted = false;
+
+  function showAuth(mode) {
+    authMode = mode;
+    $("auth-card").hidden = false; $("app").hidden = true; $("userbar").hidden = true; $("not-member").hidden = true;
+    const titles = { signin: "Sign in", signup: "Create an account", reset: "Reset your password", newpw: "Choose a new password", name: "One more thing" };
+    const buttons = { signin: "Sign in", signup: "Create account", reset: "Send reset link", newpw: "Save new password", name: "Continue" };
+    $("auth-title").textContent = titles[mode];
+    $("auth-submit").textContent = buttons[mode];
+    $("auth-help").textContent = {
+      signin: "This map is invite-only. Sign in with the email Richard added.",
+      signup: "Use the email Richard added to the invite list. Passwords need at least 8 characters.",
+      reset: "We'll email you a link to set a new password.",
+      newpw: "Type a new password (at least 8 characters).",
+      name: "What should your friends see as your name on spots and catches?"
+    }[mode];
+    $("auth-email-row").hidden = mode === "newpw" || mode === "name";
+    $("a-email").required = !$("auth-email-row").hidden;
+    $("auth-pw-row").hidden = mode === "reset" || mode === "name";
+    $("a-pw").required = !$("auth-pw-row").hidden;
+    $("a-pw").autocomplete = mode === "signin" ? "current-password" : "new-password";
+    $("a-pw-label").textContent = mode === "newpw" ? "New password" : "Password";
+    $("auth-name-row").hidden = !(mode === "signup" || mode === "name");
+    $("auth-links").hidden = mode === "newpw" || mode === "name";
+    document.querySelectorAll("#auth-links [data-mode]").forEach(b => { b.hidden = b.dataset.mode === mode || (mode !== "signin" && b.dataset.mode !== "signin"); });
+    $("auth-msg").textContent = ""; $("auth-msg").className = "msg";
+  }
+  document.querySelectorAll("#auth-links [data-mode]").forEach(b => b.addEventListener("click", () => showAuth(b.dataset.mode)));
+
+  function authMsg(text, isErr) { $("auth-msg").className = "msg" + (isErr ? " err" : ""); $("auth-msg").textContent = text; }
+
+  $("auth-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!db) return authMsg("Couldn't reach the database — check your connection and refresh.", true);
+    const email = $("a-email").value.trim().toLowerCase(), pw = $("a-pw").value, name = $("a-name").value.trim();
+    $("auth-submit").disabled = true;
+    try {
+      if (authMode === "signin") {
+        const { error } = await db.auth.signInWithPassword({ email, password: pw });
+        if (error) throw error;
+        await gate();
+      } else if (authMode === "signup") {
+        const { data, error } = await db.auth.signUp({ email, password: pw, options: { emailRedirectTo: SITE, data: { name } } });
+        if (error) throw error;
+        if (data.session) { await gate(); }
+        else { showAuth("signin"); $("a-email").value = email; authMsg("Check your email and tap the confirmation link, then sign in here."); }
+      } else if (authMode === "reset") {
+        const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: SITE });
+        if (error) throw error;
+        authMsg("If that email is on the list, a reset link is on its way. Check your inbox (and spam).");
+      } else if (authMode === "newpw") {
+        const { error } = await db.auth.updateUser({ password: pw });
+        if (error) throw error;
+        history.replaceState(null, "", SITE);
+        authMode = "signin";
+        await gate();
+      } else if (authMode === "name") {
+        if (!name) throw new Error("Please type a name.");
+        const { error } = await db.rpc("set_my_name", { new_name: name });
+        if (error) throw error;
+        await gate();
+      }
+    } catch (err) {
+      const m = String(err.message || err);
+      authMsg(/Invalid login credentials/i.test(m) ? "Wrong email or password." :
+              /Email not confirmed/i.test(m) ? "Please tap the confirmation link we emailed you first." :
+              /rate limit/i.test(m) ? "Too many emails sent — wait a few minutes and try again." : m, true);
+    } finally {
+      $("auth-submit").disabled = false;
+    }
+  });
+
+  async function gate() {
+    if (!db) { showAuth("signin"); authMsg("Couldn't reach the database — check your connection and refresh.", true); return; }
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) { me = null; showAuth("signin"); return; }
+    if (authMode === "newpw") { showAuth("newpw"); return; } // finish choosing a new password first
+    const email = (session.user.email || "").toLowerCase();
+    const { data: member, error } = await db.from("members").select("email,display_name,is_admin").eq("email", email).maybeSingle();
+    if (error || !member) {
+      $("auth-card").hidden = true; $("app").hidden = true; $("userbar").hidden = true;
+      $("not-member").hidden = false;
+      $("not-member-text").textContent = `You're signed in as ${email}, but that email isn't on the invite list. Ask Richard to add it, then sign in again.`;
+      return;
+    }
+    // First sign-in: save the name typed at sign-up, or ask for one
+    if (!member.display_name) {
+      const typed = (session.user.user_metadata && session.user.user_metadata.name || "").trim();
+      if (typed) { await db.rpc("set_my_name", { new_name: typed }); member.display_name = typed; }
+      else { showAuth("name"); return; }
+    }
+    me = { id: session.user.id, email, name: member.display_name, isAdmin: !!member.is_admin };
+    $("auth-card").hidden = true; $("not-member").hidden = true;
+    $("userbar").hidden = false; $("app").hidden = false;
+    $("who").textContent = `Signed in as ${me.name}`;
+    $("invite-btn").hidden = !me.isAdmin;
+    if (!appStarted) {
+      appStarted = true;
+      loadSpots();
+      loadSuggestions();
+    } else {
+      loadSpots();
+    }
+  }
+
+  async function signOut() {
+    await db.auth.signOut();
+    me = null; spots = null; catchesBySpot = {};
+    $("invite-card").hidden = true;
+    showAuth("signin");
+  }
+  $("signout-btn").addEventListener("click", signOut);
+  $("not-member-out").addEventListener("click", signOut);
+
+  // Invite list (admins only)
+  async function loadMembers() {
+    const ul = $("member-list"); ul.innerHTML = "";
+    const { data, error } = await db.from("members").select("email,display_name,is_admin").order("added_at");
+    if (error) { ul.appendChild(el("li", "empty", "Couldn't load the list: " + error.message)); return; }
+    data.forEach(m => {
+      const li = el("li");
+      const left = el("div");
+      left.appendChild(el("div", "sugg-name", m.display_name || "(hasn't signed in yet)"));
+      left.appendChild(el("div", "spot-meta", m.email + (m.is_admin ? " · admin" : "")));
+      li.appendChild(left);
+      if (m.email !== me.email) {
+        const rm = el("button", "linkbtn danger", "Remove"); rm.type = "button";
+        rm.addEventListener("click", async () => {
+          if (!confirm(`Remove ${m.email} from the invite list? They won't be able to see the map anymore.`)) return;
+          const { error: e2 } = await db.from("members").delete().eq("email", m.email);
+          if (e2) alert("Couldn't remove: " + e2.message);
+          loadMembers();
+        });
+        li.appendChild(rm);
+      }
+      ul.appendChild(li);
+    });
+  }
+  $("invite-btn").addEventListener("click", () => { $("invite-card").hidden = false; loadMembers(); $("invite-card").scrollIntoView({ behavior: "smooth" }); });
+  $("invite-close").addEventListener("click", () => { $("invite-card").hidden = true; });
+  $("invite-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = $("i-email").value.trim().toLowerCase();
+    const { error } = await db.from("members").insert({ email });
+    $("invite-msg").className = "msg" + (error ? " err" : "");
+    $("invite-msg").textContent = error
+      ? (/duplicate/i.test(error.message) ? "That email is already on the list." : "Couldn't add: " + error.message)
+      : `Added ${email}. Send them the link: ${SITE}`;
+    if (!error) $("i-email").value = "";
+    loadMembers();
+  });
+
+  if (db) {
+    db.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") showAuth("newpw");
+    });
+  }
+
   loadPressure();
   loadMoon();
-  loadSuggestions();
+  gate();
 </script>
 </body>
 </html>

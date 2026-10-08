@@ -1,0 +1,11 @@
+-- Fishing Map V2: invite-only logins, ownership, private-spot column.
+-- Already applied to the live database on Oct 8, 2026 (migrations
+-- "logins_members_ownership" and "lock_helper_functions_to_signed_in"); kept here for the record.
+--
+-- members        : the invite list (email, display name, admin flag)
+-- is_member()    : true when the signed-in email is on the list
+-- is_admin()     : true when the signed-in member is an admin
+-- set_my_name()  : lets a member set only their own display name
+-- spots/catches  : created_by (owner) added; members can read, owners can edit;
+--                  private spots (is_private) are visible only to their owner.
+-- Signed-out visitors can no longer read anything.
