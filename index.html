@@ -139,6 +139,11 @@
   .offline-bar { background: #5b6f78; color: #fff; border-radius: 10px; padding: 8px 12px; font-size: .85rem; margin: -6px 0 12px; }
   .pending-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--card);
     border-radius: 10px; padding: 8px 12px; font-size: .88rem; margin: -6px 0 12px; }
+  #ptr { position: fixed; top: 0; left: 0; right: 0; height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: .88rem; color: var(--muted); background: var(--bg); z-index: 950; padding-top: env(safe-area-inset-top); transition: height .15s; }
+  #ptr.pulling { transition: none; }
+  #ptr-icon { display: inline-block; transition: transform .15s; }
+  #ptr.ready #ptr-icon { transform: rotate(180deg); }
   .check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--text); cursor: pointer; }
   .check-row input { width: auto; margin-top: 3px; transform: scale(1.2); }
   .btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; padding: 12px;
@@ -194,6 +199,7 @@
     <span id="who"></span>
     <span class="userbar-links">
       <button class="linkbtn" id="invite-btn" type="button" hidden>👥 Invite friends</button>
+      <button class="linkbtn" id="refresh-btn" type="button" aria-label="Refresh">↻ Refresh</button>
       <button class="linkbtn" id="signout-btn" type="button">Sign out</button>
     </span>
   </div>
@@ -449,6 +455,7 @@
   </footer>
 </main>
 
+<div id="ptr" aria-hidden="true"><span id="ptr-icon">↓</span> <span id="ptr-text">Pull to refresh</span></div>
 <button id="qc-fab" type="button" aria-label="Quick catch" hidden>📸</button>
 
 <div id="qc" hidden>
@@ -2918,6 +2925,52 @@
   loadPressure();
   loadMoon();
   gate();
+
+  // ---- Refreshing (the home-screen app has no reload button) ----
+  function refreshApp() {
+    $("ptr").style.height = "44px"; $("ptr-text").textContent = "Refreshing…"; $("ptr-icon").textContent = "↻";
+    location.reload();
+  }
+  $("refresh-btn").addEventListener("click", refreshApp);
+
+  // Is the person in the middle of typing or logging something? Then never reload on them.
+  function busy() {
+    return !$("qc").hidden || !$("spot-form").hidden || !!openCatchSpot || !$("viewer").hidden || !!placing ||
+      (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));
+  }
+
+  // Pull down from the top of the page to refresh (not on the map, camera or photo viewer)
+  (function pullToRefresh() {
+    const ptr = $("ptr"), PULL = 80;
+    let startY = null, dist = 0;
+    document.addEventListener("touchstart", e => {
+      if (window.scrollY > 0 || busy() || e.target.closest("#map, #qc, #viewer, select, input, textarea")) { startY = null; return; }
+      startY = e.touches[0].clientY; dist = 0;
+    }, { passive: true });
+    document.addEventListener("touchmove", e => {
+      if (startY == null) return;
+      dist = e.touches[0].clientY - startY;
+      if (dist <= 0 || window.scrollY > 0) { ptr.style.height = "0"; return; }
+      ptr.classList.add("pulling");
+      ptr.style.height = Math.min(70, dist * 0.5) + "px";
+      ptr.classList.toggle("ready", dist > PULL);
+      $("ptr-text").textContent = dist > PULL ? "Release to refresh" : "Pull to refresh";
+    }, { passive: true });
+    document.addEventListener("touchend", () => {
+      if (startY == null) return;
+      ptr.classList.remove("pulling");
+      if (dist > PULL && !busy()) refreshApp();
+      else { ptr.style.height = "0"; ptr.classList.remove("ready"); }
+      startY = null;
+    });
+  })();
+
+  // Coming back to the app after a while: load fresh tides, weather and spots
+  let hiddenAt = null;
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    if (hiddenAt && Date.now() - hiddenAt > 15 * 60000 && navigator.onLine && !busy()) refreshApp();
+  });
 
   // Keep a copy of the app on the phone so it opens with no signal
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
