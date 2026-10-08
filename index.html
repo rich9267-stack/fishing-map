@@ -72,6 +72,11 @@
   .msg { font-size: .9rem; margin-top: 10px; }
   .msg.err { color: var(--falling); }
   [hidden] { display: none !important; }
+  .btn.small { padding: 7px 11px; font-size: .85rem; }
+  .catches { margin-top: 10px; }
+  .catch-form { margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
+  .catch-list { margin-top: 6px; }
+  .catch-list li { display: block; padding: 8px 0; font-size: .9rem; }
 </style>
 </head>
 <body>
@@ -168,6 +173,7 @@
     <div class="label">Wind &amp; weather · Pompano Beach</div>
     <div class="now" id="wx-now">Loading weather…</div>
     <div class="next" id="wx-detail"></div>
+    <div class="next" id="wx-pressure">Loading pressure…</div>
     <ul id="wx-hours"></ul>
   </div>
 
@@ -177,8 +183,8 @@
   <footer>
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
-    Wind &amp; weather from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>Step 3 of the Fishing Map build.
+    Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
+    <br>Step 4 of the Fishing Map build.
   </footer>
 </main>
 
@@ -239,7 +245,13 @@
         document.getElementById("next").textContent =
           `Next ${next.high ? "high" : "low"} tide at ${clock(next.when)} — in ${untilText(next.when - now)}`;
         cond.tide = `${next.high ? "⬆ Incoming" : "⬇ Outgoing"} · ${next.high ? "high" : "low"} ${clock(next.when)}`;
-        renderSpots();
+        // Tide stage saved with catches: "slack" within 30 min of a high or low
+        const prev = [...tides].reverse().find(t => t.when <= now);
+        const SLACK = 30 * 60000;
+        if (prev && now - prev.when < SLACK) cond.tideStage = prev.high ? "high slack" : "low slack";
+        else if (next.when - now < SLACK) cond.tideStage = next.high ? "high slack" : "low slack";
+        else cond.tideStage = next.high ? "incoming" : "outgoing";
+        refreshConditions();
       } else {
         stage.textContent = "No upcoming tides found";
       }
@@ -302,7 +314,11 @@
       const cur = periods[0];
       nowEl.textContent = `💨 ${cur.windDirection} ${cur.windSpeed}`;
       cond.wind = `💨 ${cur.windDirection} ${cur.windSpeed} · ${cur.temperature}°`;
-      renderSpots();
+      cond.windDir = cur.windDirection || null;
+      const mph = String(cur.windSpeed || "").match(/\d+/g); // "10 mph" or "5 to 10 mph"
+      cond.windMph = mph ? parseInt(mph[mph.length - 1], 10) : null;
+      cond.tempF = cur.temperatureUnit === "F" ? cur.temperature : null;
+      refreshConditions();
       nowEl.className = "now";
       const rain = cur.probabilityOfPrecipitation && cur.probabilityOfPrecipitation.value;
       detailEl.textContent = `${cur.shortForecast}, ${cur.temperature}°${cur.temperatureUnit}` +
@@ -321,6 +337,43 @@
       nowEl.textContent = "Couldn't load weather right now";
       detailEl.textContent = "Tides still work — try refreshing in a minute.";
     }
+  }
+
+  // ---- Barometric pressure from nearby weather-station observations ----
+  // Pompano Beach Airpark first; Fort Lauderdale airport as a backup
+  const PRESSURE_STATIONS = ["KPMP", "KFLL"];
+
+  async function loadPressure() {
+    const out = $("wx-pressure");
+    for (const st of PRESSURE_STATIONS) {
+      try {
+        const data = await getJson(`https://api.weather.gov/stations/${st}/observations?limit=24`);
+        const obs = data.features
+          .map(f => ({ when: new Date(f.properties.timestamp), pa: f.properties.barometricPressure && f.properties.barometricPressure.value }))
+          .filter(o => o.pa != null)
+          .sort((a, b) => b.when - a.when);
+        if (!obs.length) continue;
+        const latest = obs[0];
+        if (Date.now() - latest.when > 3 * 3600000) continue; // too old, try the backup station
+        const inHg = latest.pa / 3386.39;
+        // Compare with the reading from about 3 hours earlier
+        const target = latest.when - 3 * 3600000;
+        const earlier = obs.filter(o => o.when <= latest.when - 2 * 3600000 && o.when >= latest.when - 4 * 3600000)
+          .sort((a, b) => Math.abs(a.when - target) - Math.abs(b.when - target))[0];
+        let trend = null;
+        if (earlier) {
+          const change = inHg - earlier.pa / 3386.39;
+          trend = change >= 0.03 ? "rising" : change <= -0.03 ? "falling" : "steady";
+        }
+        cond.pressure = Math.round(inHg * 100) / 100;
+        cond.pressureTrend = trend;
+        const arrow = { rising: "↗ rising", falling: "↘ falling", steady: "→ steady" }[trend] || "";
+        out.textContent = `🌡 Pressure ${cond.pressure.toFixed(2)} inHg ${arrow}`.trim();
+        refreshConditions();
+        return;
+      } catch (e) { /* try the next station */ }
+    }
+    out.textContent = "Pressure not available right now";
   }
 
   // ---- Shared spots (Supabase database) ----
@@ -346,7 +399,210 @@
     if (s.water_type === "freshwater") {
       return [cond.wind, "Water level: coming in a later step"].filter(Boolean).join(" · ");
     }
-    return [cond.tide, cond.wind].filter(Boolean).join("  ·  ") || "Loading conditions…";
+    return [cond.tide, cond.wind, pressureShort()].filter(Boolean).join("  ·  ") || "Loading conditions…";
+  }
+  function pressureShort() {
+    if (cond.pressure == null) return null;
+    const arrow = { rising: " ↗", falling: " ↘", steady: " →" }[cond.pressureTrend] || "";
+    return `${cond.pressure.toFixed(2)} inHg${arrow}`;
+  }
+
+  // ---- Catch log ----
+  let catchesBySpot = {};        // spot id -> list of catches, newest first
+  let openCatchSpot = null;      // spot id whose "log a catch" form is open
+  const expanded = new Set();    // spot ids whose catch history is showing
+  const STAGE_LABEL = { incoming: "⬆ incoming", outgoing: "⬇ outgoing", "high slack": "high slack", "low slack": "low slack" };
+  const RECENT_MS = 2 * 3600000; // only attach today's conditions if the catch was within 2 hours
+
+  // One form, built once and moved under whichever spot is being logged,
+  // so a background refresh never wipes what someone is typing.
+  const catchForm = document.createElement("form");
+  catchForm.className = "catch-form";
+  catchForm.innerHTML = `
+    <div class="label">Log a catch</div>
+    <label for="c-species">Species *</label>
+    <input id="c-species" required maxlength="60" list="species-list" placeholder="e.g., Snook">
+    <datalist id="species-list">
+      <option>Snook</option><option>Tarpon</option><option>Jack crevalle</option>
+      <option>Mangrove snapper</option><option>Lane snapper</option><option>Yellowtail snapper</option>
+      <option>Mutton snapper</option><option>Sheepshead</option><option>Spanish mackerel</option>
+      <option>Bluefish</option><option>Florida pompano</option><option>Permit</option>
+      <option>Barracuda</option><option>Ladyfish</option><option>Mullet</option>
+      <option>Grunt</option><option>Porgy</option><option>Triggerfish</option>
+      <option>Redfish</option><option>Black drum</option><option>Gag grouper</option>
+      <option>Goliath grouper (released)</option><option>Gulf toadfish</option>
+      <option>Peacock bass</option><option>Largemouth bass</option><option>Mayan cichlid</option>
+      <option>Bluegill</option><option>Clown knifefish</option>
+    </datalist>
+    <div class="two">
+      <div><label for="c-count">How many</label><input id="c-count" type="number" min="1" max="500" value="1"></div>
+      <div><label for="c-tide">Tide stage</label>
+        <select id="c-tide">
+          <option value="">—</option><option value="incoming">Incoming</option><option value="outgoing">Outgoing</option>
+          <option value="high slack">High slack</option><option value="low slack">Low slack</option>
+        </select>
+      </div>
+    </div>
+    <label for="c-bait">Bait / lure</label>
+    <input id="c-bait" maxlength="80" placeholder="e.g., live shrimp, white bucktail">
+    <label for="c-when">When</label>
+    <input id="c-when" type="datetime-local">
+    <label for="c-by">Caught by</label>
+    <input id="c-by" maxlength="40" placeholder="Your name">
+    <label for="c-notes">Notes</label>
+    <input id="c-notes" maxlength="500" placeholder="Size, where on the spot, etc.">
+    <div class="spot-meta" id="c-cond" style="margin-top:10px"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn ghost" id="c-cancel" type="button">Cancel</button>
+      <button class="btn" id="c-save" type="submit">Save catch</button>
+    </div>
+    <div class="msg" id="c-msg"></div>`;
+
+  function localInputValue(d) {
+    const p = n => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+  function catchIsRecent() {
+    const v = catchForm.querySelector("#c-when").value;
+    return v && Math.abs(Date.now() - new Date(v)) <= RECENT_MS;
+  }
+  function updateCatchCondPreview() {
+    const out = catchForm.querySelector("#c-cond");
+    if (!catchIsRecent()) {
+      out.textContent = "Earlier catch: today's pressure and wind won't be saved with it. Pick the tide stage yourself.";
+      return;
+    }
+    const parts = [
+      cond.pressure != null && `${cond.pressure.toFixed(2)} inHg${cond.pressureTrend ? " " + cond.pressureTrend : ""}`,
+      cond.windDir && cond.windMph != null && `wind ${cond.windDir} ${cond.windMph} mph`,
+      cond.tempF != null && `${cond.tempF}°F`
+    ].filter(Boolean);
+    out.textContent = parts.length ? "Saved with this catch: " + parts.join(" · ") : "Conditions still loading…";
+  }
+  catchForm.querySelector("#c-when").addEventListener("change", () => {
+    // Today's tide stage doesn't apply to an earlier catch, so clear the auto-filled value
+    const tide = catchForm.querySelector("#c-tide");
+    if (!catchIsRecent() && tide.value === cond.tideStage) tide.value = "";
+    if (catchIsRecent() && !tide.value) tide.value = cond.tideStage || "";
+    updateCatchCondPreview();
+  });
+
+  function openCatchForm(spotId) {
+    openCatchSpot = spotId;
+    catchForm.reset();
+    catchForm.querySelector("#c-when").value = localInputValue(new Date());
+    catchForm.querySelector("#c-tide").value = cond.tideStage || "";
+    try { catchForm.querySelector("#c-by").value = localStorage.getItem("fm-name") || ""; } catch (e) {}
+    catchForm.querySelector("#c-msg").textContent = "";
+    renderSpots();
+    updateCatchCondPreview();
+    catchForm.querySelector("#c-species").focus();
+  }
+  catchForm.querySelector("#c-cancel").addEventListener("click", () => { openCatchSpot = null; renderSpots(); });
+
+  catchForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const q = id => catchForm.querySelector(id);
+    const msg = q("#c-msg");
+    msg.className = "msg"; msg.textContent = "Saving…";
+    q("#c-save").disabled = true;
+    const txt = id => { const v = q(id).value.trim(); return v === "" ? null : v; };
+    const recent = catchIsRecent();
+    const whenVal = q("#c-when").value;
+    const row = {
+      spot_id: openCatchSpot,
+      caught_at: (whenVal ? new Date(whenVal) : new Date()).toISOString(),
+      species: txt("#c-species"),
+      how_many: Math.max(1, Math.min(500, parseInt(q("#c-count").value, 10) || 1)),
+      bait: txt("#c-bait"),
+      tide_stage: q("#c-tide").value || null,
+      notes: txt("#c-notes"),
+      caught_by: txt("#c-by"),
+      pressure_inhg: recent ? cond.pressure : null,
+      pressure_trend: recent ? cond.pressureTrend : null,
+      wind_dir: recent ? cond.windDir : null,
+      wind_mph: recent ? cond.windMph : null,
+      air_temp_f: recent ? cond.tempF : null
+    };
+    try {
+      if (!db) throw new Error("Not connected to the database");
+      const { error } = await db.from("catches").insert(row);
+      if (error) throw error;
+      try { if (row.caught_by) localStorage.setItem("fm-name", row.caught_by); } catch (e2) {}
+      expanded.add(openCatchSpot);
+      openCatchSpot = null;
+      await loadCatches();
+    } catch (err) {
+      msg.className = "msg err";
+      msg.textContent = "Couldn't save: " + (err.message || err);
+    } finally {
+      q("#c-save").disabled = false;
+    }
+  });
+
+  async function loadCatches() {
+    try {
+      const { data, error } = await db.from("catches").select("*").order("caught_at", { ascending: false }).limit(1000);
+      if (error) throw error;
+      catchesBySpot = {};
+      data.forEach(c => (catchesBySpot[c.spot_id] = catchesBySpot[c.spot_id] || []).push(c));
+    } catch (err) {
+      catchesBySpot = {}; // the spots list still works without catches
+    }
+    renderSpots();
+  }
+
+  function catchLine(c) {
+    const when = new Date(c.caught_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    const what = `${c.how_many > 1 ? c.how_many + " " : ""}${c.species}` + (c.bait ? ` on ${c.bait}` : "");
+    const extra = [
+      c.tide_stage && STAGE_LABEL[c.tide_stage],
+      c.pressure_inhg != null && `${Number(c.pressure_inhg).toFixed(2)} inHg${c.pressure_trend ? " " + c.pressure_trend : ""}`,
+      c.wind_dir && c.wind_mph != null && `${c.wind_dir} ${c.wind_mph} mph`,
+      c.caught_by && `by ${c.caught_by}`
+    ].filter(Boolean).join(" · ");
+    const li = el("li", "catch");
+    li.appendChild(el("div", null, `${when} — ${what}`));
+    if (extra) li.appendChild(el("div", "spot-meta", extra));
+    if (c.notes) li.appendChild(el("div", "spot-meta", c.notes));
+    return li;
+  }
+
+  function catchSection(s) {
+    const wrap = el("div", "catches");
+    const list = catchesBySpot[s.id] || [];
+    const row = el("div", "row");
+    const total = list.reduce((n, c) => n + (c.how_many || 1), 0);
+    const toggle = el("button", "btn ghost small", list.length
+      ? `${total} fish logged ${expanded.has(s.id) ? "▴" : "▾"}` : "No catches yet");
+    toggle.type = "button";
+    toggle.disabled = !list.length;
+    toggle.addEventListener("click", () => {
+      expanded.has(s.id) ? expanded.delete(s.id) : expanded.add(s.id);
+      renderSpots();
+    });
+    const logBtn = el("button", "btn small", "🐟 Log a catch");
+    logBtn.type = "button";
+    logBtn.hidden = openCatchSpot === s.id;
+    logBtn.addEventListener("click", () => openCatchForm(s.id));
+    row.appendChild(toggle); row.appendChild(logBtn);
+    wrap.appendChild(row);
+    if (openCatchSpot === s.id) wrap.appendChild(catchForm);
+    if (expanded.has(s.id) && list.length) {
+      const ul = el("ul", "catch-list");
+      list.slice(0, 15).forEach(c => ul.appendChild(catchLine(c)));
+      wrap.appendChild(ul);
+    }
+    return wrap;
+  }
+
+  // Update just the conditions text in place (keeps any open form and keyboard intact)
+  function refreshConditions() {
+    (spots || []).forEach(s => {
+      const node = document.querySelector(`.spot-cond[data-spot="${s.id}"]`);
+      if (node) node.textContent = spotConditions(s);
+    });
+    if (openCatchSpot) updateCatchCondPreview();
   }
 
   function renderSpots() {
@@ -363,7 +619,9 @@
       item.appendChild(el("div", "spot-name", s.name));
       item.appendChild(el("div", "spot-meta",
         `${cap(s.spot_type)} · ${WATER_LABEL[s.water_type] || s.water_type}` + (s.added_by ? ` · added by ${s.added_by}` : "")));
-      item.appendChild(el("div", "spot-cond", spotConditions(s)));
+      const condEl = el("div", "spot-cond", spotConditions(s));
+      condEl.dataset.spot = s.id;
+      item.appendChild(condEl);
 
       const chips = el("div", "chips");
       const accessText = { yes: "Public access", no: "Not public", unsure: "Access unsure" }[s.public_access];
@@ -379,6 +637,7 @@
 
       if (s.access_notes) item.appendChild(el("div", "spot-notes", "🚗 " + s.access_notes));
       if (s.notes) item.appendChild(el("div", "spot-notes", s.notes));
+      item.appendChild(catchSection(s));
       list.appendChild(item);
     });
   }
@@ -391,6 +650,7 @@
       if (error) throw error;
       spots = data;
       spotsError = null;
+      loadCatches();
     } catch (err) {
       spotsError = "Couldn't load spots: " + (err.message || err);
     }
@@ -462,6 +722,7 @@
   load();
   loadWeather();
   loadSpots();
+  loadPressure();
 </script>
 </body>
 </html>
