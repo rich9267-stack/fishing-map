@@ -97,6 +97,9 @@
   .pop-cond { margin-top: 6px; font-size: .85rem; }
   .pop-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
   .pop-actions a, .pop-actions button { font: inherit; font-size: .85rem; font-weight: 600; padding: 6px 10px; border-radius: 8px; border: 1px solid #dfe7ea; background: #fff; color: #0e7c86; text-decoration: none; cursor: pointer; }
+  #sugg-list li { gap: 8px; }
+  .sugg-name { font-weight: 600; }
+  .sugg-btns { display: flex; gap: 6px; flex-shrink: 0; }
   .spot.flash { animation: flash 1.6s ease-out; }
   @keyframes flash { from { background: rgba(14,124,134,.18); } to { background: transparent; } }
 </style>
@@ -122,11 +125,13 @@
       <button class="btn small" id="map-add" type="button">+ Add a spot on the map</button>
       <button class="btn ghost small" id="map-me" type="button">◎ Show me</button>
       <button class="btn ghost small" id="map-layer" type="button">🛰 Satellite</button>
+      <button class="btn ghost small" id="map-sugg" type="button">☆ Show suggestions</button>
     </div>
     <div class="legend">
       <span><span class="dot" style="background:#1d6fd6"></span>Saltwater</span>
       <span><span class="dot" style="background:#16a085"></span>Brackish / tidal canal</span>
       <span><span class="dot" style="background:#b7791f"></span>Freshwater</span>
+      <span><span class="dot" style="background:#fff;border-color:#888"></span>Suggested</span>
     </div>
     <div class="card" id="unplaced-card" style="margin-top:14px" hidden>
       <div class="label">Spots without a location</div>
@@ -219,6 +224,13 @@
     <div id="spot-list"><div class="empty">Loading spots…</div></div>
   </div>
 
+  <div class="card" id="sugg-card">
+    <div class="label">Suggested spots nearby</div>
+    <div class="spot-meta" style="margin-top:4px">Public piers, ramps, jetties and fishing spots from OpenStreetMap that nobody has saved yet. Check access before you go.</div>
+    <ul id="sugg-list"><li class="empty">Loading suggestions…</li></ul>
+    <button class="btn ghost small" id="sugg-more" type="button" hidden>Show more</button>
+  </div>
+
   <div class="card" id="status">
     <div class="label">Right now</div>
     <div class="now" id="stage">Loading tides…</div>
@@ -248,7 +260,7 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>Step 6b of the Fishing Map build. Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>Step 7 of the Fishing Map build. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
   </footer>
 </main>
 
@@ -1047,6 +1059,7 @@
       spotsError = null;
       loadCatches();
       renderPins();
+      if (typeof renderSuggestions === "function") renderSuggestions();
     } catch (err) {
       spotsError = "Couldn't load spots: " + (err.message || err);
     }
@@ -1324,9 +1337,145 @@
     }, () => alert("Couldn't get your location — allow it in your browser settings."), { enableHighAccuracy: true, timeout: 15000 });
   });
 
+  // ---- Suggested spots (OpenStreetMap via the free Overpass API) ----
+  const SUGG_KEY = "fm-suggestions-v1";
+  const SUGG_BOX = "25.95,-80.45,26.40,-80.03"; // south, west, north, east — Broward plus a little margin
+  const KIND_EMOJI = { pier: "🎣", ramp: "🚤", jetty: "🪨", bridge: "🌉", dock: "⚓" };
+  let suggestions = null, suggError = null, suggShowAll = false, suggLayer = null, suggOnMap = false;
+
+  function osmToSpot(e) {
+    const t = e.tags || {};
+    const lat = e.lat != null ? e.lat : e.center && e.center.lat;
+    const lng = e.lon != null ? e.lon : e.center && e.center.lon;
+    if (lat == null || lng == null) return null;
+    if (/^(private|no|customers)$/.test(t.access || "")) return null;
+    const publicish = !!t.name || t.fishing === "yes" || t.leisure === "fishing" || /^(yes|public|permissive)$/.test(t.access || "");
+    let kind;
+    if (t.leisure === "slipway") kind = "ramp";
+    else if (/^(breakwater|groyne)$/.test(t.man_made || "")) kind = "jetty";
+    else if (t.bridge === "yes") kind = "bridge";
+    else if (t.man_made === "pier") { if (!publicish) return null; kind = "pier"; } // skips private backyard docks
+    else if (t.leisure === "fishing") kind = "dock";
+    else return null;
+    if (kind === "jetty" && !t.name) return null; // unnamed seawall rocks aren't useful suggestions
+    const label = { pier: "Pier", ramp: "Boat ramp", jetty: "Jetty", bridge: "Bridge", dock: "Fishing spot" }[kind];
+    return { key: e.type + "/" + e.id, name: t.name || `${label} (unnamed)`, kind, label, lat: +lat.toFixed(5), lng: +lng.toFixed(5) };
+  }
+
+  async function loadSuggestions() {
+    try {
+      const cached = JSON.parse(localStorage.getItem(SUGG_KEY) || "null");
+      if (cached && Date.now() - cached.t < 7 * 86400000) { suggestions = cached.items; renderSuggestions(); return; }
+    } catch (e) {}
+    const q = `[out:json][timeout:25];(` +
+      `nwr["man_made"="pier"](${SUGG_BOX});` +
+      `nwr["leisure"="slipway"](${SUGG_BOX});` +
+      `nwr["leisure"="fishing"](${SUGG_BOX});` +
+      `nwr["man_made"~"^(breakwater|groyne)$"](${SUGG_BOX});` +
+      `way["bridge"="yes"]["fishing"="yes"](${SUGG_BOX});` +
+      `);out center tags;`;
+    try {
+      const res = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST", body: "data=" + encodeURIComponent(q),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" }
+      });
+      if (!res.ok) throw new Error("Map data service is busy (" + res.status + ")");
+      const data = await res.json();
+      const seen = new Set();
+      suggestions = data.elements.map(osmToSpot).filter(x => x && !seen.has(x.key) && seen.add(x.key));
+      try { localStorage.setItem(SUGG_KEY, JSON.stringify({ t: Date.now(), items: suggestions })); } catch (e) {}
+      suggError = null;
+    } catch (err) {
+      suggError = "Couldn't load suggestions right now — try again later.";
+    }
+    renderSuggestions();
+  }
+
+  // Suggestions nobody has saved yet (nothing saved within ~150 m), closest to your spots first
+  function openSuggestions() {
+    if (!suggestions) return [];
+    const placed = (spots || []).filter(hasLoc);
+    const anchor = placed.length
+      ? { lat: placed.reduce((a, s) => a + s.lat, 0) / placed.length, lng: placed.reduce((a, s) => a + s.lng, 0) / placed.length }
+      : { lat: LAT, lng: LNG };
+    return suggestions
+      .filter(g => !placed.some(s => miles(s.lat, s.lng, g.lat, g.lng) < 0.1))
+      .map(g => ({ ...g, dist: miles(anchor.lat, anchor.lng, g.lat, g.lng) }))
+      .sort((a, b) => a.dist - b.dist);
+  }
+
+  function addSuggestion(g) {
+    map && map.closePopup();
+    showView("list");
+    closeSpotForm();
+    openForm(true);
+    $("f-name").value = g.name.replace(/ \(unnamed\)$/, "");
+    $("f-type").value = g.kind === "ramp" ? "ramp" : g.kind === "jetty" ? "jetty" : g.kind === "bridge" ? "bridge" : g.kind === "dock" ? "dock" : "pier";
+    pickedLoc = { lat: g.lat, lng: g.lng };
+    $("loc-text").textContent = "Set ✓ (from the suggestion)";
+    $("form-msg").className = "msg";
+    $("form-msg").textContent = "Check the water type and access, then save.";
+    $("spots-card").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function renderSuggestions() {
+    const ul = $("sugg-list");
+    ul.innerHTML = "";
+    if (suggError) { ul.appendChild(el("li", "empty", suggError)); $("sugg-more").hidden = true; return; }
+    if (!suggestions || spots === null) { ul.appendChild(el("li", "empty", "Loading suggestions…")); return; }
+    const list = openSuggestions();
+    if (!list.length) { ul.appendChild(el("li", "empty", "No new suggestions nearby.")); $("sugg-more").hidden = true; return; }
+    list.slice(0, suggShowAll ? 25 : 6).forEach(g => {
+      const li = el("li");
+      const left = el("div");
+      left.appendChild(el("div", "sugg-name", `${KIND_EMOJI[g.kind] || ""} ${g.name}`));
+      left.appendChild(el("div", "spot-meta", `${g.label} · ${g.dist.toFixed(1)} mi`));
+      const btns = el("div", "sugg-btns");
+      const mapBtn = el("button", "btn ghost small", "Map"); mapBtn.type = "button";
+      mapBtn.addEventListener("click", () => { showView("map"); setSuggOnMap(true); map.setView([g.lat, g.lng], 16); });
+      const add = el("button", "btn small", "+ Add"); add.type = "button";
+      add.addEventListener("click", () => addSuggestion(g));
+      btns.appendChild(mapBtn); btns.appendChild(add);
+      li.appendChild(left); li.appendChild(btns);
+      ul.appendChild(li);
+    });
+    $("sugg-more").hidden = list.length <= 6;
+    $("sugg-more").textContent = suggShowAll ? "Show fewer" : `Show more (${Math.min(list.length, 25) - 6})`;
+    if (suggOnMap) renderSuggPins();
+  }
+  $("sugg-more").addEventListener("click", () => { suggShowAll = !suggShowAll; renderSuggestions(); });
+
+  function renderSuggPins() {
+    if (!map) return;
+    if (!suggLayer) suggLayer = L.layerGroup();
+    suggLayer.clearLayers();
+    openSuggestions().forEach(g => {
+      L.circleMarker([g.lat, g.lng], { radius: 6, weight: 2, color: "#777", fillColor: "#ffffff", fillOpacity: 1 })
+        .bindPopup(() => {
+          const box = document.createElement("div");
+          box.appendChild(el("div", "pop-name", `${KIND_EMOJI[g.kind] || ""} ${g.name}`));
+          box.appendChild(el("div", "pop-meta", `${g.label} · suggested from OpenStreetMap`));
+          const actions = el("div", "pop-actions");
+          const add = el("button", null, "+ Add to my spots"); add.type = "button";
+          add.addEventListener("click", () => addSuggestion(g));
+          actions.appendChild(add);
+          box.appendChild(actions);
+          return box;
+        }).addTo(suggLayer);
+    });
+  }
+  function setSuggOnMap(on) {
+    suggOnMap = on;
+    if (!map) return;
+    if (on) { renderSuggPins(); suggLayer.addTo(map); } else if (suggLayer) map.removeLayer(suggLayer);
+    $("map-sugg").textContent = on ? "☆ Hide suggestions" : "☆ Show suggestions";
+  }
+  $("map-sugg").addEventListener("click", () => setSuggOnMap(!suggOnMap));
+
   loadSpots();
   loadPressure();
   loadMoon();
+  loadSuggestions();
 </script>
 </body>
 </html>
