@@ -336,6 +336,8 @@
         <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
           <button class="btn ghost small" id="loc-btn" type="button">📍 Where I am</button>
           <button class="btn ghost small" id="loc-map-btn" type="button">🗺 Pick on map</button>
+          <button class="btn ghost small" id="loc-photo-btn" type="button">📷 From a photo</button>
+          <input id="loc-photo" type="file" accept="image/*" hidden>
         </span>
       </div>
 
@@ -407,6 +409,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
   const STATION = "8722859";
@@ -800,13 +803,33 @@
     return (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
   }
 
-  async function uploadPhoto(file, spotId, catchId) {
+  // When and where a photo was taken, from the details phones save inside the file.
+  // The time is usually there; location is often removed by the phone when picked in a browser.
+  async function photoInfo(file) {
+    try {
+      if (!window.exifr || !file) return {};
+      const d = await exifr.parse(file, { gps: true }) || {};
+      const when = d.DateTimeOriginal || d.CreateDate;
+      const ok = n => typeof n === "number" && isFinite(n) && !(n === 0);
+      return {
+        when: when instanceof Date && !isNaN(when) ? when : null,
+        lat: ok(d.latitude) ? +d.latitude.toFixed(5) : null,
+        lng: ok(d.longitude) ? +d.longitude.toFixed(5) : null
+      };
+    } catch (e) { return {}; }
+  }
+
+  async function uploadPhoto(file, spotId, catchId, info) {
+    info = info || await photoInfo(file);
     if (!me) throw new Error("Please sign in again");
     const blob = await compressImage(file);
     const path = `${me.id}/${newId()}.jpg`;
     const { error: upErr } = await db.storage.from("photos").upload(path, blob, { contentType: "image/jpeg" });
     if (upErr) throw upErr;
-    const { error } = await db.from("photos").insert({ spot_id: spotId, catch_id: catchId || null, path });
+    const { error } = await db.from("photos").insert({
+      spot_id: spotId, catch_id: catchId || null, path,
+      taken_at: info.when ? info.when.toISOString() : null, lat: info.lat, lng: info.lng
+    });
     if (error) { await db.storage.from("photos").remove([path]); throw error; }
     await loadPhotos();
   }
@@ -835,7 +858,15 @@
       const f = input.files && input.files[0];
       if (!f) return;
       btn.disabled = true; btn.textContent = "Uploading…";
-      try { await uploadPhoto(f, s.id, null); }
+      try {
+        const info = await photoInfo(f);
+        await uploadPhoto(f, s.id, null, info);
+        if (!hasLoc(s) && isMine(s) && info.lat != null &&
+            confirm(`This photo has a location. Use it to place “${s.name}” on the map?`)) {
+          const { error } = await db.from("spots").update({ lat: info.lat, lng: info.lng }).eq("id", s.id);
+          if (error) alert("Couldn't set the location: " + error.message); else loadSpots();
+        }
+      }
       catch (e) { alert("Couldn't upload the photo: " + (e.message || e)); btn.disabled = false; btn.textContent = "📷 Add photo"; }
     });
     wrap.appendChild(btn); wrap.appendChild(input);
@@ -1109,6 +1140,7 @@
     <input id="c-notes" maxlength="500" placeholder="Size, where on the spot, etc.">
     <label for="c-photo">📷 Photo (optional)</label>
     <input id="c-photo" type="file" accept="image/*">
+    <div class="spot-meta" id="c-photo-info" style="margin-top:6px"></div>
     <div class="spot-meta" id="c-cond" style="margin-top:10px"></div>
     <div class="row" style="margin-top:14px">
       <button class="btn ghost" id="c-cancel" type="button">Cancel</button>
@@ -1274,6 +1306,39 @@
   }
 
   catchForm.querySelector("#c-when").addEventListener("change", lookupCatchConditions);
+
+  catchForm.querySelector("#c-photo").addEventListener("change", async () => {
+    const out = catchForm.querySelector("#c-photo-info");
+    const f = catchForm.querySelector("#c-photo").files[0];
+    out.textContent = "";
+    if (!f) return;
+    out.textContent = "Reading photo details…";
+    const info = await photoInfo(f);
+    const notes = [];
+    if (info.when && info.when - Date.now() < 15 * 60000) {
+      const whenInput = catchForm.querySelector("#c-when");
+      const before = whenInput.value;
+      whenInput.value = localInputValue(info.when);
+      if (whenInput.value !== before) {
+        notes.push(`🕒 Time set from the photo: ${info.when.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`);
+        tideTouched = false;
+        lookupCatchConditions();
+      } else notes.push("🕒 Photo time matches");
+    } else notes.push("🕒 No time saved in this photo — keep the time above");
+    const spot = (spots || []).find(x => x.id === openCatchSpot);
+    if (info.lat != null) {
+      if (spot && hasLoc(spot)) {
+        const d = miles(spot.lat, spot.lng, info.lat, info.lng);
+        if (d > 0.3) {
+          const near = (spots || []).filter(hasLoc).map(x => ({ x, d: miles(x.lat, x.lng, info.lat, info.lng) })).sort((a, b) => a.d - b.d)[0];
+          notes.push(`📍 Heads up: this photo was taken ${d.toFixed(1)} mi from ${spot.name}` +
+            (near && near.x.id !== spot.id && near.d < 0.3 ? ` — it looks like ${near.x.name}.` : "."));
+        } else notes.push(`📍 Taken at ${spot.name} ✓`);
+      } else notes.push("📍 Photo has a location");
+    } else notes.push("📍 No location in this photo (phones often remove it)");
+    out.textContent = notes.join("  ·  ");
+    catchForm.photoInfo = info;
+  });
   catchForm.querySelector("#c-tide").addEventListener("change", () => { tideTouched = true; });
 
   let editingCatch = null;   // the catch being edited, or null when logging a new one
@@ -1283,6 +1348,8 @@
     openCatchSpot = spotId;
     editingCatch = existing || null;
     catchForm.reset();
+    catchForm.photoInfo = null;
+    catchForm.querySelector("#c-photo-info").textContent = "";
     tideTouched = false;
     q("#c-msg").textContent = "";
     q("#c-title").textContent = existing ? "Edit catch" : "Log a catch";
@@ -1375,7 +1442,7 @@
       const photoFile = q("#c-photo").files && q("#c-photo").files[0];
       if (photoFile) {
         msg.textContent = "Uploading photo…";
-        try { await uploadPhoto(photoFile, row.spot_id, savedRow.id); }
+        try { await uploadPhoto(photoFile, row.spot_id, savedRow.id, catchForm.photoInfo); }
         catch (pe) { alert("The catch was saved, but the photo didn't upload: " + (pe.message || pe)); }
       }
       try { if (row.caught_by) localStorage.setItem("fm-name", row.caught_by); } catch (e2) {}
@@ -1912,6 +1979,17 @@
 
   $("map-add").addEventListener("click", () => startPlacing({ mode: "new" }));
   $("loc-map-btn").addEventListener("click", () => startPlacing({ mode: "form" }));
+  $("loc-photo-btn").addEventListener("click", () => $("loc-photo").click());
+  $("loc-photo").addEventListener("change", async () => {
+    const f = $("loc-photo").files[0];
+    if (!f) return;
+    $("loc-text").textContent = "Reading photo…";
+    const info = await photoInfo(f);
+    $("loc-photo").value = "";
+    if (info.lat == null) { $("loc-text").textContent = "That photo has no location saved (phones often remove it) — try Pick on map"; return; }
+    pickedLoc = { lat: info.lat, lng: info.lng };
+    $("loc-text").textContent = "Set ✓ from photo" + (info.when ? ` taken ${info.when.toLocaleDateString([], { month: "short", day: "numeric" })}` : "");
+  });
   $("map-layer").addEventListener("click", () => {
     satellite = !satellite;
     if (satellite) { map.removeLayer(streetTiles); satTiles.addTo(map); }
