@@ -1,0 +1,6 @@
+-- Fishing Map V2 step 4: photos. Already applied to the live database on Oct 8, 2026
+-- (migration "photos"); kept here for the record.
+-- Private storage bucket "photos" (5 MB max per file; JPEG/PNG/WebP). Files live at <user id>/<random id>.jpg.
+-- public.photos: one row per photo (spot_id, optional catch_id, path, created_by).
+-- Rules: a photo is visible when you can see its spot (private spots' photos stay private);
+-- members upload only into their own folder; only the person who added a photo can delete it.

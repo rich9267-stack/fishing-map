@@ -82,6 +82,13 @@
   .fchip { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--text); border-radius: 999px; padding: 6px 11px; font: inherit; font-size: .85rem; cursor: pointer; }
   .fchip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
   .filter-status { margin-top: 10px; font-size: .85rem; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
+  .thumbs { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; }
+  .thumbs img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; flex-shrink: 0; background: var(--line); }
+  .photo-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  #viewer { position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
+  #viewer img { max-width: 100%; max-height: 78vh; border-radius: 8px; }
+  #viewer .vbar { display: flex; gap: 12px; margin-top: 14px; align-items: center; color: #ddd; font-size: .9rem; flex-wrap: wrap; justify-content: center; }
+  #viewer button { appearance: none; border: 1px solid rgba(255,255,255,.35); background: transparent; color: #fff; border-radius: 10px; padding: 8px 14px; font: inherit; cursor: pointer; }
   .check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--text); cursor: pointer; }
   .check-row input { width: auto; margin-top: 3px; transform: scale(1.2); }
   .auth-links { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
@@ -343,9 +350,18 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>V2 step 3: filters. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>V2 step 4: photos. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
   </footer>
 </main>
+
+<div id="viewer" hidden>
+  <img id="viewer-img" alt="">
+  <div class="vbar">
+    <span id="viewer-cap"></span>
+    <button type="button" id="viewer-del" hidden>Delete photo</button>
+    <button type="button" id="viewer-close">Close</button>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
@@ -699,6 +715,109 @@
     return `${cond.pressure.toFixed(2)} inHg${arrow}`;
   }
 
+  // ---- Photos (private Supabase storage, shown through 1-hour signed links) ----
+  let photosBySpot = {};   // spot id -> photos, newest first
+  let photoUrls = {};      // storage path -> signed link
+
+  async function loadPhotos() {
+    try {
+      const { data, error } = await db.from("photos").select("*").order("created_at", { ascending: false }).limit(500);
+      if (error) throw error;
+      photosBySpot = {};
+      data.forEach(p => (photosBySpot[p.spot_id] = photosBySpot[p.spot_id] || []).push(p));
+      const need = data.map(p => p.path).filter(path => !photoUrls[path]);
+      if (need.length) {
+        const { data: links } = await db.storage.from("photos").createSignedUrls(need, 3600);
+        (links || []).forEach(l => { if (l.signedUrl) photoUrls[l.path] = l.signedUrl; });
+      }
+    } catch (e) { /* the app works without photos */ }
+    renderSpots();
+  }
+
+  // Shrink a phone photo (often 4–8 MB) to ~300 KB before uploading
+  async function compressImage(file) {
+    const MAX = 1600;
+    let src;
+    try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+    catch (e) {
+      src = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(file); });
+    }
+    const scale = Math.min(1, MAX / Math.max(src.width, src.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(src.width * scale); c.height = Math.round(src.height * scale);
+    c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+    return await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("Couldn't read that photo")), "image/jpeg", 0.8));
+  }
+
+  function newId() {
+    return (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+  }
+
+  async function uploadPhoto(file, spotId, catchId) {
+    if (!me) throw new Error("Please sign in again");
+    const blob = await compressImage(file);
+    const path = `${me.id}/${newId()}.jpg`;
+    const { error: upErr } = await db.storage.from("photos").upload(path, blob, { contentType: "image/jpeg" });
+    if (upErr) throw upErr;
+    const { error } = await db.from("photos").insert({ spot_id: spotId, catch_id: catchId || null, path });
+    if (error) { await db.storage.from("photos").remove([path]); throw error; }
+    await loadPhotos();
+  }
+
+  function thumbStrip(list) {
+    const strip = el("div", "thumbs");
+    list.forEach(ph => {
+      if (!photoUrls[ph.path]) return;
+      const img = document.createElement("img");
+      img.src = photoUrls[ph.path]; img.alt = "Photo"; img.loading = "lazy";
+      img.addEventListener("click", () => openViewer(ph));
+      strip.appendChild(img);
+    });
+    return strip;
+  }
+
+  function spotPhotoSection(s) {
+    const wrap = el("div", "photo-row");
+    const list = photosBySpot[s.id] || [];
+    if (list.length) wrap.appendChild(thumbStrip(list.slice(0, 12)));
+    const input = document.createElement("input");
+    input.type = "file"; input.accept = "image/*"; input.hidden = true;
+    const btn = el("button", "btn ghost small", "📷 Add photo"); btn.type = "button";
+    btn.addEventListener("click", () => input.click());
+    input.addEventListener("change", async () => {
+      const f = input.files && input.files[0];
+      if (!f) return;
+      btn.disabled = true; btn.textContent = "Uploading…";
+      try { await uploadPhoto(f, s.id, null); }
+      catch (e) { alert("Couldn't upload the photo: " + (e.message || e)); btn.disabled = false; btn.textContent = "📷 Add photo"; }
+    });
+    wrap.appendChild(btn); wrap.appendChild(input);
+    return wrap;
+  }
+
+  let viewing = null;
+  function openViewer(ph) {
+    viewing = ph;
+    $("viewer-img").src = photoUrls[ph.path];
+    const spot = (spots || []).find(x => x.id === ph.spot_id);
+    $("viewer-cap").textContent = `${spot ? spot.name + " · " : ""}${new Date(ph.created_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}`;
+    $("viewer-del").hidden = !isMine(ph);
+    $("viewer").hidden = false;
+  }
+  function closeViewer() { $("viewer").hidden = true; $("viewer-img").src = ""; viewing = null; }
+  $("viewer-close").addEventListener("click", closeViewer);
+  $("viewer").addEventListener("click", e => { if (e.target.id === "viewer") closeViewer(); });
+  $("viewer-del").addEventListener("click", async () => {
+    if (!viewing || !confirm("Delete this photo?")) return;
+    const ph = viewing;
+    const { error } = await db.from("photos").delete().eq("id", ph.id);
+    if (error) return alert("Couldn't delete: " + error.message);
+    await db.storage.from("photos").remove([ph.path]);
+    delete photoUrls[ph.path];
+    closeViewer();
+    loadPhotos();
+  });
+
   // ---- Filters (remembered on this phone) ----
   // Within a group, any ticked option matches; across groups, all must match.
   const FILTER_GROUPS = [
@@ -833,6 +952,8 @@
     <input id="c-by" maxlength="40" placeholder="Your name">
     <label for="c-notes">Notes</label>
     <input id="c-notes" maxlength="500" placeholder="Size, where on the spot, etc.">
+    <label for="c-photo">📷 Photo (optional)</label>
+    <input id="c-photo" type="file" accept="image/*">
     <div class="spot-meta" id="c-cond" style="margin-top:10px"></div>
     <div class="row" style="margin-top:14px">
       <button class="btn ghost" id="c-cancel" type="button">Cancel</button>
@@ -1092,10 +1213,16 @@
     };
     try {
       if (!db) throw new Error("Not connected to the database");
-      const { error } = editingCatch
-        ? await db.from("catches").update(row).eq("id", editingCatch.id)
-        : await db.from("catches").insert(row);
+      const { data: savedRow, error } = editingCatch
+        ? await db.from("catches").update(row).eq("id", editingCatch.id).select("id").single()
+        : await db.from("catches").insert(row).select("id").single();
       if (error) throw error;
+      const photoFile = q("#c-photo").files && q("#c-photo").files[0];
+      if (photoFile) {
+        msg.textContent = "Uploading photo…";
+        try { await uploadPhoto(photoFile, row.spot_id, savedRow.id); }
+        catch (pe) { alert("The catch was saved, but the photo didn't upload: " + (pe.message || pe)); }
+      }
       try { if (row.caught_by) localStorage.setItem("fm-name", row.caught_by); } catch (e2) {}
       expanded.add(openCatchSpot);
       openCatchSpot = null;
@@ -1134,6 +1261,8 @@
     ].filter(Boolean).join(" · ");
     const li = el("li", "catch");
     li.appendChild(el("div", null, `${when} — ${what}`));
+    const cphotos = (photosBySpot[c.spot_id] || []).filter(ph => ph.catch_id === c.id);
+    if (cphotos.length) li.appendChild(thumbStrip(cphotos));
     if (extra) li.appendChild(el("div", "spot-meta", extra));
     if (c.notes) li.appendChild(el("div", "spot-meta", c.notes));
     if (!isMine(c)) return li;
@@ -1226,6 +1355,7 @@
         editSpot.addEventListener("click", () => openForm(true, s));
         item.appendChild(editSpot);
       }
+      item.appendChild(spotPhotoSection(s));
       item.appendChild(catchSection(s));
       list.appendChild(item);
     });
@@ -1239,6 +1369,7 @@
       spots = data;
       spotsError = null;
       loadCatches();
+      loadPhotos();
       renderPins();
       if (typeof renderSuggestions === "function") renderSuggestions();
     } catch (err) {
