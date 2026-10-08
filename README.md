@@ -20,7 +20,7 @@ A shared map to help pick where to fish in Pompano Beach / Broward County today:
 
 **Step 6b:** edit a spot's details (list or map popup).
 
-**Step 7 (current):** suggested spots from OpenStreetMap (Overpass API): named/public piers, boat ramps, named jetties, fishing spots, and fishing bridges in Broward that nobody has saved; private backyard docks filtered out. Cached on the phone for 7 days. One-tap add pre-fills the spot form; shown on the map as white pins.
+**Step 7:** suggested spots from OpenStreetMap (Overpass API): named/public piers, boat ramps, named jetties, fishing spots, and fishing bridges in Broward that nobody has saved; private backyard docks filtered out. Cached on the phone for 7 days. One-tap add pre-fills the spot form; shown on the map as white pins.
 
 ## V2
 
@@ -40,4 +40,8 @@ A shared map to help pick where to fish in Pompano Beach / Broward County today:
 
 **Quick catch (📸 button):** in-app camera + live GPS. Matches the nearest saved spot within ~800 ft, or creates a private "Quick spot" right there (named after a public place if one is right there). Species chips (recent first), count, bait (last used pre-filled); all conditions automatic; saves in the background so you can get back to fishing. Library and "No photo" options too.
 
-**Step 7 (current):** beyond Broward — 80+ built-in NOAA tide stations from St. Lucie Inlet to Card Sound; spots more than 5 mi from any of them look up the nearest station live from NOAA (remembered per phone). Spots more than 15 mi from Pompano get their own current wind and pressure; past-catch weather uses the spot's own location. Suggested spots follow the middle of your spots, or "◎ Near me".
+**Step 7:** beyond Broward — 80+ built-in NOAA tide stations from St. Lucie Inlet to Card Sound; spots more than 5 mi from any of them look up the nearest station live from NOAA (remembered per phone). Spots more than 15 mi from Pompano get their own current wind and pressure; past-catch weather uses the spot's own location. Suggested spots follow the middle of your spots, or "◎ Near me".
+
+**Step 8:** Google sign-in (Google Auth Platform client → Supabase Google provider; links to existing accounts with the same email) and password-reset email sent through Gmail SMTP (app password) set in Supabase. Privacy page: `privacy.html`.
+
+**V2 complete — October 8, 2026.**
