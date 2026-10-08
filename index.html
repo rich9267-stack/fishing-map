@@ -1040,8 +1040,8 @@
     const v = i >= 0 ? h.sea_surface_temperature[i] : null;
     if (okTemp(v)) return { f: Math.round(v * 10) / 10, source: "ocean model" };
     // Last resort for older dates: NOAA's daily satellite record (one value per day)
-    const sat = await (await fetch("https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.json?analysed_sst" +
-      `[(${dd}T12:00:00Z)][(${lat.toFixed(3)})][(${lng.toFixed(3)})]`)).json();
+    const sat = await erddapJson("https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.json?analysed_sst" +
+      `[(${dd}T12:00:00Z)][(${lat.toFixed(3)})][(${lng.toFixed(3)})]`);
     const row = sat.table && sat.table.rows && sat.table.rows[0];
     const c = row ? row[row.length - 1] : null;
     const f = typeof c === "number" ? c * 9 / 5 + 32 : null;
@@ -2890,6 +2890,7 @@
       palette: "Rainbow", scale: "Linear",
       gradient: "linear-gradient(90deg,#3b0f9f,#2c6bff,#22c3e6,#3fd36b,#f4e04d,#f08a24,#d7191c)",
       fmt: c => `${Math.round(c * 9 / 5 + 32)}°F`,
+      fallback: { lo: 24, hi: 31 }, // typical South Florida range (°C) if today's range can't be read
       note: "Warm and cool edges (temperature breaks) are worth checking — bait and predators often gather along them."
     },
     chl: {
@@ -2898,17 +2899,34 @@
       palette: "Rainbow", scale: "Log",
       gradient: "linear-gradient(90deg,#3b0f9f,#2c6bff,#22c3e6,#3fd36b,#f4e04d,#f08a24,#d7191c)",
       fmt: (v, end) => end === "lo" ? "← clearer" : "murkier →",
+      fallback: { lo: 0.05, hi: 5 },
       note: "Blue = clear water, red = green/murky water. Gaps are clouds. Color changes (weed lines, edges) often hold fish."
     }
   };
   let satLayer = null, satOn = null;
+
+  // NOAA's data server doesn't allow normal cross-site data requests (CORS) but supports the older
+  // "JSONP" style: the answer comes back as a small script that hands us the data.
+  let jsonpN = 0;
+  function erddapJson(url, timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const cb = "__erddap" + (++jsonpN) + "_" + Date.now();
+      const el = document.createElement("script");
+      const done = () => { clearTimeout(t); delete window[cb]; el.remove(); };
+      const t = setTimeout(() => { done(); reject(new Error("NOAA didn't answer")); }, timeoutMs || 20000);
+      window[cb] = data => { done(); resolve(data); };
+      el.onerror = () => { done(); reject(new Error("NOAA request failed")); };
+      el.src = url + (url.includes("?") ? "&" : "?") + ".jsonp=" + cb;
+      document.head.appendChild(el);
+    });
+  }
 
   // Ask NOAA for a coarse sample of the latest image to learn its date and value range
   async function satProbe(def) {
     for (const c of def.candidates) {
       try {
         const q = `${ERDDAP}${c.id}.json?${c.v}[(last)][(${SAT_BOX.s}):20:(${SAT_BOX.n})][(${SAT_BOX.w}):20:(${SAT_BOX.e})]`;
-        const d = await (await fetch(q)).json();
+        const d = await erddapJson(q);
         const rows = (d.table && d.table.rows) || [];
         const vals = rows.map(r => r[r.length - 1]).filter(v => typeof v === "number" && isFinite(v) && (def.scale !== "Log" || v > 0)).sort((a, b) => a - b);
         if (vals.length < 10) continue;
@@ -2934,7 +2952,9 @@
     $("sat-min").textContent = ""; $("sat-max").textContent = "";
     $("sat-note").textContent = "Loading satellite image…";
     try {
-      const p = await satProbe(def);
+      let p, guessed = false;
+      try { p = await satProbe(def); }
+      catch (e) { p = { c: def.candidates[0], time: null, ...def.fallback }; guessed = true; } // still draw it, with a typical color range
       if (satOn !== kind) return; // switched away while loading
       const lo = def.scale === "Log" ? p.lo.toPrecision(2) : p.lo.toFixed(2);
       const hi = def.scale === "Log" ? p.hi.toPrecision(2) : p.hi.toFixed(2);
@@ -2950,7 +2970,9 @@
       const when = new Date(p.time);
       $("sat-min").textContent = def.fmt(p.lo, "lo");
       $("sat-max").textContent = def.fmt(p.hi, "hi");
-      $("sat-note").textContent = `${def.note} Image from ${isNaN(when) ? "the latest pass" : when.toLocaleDateString([], { month: "short", day: "numeric" })}.`;
+      $("sat-note").textContent = `${def.note} ` + (guessed
+        ? "(Couldn't read today's range, so colors use a typical range. If nothing appears over the water, the image isn't available right now.)"
+        : `Image from ${isNaN(when) ? "the latest pass" : when.toLocaleDateString([], { month: "short", day: "numeric" })}.`);
     } catch (e) {
       if (satOn === kind) $("sat-note").textContent = "This satellite layer isn't available right now — try again later.";
     }
