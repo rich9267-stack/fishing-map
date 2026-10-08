@@ -12,4 +12,6 @@ A shared map to help pick where to fish in Pompano Beach / Broward County today:
 
 **Step 4b:** catches logged for any date/time auto-load that moment's tide stage (NOAA), pressure + trend, wind, temp (Open-Meteo records), moon phase and solunar period (SunCalc). Moon & solunar card for today.
 
-**Step 4c (current):** edit and delete catches (delete is recoverable in Supabase).
+**Step 4c:** edit and delete catches (delete is recoverable in Supabase).
+
+**Step 5 (current):** map view (Leaflet + OpenStreetMap, Esri satellite toggle). Pins colored by water type; tap a pin for conditions, catches, log a catch, directions, or move pin. Add a spot by tapping the map; place spots that have no location.
