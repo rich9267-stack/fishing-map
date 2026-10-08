@@ -85,6 +85,17 @@
   .thumbs { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; }
   .thumbs img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; flex-shrink: 0; background: var(--line); }
   .photo-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  #measure { position: fixed; inset: 0; z-index: 1300; background: #000; color: #fff; display: flex; flex-direction: column; }
+  #measure .m-top { padding: 12px 16px; display: flex; gap: 10px; align-items: center; justify-content: space-between; background: rgba(0,0,0,.85); }
+  #m-step { font-weight: 700; font-size: 1rem; }
+  #m-stage { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; }
+  #m-wrap { position: relative; line-height: 0; }
+  #m-img { max-width: 100vw; max-height: 100%; display: block; user-select: none; -webkit-user-select: none; }
+  #m-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #measure .m-bottom { padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: #12262e; color: #e6f0f2; }
+  #measure .m-bottom select, #measure .m-bottom input { width: 100%; }
+  #m-result { font-size: 1.3rem; font-weight: 700; margin: 8px 0; }
+  #measure .linkbtn { color: #4fc3cc; }
   #viewer { position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
   #viewer img { max-width: 100%; max-height: 78vh; border-radius: 8px; }
   #viewer .vbar { display: flex; gap: 12px; margin-top: 14px; align-items: center; color: #ddd; font-size: .9rem; flex-wrap: wrap; justify-content: center; }
@@ -567,6 +578,33 @@
 </div>
 
 <div id="qc-toast" hidden></div>
+
+<div id="measure" hidden>
+  <div class="m-top">
+    <div id="m-step"></div>
+    <button type="button" id="m-cancel" class="linkbtn">Cancel</button>
+  </div>
+  <div id="m-stage"><div id="m-wrap"><img id="m-img" alt="Catch photo"><svg id="m-svg"></svg></div></div>
+  <div class="m-bottom">
+    <div id="m-help" class="spot-meta" style="color:#9db2ba"></div>
+    <div id="m-ref-box" hidden>
+      <label for="m-ref" style="color:#e6f0f2">The two blue taps are…</label>
+      <select id="m-ref">
+        <option value="ruler">Marks on a ruler or tape (enter the inches)</option>
+        <option value="6.14">A dollar bill — long side (6.1″)</option>
+        <option value="3.37">A credit card or driver's license — long side (3.4″)</option>
+        <option value="4.83">A soda can — height (4.8″)</option>
+        <option value="custom">Something else I know the size of</option>
+      </select>
+      <input id="m-ref-in" type="number" min="0.5" max="120" step="0.25" placeholder="Inches between the blue taps" style="margin-top:8px">
+      <div id="m-result"></div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button type="button" id="m-undo" class="linkbtn">↶ Undo tap</button>
+      <button type="button" class="btn" id="m-use" disabled>Use this length</button>
+    </div>
+  </div>
+</div>
 
 <div id="viewer" hidden>
   <img id="viewer-img" alt="">
@@ -2216,10 +2254,16 @@
     <label for="c-by">Caught by</label>
     <input id="c-by" maxlength="40" placeholder="Your name">
     <label for="c-notes">Notes</label>
-    <input id="c-notes" maxlength="500" placeholder="Size, where on the spot, etc.">
+    <input id="c-notes" maxlength="500" placeholder="Where on the spot, etc.">
     <label for="c-photo">📷 Photo (optional)</label>
     <input id="c-photo" type="file" accept="image/*">
     <div class="spot-meta" id="c-photo-info" style="margin-top:6px"></div>
+    <div class="two">
+      <div><label for="c-length">Length (inches)</label><input id="c-length" type="number" min="0.5" max="199" step="0.25" inputmode="decimal"></div>
+      <div><label for="c-weight">Weight (lb)</label><input id="c-weight" type="number" min="0.05" max="1999" step="0.05" inputmode="decimal" placeholder="Optional"></div>
+    </div>
+    <button class="btn ghost small" id="c-measure" type="button" style="margin-top:8px">📏 Measure from the photo</button>
+    <div class="spot-meta" id="c-size-note" style="margin-top:6px"></div>
     <div class="spot-meta" id="c-cond" style="margin-top:10px"></div>
     <div class="row" style="margin-top:14px">
       <button class="btn ghost" id="c-cancel" type="button">Cancel</button>
@@ -2424,6 +2468,145 @@
   });
   catchForm.querySelector("#c-tide").addEventListener("change", () => { tideTouched = true; });
 
+  // ---- Length and weight ----
+  // Weight from length: weight grows with the cube of length, so each fish has one reference point
+  // ("a typical 30-inch snook weighs about 8.7 lb") and weight = ref lb × (length ÷ ref length)³.
+  // Rough averages for Florida fish — a fat or skinny fish can be 20% off either way.
+  const WEIGHT_REF = [
+    [["snook"], 30, 8.7], [["tarpon"], 60, 85], [["redfish", "red drum"], 27, 7.5], [["seatrout", "speckled trout", "trout"], 20, 3],
+    [["crevalle", "jack"], 30, 16], [["mangrove", "gray snapper"], 16, 2.4], [["mutton"], 24, 7.8], [["yellowtail"], 16, 1.7],
+    [["lane snapper"], 12, 1], [["red snapper"], 24, 8], [["pompano"], 15, 2.1], [["permit"], 30, 20], [["spanish"], 20, 2.2],
+    [["bluefish"], 20, 2.7], [["sheepshead"], 16, 3.2], [["whiting", "kingcroaker"], 14, 0.95], [["kingfish", "king mackerel"], 40, 15.7],
+    [["mahi", "dolphin"], 40, 19.6], [["wahoo"], 60, 48], [["black grouper"], 36, 25], [["red grouper"], 24, 7], [["gag"], 30, 12],
+    [["goliath"], 60, 120], [["barracuda"], 40, 14.5], [["cobia"], 40, 19], [["ladyfish"], 20, 1.5], [["black drum"], 30, 15],
+    [["largemouth"], 20, 5], [["peacock"], 18, 4], [["snakehead"], 30, 10], [["bluegill", "panfish", "shellcracker"], 8, 0.5],
+    [["mayan", "cichlid"], 10, 0.9], [["mullet"], 16, 1.6]
+  ];
+  function weightRef(species) {
+    const sp = (species || "").toLowerCase();
+    // more specific names first ("red snapper" before "snapper", "black drum" before "drum")
+    return WEIGHT_REF.slice().sort((a, b) => Math.max(...b[0].map(w => w.length)) - Math.max(...a[0].map(w => w.length)))
+      .find(r => r[0].some(w => sp.includes(w)));
+  }
+  function estWeight(species, lengthIn) {
+    const r = weightRef(species);
+    if (!r || !(lengthIn > 0)) return null;
+    return r[2] * Math.pow(lengthIn / r[1], 3);
+  }
+  const lbText = lb => lb >= 10 ? `${Math.round(lb)} lb` : lb >= 1 ? `${lb.toFixed(1)} lb` : `${Math.round(lb * 16)} oz`;
+  function sizeFields(species, lenStr, wStr) {
+    const len = parseFloat(lenStr), w = parseFloat(wStr);
+    const length_in = len > 0 && len < 200 ? Math.round(len * 4) / 4 : null;
+    if (w > 0 && w < 2000) return { length_in, weight_lb: Math.round(w * 100) / 100, weight_est: false };
+    const est = length_in ? estWeight(species, length_in) : null;
+    return { length_in, weight_lb: est && est < 2000 ? Math.round(est * 100) / 100 : null, weight_est: !!est };
+  }
+  function sizeText(c) {
+    const parts = [];
+    if (c.length_in != null) parts.push(`${+Number(c.length_in).toFixed(2)}″`);
+    if (c.weight_lb != null) parts.push((c.weight_est ? "≈" : "") + lbText(Number(c.weight_lb)));
+    return parts.length ? ` (${parts.join(", ")})` : "";
+  }
+  function updateSizeNote() {
+    const q = id => catchForm.querySelector(id);
+    const len = parseFloat(q("#c-length").value), w = parseFloat(q("#c-weight").value), sp = q("#c-species").value;
+    const note = q("#c-size-note");
+    if (w > 0) { note.textContent = ""; return; }
+    if (!(len > 0)) { note.textContent = "Tip: lay a ruler, dollar bill or card next to the fish and shoot from straight above — then tap 📏 to measure."; return; }
+    const est = estWeight(sp, len);
+    note.textContent = est ? `⚖️ About ${lbText(est)} for a ${len}″ ${weightRef(sp)[0][0]} (estimated from length — type a weight if you weighed it)`
+      : (sp ? "No weight estimate for this species yet — type a weight if you weighed it." : "Pick the species to get a weight estimate.");
+  }
+  ["#c-length", "#c-weight", "#c-species"].forEach(id => catchForm.querySelector(id).addEventListener("input", updateSizeNote));
+
+  // ---- Tap-to-measure: nose, tail, then both ends of something of known size ----
+  const M_STEPS = ["Tap the tip of the fish's nose", "Now tap the end of the tail", "Tap one end of your reference (ruler mark, bill, card…)", "Tap the other end of the reference"];
+  const ms = { pts: [], drag: -1, onUse: null, url: null };
+  function openMeasure(src, onUse) {
+    ms.pts = []; ms.onUse = onUse;
+    if (ms.url) { URL.revokeObjectURL(ms.url); ms.url = null; }
+    const img = $("m-img");
+    if (src instanceof Blob) { ms.url = URL.createObjectURL(src); img.src = ms.url; } else img.src = src;
+    let last = null; try { last = localStorage.getItem("fm-measure-ref"); } catch (e) { /* none */ }
+    if (last) { $("m-ref").value = last.split("|")[0]; $("m-ref-in").value = last.split("|")[1] || ""; }
+    $("measure").hidden = false;
+    img.onload = () => drawMeasure();
+    drawMeasure();
+  }
+  function closeMeasure() { $("measure").hidden = true; }
+  function refInches() {
+    const v = $("m-ref").value;
+    $("m-ref-in").hidden = !(v === "ruler" || v === "custom");
+    return v === "ruler" || v === "custom" ? parseFloat($("m-ref-in").value) : parseFloat(v);
+  }
+  const mDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  function measuredLength() {
+    if (ms.pts.length < 4) return null;
+    const ref = refInches(), refPx = mDist(ms.pts[2], ms.pts[3]);
+    if (!(ref > 0) || refPx < 3) return null;
+    return mDist(ms.pts[0], ms.pts[1]) / refPx * ref;
+  }
+  function drawMeasure() {
+    const img = $("m-img"), svg = $("m-svg");
+    const W = img.naturalWidth || 1000, H = img.naturalHeight || 750, r = Math.max(W, H) / 90;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const line = (a, b, col) => `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="${r / 2.5}" stroke-dasharray="${r} ${r / 2}"/>`;
+    const dot = (p, col, i) => `<circle cx="${p.x}" cy="${p.y}" r="${r * 1.6}" fill="none" stroke="#fff" stroke-width="${r / 3}"/><circle data-i="${i}" cx="${p.x}" cy="${p.y}" r="${r}" fill="${col}" fill-opacity=".85"/>`;
+    let out = "";
+    const P = ms.pts;
+    if (P.length >= 2) out += line(P[0], P[1], "#ffd400");
+    if (P.length >= 4) out += line(P[2], P[3], "#2c9bff");
+    P.forEach((p, i) => { out += dot(p, i < 2 ? "#ffd400" : "#2c9bff", i); });
+    svg.innerHTML = out;
+    const n = P.length;
+    $("m-step").textContent = n < 4 ? `${n + 1} of 4 · ${M_STEPS[n]}` : "Done — check the result";
+    $("m-help").textContent = n < 4
+      ? (n < 2 ? "Yellow = the fish. You can drag a dot to fine-tune it." : "Blue = something of known size lying right next to the fish.")
+      : "Drag any dot to adjust. For best results the reference should lie flat beside the fish and the photo should be taken from straight above.";
+    $("m-ref-box").hidden = n < 4;
+    const len = measuredLength();
+    $("m-result").textContent = len ? `Fish length ≈ ${(Math.round(len * 4) / 4)}″` : (n >= 4 ? "Enter the reference size above" : "");
+    $("m-use").disabled = !len || len > 199;
+    $("m-undo").disabled = !n;
+  }
+  function mPoint(e) {
+    const img = $("m-img"), b = img.getBoundingClientRect();
+    const W = img.naturalWidth || b.width, H = img.naturalHeight || b.height;
+    return { x: (e.clientX - b.left) / b.width * W, y: (e.clientY - b.top) / b.height * H };
+  }
+  $("m-svg").addEventListener("pointerdown", e => {
+    e.preventDefault();
+    const p = mPoint(e), img = $("m-img"), scale = (img.naturalWidth || 1) / img.getBoundingClientRect().width;
+    const near = ms.pts.map((q, i) => ({ i, d: mDist(p, q) })).sort((a, b) => a.d - b.d)[0];
+    if (near && near.d < 28 * scale) { ms.drag = near.i; $("m-svg").setPointerCapture && $("m-svg").setPointerCapture(e.pointerId); return; }
+    if (ms.pts.length < 4) { ms.pts.push(p); drawMeasure(); }
+  });
+  $("m-svg").addEventListener("pointermove", e => { if (ms.drag < 0) return; ms.pts[ms.drag] = mPoint(e); drawMeasure(); });
+  ["pointerup", "pointercancel"].forEach(t => $("m-svg").addEventListener(t, () => { ms.drag = -1; }));
+  $("m-undo").addEventListener("click", () => { ms.pts.pop(); drawMeasure(); });
+  $("m-cancel").addEventListener("click", closeMeasure);
+  $("m-ref").addEventListener("change", drawMeasure);
+  $("m-ref-in").addEventListener("input", drawMeasure);
+  $("m-use").addEventListener("click", () => {
+    const len = measuredLength();
+    if (!len) return;
+    try { localStorage.setItem("fm-measure-ref", $("m-ref").value + "|" + $("m-ref-in").value); } catch (e) { /* fine */ }
+    closeMeasure();
+    if (ms.onUse) ms.onUse(Math.round(len * 4) / 4);
+  });
+
+  catchForm.querySelector("#c-measure").addEventListener("click", () => {
+    const q = id => catchForm.querySelector(id);
+    const file = q("#c-photo").files && q("#c-photo").files[0];
+    let src = file || null;
+    if (!src && editingCatch) {
+      const ph = (photosBySpot[editingCatch.spot_id] || []).find(p => p.catch_id === editingCatch.id);
+      if (ph && photoUrls[ph.path]) src = photoUrls[ph.path];
+    }
+    if (!src) { q("#c-size-note").textContent = "📷 Choose the catch photo first (just above), then tap 📏 again."; return; }
+    openMeasure(src, len => { q("#c-length").value = len; updateSizeNote(); });
+  });
+
   let editingCatch = null;   // the catch being edited, or null when logging a new one
 
   function openCatchForm(spotId, existing) {
@@ -2433,6 +2616,7 @@
     catchForm.reset();
     catchForm.photoInfo = null;
     catchForm.querySelector("#c-photo-info").textContent = "";
+    catchForm.querySelector("#c-size-note").textContent = "";
     tideTouched = false;
     q("#c-msg").textContent = "";
     q("#c-title").textContent = existing ? "Edit catch" : "Log a catch";
@@ -2446,6 +2630,9 @@
       q("#c-tide").value = existing.tide_stage || "";
       q("#c-by").value = existing.caught_by || "";
       q("#c-notes").value = existing.notes || "";
+      q("#c-length").value = existing.length_in != null ? +Number(existing.length_in).toFixed(2) : "";
+      q("#c-weight").value = existing.weight_lb != null && !existing.weight_est ? +Number(existing.weight_lb).toFixed(2) : "";
+      updateSizeNote();
       condRequest++;
       catchCond = {
         tideStage: existing.tide_stage, pressure: existing.pressure_inhg != null ? Number(existing.pressure_inhg) : null,
@@ -2517,7 +2704,8 @@
       solunar: c.solunar || null,
       conditions_source: c.source || null,
       water_temp_f: c.waterF != null ? c.waterF : null,
-      water_temp_source: c.waterSource || null
+      water_temp_source: c.waterSource || null,
+      ...sizeFields(txt("#c-species"), q("#c-length").value, q("#c-weight").value)
     };
     try {
       if (!db) throw new Error("Not connected to the database");
@@ -2564,7 +2752,7 @@
 
   function catchLine(c) {
     const when = new Date(c.caught_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-    const what = `${c.how_many > 1 ? c.how_many + " " : ""}${c.species}` + (c.bait ? ` on ${c.bait}` : "");
+    const what = `${c.how_many > 1 ? c.how_many + " " : ""}${c.species}` + sizeText(c) + (c.bait ? ` on ${c.bait}` : "");
     const extra = [
       c.tide_stage && STAGE_LABEL[c.tide_stage],
       c.pressure_inhg != null && `${Number(c.pressure_inhg).toFixed(2)} inHg${c.pressure_trend ? " " + c.pressure_trend : ""}`,
