@@ -89,6 +89,18 @@
   #viewer img { max-width: 100%; max-height: 78vh; border-radius: 8px; }
   #viewer .vbar { display: flex; gap: 12px; margin-top: 14px; align-items: center; color: #ddd; font-size: .9rem; flex-wrap: wrap; justify-content: center; }
   #viewer button { appearance: none; border: 1px solid rgba(255,255,255,.35); background: transparent; color: #fff; border-radius: 10px; padding: 8px 14px; font: inherit; cursor: pointer; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+  .tile-num { font-size: 1.35rem; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+  .tile-label { font-size: .75rem; color: var(--muted); }
+  .chart h3 { font-size: .95rem; margin: 0 0 2px; }
+  .chart .chart-sub { font-size: .8rem; color: var(--muted); margin-bottom: 8px; }
+  .bar-row { display: grid; grid-template-columns: 7.5em 1fr auto; align-items: center; gap: 8px; padding: 5px 0; font-size: .88rem; }
+  .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { height: 10px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 4px; min-width: 2px; }
+  .bar-val { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: .82rem; }
+  .bar-row.top .bar-label { font-weight: 700; }
   .check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--text); cursor: pointer; }
   .check-row input { width: auto; margin-top: 3px; transform: scale(1.2); }
   .auth-links { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
@@ -101,7 +113,7 @@
   .linkbtn { appearance: none; background: none; border: 0; padding: 4px 0; font: inherit; font-size: .85rem; color: var(--accent); cursor: pointer; }
   .linkbtn.danger { color: var(--falling); }
   /* List / Map tabs */
-  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--line); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; background: var(--line); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
   .tabs button { appearance: none; border: 0; border-radius: 9px; padding: 9px; font: inherit; font-weight: 600; background: transparent; color: var(--muted); cursor: pointer; }
   .tabs button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
   /* Map */
@@ -189,6 +201,7 @@
   <div class="tabs" role="tablist">
     <button id="tab-list" class="on" type="button" role="tab">☰ List</button>
     <button id="tab-map" type="button" role="tab">🗺 Map</button>
+    <button id="tab-insights" type="button" role="tab">📊 Insights</button>
   </div>
 
   <div id="view-map" hidden>
@@ -215,6 +228,20 @@
       <div class="label">Spots without a location</div>
       <ul id="unplaced-list"></ul>
     </div>
+  </div>
+
+  <div id="view-insights" hidden>
+    <div class="card">
+      <div class="label">Catch insights</div>
+      <div class="two" style="margin-top:4px">
+        <div><label for="ins-spot">Spot</label><select id="ins-spot"><option value="">All spots</option></select></div>
+        <div><label for="ins-species">Species</label><select id="ins-species"><option value="">All species</option></select></div>
+      </div>
+      <label class="check-row" for="ins-mine"><input id="ins-mine" type="checkbox"><span>Only my catches</span></label>
+    </div>
+    <div class="tiles" id="ins-tiles"></div>
+    <p class="spot-meta" id="ins-note" style="margin:0 0 14px"></p>
+    <div id="ins-charts"></div>
   </div>
 
   <div id="view-list">
@@ -350,7 +377,7 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>V2 step 4: photos. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>V2 step 5: catch insights. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
   </footer>
 </main>
 
@@ -818,6 +845,121 @@
     loadPhotos();
   });
 
+  // ---- Catch insights: what was going on when fish were caught ----
+  const PHASE_ORDER = ["new moon", "waxing crescent", "first quarter", "waxing gibbous", "full moon", "waning gibbous", "last quarter", "waning crescent"];
+
+  function timeOfDay(d) {
+    try {
+      const t = SunCalc.getTimes(d, LAT, LNG), H = 3600000;
+      if (Math.abs(d - t.sunrise) <= H) return "Dawn";
+      if (Math.abs(d - t.sunset) <= H) return "Dusk";
+      if (d < t.sunrise || d > t.sunset) return "Night";
+    } catch (e) {}
+    const h = d.getHours();
+    return h < 12 ? "Morning" : h < 15 ? "Midday" : "Afternoon";
+  }
+  function windBand(mph) {
+    if (mph == null) return null;
+    return mph <= 5 ? "0–5 mph" : mph <= 10 ? "6–10 mph" : mph <= 15 ? "11–15 mph" : "16+ mph";
+  }
+
+  // Each chart: a title, how to read one catch, and (optionally) a fixed order
+  const INSIGHT_CHARTS = [
+    { title: "Tide stage", sub: "Saltwater & brackish catches", key: c => c.tide_stage && cap(c.tide_stage), order: ["Incoming", "High slack", "Outgoing", "Low slack"] },
+    { title: "Pressure trend", sub: "Over the 3 hours before the catch", key: c => c.pressure_trend && cap(c.pressure_trend), order: ["Falling", "Steady", "Rising"] },
+    { title: "Time of day", sub: "Dawn and dusk = within an hour of sunrise / sunset", key: c => timeOfDay(new Date(c.caught_at)), order: ["Dawn", "Morning", "Midday", "Afternoon", "Dusk", "Night"] },
+    { title: "Moon phase", key: c => c.moon_phase && cap(c.moon_phase), order: PHASE_ORDER.map(cap) },
+    { title: "Solunar period", sub: "Major = moon overhead/underfoot · minor = moonrise/moonset", key: c => c.moon_phase ? (c.solunar ? cap(c.solunar) : "Neither") : null, order: ["Major", "Minor", "Neither"] },
+    { title: "Wind speed", key: c => windBand(c.wind_mph), order: ["0–5 mph", "6–10 mph", "11–15 mph", "16+ mph"] },
+    { title: "Top baits & lures", key: c => c.bait && cap(c.bait.trim().toLowerCase()), top: 6 },
+    { title: "Top species", key: c => c.species && cap(c.species.trim()), top: 6, hideWhenSpecies: true },
+    { title: "Top spots", key: c => { const s = (spots || []).find(x => x.id === c.spot_id); return s ? s.name : null; }, top: 6, hideWhenSpot: true }
+  ];
+
+  function fillInsightPickers() {
+    const spotSel = $("ins-spot"), spSel = $("ins-species");
+    const keepSpot = spotSel.value, keepSp = spSel.value;
+    spotSel.innerHTML = '<option value="">All spots</option>';
+    (spots || []).forEach(s => { const o = document.createElement("option"); o.value = s.id; o.textContent = s.name; spotSel.appendChild(o); });
+    const species = new Set();
+    Object.values(catchesBySpot).flat().forEach(c => c.species && species.add(cap(c.species.trim())));
+    spSel.innerHTML = '<option value="">All species</option>';
+    [...species].sort().forEach(n => { const o = document.createElement("option"); o.value = n; o.textContent = n; spSel.appendChild(o); });
+    spotSel.value = keepSpot; spSel.value = keepSp;
+  }
+
+  function insightCatches() {
+    const spotId = $("ins-spot").value, sp = $("ins-species").value, mineOnly = $("ins-mine").checked;
+    return Object.values(catchesBySpot).flat().filter(c =>
+      (!spotId || c.spot_id === spotId) &&
+      (!sp || (c.species && cap(c.species.trim()) === sp)) &&
+      (!mineOnly || isMine(c)));
+  }
+
+  function barChart(def, list) {
+    const counts = new Map();
+    let known = 0;
+    list.forEach(c => {
+      const k = def.key(c);
+      if (!k) return;
+      counts.set(k, (counts.get(k) || 0) + (c.how_many || 1));
+      known += (c.how_many || 1);
+    });
+    if (!known) return null;
+    let rows = [...counts.entries()];
+    if (def.order) rows = def.order.map(k => [k, counts.get(k) || 0]).concat(rows.filter(([k]) => !def.order.includes(k)));
+    else rows.sort((a, b) => b[1] - a[1]);
+    if (def.top) rows = rows.slice(0, def.top);
+    const max = Math.max(...rows.map(r => r[1]));
+    const card = el("div", "card chart");
+    card.appendChild(el("h3", null, def.title));
+    card.appendChild(el("div", "chart-sub", (def.sub ? def.sub + " · " : "") + `${known} fish with this info`));
+    rows.forEach(([label, n]) => {
+      const row = el("div", "bar-row" + (n === max && n > 0 ? " top" : ""));
+      row.appendChild(el("div", "bar-label", label));
+      const track = el("div", "bar-track"), fill = el("div", "bar-fill");
+      fill.style.width = (max ? (n / max) * 100 : 0) + "%";
+      if (!n) fill.style.minWidth = "0";
+      track.appendChild(fill); row.appendChild(track);
+      row.appendChild(el("div", "bar-val", n ? `${n} · ${Math.round(n / known * 100)}%` : "0"));
+      row.title = `${label}: ${n} fish`;
+      card.appendChild(row);
+    });
+    return card;
+  }
+
+  function tile(num, label) {
+    const t = el("div", "tile");
+    t.appendChild(el("div", "tile-num", String(num)));
+    t.appendChild(el("div", "tile-label", label));
+    return t;
+  }
+
+  function renderInsights() {
+    if ($("view-insights").hidden) return;
+    fillInsightPickers();
+    const list = insightCatches();
+    const fish = list.reduce((n, c) => n + (c.how_many || 1), 0);
+    const tiles = $("ins-tiles"); tiles.innerHTML = "";
+    const bySpecies = new Map();
+    list.forEach(c => { const k = cap((c.species || "").trim()); bySpecies.set(k, (bySpecies.get(k) || 0) + (c.how_many || 1)); });
+    const topSpecies = [...bySpecies.entries()].sort((a, b) => b[1] - a[1])[0];
+    tiles.appendChild(tile(fish, "fish caught"));
+    tiles.appendChild(tile(list.length, "catches logged"));
+    tiles.appendChild(tile(topSpecies ? topSpecies[0] : "—", "most caught"));
+    $("ins-note").textContent = !list.length ? "No catches match yet — log some catches and the patterns will show up here."
+      : (list.length < 20 ? `Based on ${list.length} catch${list.length === 1 ? "" : "es"}. Patterns get more trustworthy after about 20. ` : "") +
+        "Counts also reflect when you fish — if you mostly go on outgoing tides, outgoing will look best.";
+    const charts = $("ins-charts"); charts.innerHTML = "";
+    INSIGHT_CHARTS.forEach(def => {
+      if (def.hideWhenSpecies && $("ins-species").value) return;
+      if (def.hideWhenSpot && $("ins-spot").value) return;
+      const card = barChart(def, list);
+      if (card) charts.appendChild(card);
+    });
+  }
+  ["ins-spot", "ins-species", "ins-mine"].forEach(id => $(id).addEventListener("change", renderInsights));
+
   // ---- Filters (remembered on this phone) ----
   // Within a group, any ticked option matches; across groups, all must match.
   const FILTER_GROUPS = [
@@ -1242,6 +1384,7 @@
       if (error) throw error;
       catchesBySpot = {};
       data.forEach(c => (catchesBySpot[c.spot_id] = catchesBySpot[c.spot_id] || []).push(c));
+      renderInsights();
     } catch (err) {
       catchesBySpot = {}; // the spots list still works without catches
     }
@@ -1504,9 +1647,12 @@
   function showView(which) {
     const isMap = which === "map";
     $("view-map").hidden = !isMap;
-    $("view-list").hidden = isMap;
+    $("view-list").hidden = which !== "list";
+    $("view-insights").hidden = which !== "insights";
     $("tab-map").classList.toggle("on", isMap);
-    $("tab-list").classList.toggle("on", !isMap);
+    $("tab-list").classList.toggle("on", which === "list");
+    $("tab-insights").classList.toggle("on", which === "insights");
+    if (which === "insights") renderInsights();
     if (isMap) {
       initMap();
       if (!map) { $("map").textContent = "The map couldn't load — check your connection and refresh."; return; }
@@ -1516,6 +1662,7 @@
   }
   $("tab-list").addEventListener("click", () => { stopPlacing(); showView("list"); });
   $("tab-map").addEventListener("click", () => showView("map"));
+  $("tab-insights").addEventListener("click", () => { stopPlacing(); showView("insights"); });
 
   function initMap() {
     if (map || !window.L) return;

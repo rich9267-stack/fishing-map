@@ -30,4 +30,6 @@ A shared map to help pick where to fish in Pompano Beach / Broward County today:
 
 **Step 3:** filters — water type, spot type, public access, free/any parking, no long walk, no 4x4, only my spots, private only, has catches. Applies to the list and map; remembered on each phone.
 
-**Step 4 (current):** photos on spots and catches — shrunk on the phone to ~300 KB, stored privately in Supabase, shown via 1-hour signed links; tap to view full screen; delete your own.
+**Step 4:** photos on spots and catches — shrunk on the phone to ~300 KB, stored privately in Supabase, shown via 1-hour signed links; tap to view full screen; delete your own.
+
+**Step 5 (current):** 📊 Insights tab — fish counts by tide stage, pressure trend, time of day (dawn/dusk from sunrise/sunset), moon phase, solunar period, wind speed, top baits, species and spots; filter by spot, species, or only my catches.
