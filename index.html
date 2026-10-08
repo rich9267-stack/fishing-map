@@ -57,12 +57,21 @@
     <div class="next" id="next"></div>
   </div>
 
+  <div class="card" id="weather">
+    <div class="label">Wind &amp; weather · Pompano Beach</div>
+    <div class="now" id="wx-now">Loading weather…</div>
+    <div class="next" id="wx-detail"></div>
+    <ul id="wx-hours"></ul>
+  </div>
+
+  <h2>Tide times</h2>
   <div id="days"></div>
 
   <footer>
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
-    <br>Step 1 of the Fishing Map build.
+    Wind &amp; weather from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
+    <br>Step 2 of the Fishing Map build.
   </footer>
 </main>
 
@@ -153,7 +162,55 @@
     }
   }
 
+  // ---- Wind & weather from the National Weather Service ----
+  const WX_POINT = "26.24,-80.10"; // Pompano Beach / Hillsboro Inlet area
+
+  async function getJson(url) {
+    // The weather service sometimes hiccups; try twice before giving up
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(url, { headers: { Accept: "application/geo+json" } });
+        if (res.ok) return await res.json();
+      } catch (e) {}
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    throw new Error("Weather request failed");
+  }
+
+  async function loadWeather() {
+    const nowEl = document.getElementById("wx-now");
+    const detailEl = document.getElementById("wx-detail");
+    try {
+      const point = await getJson(`https://api.weather.gov/points/${WX_POINT}`);
+      const hourly = await getJson(point.properties.forecastHourly);
+      const now = new Date();
+      const periods = hourly.properties.periods.filter(p => new Date(p.endTime) > now);
+      if (!periods.length) throw new Error("No forecast");
+
+      const cur = periods[0];
+      nowEl.textContent = `💨 ${cur.windDirection} ${cur.windSpeed}`;
+      nowEl.className = "now";
+      const rain = cur.probabilityOfPrecipitation && cur.probabilityOfPrecipitation.value;
+      detailEl.textContent = `${cur.shortForecast}, ${cur.temperature}°${cur.temperatureUnit}` +
+        (rain != null ? ` · ${rain}% chance of rain` : "");
+
+      // Next several hours, every 2 hours
+      const ul = document.getElementById("wx-hours");
+      periods.slice(1, 13).filter((_, i) => i % 2 === 0).forEach(p => {
+        const li = document.createElement("li");
+        const r = p.probabilityOfPrecipitation && p.probabilityOfPrecipitation.value;
+        li.innerHTML = `<span>${clock(new Date(p.startTime))}</span>` +
+          `<span>${p.windDirection} ${p.windSpeed}<span class="ft">${r != null ? r + "% rain" : ""}</span></span>`;
+        ul.appendChild(li);
+      });
+    } catch (err) {
+      nowEl.textContent = "Couldn't load weather right now";
+      detailEl.textContent = "Tides still work — try refreshing in a minute.";
+    }
+  }
+
   load();
+  loadWeather();
 </script>
 </body>
 </html>
