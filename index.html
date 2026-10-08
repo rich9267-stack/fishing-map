@@ -2895,12 +2895,14 @@
     },
     chl: {
       title: "Water clarity (satellite chlorophyll)",
-      candidates: [{ id: "nesdisVHNSQchlaDaily", v: "chlor_a" }, { id: "nesdisVHNnoaa20chlaDaily", v: "chlor_a" }, { id: "erdMH1chla1day", v: "chlor_a" }],
+      // "Gap-filled" versions have no cloud holes. These datasets have an extra altitude slot and store latitude north-to-south.
+      candidates: [{ id: "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily", v: "chlor_a", alt: true, desc: true },
+                   { id: "nesdisVHNnoaaSNPPnoaa20chlaGapfilledDaily", v: "chlor_a", alt: true, desc: true }],
       palette: "Rainbow", scale: "Log",
       gradient: "linear-gradient(90deg,#3b0f9f,#2c6bff,#22c3e6,#3fd36b,#f4e04d,#f08a24,#d7191c)",
       fmt: (v, end) => end === "lo" ? "← clearer" : "murkier →",
       fallback: { lo: 0.05, hi: 5 },
-      note: "Blue = clear water, red = green/murky water. Gaps are clouds. Color changes (weed lines, edges) often hold fish."
+      note: "Blue = clear water, red = green/murky water. Cloudy areas are filled in by NOAA from nearby days. Color changes (weed lines, edges) often hold fish."
     }
   };
   let satLayer = null, satOn = null;
@@ -2922,10 +2924,19 @@
   }
 
   // Ask NOAA for a coarse sample of the latest image to learn its date and value range
+  // Build the "which slice" part of a NOAA request: [time][altitude?][latitude][longitude]
+  function satQuery(c, s, n, stride, desc) {
+    const st = stride ? `:${stride}:` : ":";
+    const lat = desc ? `[(${n})${st}(${s})]` : `[(${s})${st}(${n})]`;
+    return `${c.v}[(last)]${c.alt ? "[(0.0)]" : ""}${lat}[(${SAT_BOX.w})${st}(${SAT_BOX.e})]`;
+  }
+
   async function satProbe(def) {
-    for (const c of def.candidates) {
+    for (const c0 of def.candidates) {
+      for (const desc of [!!c0.desc, !c0.desc]) { // if the latitude order guess is wrong, try the other way
+      const c = { ...c0, desc };
       try {
-        const q = `${ERDDAP}${c.id}.json?${c.v}[(last)][(${SAT_BOX.s}):20:(${SAT_BOX.n})][(${SAT_BOX.w}):20:(${SAT_BOX.e})]`;
+        const q = `${ERDDAP}${c.id}.json?${satQuery(c, SAT_BOX.s, SAT_BOX.n, 20, desc)}`;
         const d = await erddapJson(q);
         const rows = (d.table && d.table.rows) || [];
         const vals = rows.map(r => r[r.length - 1]).filter(v => typeof v === "number" && isFinite(v) && (def.scale !== "Log" || v > 0)).sort((a, b) => a - b);
@@ -2935,6 +2946,7 @@
         if (def.scale === "Linear" && hi - lo < 1) { lo -= 0.5; hi += 0.5; }
         return { c, time: rows[0][0], lo, hi };
       } catch (e) { /* try the next source */ }
+      }
     }
     throw new Error("No satellite image available right now");
   }
@@ -2963,7 +2975,7 @@
       const STEP = 0.25;
       for (let lat = SAT_BOX.s; lat < SAT_BOX.n - 1e-9; lat += STEP) {
         const top = Math.min(SAT_BOX.n, lat + STEP);
-        const url = `${ERDDAP}${p.c.id}.transparentPng?${p.c.v}[(last)][(${lat.toFixed(2)}):(${top.toFixed(2)})][(${SAT_BOX.w}):(${SAT_BOX.e})]&.colorBar=${bar}`;
+        const url = `${ERDDAP}${p.c.id}.transparentPng?${satQuery(p.c, lat.toFixed(2), top.toFixed(2), 0, p.c.desc)}&.colorBar=${bar}`;
         L.imageOverlay(url, [[lat, SAT_BOX.w], [top, SAT_BOX.e]], { opacity: 0.6, interactive: false }).addTo(satLayer);
       }
       satLayer.addTo(map);
