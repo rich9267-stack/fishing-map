@@ -74,6 +74,8 @@
   [hidden] { display: none !important; }
   .userbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: .85rem; color: var(--muted); margin: -8px 0 12px; }
   .userbar-links { display: flex; gap: 14px; }
+  .check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--text); cursor: pointer; }
+  .check-row input { width: auto; margin-top: 3px; transform: scale(1.2); }
   .auth-links { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .btn.small { padding: 7px 11px; font-size: .85rem; }
   .catches { margin-top: 10px; }
@@ -191,6 +193,7 @@
       <span><span class="dot" style="background:#16a085"></span>Brackish / tidal canal</span>
       <span><span class="dot" style="background:#b7791f"></span>Freshwater</span>
       <span><span class="dot" style="background:#fff;border-color:#888"></span>Suggested</span>
+      <span><span class="dot" style="background:#1d6fd6;box-shadow:0 0 0 2px #222"></span>Private (yours)</span>
     </div>
     <div class="card" id="unplaced-card" style="margin-top:14px" hidden>
       <div class="label">Spots without a location</div>
@@ -264,6 +267,11 @@
       <label for="f-by">Added by *</label>
       <input id="f-by" required maxlength="40" placeholder="Your name">
 
+      <label class="check-row" for="f-private">
+        <input id="f-private" type="checkbox">
+        <span><strong>🔒 Private</strong> — only you can see this spot and its catches</span>
+      </label>
+
       <label>Location</label>
       <div class="row">
         <span id="loc-text" class="spot-meta">Not set</span>
@@ -320,7 +328,7 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>V2 step 1: logins. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>V2 step 2: private spots. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
   </footer>
 </main>
 
@@ -1082,7 +1090,7 @@
     }
     spots.forEach(s => {
       const item = el("div", "spot");
-      item.appendChild(el("div", "spot-name", s.name));
+      item.appendChild(el("div", "spot-name", (s.is_private ? "🔒 " : "") + s.name));
       item.appendChild(el("div", "spot-meta",
         `${cap(s.spot_type)} · ${WATER_LABEL[s.water_type] || s.water_type}` + (s.added_by ? ` · added by ${s.added_by}` : "")));
       const condEl = el("div", "spot-cond", spotConditions(s));
@@ -1150,6 +1158,7 @@
       $("f-access-notes").value = existing.access_notes || "";
       $("f-notes").value = existing.notes || "";
       $("f-by").value = existing.added_by || "";
+      $("f-private").checked = !!existing.is_private;
       pickedLoc = hasLoc(existing) ? { lat: existing.lat, lng: existing.lng } : null;
       $("loc-text").textContent = pickedLoc ? "Set ✓ (keep, or pick a new one)" : "Not set";
       $("spots-card").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1198,6 +1207,7 @@
       access_notes: val("f-access-notes"),
       notes: val("f-notes"),
       added_by: val("f-by"),
+      is_private: $("f-private").checked,
       lat: pickedLoc ? pickedLoc.lat : null,
       lng: pickedLoc ? pickedLoc.lng : null
     };
@@ -1290,7 +1300,8 @@
 
   function popupFor(s) {
     const box = document.createElement("div");
-    box.appendChild(el("div", "pop-name", s.name));
+    box.appendChild(el("div", "pop-name", (s.is_private ? "🔒 " : "") + s.name));
+    if (s.is_private) box.appendChild(el("div", "pop-meta", "Private — only you can see this"));
     box.appendChild(el("div", "pop-meta", `${cap(s.spot_type)} · ${WATER_LABEL[s.water_type] || s.water_type}`));
     box.appendChild(el("div", "pop-cond", spotConditions(s)));
     const n = (catchesBySpot[s.id] || []).reduce((t, c) => t + (c.how_many || 1), 0);
@@ -1317,7 +1328,8 @@
     pinLayer.clearLayers();
     (spots || []).filter(s => s.lat != null && s.lng != null).forEach(s => {
       L.circleMarker([s.lat, s.lng], {
-        radius: 9, weight: 3, color: "#ffffff", fillColor: WATER_COLOR[s.water_type] || "#555", fillOpacity: 1
+        radius: 9, weight: 3, color: s.is_private ? "#222222" : "#ffffff", dashArray: s.is_private ? "3 3" : null,
+        fillColor: WATER_COLOR[s.water_type] || "#555", fillOpacity: 1
       }).bindPopup(() => popupFor(s)).addTo(pinLayer);
     });
     const unplaced = (spots || []).filter(s => s.lat == null || s.lng == null);
