@@ -487,7 +487,7 @@
 
   <div class="card" id="best-card">
     <div class="label">🏆 Best spots today</div>
-    <div class="spot-meta" style="margin-top:4px">Ranks your spots by how well the next 12 hours match the conditions when fish were caught there.</div>
+    <div class="spot-meta" style="margin-top:4px">Ranks your spots by how well the next 12 hours match the conditions when fish were caught there (tide, pressure, time, solunar, wind, water temperature) — nudged up when it’s the season for what’s caught there and when people have photographed those fish nearby lately.</div>
     <div id="best-list"><div class="empty">Working it out…</div></div>
   </div>
 
@@ -1757,6 +1757,7 @@
     });
     if (!$("view-seasons").hidden) renderSeasons();
     if (sightOn) renderSightPins();
+    renderBest();
   }
 
   function renderSightPins() {
@@ -2908,16 +2909,20 @@
     sol:   { major: .167, minor: .083, none: .75 },
     moon:  { "new moon": .06, "waxing crescent": .19, "first quarter": .06, "waxing gibbous": .19,
              "full moon": .06, "waning gibbous": .19, "last quarter": .06, "waning crescent": .19 },
-    wind:  { "0–5 mph": .25, "6–10 mph": .25, "11–15 mph": .25, "16+ mph": .25 }
+    wind:  { "0–5 mph": .25, "6–10 mph": .25, "11–15 mph": .25, "16+ mph": .25 },
+    // Southeast Florida water over a year: rarely under 70°F, mostly mid-70s to mid-80s
+    water: { "Under 70°F": .05, "70–74°F": .2, "75–79°F": .3, "80–84°F": .3, "85°F+": .15 }
   };
   const FACTOR_LABEL = {
     tide: v => cap(v) + " tide", trend: v => cap(v) + " pressure", tod: v => "Between " + v,
-    sol: v => v === "none" ? "outside solunar periods" : cap(v) + " solunar period", moon: v => cap(v), wind: v => "wind " + v
+    sol: v => v === "none" ? "outside solunar periods" : cap(v) + " solunar period", moon: v => cap(v), wind: v => "wind " + v,
+    water: v => "water " + v
   };
   function catchFactors(c) {
     return {
       tide: c.tide_stage || null, trend: c.pressure_trend || null, tod: timeOfDay(new Date(c.caught_at)),
-      sol: c.moon_phase ? (c.solunar || "none") : null, moon: c.moon_phase || null, wind: windBand(c.wind_mph)
+      sol: c.moon_phase ? (c.solunar || "none") : null, moon: c.moon_phase || null, wind: windBand(c.wind_mph),
+      water: waterBand(c.water_temp_f)
     };
   }
   function windAt(t) {
@@ -2932,7 +2937,42 @@
     }
     let sol = null, moon = null;
     try { sol = solunarAt(t) || "none"; moon = moonAt(t).phase; } catch (e) {}
-    return { tide, trend: cond.pressureTrend || null, tod: timeOfDay(t), sol, moon, wind: windBand(windAt(t)) };
+    let water = null;
+    if (hasLoc(s) && s.water_type !== "freshwater") {
+      const w = waterTempNow(s.lat, s.lng);
+      if (w.done && w.done !== "error") water = waterBand(w.done.f);
+    }
+    return { tide, trend: cond.pressureTrend || null, tod: timeOfDay(t), sol, moon, wind: windBand(windAt(t)), water };
+  }
+
+  // Things about the spot as a whole (same all day): is it the season for what's caught here, and have
+  // people photographed those kinds of fish nearby lately? Small nudges on top of the hour-by-hour match.
+  function spotExtras(s, catches) {
+    let bonus = 0; const notes = [];
+    // Season: what's been caught here (or by the group, for a new spot), weighted by fish
+    const bySp = new Map();
+    catches.forEach(c => {
+      const f = SEASONS.find(x => hasWord(c.species || "", x.match));
+      if (f) bySp.set(f, (bySp.get(f) || 0) + (c.how_many || 1));
+    });
+    const m = new Date().getMonth();
+    const tot = [...bySp.values()].reduce((a, b) => a + b, 0);
+    if (tot) {
+      const avg = [...bySp.entries()].reduce((n, [f, k]) => n + f.runs[m] * k, 0) / tot;
+      bonus += (avg - 1) * 0.25;
+      const top = [...bySp.entries()].sort((a, b) => b[1] - a[1])[0][0];
+      const lvl = top.runs[m];
+      notes.push(lvl === 2 ? `🔥 ${top.name} peak season` : lvl === 1 ? `📅 ${top.name}: decent month` : `📅 ${top.name}: slow month`);
+      if (seasonOpen(top, new Date()) === false) notes.push(`⛔ ${top.name} closed to keep`);
+    }
+    // Public sightings within 5 mi (iNaturalist, last 60 days)
+    const seen = typeof sightsNear === "function" ? sightsNear(s) : [];
+    if (seen.length) {
+      bonus += seen.length >= 6 ? 0.3 : seen.length >= 3 ? 0.2 : 0.1;
+      const kinds = [...new Set(seen.map(o => o.name))];
+      notes.push(`👀 ${seen.length} game-fish sighting${seen.length === 1 ? "" : "s"} nearby (${kinds.slice(0, 2).join(", ")}${kinds.length > 2 ? "…" : ""})`);
+    }
+    return { bonus, notes };
   }
 
   // Score one moment against a set of catches. Returns { score, reasons }.
@@ -2979,7 +3019,10 @@
         const r = scoreMoment(factorsAt(s, i === 0 ? new Date() : t), hist);
         if (!best || r.score > best.score + 0.01) best = { ...r, t, now: i === 0 };
       });
-      ranked.push({ s, best, basis, own: ownFish >= 3 });
+      const sameWater = all.filter(c => { const cs = spots.find(x => x.id === c.spot_id); return cs && cs.water_type === s.water_type; });
+      const extra = spotExtras(s, ownFish >= 3 ? own : sameWater);
+      best.score += extra.bonus;
+      ranked.push({ s, best, basis, own: ownFish >= 3, extra });
     });
     ranked.sort((a, b) => (b.own - a.own) || (b.best.score - a.best.score));
     if (!ranked.length) {
@@ -2998,6 +3041,7 @@
       top.appendChild(el("span", "best-when", r.best.now ? "Best: now" : `Best around ${clock(r.best.t)}`));
       row.appendChild(top);
       row.appendChild(el("div", "best-why", r.best.reasons.length ? "✓ " + r.best.reasons.slice(0, 3).map(x => x.text).join(" · ") : "No strong pattern yet for these conditions"));
+      if (r.extra.notes.length) row.appendChild(el("div", "best-why", r.extra.notes.join(" · ")));
       row.appendChild(el("div", "spot-meta", "Based on " + r.basis));
       box.appendChild(row);
     });
