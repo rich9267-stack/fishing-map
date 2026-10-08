@@ -247,7 +247,7 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>Step 5 of the Fishing Map build. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>Step 6 of the Fishing Map build. Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
   </footer>
 </main>
 
@@ -460,11 +460,140 @@
   }
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
-  function spotConditions(s) {
-    if (s.water_type === "freshwater") {
-      return [cond.wind, "Water level: coming in a later step"].filter(Boolean).join(" · ");
+  // ---- Per-spot conditions: nearest tide station or freshwater gauge ----
+  // NOAA tide-prediction stations in and around Broward County
+  const TIDE_STATIONS = [
+    { id: "8722670", name: "Lake Worth Pier", lat: 26.6128, lng: -80.0342 },
+    { id: "8722802", name: "Lake Wyman (Boca Raton)", lat: 26.37, lng: -80.07 },
+    { id: "8722832", name: "Deerfield Beach", lat: 26.3133, lng: -80.0817 },
+    { id: "8722854", name: "Hillsboro Beach, ICWW", lat: 26.2733, lng: -80.08 },
+    { id: "8722859", name: "Hillsboro", lat: 26.26, lng: -80.085 },
+    { id: "8722861", name: "Hillsboro Inlet, inside", lat: 26.2583, lng: -80.0817 },
+    { id: "8722862", name: "Hillsboro Inlet, ocean", lat: 26.2567, lng: -80.08 },
+    { id: "8722899", name: "Lauderdale-by-the-Sea", lat: 26.1883, lng: -80.0933 },
+    { id: "8722937", name: "Ft. Lauderdale, Andrews Ave Bridge", lat: 26.1183, lng: -80.145 },
+    { id: "8722939", name: "Ft. Lauderdale, Bahia Yacht Club", lat: 26.1133, lng: -80.1083 },
+    { id: "8722946", name: "Mayan Lake", lat: 26.1, lng: -80.1083 },
+    { id: "8722951", name: "Port Everglades, Lake Mabel", lat: 26.0917, lng: -80.1233 },
+    { id: "8722956", name: "South Port Everglades", lat: 26.0817, lng: -80.1167 },
+    { id: "8722957", name: "North Dania Sound", lat: 26.08, lng: -80.1117 },
+    { id: "8722968", name: "Port Laudania", lat: 26.06, lng: -80.13 },
+    { id: "8722971", name: "Whiskey Creek, south entrance", lat: 26.055, lng: -80.1133 },
+    { id: "8722977", name: "West Lake, north end", lat: 26.0433, lng: -80.1267 },
+    { id: "8722979", name: "Hollywood Beach", lat: 26.04, lng: -80.115 },
+    { id: "8722982", name: "West Lake, south end", lat: 26.0333, lng: -80.1233 },
+    { id: "8723214", name: "Virginia Key", lat: 25.7314, lng: -80.1618 }
+  ];
+
+  function miles(aLat, aLng, bLat, bLng) {
+    const R = 3958.8, rad = Math.PI / 180;
+    const dLat = (bLat - aLat) * rad, dLng = (bLng - aLng) * rad;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(aLat * rad) * Math.cos(bLat * rad) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+  function hasLoc(s) { return s && s.lat != null && s.lng != null; }
+
+  // The tide station a spot uses (Hillsboro for spots without a location)
+  function stationFor(s) {
+    if (!hasLoc(s)) return { ...TIDE_STATIONS.find(t => t.id === STATION), dist: null };
+    let best = null;
+    TIDE_STATIONS.forEach(t => {
+      const d = miles(s.lat, s.lng, t.lat, t.lng);
+      if (!best || d < best.dist) best = { ...t, dist: d };
+    });
+    return best;
+  }
+
+  // Each station's high/lows are fetched once and shared by every spot that uses it
+  const tideCache = {};
+  function stationTides(id) {
+    if (!tideCache[id]) {
+      const start = new Date(); start.setDate(start.getDate() - 1);
+      const url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter" +
+        `?product=predictions&application=fishing_map&begin_date=${ymd(start)}&range=96` +
+        `&datum=MLLW&station=${id}&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
+      tideCache[id] = fetch(url).then(r => r.json()).then(d => {
+        if (!d.predictions) throw new Error("No tide data");
+        return d.predictions.map(p => ({ when: parseNoaa(p.t), high: p.type === "H" }));
+      });
+      tideCache[id].done = false;
+      tideCache[id].then(t => { tideCache[id].done = t; refreshConditions(); },
+                         () => { tideCache[id].done = "error"; refreshConditions(); });
     }
-    return [cond.tide, cond.wind, pressureShort()].filter(Boolean).join("  ·  ") || "Loading conditions…";
+    return tideCache[id];
+  }
+
+  function stageFrom(tides, when) {
+    const prev = [...tides].reverse().find(t => t.when <= when);
+    const next = tides.find(t => t.when > when);
+    if (!prev || !next) return null;
+    const SLACK = 30 * 60000;
+    let stage;
+    if (when - prev.when < SLACK) stage = prev.high ? "high slack" : "low slack";
+    else if (next.when - when < SLACK) stage = next.high ? "high slack" : "low slack";
+    else stage = next.high ? "incoming" : "outgoing";
+    return { stage, next };
+  }
+
+  function spotTideText(s) {
+    const st = stationFor(s);
+    const p = stationTides(st.id);
+    if (!p.done) return "Loading tide…";
+    if (p.done === "error") return "Tide unavailable";
+    const r = stageFrom(p.done, new Date());
+    if (!r) return "Tide unavailable";
+    const arrow = { incoming: "⬆ Incoming", outgoing: "⬇ Outgoing", "high slack": "High slack", "low slack": "Low slack" }[r.stage];
+    const where = st.dist != null ? ` (${st.name}, ${st.dist < 0.1 ? "here" : st.dist.toFixed(1) + " mi"})` : "";
+    return `${arrow} · ${r.next.high ? "high" : "low"} ${clock(r.next.when)}${where}`;
+  }
+
+  // Freshwater: nearest active USGS gauge with a water-level reading, plus its 24-hour change
+  const gaugeCache = {};
+  function gaugeFor(s) {
+    if (!hasLoc(s)) return null;
+    const key = s.id + ":" + s.lat + "," + s.lng;
+    if (!gaugeCache[key]) {
+      const box = [s.lng - 0.3, s.lat - 0.3, s.lng + 0.3, s.lat + 0.3].map(v => v.toFixed(4)).join(",");
+      const url = `https://waterservices.usgs.gov/nwis/iv/?format=json&bBox=${box}` +
+        "&parameterCd=00065,62614,62615,62620&siteStatus=active&period=P1D";
+      gaugeCache[key] = fetch(url).then(r => r.json()).then(d => {
+        let best = null;
+        (d.value.timeSeries || []).forEach(ts => {
+          const vals = (ts.values[0] && ts.values[0].value || []).filter(v => v.value !== "" && +v.value > -999990);
+          if (!vals.length) return;
+          const loc = ts.sourceInfo.geoLocation.geogLocation;
+          const dist = miles(s.lat, s.lng, loc.latitude, loc.longitude);
+          if (best && best.dist <= dist) return; // keep the closest gauge
+          const latest = vals[vals.length - 1], first = vals[0];
+          best = {
+            name: ts.sourceInfo.siteName, dist,
+            ft: +latest.value, change: +latest.value - +first.value,
+            hours: (new Date(latest.dateTime) - new Date(first.dateTime)) / 3600000
+          };
+        });
+        return best;
+      });
+      gaugeCache[key].done = false;
+      gaugeCache[key].then(g => { gaugeCache[key].done = g || "none"; refreshConditions(); },
+                           () => { gaugeCache[key].done = "error"; refreshConditions(); });
+    }
+    return gaugeCache[key];
+  }
+
+  function spotWaterText(s) {
+    if (!hasLoc(s)) return "Set a location to see water level";
+    const g = gaugeFor(s);
+    if (!g.done) return "Loading water level…";
+    if (g.done === "error") return "Water level unavailable";
+    if (g.done === "none") return "No water-level gauge nearby";
+    const v = g.done;
+    const trend = v.hours < 6 ? "" : Math.abs(v.change) < 0.05 ? " steady" : v.change > 0 ? ` ↗ up ${v.change.toFixed(2)} ft` : ` ↘ down ${Math.abs(v.change).toFixed(2)} ft`;
+    return `💧 ${v.ft.toFixed(2)} ft${trend}${v.hours >= 6 ? " (24 hr)" : ""} · gauge ${v.dist.toFixed(1)} mi away`;
+  }
+
+  function spotConditions(s) {
+    const first = s.water_type === "freshwater" ? spotWaterText(s) : spotTideText(s);
+    return [first, cond.wind, pressureShort()].filter(Boolean).join("  ·  ");
   }
   function pressureShort() {
     if (cond.pressure == null) return null;
@@ -541,11 +670,11 @@
   }
 
   // Tide stage at a given moment, from NOAA's high/low predictions (works for any date)
-  async function tideStageAt(when) {
+  async function tideStageAt(when, stationId) {
     const start = new Date(when.getTime() - 36 * 3600000);
     const url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter" +
       `?product=predictions&application=fishing_map&begin_date=${ymd(start)}&range=72` +
-      `&datum=MLLW&station=${STATION}&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
+      `&datum=MLLW&station=${stationId || STATION}&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
     const data = await (await fetch(url)).json();
     if (!data.predictions) throw new Error("No tide data");
     const tides = data.predictions.map(p => ({ when: parseNoaa(p.t), high: p.type === "H" }));
@@ -649,14 +778,17 @@
     try { moon = moonAt(when); sol = solunarAt(when); } catch (e) {}
     out.textContent = "Looking up conditions for that time…";
     const recent = Math.abs(Date.now() - when) <= 2 * 3600000;
-    condPromise = Promise.allSettled([tideStageAt(when), weatherAt(when)]).then(([tide, wx]) => {
+    const spot = (spots || []).find(x => x.id === openCatchSpot);
+    const fresh = spot && spot.water_type === "freshwater";
+    const tideJob = fresh ? Promise.reject(new Error("freshwater")) : tideStageAt(when, spot ? stationFor(spot).id : STATION);
+    condPromise = Promise.allSettled([tideJob, weatherAt(when)]).then(([tide, wx]) => {
       if (id !== condRequest) return; // the time changed again; a newer lookup is running
       let w = wx.status === "fulfilled" ? wx.value : null;
       if (!w && recent && cond.pressure != null) {
         // Weather records unavailable — fall back to the live readings for a just-caught fish
         w = { pressure: cond.pressure, trend: cond.pressureTrend, windDir: cond.windDir, windMph: cond.windMph, tempF: cond.tempF, source: "nws" };
       }
-      const stage = tide.status === "fulfilled" ? tide.value : (recent ? cond.tideStage : null);
+      const stage = tide.status === "fulfilled" ? tide.value : (recent && !fresh ? cond.tideStage : null);
       catchCond = { ...(w || {}), tideStage: stage || null, moon, solunar: sol };
       const tideSel = catchForm.querySelector("#c-tide");
       if (!tideTouched) tideSel.value = stage || "";
@@ -711,7 +843,8 @@
       renderSpots();
     } else {
       q("#c-when").value = localInputValue(new Date());
-      q("#c-tide").value = cond.tideStage || "";
+      const sp = (spots || []).find(x => x.id === spotId);
+      q("#c-tide").value = sp && sp.water_type === "freshwater" ? "" : (cond.tideStage || "");
       try { q("#c-by").value = localStorage.getItem("fm-name") || ""; } catch (e) {}
       renderSpots();
       lookupCatchConditions();
