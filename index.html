@@ -85,6 +85,11 @@
   .thumbs { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; }
   .thumbs img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; flex-shrink: 0; background: var(--line); }
   .photo-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .id-box { margin-top: 8px; }
+  .id-sugg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .id-sugg button { appearance: none; font: inherit; font-size: .9rem; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; }
+  .id-sugg button.on { background: var(--accent); color: #fff; }
+  .id-sugg small { opacity: .75; font-weight: 400; }
   #measure { position: fixed; inset: 0; z-index: 1300; background: #000; color: #fff; display: flex; flex-direction: column; }
   #measure .m-top { padding: 12px 16px; display: flex; gap: 10px; align-items: center; justify-content: space-between; background: rgba(0,0,0,.85); }
   #m-step { font-weight: 700; font-size: 1rem; }
@@ -559,6 +564,11 @@
       </div>
       <img id="qc-shot" alt="" hidden>
       <div class="spot-meta" id="qc-source" style="margin-top:8px"></div>
+      <div class="id-box" id="qc-id-box" hidden>
+        <button class="btn ghost small" id="qc-identify" type="button">🔍 Identify fish</button>
+        <div class="spot-meta" id="qc-id-msg"></div>
+        <div class="id-sugg" id="qc-id-sugg"></div>
+      </div>
       <label for="qc-spot">Spot</label>
       <select id="qc-spot"></select>
       <div class="spot-meta" id="qc-spot-note"></div>
@@ -1895,6 +1905,7 @@
     $("qc-source").textContent = qc.source || "";
     if (qc.blob) { $("qc-shot").src = URL.createObjectURL(qc.blob); $("qc-shot").hidden = false; }
     else $("qc-shot").hidden = true;
+    $("qc-id-box").hidden = !qc.blob; $("qc-id-msg").textContent = ID_NOTE; $("qc-id-sugg").innerHTML = "";
     fillSpotChoices();
     // species chips: my recent species first, then common local ones
     const mine = Object.values(catchesBySpot).flat().filter(isMine)
@@ -2262,7 +2273,12 @@
       <div><label for="c-length">Length (inches)</label><input id="c-length" type="number" min="0.5" max="199" step="0.25" inputmode="decimal"></div>
       <div><label for="c-weight">Weight (lb)</label><input id="c-weight" type="number" min="0.05" max="1999" step="0.05" inputmode="decimal" placeholder="Optional"></div>
     </div>
-    <button class="btn ghost small" id="c-measure" type="button" style="margin-top:8px">📏 Measure from the photo</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button class="btn ghost small" id="c-measure" type="button">📏 Measure from the photo</button>
+      <button class="btn ghost small" id="c-identify" type="button">🔍 Identify fish</button>
+    </div>
+    <div class="spot-meta" id="c-id-msg"></div>
+    <div class="id-sugg" id="c-id-sugg"></div>
     <div class="spot-meta" id="c-size-note" style="margin-top:6px"></div>
     <div class="spot-meta" id="c-cond" style="margin-top:10px"></div>
     <div class="row" style="margin-top:14px">
@@ -2595,6 +2611,22 @@
     if (ms.onUse) ms.onUse(Math.round(len * 4) / 4);
   });
 
+  function catchFormPhoto() {
+    const f = catchForm.querySelector("#c-photo").files;
+    if (f && f[0]) return f[0];
+    if (editingCatch) {
+      const ph = (photosBySpot[editingCatch.spot_id] || []).find(p => p.catch_id === editingCatch.id);
+      if (ph && photoUrls[ph.path]) return photoUrls[ph.path];
+    }
+    return null;
+  }
+  catchForm.querySelector("#c-identify").addEventListener("click", () => {
+    const q = id => catchForm.querySelector(id);
+    const src = catchFormPhoto();
+    if (!src) { q("#c-id-msg").textContent = "📷 Choose the catch photo first (above), then tap 🔍 again."; return; }
+    const sp = (spots || []).find(x => x.id === openCatchSpot);
+    identifyFish(src, sp && sp.water_type, q("#c-id-msg"), q("#c-id-sugg"), name => { q("#c-species").value = name; updateSizeNote(); });
+  });
   catchForm.querySelector("#c-measure").addEventListener("click", () => {
     const q = id => catchForm.querySelector(id);
     const file = q("#c-photo").files && q("#c-photo").files[0];
@@ -2607,6 +2639,60 @@
     openMeasure(src, len => { q("#c-length").value = len; updateSizeNote(); });
   });
 
+  // ---- 🔍 Fish ID: one photo → Google Gemini (free tier) via our Supabase function → up to 3 suggestions ----
+  const ID_NOTE = "Sends just this photo (no location) to Google's Gemini AI — free, but Google may use it to improve its products. It's a suggestion: check it.";
+  async function photoB64(src) {
+    const blob = typeof src === "string" ? await (await fetch(src)).blob() : src;
+    let img;
+    try { img = await createImageBitmap(blob, { imageOrientation: "from-image" }); }
+    catch (e) { img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(blob); }); }
+    const scale = Math.min(1, 1024 / Math.max(img.width, img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", 0.85).split(",")[1]; // a fresh picture: no hidden photo details travel with it
+  }
+  async function identifyFish(src, water, msgEl, suggEl, onPick) {
+    suggEl.innerHTML = "";
+    if (!navigator.onLine) { msgEl.textContent = "Fish ID needs a signal — you can identify it later with Edit."; return; }
+    msgEl.textContent = "🔍 Looking at the photo… " + ID_NOTE;
+    try {
+      const image = await photoB64(src);
+      const { data, error } = await db.functions.invoke("identify-fish", { body: { image, water } });
+      let out = data;
+      if (error) {
+        try { out = error.context && typeof error.context.json === "function" ? await error.context.json() : null; } catch (e) { out = null; }
+        throw new Error((out && out.error) || error.message || "Fish ID didn't answer");
+      }
+      if (!out || !out.fish_visible || !(out.suggestions || []).length) { msgEl.textContent = "Couldn't spot a fish clearly in this photo — try one with the whole fish showing."; return; }
+      msgEl.textContent = "Tap the right one (or type your own):";
+      out.suggestions.forEach(sg => {
+        const b = document.createElement("button"); b.type = "button";
+        b.append(sg.name + " ");
+        const sm = document.createElement("small"); sm.textContent = `· ${sg.confidence}`; b.appendChild(sm);
+        if (sg.clue) b.title = sg.clue;
+        b.addEventListener("click", () => {
+          suggEl.querySelectorAll("button").forEach(x => x.classList.remove("on")); b.classList.add("on");
+          onPick(sg.name);
+          msgEl.textContent = sg.clue ? `✓ ${sg.name} — ${sg.clue}` : `✓ ${sg.name}`;
+        });
+        suggEl.appendChild(b);
+      });
+      if (out.suggestions[0] && out.suggestions[0].clue) msgEl.textContent += ` Best guess because: ${out.suggestions[0].clue}.`;
+    } catch (e) {
+      msgEl.textContent = "Fish ID: " + (e.message || e);
+    }
+  }
+  $("qc-identify").addEventListener("click", () => {
+    const sp = (spots || []).find(x => x.id === $("qc-spot").value);
+    identifyFish(qc.blob, sp && sp.water_type, $("qc-id-msg"), $("qc-id-sugg"), name => {
+      const chips = $("qc-species").querySelectorAll(".fchip");
+      chips.forEach(x => x.classList.remove("on"));
+      const match = [...chips].find(x => x.textContent.toLowerCase() === name.toLowerCase());
+      if (match) { match.classList.add("on"); $("qc-species-other").value = ""; } else $("qc-species-other").value = name;
+    });
+  });
+
   let editingCatch = null;   // the catch being edited, or null when logging a new one
 
   function openCatchForm(spotId, existing) {
@@ -2617,6 +2703,7 @@
     catchForm.photoInfo = null;
     catchForm.querySelector("#c-photo-info").textContent = "";
     catchForm.querySelector("#c-size-note").textContent = "";
+    catchForm.querySelector("#c-id-msg").textContent = ""; catchForm.querySelector("#c-id-sugg").innerHTML = "";
     tideTouched = false;
     q("#c-msg").textContent = "";
     q("#c-title").textContent = existing ? "Edit catch" : "Log a catch";
