@@ -2896,8 +2896,11 @@
     chl: {
       title: "Water clarity (satellite chlorophyll)",
       // "Gap-filled" versions have no cloud holes. These datasets have an extra altitude slot and store latitude north-to-south.
-      candidates: [{ id: "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily", v: "chlor_a", alt: true, desc: true },
-                   { id: "nesdisVHNnoaaSNPPnoaa20chlaGapfilledDaily", v: "chlor_a", alt: true, desc: true }],
+      // grid: true = download the numbers once (about 1,300 squares, ~9 km each) and draw the picture on the phone,
+      // instead of asking NOAA's slow image maker for many slices.
+      candidates: [{ id: "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily", v: "chlor_a", alt: true, desc: true, grid: true },
+                   { id: "nesdisVHNnoaaSNPPnoaa20chlaGapfilledDaily", v: "chlor_a", alt: true, desc: true, grid: true }],
+      colors: ["#3b0f9f", "#2c6bff", "#22c3e6", "#3fd36b", "#f4e04d", "#f08a24", "#d7191c"],
       palette: "Rainbow", scale: "Log",
       gradient: "linear-gradient(90deg,#3b0f9f,#2c6bff,#22c3e6,#3fd36b,#f4e04d,#f08a24,#d7191c)",
       fmt: (v, end) => end === "lo" ? "← clearer" : "murkier →",
@@ -2936,19 +2939,54 @@
       for (const desc of [!!c0.desc, !c0.desc]) { // if the latitude order guess is wrong, try the other way
       const c = { ...c0, desc };
       try {
-        const q = `${ERDDAP}${c.id}.json?${satQuery(c, SAT_BOX.s, SAT_BOX.n, 20, desc)}`;
-        const d = await erddapJson(q);
+        const q = `${ERDDAP}${c.id}.json?${satQuery(c, SAT_BOX.s, SAT_BOX.n, c.grid ? 0 : 20, desc)}`;
+        const d = await erddapJson(q, c.grid ? 30000 : 20000);
         const rows = (d.table && d.table.rows) || [];
         const vals = rows.map(r => r[r.length - 1]).filter(v => typeof v === "number" && isFinite(v) && (def.scale !== "Log" || v > 0)).sort((a, b) => a - b);
         if (vals.length < 10) continue;
         const pct = q => vals[Math.min(vals.length - 1, Math.floor(q * vals.length))];
         let lo = pct(0.05), hi = pct(0.95);
         if (def.scale === "Linear" && hi - lo < 1) { lo -= 0.5; hi += 0.5; }
-        return { c, time: rows[0][0], lo, hi };
+        return { c, time: rows[0][0], lo, hi, rows: c.grid ? rows : null };
       } catch (e) { /* try the next source */ }
       }
     }
     throw new Error("No satellite image available right now");
+  }
+
+  // Paint downloaded satellite numbers into a picture. Rows are placed using the map's own
+  // (Mercator) stretching so each square lines up with the coastline.
+  function satGridOverlay(def, p) {
+    const pts = p.rows.map(r => ({ lat: r[r.length - 3], lng: r[r.length - 2], v: r[r.length - 1] }))
+      .filter(o => typeof o.v === "number" && isFinite(o.v) && o.v > 0);
+    const lats = [...new Set(p.rows.map(r => r[r.length - 3]))].sort((a, b) => a - b);
+    const lngs = [...new Set(p.rows.map(r => r[r.length - 2]))].sort((a, b) => a - b);
+    const dLat = lats.length > 1 ? (lats[lats.length - 1] - lats[0]) / (lats.length - 1) : 0.0833;
+    const dLng = lngs.length > 1 ? (lngs[lngs.length - 1] - lngs[0]) / (lngs.length - 1) : 0.0833;
+    const S = lats[0] - dLat / 2, N = lats[lats.length - 1] + dLat / 2;
+    const W = lngs[0] - dLng / 2, E = lngs[lngs.length - 1] + dLng / 2;
+    const merc = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+    const mS = merc(S), mN = merc(N);
+    const Wpx = lngs.length * 8, Hpx = lats.length * 8;
+    const cv = document.createElement("canvas");
+    cv.width = Wpx; cv.height = Hpx;
+    const ctx = cv.getContext("2d");
+    const rgb = def.colors.map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
+    const lo = Math.log(p.lo), hi = Math.log(p.hi);
+    const color = v => {
+      let t = (Math.log(v) - lo) / ((hi - lo) || 1);
+      t = Math.max(0, Math.min(1, t)) * (rgb.length - 1);
+      const i = Math.min(rgb.length - 2, Math.floor(t)), f = t - i;
+      const c = rgb[i].map((a, k) => Math.round(a + (rgb[i + 1][k] - a) * f));
+      return `rgb(${c[0]},${c[1]},${c[2]})`;
+    };
+    for (const o of pts) {
+      const x0 = Math.floor((o.lng - dLng / 2 - W) / (E - W) * Wpx), x1 = Math.ceil((o.lng + dLng / 2 - W) / (E - W) * Wpx);
+      const y0 = Math.floor((mN - merc(o.lat + dLat / 2)) / (mN - mS) * Hpx), y1 = Math.ceil((mN - merc(o.lat - dLat / 2)) / (mN - mS) * Hpx);
+      ctx.fillStyle = color(o.v);
+      ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    }
+    return L.imageOverlay(cv.toDataURL(), [[S, W], [N, E]], { opacity: 0.6, interactive: false });
   }
 
   async function showSat(kind) {
@@ -2972,11 +3010,14 @@
       const hi = def.scale === "Log" ? p.hi.toPrecision(2) : p.hi.toFixed(2);
       const bar = encodeURIComponent(`${def.palette}|C|${def.scale}|${lo}|${hi}|`);
       satLayer = L.layerGroup();
+      if (p.rows) { satGridOverlay(def, p).addTo(satLayer); }
+      else {
       const STEP = 0.25;
       for (let lat = SAT_BOX.s; lat < SAT_BOX.n - 1e-9; lat += STEP) {
         const top = Math.min(SAT_BOX.n, lat + STEP);
         const url = `${ERDDAP}${p.c.id}.transparentPng?${satQuery(p.c, lat.toFixed(2), top.toFixed(2), 0, p.c.desc)}&.colorBar=${bar}`;
         L.imageOverlay(url, [[lat, SAT_BOX.w], [top, SAT_BOX.e]], { opacity: 0.6, interactive: false }).addTo(satLayer);
+      }
       }
       satLayer.addTo(map);
       const when = new Date(p.time);
