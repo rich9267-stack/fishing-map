@@ -1025,8 +1025,51 @@
     const h = d.hourly || {};
     const i = (h.time || []).indexOf(`${dd}T${pad2(when.getHours())}:00`);
     const v = i >= 0 ? h.sea_surface_temperature[i] : null;
-    if (!okTemp(v)) throw new Error("No water temperature record");
-    return { f: Math.round(v * 10) / 10, source: "ocean model" };
+    if (okTemp(v)) return { f: Math.round(v * 10) / 10, source: "ocean model" };
+    // Last resort for older dates: NOAA's daily satellite record (one value per day)
+    const sat = await (await fetch("https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.json?analysed_sst" +
+      `[(${dd}T12:00:00Z)][(${lat.toFixed(3)})][(${lng.toFixed(3)})]`)).json();
+    const row = sat.table && sat.table.rows && sat.table.rows[0];
+    const c = row ? row[row.length - 1] : null;
+    const f = typeof c === "number" ? c * 9 / 5 + 32 : null;
+    if (!okTemp(f)) throw new Error("No water temperature record");
+    return { f: Math.round(f * 10) / 10, source: "satellite (daily)" };
+  }
+
+  // ---- Fill in water temperature on older catches (your own — only the owner can change a catch) ----
+  // Runs quietly a few at a time; anything that can't be found is retried after a week.
+  let backfilling = false;
+  async function backfillWaterTemps() {
+    if (backfilling || !me || !navigator.onLine) return;
+    let tried = {};
+    try { tried = JSON.parse(localStorage.getItem("fm-wt-tried") || "{}"); } catch (e) {}
+    const WEEK = 7 * 86400000, now = Date.now();
+    const todo = Object.values(catchesBySpot).flat().filter(c => {
+      if (!isMine(c) || c.water_temp_f != null) return false;
+      if (tried[c.id] && now - tried[c.id] < WEEK) return false;
+      const s = (spots || []).find(x => x.id === c.spot_id);
+      return s && hasLoc(s) && s.water_type !== "freshwater" && new Date(c.caught_at) <= new Date();
+    }).slice(0, 25);
+    if (!todo.length) return;
+    backfilling = true;
+    let filled = 0;
+    for (const c of todo) {
+      const s = spots.find(x => x.id === c.spot_id);
+      try {
+        const r = await waterTempAt(s.lat, s.lng, new Date(c.caught_at));
+        const { error } = await db.from("catches").update({ water_temp_f: r.f, water_temp_source: r.source }).eq("id", c.id);
+        if (error) throw error;
+        c.water_temp_f = r.f; c.water_temp_source = r.source;
+        filled++;
+      } catch (e) {
+        if (isNetErr(e)) break;
+        tried[c.id] = now;
+      }
+      await new Promise(r => setTimeout(r, 400)); // be gentle with the free data services
+    }
+    try { localStorage.setItem("fm-wt-tried", JSON.stringify(tried)); } catch (e) {}
+    backfilling = false;
+    if (filled) { renderSpots(); renderInsights(); }
   }
   function spotWaterTemp(s) {
     if (!hasLoc(s) || s.water_type === "freshwater") return null; // ocean readings don't apply to fresh water
@@ -2110,6 +2153,7 @@
       saveCopy("catches", data);
       renderInsights();
       renderBest();
+      setTimeout(backfillWaterTemps, 3000);
     } catch (err) {
       const copy = isNetErr(err) && loadCopy("catches");
       catchesBySpot = {}; // the spots list still works without catches
