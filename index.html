@@ -101,6 +101,15 @@
   .bar-fill { height: 100%; background: var(--accent); border-radius: 4px; min-width: 2px; }
   .bar-val { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: .82rem; }
   .bar-row.top .bar-label { font-weight: 700; }
+  .best { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .best:last-child { border-bottom: 0; }
+  .best-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .best-name { font-weight: 700; }
+  .best-rank { color: var(--muted); font-weight: 600; margin-right: 4px; }
+  .best-when { font-size: .85rem; color: var(--accent); font-weight: 600; white-space: nowrap; }
+  .best-why { font-size: .85rem; margin-top: 4px; }
+  .rating { display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; vertical-align: 1px; }
+  .rating.strong { border-color: var(--rising); color: var(--rising); }
   .check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--text); cursor: pointer; }
   .check-row input { width: auto; margin-top: 3px; transform: scale(1.2); }
   .auth-links { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
@@ -340,6 +349,12 @@
     <div id="spot-list"><div class="empty">Loading spots…</div></div>
   </div>
 
+  <div class="card" id="best-card">
+    <div class="label">🏆 Best spots today</div>
+    <div class="spot-meta" style="margin-top:4px">Ranks your spots by how well the next 12 hours match the conditions when fish were caught there.</div>
+    <div id="best-list"><div class="empty">Working it out…</div></div>
+  </div>
+
   <div class="card" id="sugg-card">
     <div class="label">Suggested spots nearby</div>
     <div class="spot-meta" style="margin-top:4px">Public piers, ramps, jetties and fishing spots from OpenStreetMap that nobody has saved yet. Check access before you go.</div>
@@ -377,7 +392,7 @@
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>V2 step 5: catch insights. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
+    <br>V2 step 6: best spot today. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
   </footer>
 </main>
 
@@ -516,6 +531,11 @@
       if (!periods.length) throw new Error("No forecast");
 
       const cur = periods[0];
+      cond.hours = periods.slice(0, 24).map(p => {
+        const m = String(p.windSpeed || "").match(/\d+/g);
+        return { start: new Date(p.startTime), end: new Date(p.endTime), mph: m ? parseInt(m[m.length - 1], 10) : null };
+      });
+      setTimeout(renderBest, 0);
       nowEl.textContent = `💨 ${cur.windDirection} ${cur.windSpeed}`;
       cond.wind = `💨 ${cur.windDirection} ${cur.windSpeed} · ${cur.temperature}°`;
       cond.windDir = cur.windDirection || null;
@@ -1011,7 +1031,7 @@
           filters[g.key].has(val) ? filters[g.key].delete(val) : filters[g.key].add(val);
           b.classList.toggle("on");
           saveFilters();
-          renderSpots(); renderPins();
+          renderSpots(); renderPins(); renderBest();
         });
         chips.appendChild(b);
       });
@@ -1385,6 +1405,7 @@
       catchesBySpot = {};
       data.forEach(c => (catchesBySpot[c.spot_id] = catchesBySpot[c.spot_id] || []).push(c));
       renderInsights();
+      renderBest();
     } catch (err) {
       catchesBySpot = {}; // the spots list still works without catches
     }
@@ -1450,7 +1471,116 @@
   }
 
   // Update just the conditions text in place (keeps any open form and keyboard intact)
+  // ---- Best spot today ----
+  // For each spot, compare each hour of the next 12 against its catch history.
+  // A condition scores well when more fish were caught under it than chance alone would give
+  // (e.g. dusk is only ~2 of 24 hours, so 3 of 5 dusk catches is a strong signal).
+  const BASELINE = { // roughly how much of the time each condition happens
+    tide:  { incoming: .42, outgoing: .42, "high slack": .08, "low slack": .08 },
+    trend: { falling: 1/3, steady: 1/3, rising: 1/3 },
+    tod:   { Dawn: .083, Morning: .19, Midday: .125, Afternoon: .10, Dusk: .083, Night: .42 },
+    sol:   { major: .167, minor: .083, none: .75 },
+    moon:  { "new moon": .06, "waxing crescent": .19, "first quarter": .06, "waxing gibbous": .19,
+             "full moon": .06, "waning gibbous": .19, "last quarter": .06, "waning crescent": .19 },
+    wind:  { "0–5 mph": .25, "6–10 mph": .25, "11–15 mph": .25, "16+ mph": .25 }
+  };
+  const FACTOR_LABEL = {
+    tide: v => cap(v) + " tide", trend: v => cap(v) + " pressure", tod: v => v,
+    sol: v => v === "none" ? "outside solunar periods" : cap(v) + " solunar period", moon: v => cap(v), wind: v => "wind " + v
+  };
+  function catchFactors(c) {
+    return {
+      tide: c.tide_stage || null, trend: c.pressure_trend || null, tod: timeOfDay(new Date(c.caught_at)),
+      sol: c.moon_phase ? (c.solunar || "none") : null, moon: c.moon_phase || null, wind: windBand(c.wind_mph)
+    };
+  }
+  function windAt(t) {
+    const h = (cond.hours || []).find(x => t >= x.start && t < x.end);
+    return h ? h.mph : cond.windMph;
+  }
+  function factorsAt(s, t) {
+    let tide = null;
+    if (s.water_type !== "freshwater") {
+      const p = stationTides(stationFor(s).id);
+      if (p.done && p.done !== "error") { const r = stageFrom(p.done, t); tide = r ? r.stage : null; }
+    }
+    let sol = null, moon = null;
+    try { sol = solunarAt(t) || "none"; moon = moonAt(t).phase; } catch (e) {}
+    return { tide, trend: cond.pressureTrend || null, tod: timeOfDay(t), sol, moon, wind: windBand(windAt(t)) };
+  }
+
+  // Score one moment against a set of catches. Returns { score, reasons }.
+  function scoreMoment(now, history) {
+    let score = 0; const reasons = [];
+    Object.keys(BASELINE).forEach(f => {
+      const v = now[f];
+      if (!v || !BASELINE[f][v]) return;
+      let total = 0, hits = 0;
+      history.forEach(h => { const hv = h.f[f]; if (!hv) return; total += h.n; if (hv === v) hits += h.n; });
+      if (total < 2) return;
+      const prior = 2; // pulls small samples toward "no effect"
+      const lift = (hits + prior * BASELINE[f][v]) / (total + prior) / BASELINE[f][v];
+      // Moon phase changes slowly, so a few recent catches all share it — count it at half weight
+      // and only call it a reason once there's more history
+      const weight = f === "moon" ? 0.5 : 1;
+      score += weight * Math.log(lift);
+      if (f === "moon" && total < 8) return;
+      if (lift >= 1.4 && hits >= 2) reasons.push({ text: `${FACTOR_LABEL[f](v)} — ${hits} of ${total} fish`, lift });
+    });
+    reasons.sort((a, b) => b.lift - a.lift);
+    return { score, reasons };
+  }
+
+  function renderBest() {
+    const box = $("best-list");
+    if (!box || !spots) return;
+    box.innerHTML = "";
+    const all = Object.values(catchesBySpot).flat().filter(c => c.moon_phase || c.tide_stage || c.pressure_trend);
+    const toHist = list => list.map(c => ({ f: catchFactors(c), n: c.how_many || 1 }));
+    const groupHist = toHist(all);
+    const start = new Date(); start.setMinutes(0, 0, 0);
+    const hours = []; for (let i = 0; i <= 12; i++) hours.push(new Date(start.getTime() + i * 3600000));
+    const ranked = [], skipped = [];
+    filteredSpots().forEach(s => {
+      const own = (catchesBySpot[s.id] || []).filter(c => c.moon_phase || c.tide_stage || c.pressure_trend);
+      const ownFish = own.reduce((n, c) => n + (c.how_many || 1), 0);
+      let hist, basis;
+      if (ownFish >= 3) { hist = toHist(own); basis = `${ownFish} fish caught here`; }
+      else if (groupHist.reduce((n, h) => n + h.n, 0) >= 5) { hist = groupHist; basis = "few catches here yet — using everyone's catches"; }
+      else { skipped.push(s); return; }
+      let best = null;
+      hours.forEach((t, i) => {
+        const r = scoreMoment(factorsAt(s, i === 0 ? new Date() : t), hist);
+        if (!best || r.score > best.score + 0.01) best = { ...r, t, now: i === 0 };
+      });
+      ranked.push({ s, best, basis, own: ownFish >= 3 });
+    });
+    ranked.sort((a, b) => (b.own - a.own) || (b.best.score - a.best.score));
+    if (!ranked.length) {
+      box.appendChild(el("div", "empty", "Not enough catches yet. Once a spot has about 3 fish logged (or the group has 5), it'll be ranked here."));
+      return;
+    }
+    ranked.slice(0, 5).forEach((r, i) => {
+      const row = el("div", "best");
+      const top = el("div", "best-top");
+      const name = el("div");
+      name.appendChild(el("span", "best-rank", `${i + 1}.`));
+      name.appendChild(el("span", "best-name", r.s.name));
+      const rating = r.best.score > 1.2 ? ["strong", "Strong match"] : r.best.score > 0.4 ? ["", "Good match"] : ["", "Weak match"];
+      name.appendChild(el("span", "rating " + rating[0], rating[1]));
+      top.appendChild(name);
+      top.appendChild(el("span", "best-when", r.best.now ? "Best: now" : `Best around ${clock(r.best.t)}`));
+      row.appendChild(top);
+      row.appendChild(el("div", "best-why", r.best.reasons.length ? "✓ " + r.best.reasons.slice(0, 3).map(x => x.text).join(" · ") : "No strong pattern yet for these conditions"));
+      row.appendChild(el("div", "spot-meta", "Based on " + r.basis));
+      box.appendChild(row);
+    });
+    if (skipped.length) box.appendChild(el("div", "spot-meta", `Not ranked yet (too few catches): ${skipped.map(s => s.name).join(", ")}`));
+  }
+
   function refreshConditions() {
+    clearTimeout(refreshConditions.t);
+    refreshConditions.t = setTimeout(renderBest, 200);
     (spots || []).forEach(s => {
       const node = document.querySelector(`.spot-cond[data-spot="${s.id}"]`);
       if (node) node.textContent = spotConditions(s);
