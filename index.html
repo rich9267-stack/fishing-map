@@ -456,6 +456,17 @@
       <label for="f-access-notes">Access notes</label>
       <input id="f-access-notes" maxlength="500" placeholder="e.g., gate locks at sunset">
 
+      <div id="f-tide-box">
+        <label for="f-tide-offset">Tide timing here (minutes)</label>
+        <input id="f-tide-offset" type="number" min="-300" max="300" step="5" inputmode="numeric" placeholder="0 = same as the tide station">
+        <div class="spot-meta">Up a canal or river the tide turns later than at the station. Use + for later, − for earlier — or stand here at the turn of the tide and tap:</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+          <button class="btn ghost small" id="f-tide-high" type="button">🌊 It's high tide here now</button>
+          <button class="btn ghost small" id="f-tide-low" type="button">🏖 It's low tide here now</button>
+        </div>
+        <div class="spot-meta" id="f-tide-msg"></div>
+      </div>
+
       <label for="f-notes">Notes</label>
       <textarea id="f-notes" maxlength="1000" placeholder="What's good here, best tide, etc."></textarea>
 
@@ -999,15 +1010,24 @@
     return { stage, next };
   }
 
+  // A spot's own tide times: the station's, shifted by the spot's "tide timing here" setting
+  const shiftTides = (tides, min) => !min ? tides : tides.map(t => ({ ...t, when: new Date(t.when.getTime() + min * 60000) }));
+  function spotTides(s) {
+    const p = stationTides(stationFor(s).id);
+    return p.done && p.done !== "error" ? shiftTides(p.done, s.tide_offset_min || 0) : p.done;
+  }
+  const offsetText = min => !min ? "" : `${min > 0 ? "+" : "−"}${Math.abs(min) >= 60 ? Math.floor(Math.abs(min) / 60) + " hr " : ""}${Math.abs(min) % 60 ? Math.abs(min) % 60 + " min" : ""}`.trim();
+
   function spotTideText(s) {
     const st = stationFor(s);
-    const p = stationTides(st.id);
-    if (!p.done) return "Loading tide…";
-    if (p.done === "error") return "Tide unavailable";
-    const r = stageFrom(p.done, new Date());
+    const t = spotTides(s);
+    if (!t) return "Loading tide…";
+    if (t === "error") return "Tide unavailable";
+    const r = stageFrom(t, new Date());
     if (!r) return "Tide unavailable";
     const arrow = { incoming: "⬆ Incoming", outgoing: "⬇ Outgoing", "high slack": "High slack", "low slack": "Low slack" }[r.stage];
-    const where = st.dist != null ? ` (${st.name}, ${st.dist < 0.1 ? "here" : st.dist.toFixed(1) + " mi"})` : "";
+    const adj = s.tide_offset_min ? `, ${offsetText(s.tide_offset_min)} here` : "";
+    const where = st.dist != null ? ` (${st.name}, ${st.dist < 0.1 ? "here" : st.dist.toFixed(1) + " mi"}${adj})` : "";
     return `${arrow} · ${r.next.high ? "high" : "low"} ${clock(r.next.when)}${where}`;
   }
 
@@ -1195,9 +1215,55 @@
 
   function spotConditions(s) {
     const first = s.water_type === "freshwater" ? spotWaterText(s) : spotTideText(s);
-    const wt = spotWaterTemp(s);
-    if (wt) return [first, wt, spotWindPressure(s)].filter(Boolean).join("  ·  ");
-    return [first, spotWindPressure(s)].filter(Boolean).join("  ·  ");
+    return [first, spotWaterTemp(s), spotWindPressure(s), canalText(s)].filter(Boolean).join("  ·  ");
+  }
+
+  // Canal salinity and flow from USGS sensors within ~8 miles (free; mostly Miami-Dade canals + Hillsboro Canal at S-6)
+  const CANAL_NEAR_MI = 8;
+  const canalCache = {};
+  function canalFor(s) {
+    if (!hasLoc(s)) return null;
+    const key = s.lat.toFixed(2) + "," + s.lng.toFixed(2);
+    if (!canalCache[key]) {
+      const box = [s.lng - 0.15, s.lat - 0.13, s.lng + 0.15, s.lat + 0.13].map(v => v.toFixed(4)).join(",");
+      const url = `https://waterservices.usgs.gov/nwis/iv/?format=json&bBox=${box}&parameterCd=00480,00060&siteStatus=active&period=P1D`;
+      canalCache[key] = fetch(url).then(r => r.json()).then(d => {
+        const best = {};
+        (d.value.timeSeries || []).forEach(ts => {
+          const code = ts.variable.variableCode[0].value;
+          const vals = (ts.values[0] && ts.values[0].value || []).filter(v => v.value !== "" && +v.value > -999990);
+          if (!vals.length) return;
+          const loc = ts.sourceInfo.geoLocation.geogLocation;
+          const dist = miles(s.lat, s.lng, loc.latitude, loc.longitude);
+          if (dist > CANAL_NEAR_MI || (best[code] && best[code].dist <= dist)) return;
+          const latest = vals[vals.length - 1];
+          best[code] = { name: niceSite(ts.sourceInfo.siteName), dist, v: +latest.value, first: +vals[0].value, when: new Date(latest.dateTime) };
+        });
+        return { salt: best["00480"] || null, flow: best["00060"] || null };
+      });
+      canalCache[key].done = false;
+      canalCache[key].then(g => { canalCache[key].done = g; refreshConditions(); },
+                           () => { canalCache[key].done = "error"; });
+    }
+    return canalCache[key];
+  }
+  const niceSite = n => n.toLowerCase().replace(/\b(fl|nr)\b/g, m => m === "nr" ? "near" : "").replace(/,\s*$/, "").replace(/\s+/g, " ").trim()
+    .replace(/(^|\s)([a-z])/g, (m, a, b) => a + b.toUpperCase()).replace(/\b(S|G)-?(\d+[a-z]?)\b/gi, (m, a, b) => a.toUpperCase() + "-" + b.toUpperCase()).replace(/\b(At|Of|Near|Upstream|Downstream)\b/g, m => m.toLowerCase());
+  function canalText(s) {
+    const c = canalFor(s);
+    if (!c || !c.done || c.done === "error") return null;
+    const parts = [];
+    const { salt, flow } = c.done;
+    if (salt) {
+      const kind = salt.v < 0.5 ? "fresh" : salt.v < 5 ? "slightly salty" : salt.v < 18 ? "brackish" : "salty";
+      parts.push(`🧂 Canal ${salt.v.toFixed(1)} ppt, ${kind} (${salt.name}, ${salt.dist.toFixed(1)} mi)`);
+    }
+    if (flow) {
+      const f = Math.round(flow.v), was = Math.round(flow.first);
+      const state = f < 5 ? "little or no flow" : `flowing ${f} cfs` + (Math.abs(f - was) >= Math.max(10, was * 0.3) ? ` (${f > was ? "up" : "down"} from ${was} a day ago)` : "");
+      parts.push(`🚰 ${flow.name}: ${state}`);
+    }
+    return parts.join("  ·  ") || null;
   }
   function spotWindPressure(s) {
     if (hasLoc(s) && miles(s.lat, s.lng, LAT, LNG) > 15) {
@@ -2124,7 +2190,7 @@
   async function conditionsFor(spot, when) {
     const fresh = spot.water_type === "freshwater";
     const [tide, wx, wt] = await Promise.allSettled([
-      fresh ? Promise.reject(new Error("freshwater")) : tideStageAt(when, stationFor(spot).id),
+      fresh ? Promise.reject(new Error("freshwater")) : tideStageAt(when, stationFor(spot).id, spot.tide_offset_min),
       weatherAt(when, spot.lat, spot.lng),
       !fresh && hasLoc(spot) ? waterTempAt(spot.lat, spot.lng, when) : Promise.reject(new Error("no water temp"))
     ]);
@@ -2496,7 +2562,8 @@
   }
 
   // Tide stage at a given moment, from NOAA's high/low predictions (works for any date)
-  async function tideStageAt(when, stationId) {
+  async function tideStageAt(when, stationId, offsetMin) {
+    when = new Date(when.getTime() - (offsetMin || 0) * 60000); // the tide here runs late/early: look up the station's matching moment
     const start = new Date(when.getTime() - 36 * 3600000);
     const url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter" +
       `?product=predictions&application=fishing_map&begin_date=${ymd(start)}&range=72` +
@@ -2607,7 +2674,7 @@
     const recent = Math.abs(Date.now() - when) <= 2 * 3600000;
     const spot = (spots || []).find(x => x.id === openCatchSpot);
     const fresh = spot && spot.water_type === "freshwater";
-    const tideJob = fresh ? Promise.reject(new Error("freshwater")) : tideStageAt(when, spot ? stationFor(spot).id : STATION);
+    const tideJob = fresh ? Promise.reject(new Error("freshwater")) : tideStageAt(when, spot ? stationFor(spot).id : STATION, spot && spot.tide_offset_min);
     const wtJob = spot && hasLoc(spot) && !fresh ? waterTempAt(spot.lat, spot.lng, when) : Promise.reject(new Error("no water temp"));
     condPromise = Promise.allSettled([tideJob, weatherAt(when, spot && spot.lat, spot && spot.lng), wtJob]).then(([tide, wx, wt]) => {
       if (id !== condRequest) return; // the time changed again; a newer lookup is running
@@ -3121,8 +3188,8 @@
   function factorsAt(s, t) {
     let tide = null;
     if (s.water_type !== "freshwater") {
-      const p = stationTides(stationFor(s).id);
-      if (p.done && p.done !== "error") { const r = stageFrom(p.done, t); tide = r ? r.stage : null; }
+      const st = spotTides(s);
+      if (st && st !== "error") { const r = stageFrom(st, t); tide = r ? r.stage : null; }
     }
     let sol = null, moon = null;
     try { sol = solunarAt(t) || "none"; moon = moonAt(t).phase; } catch (e) {}
@@ -3356,8 +3423,10 @@
       $("f-getting").value = existing.getting_there || "";
       $("f-access-notes").value = existing.access_notes || "";
       $("f-notes").value = existing.notes || "";
+      $("f-tide-offset").value = existing.tide_offset_min ? existing.tide_offset_min : "";
       $("f-by").value = existing.added_by || "";
       $("f-private").checked = !!existing.is_private;
+      $("f-tide-box").hidden = existing.water_type === "freshwater";
       pickedLoc = hasLoc(existing) ? { lat: existing.lat, lng: existing.lng } : null;
       $("loc-text").textContent = pickedLoc ? "Set ✓ (keep, or pick a new one)" : "Not set";
       $("spots-card").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -3369,7 +3438,7 @@
     $("f-name").focus();
   }
   function closeSpotForm() {
-    $("spot-form").reset(); pickedLoc = null; editingSpot = null;
+    $("spot-form").reset(); pickedLoc = null; editingSpot = null; $("f-tide-msg").textContent = "";
     $("loc-text").textContent = "Not set";
     openForm(false);
   }
@@ -3390,6 +3459,28 @@
     );
   });
 
+  // Work out the tide timing from a high or low tide seen at the spot right now
+  async function tideTurnNow(high) {
+    const msg = $("f-tide-msg");
+    const where = pickedLoc || (editingSpot && hasLoc(editingSpot) ? editingSpot : null);
+    if (!where) { msg.textContent = "Set the spot's location first (below), so we know which tide station to compare with."; return; }
+    const st = stationFor({ lat: where.lat, lng: where.lng });
+    msg.textContent = "Checking the station's tide times…";
+    try {
+      const p = stationTides(st.id);
+      const tides = await p;
+      const now = Date.now();
+      const near = tides.filter(t => t.high === high).map(t => ({ t, d: now - t.when.getTime() })).sort((a, b) => Math.abs(a.d) - Math.abs(b.d))[0];
+      if (!near || Math.abs(near.d) > 5 * 3600000) { msg.textContent = `No ${high ? "high" : "low"} tide at ${st.name} within 5 hours of now — try at the next turn.`; return; }
+      const min = Math.round(near.d / 60000 / 5) * 5;
+      $("f-tide-offset").value = min;
+      msg.textContent = `${st.name} had ${high ? "high" : "low"} tide at ${clock(near.t.when)}, so the tide here runs ${min === 0 ? "right on time" : offsetText(min).replace(/^[+−]/, "") + (min > 0 ? " later" : " earlier")}. Tap Save to keep it.` + (Math.abs(min) > 120 ? " (That's a big difference — make sure the water has really stopped and turned.)" : "");
+    } catch (e) { msg.textContent = "Couldn't get the station's tide times — check your signal."; }
+  }
+  $("f-tide-high").addEventListener("click", () => tideTurnNow(true));
+  $("f-tide-low").addEventListener("click", () => tideTurnNow(false));
+  $("f-water").addEventListener("change", () => { $("f-tide-box").hidden = $("f-water").value === "freshwater"; });
+
   $("spot-form").addEventListener("submit", async e => {
     e.preventDefault();
     const msg = $("form-msg");
@@ -3405,6 +3496,7 @@
       getting_there: val("f-getting"),
       access_notes: val("f-access-notes"),
       notes: val("f-notes"),
+      tide_offset_min: Math.max(-300, Math.min(300, Math.round((parseFloat($("f-tide-offset").value) || 0) / 5) * 5)),
       added_by: val("f-by"),
       is_private: $("f-private").checked,
       lat: pickedLoc ? pickedLoc.lat : null,
