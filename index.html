@@ -177,18 +177,26 @@
     <ul id="wx-hours"></ul>
   </div>
 
+  <div class="card" id="moon-card">
+    <div class="label">Moon &amp; solunar · today</div>
+    <div class="now" id="moon-now">Loading moon…</div>
+    <div class="next" id="moon-detail"></div>
+    <ul id="moon-periods"></ul>
+  </div>
+
   <h2>Tide times</h2>
   <div id="days"></div>
 
   <footer>
     Tide predictions from <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8722859" target="_blank" rel="noopener">NOAA station 8722859 (Hillsboro)</a>.
     Heights in feet above mean lower low water.
-    Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
-    <br>Step 4 of the Fishing Map build.
+    Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
+    <br>Step 4b of the Fishing Map build.
   </footer>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script>
   const STATION = "8722859";
   // Today's conditions, shared by every spot for now (all spots are in the Hillsboro area)
@@ -412,7 +420,6 @@
   let openCatchSpot = null;      // spot id whose "log a catch" form is open
   const expanded = new Set();    // spot ids whose catch history is showing
   const STAGE_LABEL = { incoming: "⬆ incoming", outgoing: "⬇ outgoing", "high slack": "high slack", "low slack": "low slack" };
-  const RECENT_MS = 2 * 3600000; // only attach today's conditions if the catch was within 2 hours
 
   // One form, built once and moved under whichever spot is being logged,
   // so a background refresh never wipes what someone is typing.
@@ -462,40 +469,166 @@
     const p = n => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
   }
-  function catchIsRecent() {
-    const v = catchForm.querySelector("#c-when").value;
-    return v && Math.abs(Date.now() - new Date(v)) <= RECENT_MS;
+  // ---- Conditions at any date & time (used by the catch log) ----
+  const LAT = 26.24, LNG = -80.10;   // Pompano Beach / Hillsboro Inlet area
+  let catchCond = null;              // conditions looked up for the time in the form
+  let condPromise = null;            // the lookup in progress, so Save can wait for it
+  let condRequest = 0;               // ignore an old lookup if the time changes again
+  let tideTouched = false;           // the angler picked the tide stage by hand
+  const pad2 = n => String(n).padStart(2, "0");
+  const ymdDash = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+  function compass(deg) {
+    const pts = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+    return pts[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
   }
-  function updateCatchCondPreview() {
+
+  // Tide stage at a given moment, from NOAA's high/low predictions (works for any date)
+  async function tideStageAt(when) {
+    const start = new Date(when.getTime() - 36 * 3600000);
+    const url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter" +
+      `?product=predictions&application=fishing_map&begin_date=${ymd(start)}&range=72` +
+      `&datum=MLLW&station=${STATION}&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
+    const data = await (await fetch(url)).json();
+    if (!data.predictions) throw new Error("No tide data");
+    const tides = data.predictions.map(p => ({ when: parseNoaa(p.t), high: p.type === "H" }));
+    const prev = [...tides].reverse().find(t => t.when <= when);
+    const next = tides.find(t => t.when > when);
+    if (!prev || !next) throw new Error("No tide data for that time");
+    const SLACK = 30 * 60000;
+    if (when - prev.when < SLACK) return prev.high ? "high slack" : "low slack";
+    if (next.when - when < SLACK) return next.high ? "high slack" : "low slack";
+    return next.high ? "incoming" : "outgoing";
+  }
+
+  // Pressure (+3-hour trend), wind and temperature for a given hour, from Open-Meteo's free weather records
+  async function weatherAt(when) {
+    const day = ymdDash(when), dayBefore = ymdDash(new Date(when.getTime() - 86400000));
+    const params = `latitude=${LAT}&longitude=${LNG}` +
+      "&hourly=pressure_msl,wind_speed_10m,wind_direction_10m,temperature_2m" +
+      "&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FNew_York" +
+      `&start_date=${dayBefore}&end_date=${day}`;
+    const recentUrl = "https://api.open-meteo.com/v1/forecast?" + params;
+    const archiveUrl = "https://archive-api.open-meteo.com/v1/archive?" + params;
+    const ageDays = (Date.now() - when) / 86400000;
+    for (const url of ageDays > 60 ? [archiveUrl, recentUrl] : [recentUrl, archiveUrl]) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const h = (await res.json()).hourly;
+        const i = h.time.indexOf(`${day}T${pad2(when.getHours())}:00`);
+        if (i < 0 || h.pressure_msl[i] == null) continue;
+        const inHg = h.pressure_msl[i] / 33.8639;
+        let trend = null;
+        if (i >= 3 && h.pressure_msl[i - 3] != null) {
+          const change = inHg - h.pressure_msl[i - 3] / 33.8639;
+          trend = change >= 0.03 ? "rising" : change <= -0.03 ? "falling" : "steady";
+        }
+        return {
+          pressure: Math.round(inHg * 100) / 100, trend,
+          windDir: h.wind_direction_10m[i] != null ? compass(h.wind_direction_10m[i]) : null,
+          windMph: h.wind_speed_10m[i] != null ? Math.round(h.wind_speed_10m[i]) : null,
+          tempF: h.temperature_2m[i] != null ? Math.round(h.temperature_2m[i]) : null,
+          source: "open-meteo"
+        };
+      } catch (e) { /* try the other source */ }
+    }
+    throw new Error("No weather record for that time");
+  }
+
+  // Moon phase and solunar periods (pure astronomy, works offline for any date)
+  const MOON_EMOJI = { "new moon": "🌑", "waxing crescent": "🌒", "first quarter": "🌓", "waxing gibbous": "🌔",
+    "full moon": "🌕", "waning gibbous": "🌖", "last quarter": "🌗", "waning crescent": "🌘" };
+  function moonAt(when) {
+    const m = SunCalc.getMoonIllumination(when), p = m.phase;
+    const phase = p < 0.03 || p > 0.97 ? "new moon" : p < 0.22 ? "waxing crescent" : p < 0.28 ? "first quarter" :
+      p < 0.47 ? "waxing gibbous" : p < 0.53 ? "full moon" : p < 0.72 ? "waning gibbous" : p < 0.78 ? "last quarter" : "waning crescent";
+    return { phase, illum: Math.round(m.fraction * 100), emoji: MOON_EMOJI[phase] };
+  }
+  // Major = moon overhead or underfoot (about 2 hours); minor = moonrise or moonset (about 1 hour)
+  function solunarPeriods(day) {
+    const d0 = new Date(day); d0.setHours(0, 0, 0, 0);
+    const d1 = new Date(d0.getTime() + 86400000);
+    const out = [], STEP = 5 * 60000, t0 = d0.getTime() - 2 * 3600000;
+    const alt = [];
+    for (let t = t0; t <= d1.getTime() + 2 * 3600000; t += STEP) alt.push(SunCalc.getMoonPosition(new Date(t), LAT, LNG).altitude);
+    for (let k = 1; k < alt.length - 1; k++) {
+      const t = new Date(t0 + k * STEP);
+      if (t < d0 || t >= d1) continue;
+      const peak = alt[k] > alt[k - 1] && alt[k] >= alt[k + 1], trough = alt[k] < alt[k - 1] && alt[k] <= alt[k + 1];
+      if (peak || trough) out.push({ type: "major", center: t, why: peak ? "moon overhead" : "moon underfoot",
+        start: new Date(t - 3600000), end: new Date(+t + 3600000) });
+    }
+    const mt = SunCalc.getMoonTimes(d0, LAT, LNG);
+    [["rise", "moonrise"], ["set", "moonset"]].forEach(([k, why]) => {
+      if (mt[k]) out.push({ type: "minor", center: mt[k], why, start: new Date(mt[k] - 1800000), end: new Date(+mt[k] + 1800000) });
+    });
+    return out.sort((a, b) => a.start - b.start);
+  }
+  function solunarAt(when) {
+    let hit = null;
+    [-1, 0, 1].forEach(off => solunarPeriods(new Date(when.getTime() + off * 86400000)).forEach(p => {
+      if (when >= p.start && when <= p.end && (!hit || p.type === "major")) hit = p.type;
+    }));
+    return hit;
+  }
+
+  function catchWhen() {
+    const v = catchForm.querySelector("#c-when").value;
+    return v ? new Date(v) : new Date();
+  }
+
+  function lookupCatchConditions() {
+    const id = ++condRequest;
     const out = catchForm.querySelector("#c-cond");
-    if (!catchIsRecent()) {
-      out.textContent = "Earlier catch: today's pressure and wind won't be saved with it. Pick the tide stage yourself.";
+    const when = catchWhen();
+    catchCond = null;
+    if (when - Date.now() > 15 * 60000) {
+      out.textContent = "That time is in the future — pick when you caught it.";
+      condPromise = Promise.resolve();
       return;
     }
-    const parts = [
-      cond.pressure != null && `${cond.pressure.toFixed(2)} inHg${cond.pressureTrend ? " " + cond.pressureTrend : ""}`,
-      cond.windDir && cond.windMph != null && `wind ${cond.windDir} ${cond.windMph} mph`,
-      cond.tempF != null && `${cond.tempF}°F`
-    ].filter(Boolean);
-    out.textContent = parts.length ? "Saved with this catch: " + parts.join(" · ") : "Conditions still loading…";
+    let moon = null, sol = null;
+    try { moon = moonAt(when); sol = solunarAt(when); } catch (e) {}
+    out.textContent = "Looking up conditions for that time…";
+    const recent = Math.abs(Date.now() - when) <= 2 * 3600000;
+    condPromise = Promise.allSettled([tideStageAt(when), weatherAt(when)]).then(([tide, wx]) => {
+      if (id !== condRequest) return; // the time changed again; a newer lookup is running
+      let w = wx.status === "fulfilled" ? wx.value : null;
+      if (!w && recent && cond.pressure != null) {
+        // Weather records unavailable — fall back to the live readings for a just-caught fish
+        w = { pressure: cond.pressure, trend: cond.pressureTrend, windDir: cond.windDir, windMph: cond.windMph, tempF: cond.tempF, source: "nws" };
+      }
+      const stage = tide.status === "fulfilled" ? tide.value : (recent ? cond.tideStage : null);
+      catchCond = { ...(w || {}), tideStage: stage || null, moon, solunar: sol };
+      const tideSel = catchForm.querySelector("#c-tide");
+      if (!tideTouched) tideSel.value = stage || "";
+      const parts = [
+        stage && `tide ${stage}`,
+        w && w.pressure != null && `${w.pressure.toFixed(2)} inHg${w.trend ? " " + w.trend : ""}`,
+        w && w.windDir && w.windMph != null && `wind ${w.windDir} ${w.windMph} mph`,
+        w && w.tempF != null && `${w.tempF}°F`,
+        moon && `${moon.emoji} ${moon.phase} (${moon.illum}%)`,
+        sol && `${sol} solunar period`
+      ].filter(Boolean);
+      out.textContent = (parts.length ? "Saved with this catch: " + parts.join(" · ") : "Couldn't find conditions for that time.") +
+        (!w ? " (Weather record not available for that time.)" : "");
+    });
   }
-  catchForm.querySelector("#c-when").addEventListener("change", () => {
-    // Today's tide stage doesn't apply to an earlier catch, so clear the auto-filled value
-    const tide = catchForm.querySelector("#c-tide");
-    if (!catchIsRecent() && tide.value === cond.tideStage) tide.value = "";
-    if (catchIsRecent() && !tide.value) tide.value = cond.tideStage || "";
-    updateCatchCondPreview();
-  });
+
+  catchForm.querySelector("#c-when").addEventListener("change", lookupCatchConditions);
+  catchForm.querySelector("#c-tide").addEventListener("change", () => { tideTouched = true; });
 
   function openCatchForm(spotId) {
     openCatchSpot = spotId;
     catchForm.reset();
+    tideTouched = false;
     catchForm.querySelector("#c-when").value = localInputValue(new Date());
     catchForm.querySelector("#c-tide").value = cond.tideStage || "";
     try { catchForm.querySelector("#c-by").value = localStorage.getItem("fm-name") || ""; } catch (e) {}
     catchForm.querySelector("#c-msg").textContent = "";
     renderSpots();
-    updateCatchCondPreview();
+    lookupCatchConditions();
     catchForm.querySelector("#c-species").focus();
   }
   catchForm.querySelector("#c-cancel").addEventListener("click", () => { openCatchSpot = null; renderSpots(); });
@@ -507,22 +640,32 @@
     msg.className = "msg"; msg.textContent = "Saving…";
     q("#c-save").disabled = true;
     const txt = id => { const v = q(id).value.trim(); return v === "" ? null : v; };
-    const recent = catchIsRecent();
-    const whenVal = q("#c-when").value;
+    const when = catchWhen();
+    if (when - Date.now() > 15 * 60000) {
+      msg.className = "msg err"; msg.textContent = "That time is in the future — pick when you caught it.";
+      q("#c-save").disabled = false;
+      return;
+    }
+    try { await condPromise; } catch (e3) {}
+    const c = catchCond || {};
     const row = {
       spot_id: openCatchSpot,
-      caught_at: (whenVal ? new Date(whenVal) : new Date()).toISOString(),
+      caught_at: when.toISOString(),
       species: txt("#c-species"),
       how_many: Math.max(1, Math.min(500, parseInt(q("#c-count").value, 10) || 1)),
       bait: txt("#c-bait"),
       tide_stage: q("#c-tide").value || null,
       notes: txt("#c-notes"),
       caught_by: txt("#c-by"),
-      pressure_inhg: recent ? cond.pressure : null,
-      pressure_trend: recent ? cond.pressureTrend : null,
-      wind_dir: recent ? cond.windDir : null,
-      wind_mph: recent ? cond.windMph : null,
-      air_temp_f: recent ? cond.tempF : null
+      pressure_inhg: c.pressure != null ? c.pressure : null,
+      pressure_trend: c.trend || null,
+      wind_dir: c.windDir || null,
+      wind_mph: c.windMph != null ? c.windMph : null,
+      air_temp_f: c.tempF != null ? c.tempF : null,
+      moon_phase: c.moon ? c.moon.phase : null,
+      moon_illum: c.moon ? c.moon.illum : null,
+      solunar: c.solunar || null,
+      conditions_source: c.source || null
     };
     try {
       if (!db) throw new Error("Not connected to the database");
@@ -559,6 +702,8 @@
       c.tide_stage && STAGE_LABEL[c.tide_stage],
       c.pressure_inhg != null && `${Number(c.pressure_inhg).toFixed(2)} inHg${c.pressure_trend ? " " + c.pressure_trend : ""}`,
       c.wind_dir && c.wind_mph != null && `${c.wind_dir} ${c.wind_mph} mph`,
+      c.moon_phase && `${MOON_EMOJI[c.moon_phase] || ""} ${c.moon_phase}`,
+      c.solunar && `${c.solunar} solunar`,
       c.caught_by && `by ${c.caught_by}`
     ].filter(Boolean).join(" · ");
     const li = el("li", "catch");
@@ -602,7 +747,6 @@
       const node = document.querySelector(`.spot-cond[data-spot="${s.id}"]`);
       if (node) node.textContent = spotConditions(s);
     });
-    if (openCatchSpot) updateCatchCondPreview();
   }
 
   function renderSpots() {
@@ -721,8 +865,35 @@
 
   load();
   loadWeather();
+  // ---- Today's moon & solunar card ----
+  function loadMoon() {
+    try {
+      const now = new Date(), m = moonAt(now);
+      $("moon-now").textContent = `${m.emoji} ${cap(m.phase)} · ${m.illum}% lit`;
+      const periods = solunarPeriods(now);
+      const current = periods.find(p => now >= p.start && now <= p.end);
+      const upcoming = periods.find(p => p.start > now);
+      $("moon-detail").textContent = current
+        ? `In a ${current.type} solunar period now (${current.why}) until ${clock(current.end)}`
+        : upcoming ? `Next: ${upcoming.type} period at ${clock(upcoming.start)}` : "No more solunar periods today";
+      const ul = $("moon-periods");
+      ul.innerHTML = "";
+      periods.forEach(p => {
+        const li = el("li", p.end < now ? "past" : null);
+        li.appendChild(el("span", "kind " + (p.type === "major" ? "rising" : ""), cap(p.type)));
+        const right = el("span", null, `${clock(p.start)} – ${clock(p.end)}`);
+        right.appendChild(el("span", "ft", p.why));
+        li.appendChild(right);
+        ul.appendChild(li);
+      });
+    } catch (e) {
+      $("moon-now").textContent = "Couldn't load moon info";
+    }
+  }
+
   loadSpots();
   loadPressure();
+  loadMoon();
 </script>
 </body>
 </html>

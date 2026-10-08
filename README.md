@@ -8,4 +8,6 @@ A shared map to help pick where to fish in Pompano Beach / Broward County today:
 
 **Step 3:** shared spots list saved in a Supabase database. Database setup: run `setup/01-spots.sql` once in the Supabase SQL Editor.
 
-**Step 4 (current):** catch log per spot, saving tide stage, barometric pressure (and trend), wind, and air temp with each catch. Pressure comes from NWS observations at Pompano Beach Airpark (KPMP), with Fort Lauderdale (KFLL) as backup.
+**Step 4:** catch log per spot, saving tide stage, barometric pressure (and trend), wind, and air temp with each catch. Pressure comes from NWS observations at Pompano Beach Airpark (KPMP), with Fort Lauderdale (KFLL) as backup.
+
+**Step 4b (current):** catches logged for any date/time auto-load that moment's tide stage (NOAA), pressure + trend, wind, temp (Open-Meteo records), moon phase and solunar period (SunCalc). Moon & solunar card for today.
