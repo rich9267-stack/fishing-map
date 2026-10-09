@@ -72,8 +72,8 @@
   .msg { font-size: .9rem; margin-top: 10px; }
   .msg.err { color: var(--falling); }
   [hidden] { display: none !important; }
-  .userbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: .85rem; color: var(--muted); margin: -8px 0 12px; }
-  .userbar-links { display: flex; gap: 14px; }
+  .userbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 10px; font-size: .85rem; color: var(--muted); margin: -8px 0 12px; }
+  .userbar-links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
   #filter-panel { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
   .fgroup { margin-bottom: 10px; }
   .fgroup:last-of-type { margin-bottom: 4px; }
@@ -283,7 +283,8 @@
     <span id="who"></span>
     <span class="userbar-links">
       <button class="linkbtn" id="profile-btn" type="button">🙂 Profile</button>
-      <button class="linkbtn" id="invite-btn" type="button" hidden>👥 Invite friends</button>
+      <button class="linkbtn" id="friends-btn" type="button">👥 Friends</button>
+      <button class="linkbtn" id="invite-btn" type="button" hidden>✉ Invite to app</button>
       <button class="linkbtn" id="refresh-btn" type="button" aria-label="Refresh">↻ Refresh</button>
       <button class="linkbtn" id="signout-btn" type="button">Sign out</button>
     </span>
@@ -347,6 +348,23 @@
       <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="pf-save" type="submit">Save profile</button></div>
       <div class="msg" id="pf-msg"></div>
     </form>
+  </div>
+
+  <div class="card" id="friends-card" hidden>
+    <div class="row">
+      <div class="label">Friends</div>
+      <button class="linkbtn" id="friends-close" type="button">Close</button>
+    </div>
+    <div class="spot-meta">Friends see the spots and catches you share with "Friends" (and the exact pin, unless you hide it).</div>
+    <div id="fr-requests"></div>
+    <form id="fr-search-form" style="display:flex;gap:8px;margin-top:10px">
+      <input id="fr-q" maxlength="30" autocapitalize="none" autocomplete="off" placeholder="Find people by username or name" style="flex:1;min-width:0">
+      <button class="btn small" type="submit">Search</button>
+    </form>
+    <div id="fr-results"></div>
+    <div class="label" style="margin-top:14px">Your friends</div>
+    <div id="fr-list"></div>
+    <div class="msg" id="fr-msg"></div>
   </div>
 
   <div class="card" id="invite-card" hidden>
@@ -4942,6 +4960,97 @@
   }
   $("signout-btn").addEventListener("click", signOut);
 
+  // ---- Friends (V4 social) ----
+  let friendRows = [], friendProfiles = {};
+  const otherOf = r => (r.user_a === me.id ? r.user_b : r.user_a);
+  const pairOf = other => me.id < other ? { user_a: me.id, user_b: other } : { user_a: other, user_b: me.id };
+  const incomingReqs = () => friendRows.filter(r => r.status === "pending" && r.requested_by !== me.id);
+  function friendBadge() {
+    const n = me ? incomingReqs().length : 0;
+    $("friends-btn").textContent = n ? `👥 Friends (${n})` : "👥 Friends";
+  }
+  async function loadFriends() {
+    if (!me) return;
+    try {
+      const { data, error } = await db.from("friendships").select("*");
+      if (error) throw error;
+      friendRows = data;
+      me.friendIds = new Set(data.filter(r => r.status === "accepted").map(otherOf));
+      const ids = [...new Set(data.map(otherOf))];
+      if (ids.length) {
+        const { data: ps, error: e2 } = await db.from("profiles").select("user_id,handle,display_name,home_area").in("user_id", ids);
+        if (e2) throw e2;
+        ps.forEach(x => { friendProfiles[x.user_id] = x; });
+      }
+      $("fr-msg").textContent = "";
+    } catch (e) { $("fr-msg").className = "msg err"; $("fr-msg").textContent = "Couldn't load friends right now."; }
+    friendBadge();
+    if (!$("friends-card").hidden) renderFriends();
+  }
+  const personLine = (p, extra) => {
+    const row = el("div", "feed-top"); row.style.cssText = "padding:8px 0;border-bottom:1px solid var(--line);align-items:center";
+    const who = el("span"); who.appendChild(el("b", null, p ? p.display_name : "Someone"));
+    if (p) who.appendChild(el("span", "spot-meta", `  @${p.handle}` + (p.home_area ? ` · ${p.home_area}` : "")));
+    row.appendChild(who); row.appendChild(extra);
+    return row;
+  };
+  const frBtn = (label, fn, cls) => { const b = el("button", cls || "btn ghost small", label); b.type = "button"; b.addEventListener("click", fn); return b; };
+  async function friendAction(fn, failText) {
+    const { error } = await fn();
+    if (error) { $("fr-msg").className = "msg err"; $("fr-msg").textContent = failText + (error.message ? " (" + error.message + ")" : ""); return false; }
+    await loadFriends(); return true;
+  }
+  const sendRequest = id => friendAction(() => db.from("friendships").insert({ ...pairOf(id), requested_by: me.id, status: "pending" }), "Couldn't send the request.");
+  const acceptRequest = r => friendAction(() => db.from("friendships").update({ status: "accepted" }).eq("user_a", r.user_a).eq("user_b", r.user_b), "Couldn't accept.");
+  const removeRow = (r, ask) => { if (ask && !confirm(ask)) return; return friendAction(() => db.from("friendships").delete().eq("user_a", r.user_a).eq("user_b", r.user_b), "Couldn't do that."); };
+  function renderFriends() {
+    const reqBox = $("fr-requests"), list = $("fr-list");
+    reqBox.innerHTML = ""; list.innerHTML = "";
+    const inc = incomingReqs();
+    if (inc.length) {
+      reqBox.appendChild(el("div", "label", "Friend requests"));
+      inc.forEach(r => {
+        const act = el("span"); act.style.cssText = "display:flex;gap:6px";
+        act.appendChild(frBtn("Accept", () => acceptRequest(r), "btn small"));
+        act.appendChild(frBtn("Decline", () => removeRow(r)));
+        reqBox.appendChild(personLine(friendProfiles[otherOf(r)], act));
+      });
+    }
+    const sent = friendRows.filter(r => r.status === "pending" && r.requested_by === me.id);
+    const friends = friendRows.filter(r => r.status === "accepted");
+    friends.forEach(r => list.appendChild(personLine(friendProfiles[otherOf(r)], frBtn("Remove", () => removeRow(r, "Remove this friend? You'll stop seeing each other's Friends-only spots and catches.")))));
+    sent.forEach(r => list.appendChild(personLine(friendProfiles[otherOf(r)], frBtn("Cancel request", () => removeRow(r)))));
+    if (!friends.length && !sent.length) list.appendChild(el("div", "empty", "No friends yet — search for someone above."));
+  }
+  $("fr-search-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const q = $("fr-q").value.trim().replace(/^@/, "").replace(/[%,()*\\]/g, "");
+    const box = $("fr-results"); box.innerHTML = "";
+    if (q.length < 2) { box.appendChild(el("div", "spot-meta", "Type at least 2 letters.")); return; }
+    box.appendChild(el("div", "spot-meta", "Searching…"));
+    const { data, error } = await db.from("profiles").select("user_id,handle,display_name,home_area").or(`handle.ilike.%${q}%,display_name.ilike.%${q}%`).limit(20);
+    box.innerHTML = "";
+    if (error) { box.appendChild(el("div", "msg err", "Couldn't search right now.")); return; }
+    const found = (data || []).filter(x => x.user_id !== me.id);
+    if (!found.length) { box.appendChild(el("div", "spot-meta", "Nobody found with that username or name.")); return; }
+    found.forEach(pr => {
+      friendProfiles[pr.user_id] = pr;
+      const r = friendRows.find(x => otherOf(x) === pr.user_id);
+      let act;
+      if (!r) act = frBtn("Add friend", () => sendRequest(pr.user_id).then(ok => ok && $("fr-search-form").dispatchEvent(new Event("submit", { cancelable: true }))), "btn small");
+      else if (r.status === "accepted") act = el("span", "spot-meta", "✓ Friends");
+      else if (r.requested_by === me.id) act = el("span", "spot-meta", "Request sent");
+      else act = frBtn("Accept", () => acceptRequest(r).then(ok => ok && $("fr-search-form").dispatchEvent(new Event("submit", { cancelable: true }))), "btn small");
+      box.appendChild(personLine(pr, act));
+    });
+  });
+  $("friends-btn").addEventListener("click", async () => {
+    $("friends-card").hidden = false; $("fr-msg").textContent = ""; $("fr-results").innerHTML = ""; $("fr-q").value = "";
+    renderFriends(); $("friends-card").scrollIntoView({ behavior: "smooth", block: "start" });
+    await loadFriends();
+  });
+  $("friends-close").addEventListener("click", () => { $("friends-card").hidden = true; });
+
   // ---- Profile (V4 social): a username, home waters and a short bio ----
   async function ensureProfile() {
     try {
@@ -4949,6 +5058,7 @@
       if (error || !data) return;
       me.profile = data; me.handle = data.handle;
       $("who").textContent = `Signed in as ${me.name} (@${data.handle})`;
+      loadFriends();
     } catch (e) { /* offline — try again next time */ }
   }
   $("profile-btn").addEventListener("click", async () => {
