@@ -1,0 +1,7 @@
+-- 23 — Monthly repeating official contests (summary; full bodies are in the Supabase migration `monthly_series`)
+-- tournament_series (admin-read only): title, description, boards, species, geo lock, tz, active, last_month.
+-- tournaments.series_id / series_month (unique per series+month).
+-- series_roll()   service-only, pg_cron 'series-roll' every 15 min: when a new local month has started, creates "<title> — <Month YYYY>" (official, photo+length required),
+--                 re-enters everyone who was 'joined' last month, pushes "🏁 <title> is on" to approved members (contests alerts).
+-- create_series(...) admin only: makes the series + this month's contest right away (runs now -> end of month).
+-- stop_series(id)    admin only: no new month; the running contest finishes.
