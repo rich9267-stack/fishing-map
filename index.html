@@ -206,6 +206,8 @@
   #qc-review .stepper input { border-radius: 0; text-align: center; border-left: 0; border-right: 0; }
   #qc-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom)); background: #12262e; color: #fff;
     padding: 10px 16px; border-radius: 999px; z-index: 1200; font-size: .92rem; box-shadow: 0 4px 14px rgba(0,0,0,.3); max-width: 90vw; text-align: center; }
+  #welcome { position: fixed; inset: 0; z-index: 1200; background: var(--bg); overflow: auto; padding: 16px; }
+  .welcome-card { max-width: 520px; margin: 0 auto; }
   .session-bar { position: sticky; top: 6px; z-index: 50; display: flex; justify-content: space-between; align-items: center; gap: 10px;
     background: var(--accent); color: #fff; border-radius: 12px; padding: 8px 10px 8px 14px; margin: -6px 0 12px; font-size: .9rem; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
   .session-bar .btn { background: #fff; color: var(--accent); white-space: nowrap; flex: none; }
@@ -368,7 +370,11 @@
     <div id="push-box" style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
       <div class="label">🔔 Phone alerts</div>
       <div class="spot-meta" id="push-status"></div>
-      <div class="spot-meta" id="push-ios" hidden>iPhone steps: open this site in Safari → tap Share → “Add to Home Screen” → open the app from that new icon → come back here and turn alerts on.</div>
+      <div class="spot-meta" id="push-ios" hidden>iPhone alerts only work from the Home Screen app — follow the steps below.</div>
+      <details id="a2hs" style="margin-top:8px">
+        <summary style="cursor:pointer;font-weight:600">📲 How to add this app to your Home Screen</summary>
+        <div id="a2hs-body"></div>
+      </details>
       <div id="push-prefs" hidden style="margin-top:8px">
         <label class="check-row" for="push-p-social"><input id="push-p-social" type="checkbox"><span>👥 Messages, friend requests, comments, “I’m in”</span></label>
         <label class="check-row" for="push-p-contests"><input id="push-p-contests" type="checkbox"><span>🏁 Contest invites, starting soon, ended</span></label>
@@ -456,6 +462,31 @@
     <div class="msg" id="invite-msg"></div>
     <div id="report-admin"></div>
     <ul id="member-list"></ul>
+  </div>
+
+  <template id="a2hs-tpl">
+        <div class="spot-meta" style="margin-top:6px"><b>iPhone</b> (needs iOS 16.4 or newer)</div>
+        <ol style="margin:6px 0 10px 20px;padding:0;line-height:1.5;font-size:.9rem">
+          <li>Open this page in <b>Safari</b> (the blue compass icon).</li>
+          <li>Tap the <b>Share</b> button — a square with an arrow pointing up. It's at the bottom of the screen. If you don't see it, tap the <b>•••</b> button first.</li>
+          <li>Scroll down the menu and tap <b>Add to Home Screen</b>.</li>
+          <li>Leave <b>Open as Web App</b> switched on if you see it, then tap <b>Add</b>.</li>
+          <li>Close Safari. Find the new <b>Fishing Map</b> icon on your Home Screen and open the app from <b>that icon</b> from now on.</li>
+          <li>Sign in again — the Home Screen app keeps its own sign-in, separate from Safari. Then come back to <b>Profile → Phone alerts</b> and tap <b>Turn on alerts</b>.</li>
+        </ol>
+        <div class="spot-meta"><b>Android</b>: in Chrome tap the <b>⋮</b> menu → <b>Add to Home screen</b> (or <b>Install app</b>) → Add. Then open it from the icon.</div>
+  </template>
+
+  <div id="welcome" hidden>
+    <div class="card welcome-card">
+      <div class="label" id="wl-step"></div>
+      <div id="wl-body"></div>
+      <div class="msg" id="wl-msg"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px">
+        <button class="linkbtn" id="wl-skip" type="button">Skip setup</button>
+        <button class="btn" id="wl-next" type="button">Next</button>
+      </div>
+    </div>
   </div>
 
   <div id="app" hidden>
@@ -5236,7 +5267,7 @@
     $("auth-card").hidden = true; $("not-member").hidden = true;
     $("userbar").hidden = false; $("app").hidden = false; $("qc-fab").hidden = false;
     $("who").textContent = `Signed in as ${me.name}`;
-    ensureProfile();
+    ensureProfile().then(maybeWelcome);
     $("invite-btn").hidden = !me.isAdmin;
     checkRequests();
     startChat();
@@ -6232,7 +6263,7 @@
     const st = $("push-status"), on = $("push-on"), off = $("push-off"), test = $("push-test"), prefs = $("push-prefs");
     $("push-ios").hidden = true; on.hidden = off.hidden = test.hidden = prefs.hidden = true;
     if (!pushCapable() || (isIOS && !isStandalone())) {
-      if (isIOS && !isStandalone()) { st.textContent = "On iPhone, alerts only work from the Home Screen app."; $("push-ios").hidden = false; }
+      if (isIOS && !isStandalone()) { st.textContent = "On iPhone, alerts only work from the Home Screen app."; $("push-ios").hidden = false; $("a2hs").open = true; }
       else st.textContent = "This browser can't receive phone alerts.";
       return;
     }
@@ -6306,6 +6337,103 @@
   }
   function runPendingGo() { if (pendingGo && me) { const g = pendingGo; pendingGo = null; try { history.replaceState(null, "", SITE); } catch (e) {} handleGo(g); } }
   if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", e => { if (e.data && e.data.go) { pendingGo = e.data.go; runPendingGo(); } });
+
+  // ---- 👋 Welcome flow (first sign-in): profile → Home Screen → alerts → location & camera ----
+  let wl = null;
+  const wlSet = async fields => db.from("notif_prefs").upsert({ user_id: me.id, ...fields });
+  async function maybeWelcome() {
+    try {
+      if (!db || !me || !me.profile) return;
+      try { if (sessionStorage.getItem("fm-welcome-later") === "1") return; } catch (e) {}
+      const { data, error } = await db.from("notif_prefs").select("welcomed_at").eq("user_id", me.id).maybeSingle();
+      if (error || (data && data.welcomed_at)) return;
+      const phone = isIOS || /Android/i.test(navigator.userAgent);
+      const needHome = phone && !isStandalone();
+      const steps = ["profile"];
+      if (needHome) steps.push("home");
+      if (!(isIOS && !isStandalone())) { if (pushCapable()) steps.push("alerts"); steps.push("perms"); }
+      wl = { steps, i: 0 };
+      $("welcome").hidden = false; $("welcome").scrollTop = 0;
+      renderWelcome();
+    } catch (e) {}
+  }
+  function fillA2hs(box) { const t = $("a2hs-tpl"); box.innerHTML = ""; box.appendChild(t.content.cloneNode(true)); }
+  function renderWelcome() {
+    const st = wl.steps[wl.i], last = wl.i === wl.steps.length - 1, body = $("wl-body");
+    $("wl-step").textContent = `Step ${wl.i + 1} of ${wl.steps.length}`;
+    $("wl-msg").textContent = ""; $("wl-msg").className = "msg";
+    const nxt = $("wl-next"); nxt.disabled = false;
+    nxt.textContent = last ? (st === "home" && isIOS ? "Done for now" : "Finish") : "Next";
+    if (st === "profile") {
+      const p = me.profile || {};
+      body.innerHTML = `<h2 style="margin:6px 0">Welcome to Fishing Map 🎣</h2>
+        <div class="spot-meta">Share spots, log catches, plan trips with friends and run contests. First, tell everyone who you are.</div>
+        <label for="wl-name">Your name</label><input id="wl-name" maxlength="40">
+        <label for="wl-handle">Username</label><input id="wl-handle" maxlength="20" autocapitalize="none" autocomplete="off" placeholder="letters, numbers, _ (3–20)">
+        <div class="spot-meta">Friends find you by this. It shows as @username.</div>
+        <label for="wl-area">Home waters (optional)</label><input id="wl-area" maxlength="60" placeholder="e.g., Pompano Beach, FL">
+        <label for="wl-bio">About you (optional)</label><textarea id="wl-bio" maxlength="300" placeholder="What you fish for, favorite bait…"></textarea>`;
+      $("wl-name").value = p.display_name || me.name || ""; $("wl-handle").value = p.handle || "";
+      $("wl-area").value = p.home_area || ""; $("wl-bio").value = p.bio || "";
+    } else if (st === "home") {
+      body.innerHTML = `<h2 style="margin:6px 0">Put it on your Home Screen 📲</h2>
+        <div class="spot-meta">It opens like a regular app, still works with weak signal${isIOS ? ", and iPhones need it for phone alerts" : ""}.</div><div id="wl-a2hs"></div>
+        ${isIOS ? '<div class="spot-meta" style="margin-top:8px">When you open the app from its new icon, this welcome picks up again so you can turn on alerts there.</div>' : ""}`;
+      fillA2hs($("wl-a2hs"));
+    } else if (st === "alerts") {
+      body.innerHTML = `<h2 style="margin:6px 0">Phone alerts 🔔</h2>
+        <div class="spot-meta">Get a buzz for messages, friend requests, contest invites and starts, and a reminder an hour before a planned trip. You can pick which kinds later in Profile.</div>
+        <div style="margin-top:10px"><button class="btn" id="wl-alerts-btn" type="button">Turn on alerts</button></div>
+        <div class="spot-meta" id="wl-alerts-st" style="margin-top:6px"></div>`;
+      const stt = $("wl-alerts-st");
+      const check = async () => { const s = await pushCurrentSub(); if (s) { stt.textContent = "✓ Alerts are on for this phone."; $("wl-alerts-btn").hidden = true; } else if (Notification.permission === "denied") stt.textContent = "Alerts are blocked in your phone's settings for this app. You can allow them there and turn them on later in Profile."; };
+      $("wl-alerts-btn").addEventListener("click", async () => { stt.textContent = "Asking your phone…"; await pushTurnOn(); stt.textContent = ""; await check(); if (!$("wl-alerts-btn").hidden && Notification.permission !== "denied") stt.textContent = $("push-msg").textContent; });
+      check();
+    } else {
+      body.innerHTML = `<h2 style="margin:6px 0">Location &amp; camera 📍📷</h2>
+        <div class="spot-meta">Location finds the nearest spot when you log a catch, adds tide and weather for where you are, and verifies location-locked contests. The camera is for photographing catches. Allowing these shares nothing by itself — you still choose what is private, friends or public.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn small" id="wl-loc" type="button">Allow location</button><button class="btn small" id="wl-cam" type="button">Allow camera</button></div>
+        <div class="spot-meta" id="wl-perm-st" style="margin-top:6px"></div>`;
+      const say = t => { $("wl-perm-st").textContent = ($("wl-perm-st").dataset.t = ($("wl-perm-st").dataset.t || "") + " " + t).trim(); };
+      $("wl-loc").addEventListener("click", () => {
+        if (!navigator.geolocation) return say("📍 Location isn't available here.");
+        navigator.geolocation.getCurrentPosition(() => { say("📍 Location ✓"); $("wl-loc").hidden = true; }, () => say("📍 Location wasn't allowed — you can change that in your phone's settings."), { timeout: 15000 });
+      });
+      $("wl-cam").addEventListener("click", async () => {
+        try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); s.getTracks().forEach(t => t.stop()); say("📷 Camera ✓"); $("wl-cam").hidden = true; }
+        catch (e) { say("📷 Camera wasn't allowed — you can change that in your phone's settings."); }
+      });
+    }
+  }
+  async function wlNext() {
+    const st = wl.steps[wl.i], last = wl.i === wl.steps.length - 1, msg = $("wl-msg");
+    if (st === "profile") {
+      const name = $("wl-name").value.trim(), handle = $("wl-handle").value.trim().toLowerCase().replace(/^@/, "");
+      if (!name) { msg.className = "msg err"; msg.textContent = "Please add your name."; return; }
+      if (!/^[a-z0-9_]{3,20}$/.test(handle)) { msg.className = "msg err"; msg.textContent = "Username: 3–20 letters, numbers or _ (no spaces)."; return; }
+      msg.textContent = "Saving…"; $("wl-next").disabled = true;
+      try {
+        const area = $("wl-area").value.trim() || null, bio = $("wl-bio").value.trim() || null;
+        const { error } = await db.from("profiles").update({ display_name: name, handle, home_area: area, bio }).eq("user_id", me.id);
+        if (error) throw error;
+        if (name !== me.name) { await db.rpc("set_my_name", { new_name: name }); me.name = name; }
+        me.profile = { ...(me.profile || {}), display_name: name, handle, home_area: area, bio }; me.handle = handle;
+        $("who").textContent = `Signed in as ${me.name} (@${handle})`;
+      } catch (err) {
+        $("wl-next").disabled = false; msg.className = "msg err";
+        msg.textContent = err && err.code === "23505" ? "That username is taken — try another." : "Couldn't save: " + (err.message || err); return;
+      }
+    }
+    if (last) {
+      if (st === "home" && isIOS) { try { sessionStorage.setItem("fm-welcome-later", "1"); } catch (e) {} $("welcome").hidden = true; return; }
+      await wlSet({ welcomed_at: new Date().toISOString() }); $("welcome").hidden = true; toast("You're all set 🎣");
+      return;
+    }
+    wl.i++; renderWelcome(); $("welcome").scrollTop = 0;
+  }
+  $("wl-next").addEventListener("click", wlNext);
+  $("wl-skip").addEventListener("click", async () => { await wlSet({ welcomed_at: new Date().toISOString() }); $("welcome").hidden = true; });
+  fillA2hs($("a2hs-body"));
 
   // ---- Refreshing (the home-screen app has no reload button) ----
   function refreshApp() {
