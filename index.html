@@ -219,7 +219,7 @@
   .sat-title { font-weight: 600; font-size: .9rem; }
   .sat-bar { height: 10px; border-radius: 4px; margin: 8px 0 4px; }
   .sat-scale { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-  #map-sst.on, #map-chl.on, #map-sight.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #map-sst.on, #map-chl.on, #map-sight.on, #map-pub.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   .check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--text); cursor: pointer; }
   .check-row input { width: auto; margin-top: 3px; transform: scale(1.2); }
   .btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; padding: 12px;
@@ -236,9 +236,8 @@
   .linkbtn { appearance: none; background: none; border: 0; padding: 4px 0; font: inherit; font-size: .85rem; color: var(--accent); cursor: pointer; }
   .linkbtn.danger { color: var(--falling); }
   /* List / Map tabs */
-  .tabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; background: var(--line); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
-  .tabs button { appearance: none; border: 0; border-radius: 9px; padding: 9px 0; font: inherit; font-size: .7rem; font-weight: 600; white-space: nowrap; background: transparent; color: var(--muted); cursor: pointer; }
-  @media (max-width: 340px) { .tabs button { font-size: .62rem; } }
+  .tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--line); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
+  .tabs button { appearance: none; border: 0; border-radius: 9px; padding: 9px 1px; font: inherit; font-size: .78rem; font-weight: 600; white-space: nowrap; background: transparent; color: var(--muted); cursor: pointer; }
   .tabs button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
   /* Map */
   #map { height: 62vh; min-height: 340px; border-radius: 12px; border: 1px solid var(--line); z-index: 0; }
@@ -424,39 +423,31 @@
     <button id="tab-insights" type="button" role="tab">📊 Insights</button>
     <button id="tab-seasons" type="button" role="tab">📅 Seasons</button>
     <button id="tab-feed" type="button" role="tab">🎣 Feed</button>
-    <button id="tab-public" type="button" role="tab">🌎 Public</button>
   </div>
 
   <div id="view-feed" hidden>
-    <div class="card">
+    <div id="feed-mode" style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn small" id="feed-mode-circle" type="button">👥 My circle</button>
+      <button class="btn ghost small" id="feed-mode-public" type="button">🌎 Public</button>
+    </div>
+    <div class="card" id="feed-plans-card">
       <div class="label">Who's going?</div>
       <div class="spot-meta">Post when and where you're fishing — friends tap "I'm in".</div>
       <div id="plan-list"></div>
     </div>
 
-    <div class="card" style="margin-top:14px">
+    <div class="card" id="feed-circle-card" style="margin-top:14px">
       <div class="label">Catch feed</div>
       <div class="spot-meta">Latest catches from everyone. Tap 👍 to cheer a fish, 💬 to comment. Catches at private spots only show for their owner.</div>
       <div id="feed-list"></div>
     </div>
-  </div>
 
-  <div id="view-public" hidden>
-    <div class="card">
-      <div class="label">🌎 Public</div>
-      <div class="spot-meta">Catches and spots that people marked 🌎 Public. Spots you don't share a circle with show an approximate pin (within about ¼ mile) and no directions. To share your own, set a catch or spot to 🌎 Public.</div>
-      <div id="pub-sub" style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn small" id="pub-sub-feed" type="button">🎣 Catches</button>
-        <button class="btn ghost small" id="pub-sub-map" type="button">🗺 Spots map</button>
-      </div>
+    <div class="card" id="pub-feed" hidden>
+      <div class="label">🌎 Public catches</div>
+      <div class="spot-meta">Catches that people marked 🌎 Public. To share your own, set a catch to 🌎 Public. Spots you don't share a circle with show an approximate pin (about ¼ mile) and no directions — see them on the 🗺 Map with "🌎 Public spots".</div>
+      <div id="pub-feed-list"></div>
     </div>
-    <div class="card" id="pub-feed" style="margin-top:14px"><div id="pub-feed-list"></div></div>
-    <div class="card" id="pub-mapwrap" style="margin-top:14px" hidden>
-      <div id="pub-map" style="height:60vh;min-height:320px;border-radius:12px;border:1px solid var(--line);z-index:0"></div>
-      <div class="map-tools"><button class="btn ghost small" id="pub-layer" type="button">🛰 Satellite</button></div>
-      <div class="spot-meta" id="pub-map-note"></div>
-    </div>
-    <div class="card" id="pub-profile" style="margin-top:14px" hidden>
+    <div class="card" id="pub-profile" hidden>
       <button class="btn ghost small" id="pub-back" type="button">← Back</button>
       <div id="pub-profile-body"></div>
     </div>
@@ -502,6 +493,7 @@
       <button class="btn ghost small" id="map-sst" type="button">🌡 Water temp</button>
       <button class="btn ghost small" id="map-chl" type="button">🟢 Water clarity</button>
       <button class="btn ghost small" id="map-sight" type="button">👀 Sightings</button>
+      <button class="btn ghost small" id="map-pub" type="button">🌎 Public spots</button>
     </div>
     <div class="legend">
       <span><span class="dot" style="background:#1d6fd6"></span>Saltwater</span>
@@ -4397,12 +4389,9 @@
     $("view-seasons").hidden = which !== "seasons";
     $("tab-seasons").classList.toggle("on", which === "seasons");
     if (which === "seasons") renderSeasons();
-    $("view-public").hidden = which !== "public";
-    $("tab-public").classList.toggle("on", which === "public");
-    if (which === "public") { renderPublic(); loadPublic(); loadFeed(); }
     $("view-feed").hidden = which !== "feed";
     $("tab-feed").classList.toggle("on", which === "feed");
-    if (which === "feed") { renderFeed(); loadFeed(); }
+    if (which === "feed") { renderFeed(); loadFeed(); setFeedMode(feedMode); }
     renderPlanLine();
     if (which === "feed" || Date.now() - plansLoadedAt > 60000) loadPlans();
     $("tab-map").classList.toggle("on", isMap);
@@ -4413,7 +4402,9 @@
       initMap();
       if (!map) { $("map").textContent = "The map couldn't load — check your connection and refresh."; return; }
       setTimeout(() => { map.invalidateSize(); }, 50);
+      const focusing = !!pubFocus;
       renderPins();
+      if (mapPublic && !focusing) setMapPublic(true);
     }
   }
   $("tab-list").addEventListener("click", () => { stopPlacing(); showView("list"); });
@@ -4421,7 +4412,6 @@
   $("tab-insights").addEventListener("click", () => { stopPlacing(); showView("insights"); });
   $("tab-seasons").addEventListener("click", () => { stopPlacing(); showView("seasons"); });
   $("tab-feed").addEventListener("click", () => { stopPlacing(); showView("feed"); });
-  $("tab-public").addEventListener("click", () => { stopPlacing(); showView("public"); });
 
   function initMap() {
     if (map || !window.L) return;
@@ -4479,6 +4469,7 @@
         fillColor: WATER_COLOR[s.water_type] || "#555", fillOpacity: 1
       }).bindPopup(() => popupFor(s)).addTo(pinLayer);
     });
+    renderPublicPins();
     const n = activeFilterCount();
     $("map-filter-note").hidden = !n;
     if (n) $("map-filter-note").textContent = `Filters on — showing ${filteredSpots().length} of ${(spots || []).length} spots. Change them in the list view.`;
@@ -5040,9 +5031,17 @@
 
   // ---- 🌎 Public (V4.5 step D): public catches, a map of public spots, and profile pages ----
   let pubCatches = [], pubShown = 30, pubMore = false, pubProfiles = {}, pubPhotos = {}, pubError = null;
-  let pubSub = "feed", pubProfileId = null, profView = null, pubFocus = null;
-  let pubMap = null, pubPins = null, pubStreet = null, pubSatTiles = null, pubSat = false, pubMarkers = {}, pubFitted = false;
-  function pubOpen() { return !!$("view-public") && !$("view-public").hidden; }
+  let pubProfileId = null, profView = null, feedMode = "circle", mapPublic = false, pubMarkers = {}, pubFocus = null;
+  try { mapPublic = localStorage.getItem("fm-map-public") === "1"; } catch (e) {}
+  function pubOpen() { return !!$("view-feed") && !$("view-feed").hidden && feedMode === "public"; }
+  function setFeedMode(m) {
+    feedMode = m;
+    const pub = m === "public";
+    $("feed-mode-circle").className = "btn small" + (pub ? " ghost" : "");
+    $("feed-mode-public").className = "btn small" + (pub ? "" : " ghost");
+    $("feed-plans-card").hidden = pub; $("feed-circle-card").hidden = pub;
+    if (pub) { loadPublic(); renderPublic(); } else { $("pub-feed").hidden = true; $("pub-profile").hidden = true; renderFeed(); }
+  }
   const profOf = id => pubProfiles[id] || friendProfiles[id] || (me && id === me.id && me.profile) || null;
   const profName = id => { const p = profOf(id); return p ? (p.display_name || "@" + p.handle) : null; };
   async function ensureProfiles(ids) {
@@ -5081,15 +5080,9 @@
   function renderPublic() {
     if (!pubOpen()) return;
     const prof = !!pubProfileId;
-    $("pub-sub").hidden = prof;
-    $("pub-feed").hidden = prof || pubSub !== "feed";
-    $("pub-mapwrap").hidden = prof || pubSub !== "map";
+    $("pub-feed").hidden = prof;
     $("pub-profile").hidden = !prof;
-    $("pub-sub-feed").className = "btn small" + (pubSub === "feed" ? "" : " ghost");
-    $("pub-sub-map").className = "btn small" + (pubSub === "map" ? "" : " ghost");
-    if (prof) renderProfilePage();
-    else if (pubSub === "feed") renderPubFeed();
-    else renderPubMap();
+    if (prof) renderProfilePage(); else renderPubFeed();
   }
   function renderPubFeed() {
     const box = $("pub-feed-list"); box.innerHTML = "";
@@ -5102,27 +5095,6 @@
       box.appendChild(more);
     }
   }
-  async function renderPubMap() {
-    if (!window.L) { $("pub-map").textContent = "The map couldn't load — check your connection and refresh."; return; }
-    if (!pubMap) {
-      pubMap = L.map("pub-map", { zoomControl: true }).setView([LAT, LNG], 10);
-      pubStreet = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }).addTo(pubMap);
-      pubSatTiles = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics" });
-      pubPins = L.layerGroup().addTo(pubMap);
-    }
-    setTimeout(() => { pubMap.invalidateSize(); }, 50);
-    const list = spotsAll.filter(x => x.visibility === "public" && x.lat != null && x.lng != null);
-    try { await ensureProfiles(list.map(x => x.created_by)); } catch (e) { /* names are optional */ }
-    pubPins.clearLayers(); pubMarkers = {};
-    list.forEach(x => {
-      const col = WATER_COLOR[x.water_type] || "#555";
-      if (x.is_exact === false) L.circle([x.lat, x.lng], { radius: 400, color: col, weight: 1, dashArray: "4 4", fillColor: col, fillOpacity: 0.08, interactive: false }).addTo(pubPins);
-      pubMarkers[x.id] = L.circleMarker([x.lat, x.lng], { radius: 9, weight: 3, color: "#ffffff", fillColor: col, fillOpacity: 1 }).bindPopup(() => pubPopup(x)).addTo(pubPins);
-    });
-    $("pub-map-note").textContent = list.length ? `${list.length} public spot${list.length === 1 ? "" : "s"}. Dashed circles mean the pin is approximate (the real spot is within about ¼ mile).` : "No public spots yet. Set a spot to 🌎 Public and it shows up here.";
-    if (pubFocus && pubMarkers[pubFocus]) { const mk = pubMarkers[pubFocus]; pubMap.setView(mk.getLatLng(), 15); mk.openPopup(); pubFocus = null; pubFitted = true; }
-    else if (!pubFitted && list.length) { pubFitted = true; pubMap.fitBounds(list.map(x => [x.lat, x.lng]), { padding: [30, 30], maxZoom: 14 }); }
-  }
   function pubPopup(x) {
     const box = document.createElement("div");
     box.appendChild(el("div", "pop-name", "🌎 " + x.name));
@@ -5131,11 +5103,12 @@
     const who = profName(x.created_by);
     if (who) {
       const b = el("button", "linkbtn", "Shared by " + who); b.type = "button";
-      b.addEventListener("click", () => { pubMap.closePopup(); openProfile(x.created_by); });
+      b.addEventListener("click", () => { map.closePopup(); showProfile(x.created_by); });
       box.appendChild(b);
     }
     return box;
   }
+  function showProfile(id) { stopPlacing(); feedMode = "public"; showView("feed"); openProfile(id); }
   async function openProfile(id) {
     pubProfileId = id; profView = { loading: true, catches: [] };
     renderPublic();
@@ -5175,7 +5148,7 @@
     sp.forEach(x => {
       const row = el("div", "feed-top"); row.style.cssText = "padding:6px 0;align-items:center";
       row.appendChild(el("span", null, "🌎 " + x.name));
-      const b = frBtn("Show on map", () => { pubFocus = x.id; pubProfileId = null; pubSub = "map"; renderPublic(); }); row.appendChild(b);
+      const b = frBtn("Show on map", () => { pubFocus = x.id; mapPublic = true; try { localStorage.setItem("fm-map-public", "1"); } catch (e) {} $("map-pub").classList.add("on"); showView("map"); }); row.appendChild(b);
       box.appendChild(row);
     });
     box.appendChild(el("div", "label", "Public catches"));
@@ -5184,15 +5157,30 @@
     else if (!profView || !profView.catches.length) box.appendChild(el("div", "spot-meta", "No public catches yet."));
     else profView.catches.forEach(c => box.appendChild(pubCard(c)));
   }
-  $("pub-sub-feed").addEventListener("click", () => { pubSub = "feed"; renderPublic(); });
-  $("pub-sub-map").addEventListener("click", () => { pubSub = "map"; renderPublic(); });
   $("pub-back").addEventListener("click", () => { pubProfileId = null; profView = null; renderPublic(); });
-  $("pub-layer").addEventListener("click", () => {
-    if (!pubMap) return;
-    pubSat = !pubSat;
-    if (pubSat) { pubMap.removeLayer(pubStreet); pubSatTiles.addTo(pubMap); } else { pubMap.removeLayer(pubSatTiles); pubStreet.addTo(pubMap); }
-    $("pub-layer").textContent = pubSat ? "🗺 Street map" : "🛰 Satellite";
-  });
+  $("feed-mode-circle").addEventListener("click", () => setFeedMode("circle"));
+  $("feed-mode-public").addEventListener("click", () => setFeedMode("public"));
+  // Strangers' public spots on the regular map (a toggle; your circle's spots are always shown)
+  function strangerSpots() { return spotsAll.filter(x => x.visibility === "public" && x.lat != null && x.lng != null && !(spots || []).some(sp => sp.id === x.id)); }
+  async function setMapPublic(on) {
+    mapPublic = on;
+    try { localStorage.setItem("fm-map-public", on ? "1" : "0"); } catch (e) {}
+    $("map-pub").classList.toggle("on", on);
+    if (on) { try { await ensureProfiles(strangerSpots().map(x => x.created_by)); } catch (e) { /* names are optional */ } }
+    renderPins();
+  }
+  function renderPublicPins() {
+    pubMarkers = {};
+    if (!mapPublic) return;
+    strangerSpots().forEach(x => {
+      const col = WATER_COLOR[x.water_type] || "#555";
+      L.circle([x.lat, x.lng], { radius: 400, color: col, weight: 1, dashArray: "4 4", fillColor: col, fillOpacity: 0.08, interactive: false }).addTo(pinLayer);
+      pubMarkers[x.id] = L.circleMarker([x.lat, x.lng], { radius: 8, weight: 3, color: "#ffffff", fillColor: col, fillOpacity: 0.85 }).bindPopup(() => pubPopup(x)).addTo(pinLayer);
+    });
+    if (pubFocus && pubMarkers[pubFocus]) { const mk = pubMarkers[pubFocus]; pubFocus = null; map.setView(mk.getLatLng(), 15); mk.openPopup(); }
+  }
+  $("map-pub").addEventListener("click", () => { initMap(); setMapPublic(!mapPublic); });
+  $("map-pub").classList.toggle("on", mapPublic);
 
   // ---- Friends (V4 social) ----
   let friendRows = [], friendProfiles = {};
