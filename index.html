@@ -354,6 +354,28 @@
 
   <div id="view-feed" hidden>
     <div class="card">
+      <div class="label">Who's going?</div>
+      <div class="spot-meta">Post when and where you're fishing — friends tap "I'm in".</div>
+      <div id="plan-list"></div>
+      <button class="btn small" id="plan-add" type="button" style="margin-top:8px">+ Plan a trip</button>
+      <form id="plan-form" hidden>
+        <label for="pl-spot">Where</label>
+        <select id="pl-spot" required></select>
+        <label for="pl-date">Day</label>
+        <input id="pl-date" type="date" required>
+        <label for="pl-time">Time</label>
+        <input id="pl-time" type="time" required>
+        <label for="pl-note">Note (optional)</label>
+        <input id="pl-note" maxlength="200" placeholder="e.g., live shrimp, meet at the lot">
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn" id="pl-save" type="submit">Post plan</button>
+          <button class="btn ghost" id="pl-cancel" type="button">Cancel</button>
+        </div>
+        <div class="msg" id="pl-msg"></div>
+      </form>
+    </div>
+
+    <div class="card" style="margin-top:14px">
       <div class="label">Catch feed</div>
       <div class="spot-meta">Latest catches from everyone. Tap 👍 to cheer a fish, 💬 to comment. Catches at private spots only show for their owner.</div>
       <div id="feed-list"></div>
@@ -3376,6 +3398,7 @@
   function renderFeed() {
     const box = $("feed-list");
     if (!box) return;
+    renderPlans();
     box.innerHTML = "";
     if (feedError) box.appendChild(el("div", "msg err", feedError));
     const all = Object.values(catchesBySpot).flat().sort((a, b) => new Date(b.caught_at) - new Date(a.caught_at));
@@ -3442,6 +3465,110 @@
       box.appendChild(more);
     }
   }
+
+  // ---- "Who's going?" plans (V4): post a trip, friends tap "I'm in" ----
+  let plans = [], planRsvps = {}, planError = null;
+  async function loadPlans() {
+    try {
+      const since = new Date(Date.now() - 3 * 3600000).toISOString(); // a plan stays up until 3 h after its start
+      const [p, r] = await Promise.all([
+        db.from("trip_plans").select("*").is("cancelled_at", null).gte("plan_at", since).order("plan_at", { ascending: true }).limit(100),
+        db.from("trip_plan_rsvps").select("*").limit(3000)
+      ]);
+      if (p.error) throw p.error;
+      if (r.error) throw r.error;
+      plans = p.data;
+      planRsvps = {}; r.data.forEach(x => (planRsvps[x.plan_id] = planRsvps[x.plan_id] || []).push(x));
+      planError = null;
+    } catch (e) { planError = "Couldn't load trip plans right now."; }
+    feedRefresh();
+  }
+  function planWhen(d) {
+    const day = new Date(); day.setHours(0, 0, 0, 0);
+    const diff = Math.round((new Date(d).setHours(0, 0, 0, 0) - day) / 86400000);
+    const dayText = diff === 0 ? "Today" : diff === 1 ? "Tomorrow" : d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+    return `${dayText} · ${clock(d)}`;
+  }
+  async function toggleRsvp(pl) {
+    if (!me) return;
+    const list = planRsvps[pl.id] || (planRsvps[pl.id] = []);
+    const had = list.some(x => x.user_id === me.id);
+    const mine = { plan_id: pl.id, user_id: me.id, name: me.name || null };
+    if (had) planRsvps[pl.id] = list.filter(x => x.user_id !== me.id); else list.push(mine);
+    renderPlans();
+    try {
+      const { error } = had ? await db.from("trip_plan_rsvps").delete().eq("plan_id", pl.id).eq("user_id", me.id)
+                            : await db.from("trip_plan_rsvps").insert({ plan_id: pl.id, name: me.name || null });
+      if (error) throw error;
+    } catch (e) { await loadPlans(); alert("Couldn't save that — check your signal and try again."); }
+  }
+  async function cancelPlan(pl) {
+    if (!confirm("Cancel this plan for everyone?")) return;
+    const { error } = await db.from("trip_plans").update({ cancelled_at: new Date().toISOString() }).eq("id", pl.id);
+    if (error) return alert("Couldn't cancel: " + (error.message || error));
+    plans = plans.filter(x => x !== pl);
+    renderPlans();
+  }
+  function renderPlans() {
+    const box = $("plan-list");
+    if (!box) return;
+    box.innerHTML = "";
+    if (planError) box.appendChild(el("div", "msg err", planError));
+    else if (!plans.length) box.appendChild(el("div", "empty", "No trips planned yet."));
+    plans.forEach(pl => {
+      const spot = (spots || []).find(x => x.id === pl.spot_id);
+      const item = el("div", "feed-item");
+      const top = el("div", "feed-top");
+      top.appendChild(el("span", "feed-what", planWhen(new Date(pl.plan_at))));
+      top.appendChild(el("span", "feed-when", spot ? "📍 " + spot.name : ""));
+      item.appendChild(top);
+      item.appendChild(el("div", "spot-meta", `Planned by ${pl.author || "someone"}` + (pl.note ? ` — ${pl.note}` : "")));
+      const going = planRsvps[pl.id] || [];
+      item.appendChild(el("div", "spot-meta", going.length ? `✋ Going (${going.length}): ${going.map(x => x.name || "Someone").join(", ")}` : "Nobody's in yet"));
+      const inn = !!(me && going.some(x => x.user_id === me.id));
+      const acts = el("div", "feed-actions");
+      const b = el("button", "btn ghost small" + (inn ? " on" : ""), inn ? "✔ I'm in (tap to back out)" : "✋ I'm in");
+      b.type = "button"; b.setAttribute("aria-pressed", inn);
+      b.addEventListener("click", () => toggleRsvp(pl));
+      acts.appendChild(b);
+      if (me && pl.created_by === me.id) {
+        const x = el("button", "linkbtn danger", "Cancel plan"); x.type = "button";
+        x.addEventListener("click", () => cancelPlan(pl));
+        acts.appendChild(x);
+      }
+      item.appendChild(acts);
+      box.appendChild(item);
+    });
+  }
+  $("plan-add").addEventListener("click", () => {
+    const sel = $("pl-spot");
+    sel.innerHTML = "";
+    (spots || []).filter(x => !x.is_private).forEach(x => { const o = document.createElement("option"); o.value = x.id; o.textContent = x.name; sel.appendChild(o); });
+    if (!sel.options.length) { $("pl-msg").className = "msg err"; $("pl-msg").textContent = "Add a public spot first — plans can't use private spots (friends couldn't see them)."; }
+    else $("pl-msg").textContent = "";
+    const t = new Date(Date.now() + 3600000); t.setMinutes(0, 0, 0);
+    $("pl-date").value = ymdDash(t); $("pl-time").value = `${pad2(t.getHours())}:00`; $("pl-note").value = "";
+    $("plan-form").hidden = false; $("plan-add").hidden = true;
+  });
+  const closePlanForm = () => { $("plan-form").hidden = true; $("plan-add").hidden = false; };
+  $("pl-cancel").addEventListener("click", closePlanForm);
+  $("plan-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = $("pl-msg");
+    const at = new Date(`${$("pl-date").value}T${$("pl-time").value}`);
+    if (isNaN(at) || !$("pl-spot").value) { msg.className = "msg err"; msg.textContent = "Pick a spot, day and time."; return; }
+    if (at < Date.now() - 30 * 60000) { msg.className = "msg err"; msg.textContent = "That time has already passed."; return; }
+    msg.className = "msg"; msg.textContent = "Posting…"; $("pl-save").disabled = true;
+    try {
+      const note = $("pl-note").value.trim() || null;
+      const { data, error } = await db.from("trip_plans").insert({ spot_id: $("pl-spot").value, plan_at: at.toISOString(), note, author: me && me.name || null }).select("*").single();
+      if (error) throw error;
+      await db.from("trip_plan_rsvps").insert({ plan_id: data.id, name: me && me.name || null }); // the person posting is going
+      closePlanForm();
+      await loadPlans();
+    } catch (err) { msg.className = "msg err"; msg.textContent = "Couldn't post: " + (err.message || err); }
+    finally { $("pl-save").disabled = false; }
+  });
 
   function catchLine(c) {
     const when = new Date(c.caught_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -4092,7 +4219,7 @@
     if (which === "seasons") renderSeasons();
     $("view-feed").hidden = which !== "feed";
     $("tab-feed").classList.toggle("on", which === "feed");
-    if (which === "feed") { renderFeed(); loadFeed(); }
+    if (which === "feed") { renderFeed(); loadFeed(); loadPlans(); }
     $("tab-map").classList.toggle("on", isMap);
     $("tab-list").classList.toggle("on", which === "list");
     $("tab-insights").classList.toggle("on", which === "insights");
