@@ -381,6 +381,7 @@
     <div id="fr-results"></div>
     <div class="label" style="margin-top:14px">Your friends</div>
     <div id="fr-list"></div>
+    <div id="fr-blocked"></div>
     <div class="msg" id="fr-msg"></div>
   </div>
 
@@ -391,7 +392,10 @@
     </div>
     <div id="chat-list"></div>
     <div id="chat-thread" hidden>
-      <button class="btn ghost small" id="chat-back" type="button">← All messages</button>
+      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between">
+        <button class="btn ghost small" id="chat-back" type="button">← All messages</button>
+        <span><button class="linkbtn" id="chat-report" type="button">⚑ Report</button> <button class="linkbtn danger" id="chat-block" type="button">🚫 Block</button></span>
+      </div>
       <div class="chat-msgs" id="chat-msgs"></div>
       <form id="chat-form" style="display:flex;gap:8px">
         <input id="chat-input" maxlength="1000" autocomplete="off" placeholder="Write a message…" style="flex:1;min-width:0">
@@ -399,6 +403,28 @@
       </form>
     </div>
     <div class="msg" id="chat-msg"></div>
+  </div>
+
+  <div class="card" id="report-card" hidden>
+    <div class="row">
+      <div class="label" id="rp-title">Report</div>
+      <button class="linkbtn" id="rp-close" type="button">Cancel</button>
+    </div>
+    <div class="spot-meta" id="rp-what"></div>
+    <form id="rp-form">
+      <label for="rp-reason">What's wrong?</label>
+      <select id="rp-reason">
+        <option value="spam">Spam or fake</option>
+        <option value="harassment">Harassment or abuse</option>
+        <option value="inappropriate">Inappropriate or offensive</option>
+        <option value="private_info">Shows private info (a secret spot, an address…)</option>
+        <option value="other">Something else</option>
+      </select>
+      <label for="rp-details">Details (optional)</label>
+      <textarea id="rp-details" maxlength="300" placeholder="Anything that helps Richard understand"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="rp-send" type="submit">Send report</button></div>
+      <div class="msg" id="rp-msg"></div>
+    </form>
   </div>
 
   <div class="card" id="invite-card" hidden>
@@ -412,6 +438,7 @@
       <button class="btn small" type="submit">Add</button>
     </form>
     <div class="msg" id="invite-msg"></div>
+    <div id="report-admin"></div>
     <ul id="member-list"></ul>
   </div>
 
@@ -3562,6 +3589,11 @@
       cbtn.type = "button";
       cbtn.addEventListener("click", () => { feedOpen.has(c.id) ? feedOpen.delete(c.id) : feedOpen.add(c.id); redrawFeeds(); });
       acts.appendChild(like); acts.appendChild(cbtn);
+      if (o.report && me && c.created_by !== me.id) {
+        const rb = el("button", "linkbtn", "⚑ Report"); rb.type = "button"; rb.style.marginLeft = "auto";
+        rb.addEventListener("click", () => openReport({ type: "catch", id: c.id, userId: c.created_by, snippet: `${c.species} — ${c.caught_by || ""}`, label: `${c.caught_by || "this person"}'s ${c.species} catch` }));
+        acts.appendChild(rb);
+      }
       item.appendChild(acts);
       if (feedOpen.has(c.id)) {
         const wrap = el("div", "feed-cm");
@@ -3573,6 +3605,10 @@
             const x = el("button", "linkbtn danger", "✕"); x.type = "button"; x.setAttribute("aria-label", "Delete comment");
             x.addEventListener("click", () => deleteComment(c, cm));
             p.appendChild(document.createTextNode(" ")); p.appendChild(x);
+          } else if (o.report && me) {
+            const rb = el("button", "linkbtn", "⚑"); rb.type = "button"; rb.setAttribute("aria-label", "Report this comment");
+            rb.addEventListener("click", () => openReport({ type: "comment", id: cm.id, userId: cm.created_by, snippet: cm.body, label: `a comment by ${cm.author || "someone"}` }));
+            p.appendChild(document.createTextNode(" ")); p.appendChild(rb);
           }
           wrap.appendChild(p);
         });
@@ -5036,6 +5072,7 @@
     $("invite-btn").hidden = !me.isAdmin;
     checkRequests();
     startChat();
+    loadBlocks();
     setTimeout(() => { updatePendingBar(); flushQueue(); }, 1500);
     if (!appStarted) {
       appStarted = true;
@@ -5099,7 +5136,7 @@
   const pubPlace = c => { const sp = spotsAll.find(x => x.id === c.spot_id); return sp ? "📍 " + sp.name : "📍 Location kept private"; };
   function pubCard(c) {
     return feedCard(c, { who: profName(c.created_by) || c.caught_by || "Someone", onWho: () => openProfile(c.created_by),
-      place: pubPlace(c), photos: (pubPhotos[c.id] || []).filter(x => photoUrls[x.path]) });
+      place: pubPlace(c), report: true, photos: (pubPhotos[c.id] || []).filter(x => photoUrls[x.path]) });
   }
   function renderPublic() {
     if (!pubOpen()) return;
@@ -5124,6 +5161,11 @@
     box.appendChild(el("div", "pop-name", "🌎 " + x.name));
     box.appendChild(el("div", "pop-meta", `${cap(x.spot_type)} · ${WATER_LABEL[x.water_type] || x.water_type}`));
     box.appendChild(el("div", "pop-meta", x.is_exact === false ? "Approximate pin — within about ¼ mile" : "Exact pin (yours or a friend's)"));
+    if (me && x.created_by !== me.id) {
+      const rb = el("button", "linkbtn", "⚑ Report this spot"); rb.type = "button";
+      rb.addEventListener("click", () => { map.closePopup(); openReport({ type: "spot", id: x.id, userId: x.created_by, snippet: x.name, label: `the spot "${x.name}"` }); });
+      box.appendChild(rb);
+    }
     const who = profName(x.created_by);
     if (who) {
       const b = el("button", "linkbtn", "Shared by " + who); b.type = "button";
@@ -5165,6 +5207,14 @@
       else if (r.requested_by === me.id) act = el("span", "spot-meta", "Friend request sent");
       else act = frBtn("Accept friend request", async () => { done(await acceptRequest(r)); }, "btn small");
       act.style.marginTop = "8px"; box.appendChild(act);
+    }
+    if (!mine && p) {
+      const tools = el("div"); tools.style.cssText = "display:flex;gap:14px;margin-top:6px";
+      const rb = el("button", "linkbtn", "⚑ Report"); rb.type = "button";
+      rb.addEventListener("click", () => openReport({ type: "profile", id: null, userId: id, snippet: `${p.display_name || ""} @${p.handle}`, label: `${p.display_name || "this person"}'s profile` }));
+      const bb = el("button", "linkbtn danger", blockedIds.has(id) ? "Unblock" : "🚫 Block"); bb.type = "button";
+      bb.addEventListener("click", () => (blockedIds.has(id) ? unblockUser(id) : blockUser(id)));
+      tools.appendChild(rb); tools.appendChild(bb); box.appendChild(tools);
     }
     const sp = spotsAll.filter(x => x.created_by === id && x.visibility === "public");
     box.appendChild(el("div", "label", `Public spots (${sp.length})`));
@@ -5337,6 +5387,101 @@
     finally { $("chat-send").disabled = false; }
   });
 
+  // ---- Safety (V4.5 step F): reports and blocks ----
+  let blockedIds = new Set();
+  const REASON_LABEL = { spam: "Spam or fake", harassment: "Harassment or abuse", inappropriate: "Inappropriate or offensive", private_info: "Shows private info", other: "Something else" };
+  async function loadBlocks() {
+    if (!me) return;
+    try {
+      const { data, error } = await db.from("blocks").select("blocked");
+      if (error) throw error;
+      blockedIds = new Set((data || []).map(r => r.blocked));
+      await ensureProfiles([...blockedIds]);
+    } catch (e) { /* keep the last list */ }
+    if (!$("friends-card").hidden) renderFriends();
+  }
+  // After a block/unblock, refresh everything that depends on who can see what
+  async function refreshAfterBlock(id) {
+    await loadBlocks(); await loadFriends(); getCircle(true);
+    loadSpots(); loadPublic();
+    if (chatWith === id) { chatWith = null; }
+    if (!$("chat-card").hidden) loadChat();
+    if (pubProfileId === id) renderPublic();
+  }
+  async function blockUser(id) {
+    const name = profName(id) || "this person";
+    if (!confirm(`Block ${name}?\n\nYou won't see each other's public posts, comments or messages, neither of you can message the other, and you'll stop being friends. You can unblock later in 👥 Friends.`)) return;
+    try {
+      const { error } = await db.rpc("block_user", { p_user: id });
+      if (error) throw error;
+      const r = friendRows.find(x => otherOf(x) === id);
+      if (r) await db.from("friendships").delete().eq("user_a", r.user_a).eq("user_b", r.user_b);
+      $("chat-msg").textContent = "";
+    } catch (e) { alert("Couldn't block right now — check your signal and try again."); return; }
+    await refreshAfterBlock(id);
+  }
+  async function unblockUser(id) {
+    const { error } = await db.from("blocks").delete().eq("blocked", id);
+    if (error) { alert("Couldn't unblock right now."); return; }
+    await refreshAfterBlock(id);
+  }
+  let reporting = null;
+  function openReport(t) {
+    reporting = t;
+    $("rp-title").textContent = "Report";
+    $("rp-what").textContent = `You're reporting ${t.label}. Only Richard sees reports.`;
+    $("rp-reason").value = "spam"; $("rp-details").value = ""; $("rp-msg").textContent = ""; $("rp-send").disabled = false;
+    $("report-card").hidden = false; $("report-card").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  $("rp-close").addEventListener("click", () => { $("report-card").hidden = true; reporting = null; });
+  $("rp-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!reporting) return;
+    const t = reporting, msg = $("rp-msg"); msg.className = "msg"; msg.textContent = "Sending…"; $("rp-send").disabled = true;
+    const { error } = await db.from("reports").insert({ target_user: t.userId || null, target_type: t.type, target_id: t.id || null, reason: $("rp-reason").value,
+      details: $("rp-details").value.trim().slice(0, 300) || null, snippet: (t.snippet || "").slice(0, 200) || null });
+    if (error && error.code !== "23505") { msg.className = "msg err"; msg.textContent = "Couldn't send the report — check your signal and try again."; $("rp-send").disabled = false; return; }
+    msg.textContent = error ? "You've already reported this — thanks, Richard will take a look." : "Thanks — Richard will take a look.";
+    setTimeout(() => { if (reporting === t) { $("report-card").hidden = true; reporting = null; } }, 1800);
+  });
+  $("chat-report").addEventListener("click", () => {
+    if (chatWith == null) return;
+    const last = chatMsgsAll.filter(m => m.sender === chatWith && !String(m.id).startsWith("tmp")).pop();
+    openReport(last ? { type: "message", id: last.id, userId: chatWith, snippet: last.body, label: `${profName(chatWith) || "this person"}'s message` }
+                    : { type: "profile", id: null, userId: chatWith, snippet: profName(chatWith) || "", label: `${profName(chatWith) || "this person"}` });
+  });
+  $("chat-block").addEventListener("click", () => { if (chatWith != null) blockUser(chatWith); });
+  // Admin: open reports (inside the Invite card)
+  async function loadReports() {
+    const box = $("report-admin"); if (!box) return;
+    box.innerHTML = "";
+    if (!me || !me.isAdmin) return;
+    const { data, error } = await db.from("reports").select("*").eq("status", "open").order("created_at", { ascending: false }).limit(50);
+    if (error) { box.appendChild(el("div", "msg err", "Couldn't load reports.")); return; }
+    updateRequestBadge(null, data.length);
+    if (!data.length) return;
+    try { await ensureProfiles(data.flatMap(r => [r.reporter, r.target_user])); } catch (e) { /* names optional */ }
+    box.appendChild(el("div", "label", `Reports (${data.length})`));
+    data.forEach(r => {
+      const row = el("div", "feed-item");
+      row.appendChild(el("div", null, `⚑ ${REASON_LABEL[r.reason] || r.reason} — ${r.target_type}`));
+      const who = profName(r.target_user), by = profName(r.reporter);
+      row.appendChild(el("div", "spot-meta", `About: ${who || "unknown"}${profOf(r.target_user) ? " (@" + profOf(r.target_user).handle + ")" : ""} · reported by ${by || "someone"} · ${new Date(r.created_at).toLocaleDateString([], { month: "short", day: "numeric" })}`));
+      if (r.snippet) row.appendChild(el("div", "spot-meta", "“" + r.snippet + "”"));
+      if (r.details) row.appendChild(el("div", "spot-meta", r.details));
+      const acts = el("div", "feed-actions");
+      const act = async (fn, ask) => { if (ask && !confirm(ask)) return; const { error: e2 } = await fn(); if (e2) { alert("Couldn't do that: " + (e2.message || e2)); return; } loadReports(); };
+      if ((r.target_type === "catch" || r.target_type === "comment") && r.target_id) {
+        const rm = frBtn("Remove " + r.target_type, () => act(() => db.rpc("remove_content", { p_type: r.target_type, p_id: r.target_id }), `Remove this ${r.target_type} for everyone?`));
+        acts.appendChild(rm);
+      }
+      if (r.target_user) acts.appendChild(frBtn("Ban user", () => act(() => db.rpc("ban_user", { p_user: r.target_user }), `Ban ${who || "this person"} from the app? They lose all access (you can approve them again later from the member list).`)));
+      acts.appendChild(frBtn("Resolve", () => act(() => db.rpc("resolve_report", { p_id: r.id }))));
+      row.appendChild(acts);
+      box.appendChild(row);
+    });
+  }
+
   // ---- Friends (V4 social) ----
   let friendRows = [], friendProfiles = {};
   const otherOf = r => (r.user_a === me.id ? r.user_b : r.user_a);
@@ -5406,6 +5551,11 @@
     });
     sent.forEach(r => list.appendChild(personLine(friendProfiles[otherOf(r)], frBtn("Cancel request", () => removeRow(r)))));
     if (!friends.length && !sent.length) list.appendChild(el("div", "empty", "No friends yet — search for someone above."));
+    const bl = $("fr-blocked"); bl.innerHTML = "";
+    if (blockedIds.size) {
+      bl.appendChild(el("div", "label", "Blocked people"));
+      [...blockedIds].forEach(id => bl.appendChild(personLine(profOf(id), frBtn("Unblock", () => unblockUser(id)))));
+    }
   }
   $("fr-search-form").addEventListener("submit", async e => {
     e.preventDefault();
@@ -5491,10 +5641,20 @@
   });
 
   // Invite list (admins only)
-  function updateRequestBadge(n) { $("invite-btn").textContent = n ? `✉ Invite / requests (${n})` : "✉ Invite to app"; }
+  let reqCount = 0, repCount = 0;
+  function updateRequestBadge(n, r) {
+    if (n != null) reqCount = n;
+    if (r != null) repCount = r;
+    const t = reqCount + repCount;
+    $("invite-btn").textContent = t ? `✉ Invite / requests (${t})` : "✉ Invite to app";
+  }
   async function checkRequests() {
     if (!me || !me.isAdmin) return;
-    try { const { data } = await db.from("members").select("email").eq("status", "pending"); updateRequestBadge((data || []).length); } catch (e) {}
+    try {
+      const { data } = await db.from("members").select("email").eq("status", "pending");
+      const rp = await db.from("reports").select("id").eq("status", "open");
+      updateRequestBadge((data || []).length, (rp.data || []).length);
+    } catch (e) {}
   }
   async function loadMembers() {
     const ul = $("member-list"); ul.innerHTML = "";
@@ -5502,6 +5662,7 @@
     if (error) { ul.appendChild(el("li", "empty", "Couldn't load the list: " + error.message)); return; }
     const pending = data.filter(m => m.status === "pending");
     updateRequestBadge(pending.length);
+    loadReports();
     const review = async (m, ok) => {
       if (!ok && !confirm(`Decline ${m.display_name || m.email}? They won't get in (you can approve them later).`)) return;
       const { error: e2 } = await db.rpc("review_access", { p_email: m.email, p_approve: ok });
