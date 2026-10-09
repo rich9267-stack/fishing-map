@@ -349,6 +349,7 @@
   <button class="btn small" id="plan-add" type="button">📅 Plan a trip</button>
   <span class="spot-meta" id="pl-done" style="margin:0"></span>
   </div>
+  <button class="linkbtn" id="plan-line" type="button" hidden style="display:block;text-align:left;margin-top:6px"></button>
   <form id="plan-form" hidden>
     <label for="pl-spot">Where</label>
     <select id="pl-spot" required></select>
@@ -3473,7 +3474,28 @@
   }
 
   // ---- "Who's going?" plans (V4): post a trip, friends tap "I'm in" ----
-  let plans = [], planRsvps = {}, planError = null;
+  let plans = [], planRsvps = {}, planError = null, plansLoadedAt = 0;
+  // Everyone going to a plan: the people who tapped "I'm in", plus whoever posted it (they're always going)
+  function planGoing(pl) {
+    const list = (planRsvps[pl.id] || []).slice();
+    if (!list.some(x => x.user_id === pl.created_by)) list.unshift({ plan_id: pl.id, user_id: pl.created_by, name: pl.author });
+    return list;
+  }
+  const planShort = pl => {
+    const spot = (spots || []).find(x => x.id === pl.spot_id), n = planGoing(pl).length;
+    const d = new Date(pl.plan_at), w = planWhen(d).replace(" · ", " ");
+    return `${w} ${spot ? spot.name : "a spot"} (${n} going)`;
+  };
+  // A short reminder on every screen except the Feed (which lists plans in full), so nobody re-posts a trip that's already planned
+  function renderPlanLine() {
+    const b = $("plan-line");
+    if (!b) return;
+    const show = !$("view-feed").hidden ? [] : plans;
+    if (!show.length) { b.hidden = true; return; }
+    b.hidden = false;
+    b.textContent = "📅 Already planned: " + show.slice(0, 2).map(planShort).join(" · ") + (show.length > 2 ? ` · +${show.length - 2} more` : "") + " — tap to see";
+  }
+  $("plan-line").addEventListener("click", () => { stopPlacing(); showView("feed"); window.scrollTo({ top: 0, behavior: "smooth" }); });
   async function loadPlans() {
     try {
       const since = new Date(Date.now() - 3 * 3600000).toISOString(); // a plan stays up until 3 h after its start
@@ -3487,7 +3509,8 @@
       planRsvps = {}; r.data.forEach(x => (planRsvps[x.plan_id] = planRsvps[x.plan_id] || []).push(x));
       planError = null;
     } catch (e) { planError = "Couldn't load trip plans right now."; }
-    feedRefresh();
+    plansLoadedAt = Date.now();
+    renderPlans();
   }
   function planWhen(d) {
     const day = new Date(); day.setHours(0, 0, 0, 0);
@@ -3516,6 +3539,7 @@
     renderPlans();
   }
   function renderPlans() {
+    renderPlanLine();
     const box = $("plan-list");
     if (!box) return;
     box.innerHTML = "";
@@ -3529,18 +3553,21 @@
       top.appendChild(el("span", "feed-when", spot ? "📍 " + spot.name : ""));
       item.appendChild(top);
       item.appendChild(el("div", "spot-meta", `Planned by ${pl.author || "someone"}` + (pl.note ? ` — ${pl.note}` : "")));
-      const going = planRsvps[pl.id] || [];
-      item.appendChild(el("div", "spot-meta", going.length ? `✋ Going (${going.length}): ${going.map(x => x.name || "Someone").join(", ")}` : "Nobody's in yet"));
+      const going = planGoing(pl);
+      item.appendChild(el("div", "spot-meta", `✋ Going (${going.length}): ${going.map(x => x.name || "Someone").join(", ")}`));
+      const own = !!(me && pl.created_by === me.id);
       const inn = !!(me && going.some(x => x.user_id === me.id));
       const acts = el("div", "feed-actions");
-      const b = el("button", "btn ghost small" + (inn ? " on" : ""), inn ? "✔ I'm in (tap to back out)" : "✋ I'm in");
-      b.type = "button"; b.setAttribute("aria-pressed", inn);
-      b.addEventListener("click", () => toggleRsvp(pl));
-      acts.appendChild(b);
-      if (me && pl.created_by === me.id) {
+      if (own) {
+        acts.appendChild(el("span", "spot-meta", "✔ You're going — you posted this"));
         const x = el("button", "linkbtn danger", "Cancel plan"); x.type = "button";
         x.addEventListener("click", () => cancelPlan(pl));
         acts.appendChild(x);
+      } else {
+        const b = el("button", "btn ghost small" + (inn ? " on" : ""), inn ? "✔ I'm in (tap to back out)" : "✋ I'm in");
+        b.type = "button"; b.setAttribute("aria-pressed", inn);
+        b.addEventListener("click", () => toggleRsvp(pl));
+        acts.appendChild(b);
       }
       item.appendChild(acts);
       box.appendChild(item);
@@ -3555,8 +3582,23 @@
     const t = new Date(Date.now() + 3600000); t.setMinutes(0, 0, 0);
     $("pl-date").value = ymdDash(t); $("pl-time").value = `${pad2(t.getHours())}:00`; $("pl-note").value = "";
     $("plan-form").hidden = false; $("plan-add").hidden = true; $("pl-done").textContent = "";
+    $("pl-msg").className = "msg"; warnSimilar();
     $("plan-top").scrollIntoView({ behavior: "smooth", block: "start" });
   });
+  // Is there already a plan for this spot on this day? (so nobody posts it twice)
+  function similarPlans() {
+    const spot = $("pl-spot").value, day = $("pl-date").value;
+    return plans.filter(x => x.spot_id === spot && ymdDash(new Date(x.plan_at)) === day);
+  }
+  const similarText = list => `${list.map(x => `${x.author || "Someone"} (${clock(new Date(x.plan_at))})`).join(", ")} already planned this spot that day`;
+  function warnSimilar() {
+    const dup = similarPlans();
+    if ($("plan-form").hidden || $("pl-msg").classList.contains("err")) return;
+    $("pl-msg").className = "msg";
+    $("pl-msg").textContent = dup.length ? `⚠ ${similarText(dup)} — check 🎣 Feed and tap "I'm in" instead?` : "";
+  }
+  $("pl-spot").addEventListener("change", warnSimilar);
+  $("pl-date").addEventListener("change", warnSimilar);
   const closePlanForm = () => { $("plan-form").hidden = true; $("plan-add").hidden = false; };
   $("pl-cancel").addEventListener("click", closePlanForm);
   $("plan-form").addEventListener("submit", async e => {
@@ -3565,6 +3607,8 @@
     const at = new Date(`${$("pl-date").value}T${$("pl-time").value}`);
     if (isNaN(at) || !$("pl-spot").value) { msg.className = "msg err"; msg.textContent = "Pick a spot, day and time."; return; }
     if (at < Date.now() - 30 * 60000) { msg.className = "msg err"; msg.textContent = "That time has already passed."; return; }
+    const dup = similarPlans();
+    if (dup.length && !confirm(`${similarText(dup)}.\n\nPost another plan anyway?`)) return;
     msg.className = "msg"; msg.textContent = "Posting…"; $("pl-save").disabled = true;
     try {
       const note = $("pl-note").value.trim() || null;
@@ -4055,6 +4099,7 @@
       renderPins();
       if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); } // centred on your spots
       loadSightings();
+      loadPlans();
       if (typeof renderSuggestions === "function") renderSuggestions();
     } catch (err) {
       const copy = isNetErr(err) && loadCopy("spots");
@@ -4228,7 +4273,9 @@
     if (which === "seasons") renderSeasons();
     $("view-feed").hidden = which !== "feed";
     $("tab-feed").classList.toggle("on", which === "feed");
-    if (which === "feed") { renderFeed(); loadFeed(); loadPlans(); }
+    if (which === "feed") { renderFeed(); loadFeed(); }
+    renderPlanLine();
+    if (which === "feed" || Date.now() - plansLoadedAt > 60000) loadPlans();
     $("tab-map").classList.toggle("on", isMap);
     $("tab-list").classList.toggle("on", which === "list");
     $("tab-insights").classList.toggle("on", which === "insights");
