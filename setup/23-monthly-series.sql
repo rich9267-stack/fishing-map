@@ -5,3 +5,6 @@
 --                 re-enters everyone who was 'joined' last month, pushes "🏁 <title> is on" to approved members (contests alerts).
 -- create_series(...) admin only: makes the series + this month's contest right away (runs now -> end of month).
 -- stop_series(id)    admin only: no new month; the running contest finishes.
+-- Update (migration `monthly_series_choose_months`): tournament_series.months (default all 12); create_series(..., p_months smallint[]) (old one renamed create_series_v1, locked);
+-- set_series_months(id, months) admin only; series_roll no longer re-enters past players: it pushes "Want in again for <Month>?" to last time's players
+-- and "A new contest just opened" to everyone else; months not chosen are skipped.

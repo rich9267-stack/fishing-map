@@ -6475,6 +6475,7 @@
   loadMoon();
   gate();
 
+  const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   // ---- 🏁 Contests (V4.6): official tournaments (admin only) and friend competitions ----
   const CT_BOARDS = { length: "Longest fish", weight: "Heaviest fish", fish: "Most fish", species: "Most species" };
   let ctRows = [], ctMine = {}, ctMembers = [], ctView = "list", ctId = null, ctErr = null, ctBusy = false;
@@ -6603,13 +6604,13 @@
       ${admin ? `<label for="ctf-kind">Type</label><select id="ctf-kind"><option value="friends">🎣 Friends competition (invite-only)</option><option value="official">🏆 Official tournament (anyone can join)</option></select>` : ""}
       <label for="ctf-title">Name</label><input id="ctf-title" maxlength="60" placeholder="Keys weekend showdown">
       <label for="ctf-desc">Details (optional)</label><input id="ctf-desc" maxlength="300" placeholder="Prize, rules, anything friends should know">
-      ${admin ? `<label class="check-row" id="ctf-monthly-row" hidden><input type="checkbox" id="ctf-monthly"><span>🔁 Repeat every month — a new one opens on the 1st, and last month's players are entered again (they can leave)</span></label>` : ""}
+      ${admin ? `<label class="check-row" id="ctf-monthly-row" hidden><input type="checkbox" id="ctf-monthly"><span>🔁 Repeat monthly — a new one opens on the 1st of each month you choose, and last time's players are asked if they want in again</span></label><div id="ctf-months-wrap" hidden><div class="fchips" id="ctf-months">${MONTH_ABBR.map((m, i) => `<button class="fchip on" type="button" data-m="${i + 1}">${m}</button>`).join("")}</div></div>` : ""}
       <div id="ctf-when">
       <label>When</label>
       <div class="fchips" id="ctf-presets"><button class="fchip" type="button" data-p="trip">This trip (next 8 hrs)</button><button class="fchip" type="button" data-p="today">Today</button><button class="fchip" type="button" data-p="weekend">This weekend</button><button class="fchip" type="button" data-p="week">Next 7 days</button></div>
       <div class="two"><div><label for="ctf-start">Starts</label><input id="ctf-start" type="datetime-local"></div><div><label for="ctf-end">Ends</label><input id="ctf-end" type="datetime-local"></div></div>
       </div>
-      <div class="spot-meta" id="ctf-monthnote" hidden>Runs from now to the end of this month, then a fresh contest opens automatically each month. Stop it any time from the contest's page.</div>
+      <div class="spot-meta" id="ctf-monthnote" hidden>If this month is one of the months you picked, the first contest runs from now to the end of the month. After that a new one opens on the 1st of each picked month. Change the months or stop it any time from the contest's page.</div>
       <label>Winners (each one gets its own board)</label>
       <div class="fchips" id="ctf-boards">${Object.entries(CT_BOARDS).map(([k, v]) => `<button class="fchip${k === "length" ? " on" : ""}" type="button" data-b="${k}">${v}</button>`).join("")}</div>
       <label for="ctf-species">Only count one species? (optional)</label><input id="ctf-species" maxlength="40" placeholder="e.g. Snook — leave empty for any fish">
@@ -6635,9 +6636,9 @@
       const mrow = wrap.querySelector("#ctf-monthly-row");
       if (mrow) { mrow.hidden = !off; if (!off) wrap.querySelector("#ctf-monthly").checked = false; }
       const mon = !!(mrow && !mrow.hidden && wrap.querySelector("#ctf-monthly").checked);
-      wrap.querySelector("#ctf-when").hidden = mon; wrap.querySelector("#ctf-monthnote").hidden = !mon;
+      wrap.querySelector("#ctf-when").hidden = mon; wrap.querySelector("#ctf-monthnote").hidden = !mon; wrap.querySelector("#ctf-months-wrap").hidden = !mon;
     };
-    if (admin) wrap.querySelector("#ctf-monthly").addEventListener("change", () => upd());
+    if (admin) { wrap.querySelector("#ctf-monthly").addEventListener("change", () => upd()); wrap.querySelectorAll("#ctf-months .fchip").forEach(b => b.addEventListener("click", () => b.classList.toggle("on"))); }
     if (admin) wrap.querySelector("#ctf-kind").addEventListener("change", upd);
     sel.addEventListener("change", upd); upd();
     wrap.querySelector("#ctf-back").addEventListener("click", () => { ctView = "list"; ctRender(); });
@@ -6672,6 +6673,8 @@
       if (!monthly && (isNaN(s) || isNaN(e) || e <= s)) { msg.textContent = "Pick a start and an end (end after start)."; return; }
       if (!monthly && e - s > 45 * 86400000) { msg.textContent = "Contests can run up to 45 days."; return; }
       if (!boards.length) { msg.textContent = "Pick at least one winner board."; return; }
+      const months = monthly ? [...wrap.querySelectorAll("#ctf-months .fchip.on")].map(b => +b.dataset.m) : [];
+      if (monthly && !months.length) { msg.textContent = "Pick at least one month."; return; }
       let lat = null, lng = null, label = null;
       if (sel.value === "here") {
         msg.className = "msg"; msg.textContent = "Getting your location…";
@@ -6687,7 +6690,7 @@
       let tz = "America/New_York"; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch (e2) {}
       const { data, error } = monthly ? await db.rpc("create_series", {
         p_title: title, p_desc: wrap.querySelector("#ctf-desc").value.trim(), p_boards: boards, p_species: wrap.querySelector("#ctf-species").value.trim(),
-        p_lat: lat, p_lng: lng, p_radius: lat != null ? +wrap.querySelector("#ctf-radius").value : null, p_geo_label: label, p_tz: tz
+        p_lat: lat, p_lng: lng, p_radius: lat != null ? +wrap.querySelector("#ctf-radius").value : null, p_geo_label: label, p_tz: tz, p_months: months
       }) : await db.rpc("create_tournament", {
         p_kind: kind(), p_title: title, p_desc: wrap.querySelector("#ctf-desc").value.trim(), p_starts: s.toISOString(), p_ends: e.toISOString(),
         p_boards: boards, p_species: wrap.querySelector("#ctf-species").value.trim(), p_photo: off || wrap.querySelector("#ctf-photo").checked,
@@ -6696,6 +6699,11 @@
       });
       ctBusy = false;
       if (error) { msg.className = "msg err"; msg.textContent = "Couldn't create it: " + error.message; return; }
+      if (monthly && !data) { // saved, but this month isn't one of the chosen months
+        const now = new Date().getMonth() + 1, nxt = months.find(m => m > now) || months[0];
+        toast(`✓ Saved — the first one opens on ${MONTH_ABBR[nxt - 1]} 1.`, 6000);
+        ctView = "list"; await ctLoad(); ctRender(); return;
+      }
       ctId = data; ctView = "detail"; await ctLoad(); ctRender();
     });
   }
@@ -6716,7 +6724,7 @@
     const st = ctState(t), mineSt = ctMine[t.id];
     const h = el("div", "feed-top"); h.style.marginTop = "10px";
     h.appendChild(el("div", "label", (t.kind === "official" ? "🏆 " : "🎣 ") + t.title)); h.appendChild(el("span", "spot-meta", st.label)); box.appendChild(h);
-    box.appendChild(el("div", "spot-meta", `${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · by ${t.created_by === me.id ? "you" : (profName(t.created_by) || "someone")}${t.series_id ? " · 🔁 opens again every month" : ""}`));
+    box.appendChild(el("div", "spot-meta", `${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · by ${t.created_by === me.id ? "you" : (profName(t.created_by) || "someone")}${t.series_id ? " · 🔁 repeats monthly" : ""}`));
     if (t.description) box.appendChild(el("div", null, t.description));
     const rules = [];
     if (t.kind === "official") rules.push("Catch must be set to 🌎 Public");
@@ -6726,6 +6734,7 @@
     if (t.geo_lat != null) rules.push(`📍 logged live within ${t.geo_radius_mi} mi of ${t.geo_label || "the center"}`);
     box.appendChild(el("div", "spot-meta", "Rules: " + (rules.length ? rules.join(" · ") : "any catch in the time window")));
     // actions
+    let seriesBox = [];
     const acts = el("div"); acts.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin:10px 0";
     const btn = (txt, cls, fn, id) => { const b = el("button", cls, txt); b.type = "button"; if (id) b.id = id; b.addEventListener("click", fn); acts.appendChild(b); };
     const open = ctOpen(t);
@@ -6733,12 +6742,20 @@
     if (open && mineSt === "invited") btn("Decline", "btn ghost small", () => ctAct("leave_tournament", { p_id: t.id }), "ctd-decline");
     if (mineSt === "joined" && t.created_by !== me.id && open) btn("Leave", "btn ghost small", () => ctAct("leave_tournament", { p_id: t.id }), "ctd-leave");
     if (t.series_id && me.isAdmin) {
-      const { data: se } = await db.from("tournament_series").select("id,active").eq("id", t.series_id).maybeSingle();
-      if (se && se.active) btn("⏹ Stop repeating monthly", "btn ghost small", () => { if (confirm("Stop the monthly repeat? This month's contest keeps running; no new one opens next month.")) ctAct("stop_series", { p_series: t.series_id }); }, "ctd-stopseries");
-      else if (se) acts.appendChild(el("span", "spot-meta", "🔁 Monthly repeat is stopped."));
+      const { data: se } = await db.from("tournament_series").select("id,active,months").eq("id", t.series_id).maybeSingle();
+      if (se && se.active) {
+        btn("⏹ Stop repeating monthly", "btn ghost small", () => { if (confirm("Stop the monthly repeat? This month's contest keeps running; no new one opens next month.")) ctAct("stop_series", { p_series: t.series_id }); }, "ctd-stopseries");
+        const mrow = el("div", "fchips"); mrow.id = "ctd-months"; mrow.style.margin = "6px 0";
+        const have = new Set(se.months || []);
+        MONTH_ABBR.forEach((m, i) => { const c = el("button", "fchip" + (have.has(i + 1) ? " on" : ""), m); c.type = "button"; c.dataset.m = i + 1; c.addEventListener("click", () => c.classList.toggle("on")); mrow.appendChild(c); });
+        const save = el("button", "btn ghost small", "Save months"); save.type = "button"; save.id = "ctd-savemonths";
+        save.addEventListener("click", () => { const ms = [...mrow.querySelectorAll(".fchip.on")].map(b => +b.dataset.m); if (!ms.length) { toast("Pick at least one month (or stop the repeat).", 4000); return; } ctAct("set_series_months", { p_series: t.series_id, p_months: ms }).then(() => toast("✓ Months saved")); });
+        seriesBox = [el("div", "spot-meta", "🔁 Opens on the 1st of these months:"), mrow, save];
+      } else if (se) acts.appendChild(el("span", "spot-meta", "🔁 Monthly repeat is stopped."));
     }
     if (!t.cancelled_at && (t.created_by === me.id || me.isAdmin) && st.k !== "ended") btn("Cancel contest", "btn ghost small", () => { if (confirm("Cancel this contest for everyone?")) ctAct("cancel_tournament", { p_id: t.id }); }, "ctd-cancel");
     box.appendChild(acts);
+    seriesBox.forEach(n => box.appendChild(n));
     // standings
     const who = el("div"); box.appendChild(who);
     let rows = [], mineRows = [];

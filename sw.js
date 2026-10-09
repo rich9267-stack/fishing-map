@@ -2,7 +2,7 @@
 // - The page itself: try the network first (so updates show up), fall back to the saved copy.
 // - Code libraries from CDNs: use the saved copy right away, refresh it in the background.
 // - Live data (database, tides, weather, map tiles) is never cached here.
-const CACHE = "fishing-map-v9";
+const CACHE = "fishing-map-v10";
 const APP_FILES = ["./", "./index.html", "./privacy.html"];
 const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com"];
 
