@@ -24,6 +24,7 @@ const MEMBER = () => ST === "admin" ? { data: { email: "rich9267@gmail.com", dis
 let PEND = [{ email: "new@x.com", display_name: "Newbie", is_admin: false, status: "pending", note: "Rico's cousin", requested_at: new Date().toISOString() },
   { email: "rich9267@gmail.com", display_name: "Richard", is_admin: true, status: "approved" }, { email: "d@x.com", display_name: "Dee", status: "blocked" }];
 const RPCS = [];
+let TK = [{ id: "k1", name: "Live shrimp", kind: "bait", created_by: "u-rich", created_at: new Date().toISOString() }, { id: "k2", name: "Fly rod 8wt", kind: "rod", created_by: "u-rich", created_at: new Date().toISOString() }];
 const HOF = [
   { tournament_id: 't3', title: 'September Slam', ends_at: new Date(Date.now() - 20 * 86400000).toISOString(), series_month: null, board: 'length', rank: 1, user_id: 'u-rich', value: 33.5, species: 'Snook' },
   { tournament_id: 't3', title: 'September Slam', ends_at: new Date(Date.now() - 20 * 86400000).toISOString(), series_month: null, board: 'length', rank: 2, user_id: 'other', value: 31, species: 'Snook' },
@@ -89,7 +90,8 @@ const dom = new JSDOM(html, { runScripts: "dangerously", url: "https://example.o
   w.supabase = { createClient: () => ({
     auth: { getSession: async () => ({ data: { session: { user: { id: ME, email: "rich9267@gmail.com", user_metadata: {} } } } }), onAuthStateChange: () => {}, signOut: async () => {} },
     rpc: async (fn, a) => { RPCS.push([fn, a]); if (fn === 'admin_stats') return { data: { members_approved: 4, members_pending: 1, members_blocked: 0, spots: 9, catches: 8, catches_7d: 5, active_7d: 2, open_reports: 3, push_users: 3, top_species: [{ species: 'Snook', n: 4 }], hidden: [{ id: 'h1', type: 'catch', target_id: 'cx', hidden_at: new Date().toISOString(), reports: 3, snippet: 'Blue Runner' }] }, error: null }; if (fn === 'review_flagged') return { data: null, error: null }; if (fn === 'hall_of_fame') return { data: HOF, error: null }; if (fn === 'start_float_plan') { FP = [{ id: 'fp1', user_id: 'u-rich', place: a.p_place, note: a.p_note, due_at: a.p_due, grace_min: a.p_grace, buddies: a.p_buddies, status: 'active', last_lat: a.p_lat, last_lng: a.p_lng, last_at: new Date().toISOString() }]; return { data: 'fp1', error: null }; } if (fn === 'end_float_plan') { FP = FP.filter(x => x.user_id !== 'u-rich'); return { error: null }; } if (fn === 'extend_float_plan') { FP.forEach(x => { x.due_at = new Date(new Date(x.due_at).getTime() + a.p_minutes * 60000).toISOString(); }); return { error: null }; } if (fn === 'trip_review') return { data: [{ catch_id: 'x1', user_id: 'u-rich', caught_at: new Date().toISOString(), species: 'Snook', how_many: 1, length_in: 30, weight_lb: 8, weight_est: true, spot_id: 's1', lat: 26.2571, lng: -80.0812, accuracy_m: 9 }, { catch_id: 'x2', user_id: 'other', caught_at: new Date().toISOString(), species: 'Tarpon', how_many: 2, length_in: null, weight_lb: null, weight_est: false, spot_id: 's1', lat: null, lng: null, accuracy_m: null }], error: null }; if (fn === 'tournament_standings') return { data: STAND, error: null }; if (fn === 'tournament_my_catches') return { data: MYC, error: null }; if (fn === 'create_tournament') { TOURS.push({ id: 't9', kind: a.p_kind, title: a.p_title, description: a.p_desc, created_by: 'u-rich', starts_at: a.p_starts, ends_at: a.p_ends, boards: a.p_boards, species: a.p_species || null, require_photo: a.p_photo, require_length: a.p_length, geo_lat: a.p_lat, geo_lng: a.p_lng, geo_radius_mi: a.p_radius, geo_label: a.p_geo_label, cancelled_at: null }); TMEM.push({ tournament_id: 't9', user_id: 'u-rich', status: 'joined' }); return { data: 't9', error: null }; } if (fn === 'join_tournament') { const m = TMEM.find(x => x.tournament_id === a.p_id && x.user_id === 'u-rich'); if (m) m.status = 'joined'; else TMEM.push({ tournament_id: a.p_id, user_id: 'u-rich', status: 'joined' }); return { error: null }; } if (fn === 'leave_tournament') { const m = TMEM.find(x => x.tournament_id === a.p_id && x.user_id === 'u-rich'); if (m) m.status = 'left'; return { error: null }; } if (fn === 'cancel_tournament') { TOURS.find(x => x.id === a.p_id).cancelled_at = new Date().toISOString(); return { error: null }; } if (fn === 'block_user') BLOCKS.push({ blocker: 'u-rich', blocked: a.p_user }); if (fn === 'mark_read') MSGS.forEach(m => { if (m.sender === a.p_other && m.recipient === 'u-rich') m.read_at = new Date().toISOString(); }); if (fn === 'request_access') { status = 'pending'; } if (fn === 'review_access') PEND = PEND.map(m => m.email === a.p_email ? { ...m, status: a.p_approve ? 'approved' : 'blocked' } : m); return fn === 'ensure_profile' ? { data: { user_id: 'u-rich', handle: 'richard', display_name: 'Richard', home_area: 'Pompano' }, error: null } : { error: null }; }, storage: { from: () => ({ createSignedUrls: async paths => ({ data: paths.map(p => ({ path: p, signedUrl: 'https://img.test/' + p })) }) }) },
-    from: t => ({ select: () => chainT(t, t === "members" ? PEND : t === "messages" ? MSGS : t === "blocks" ? BLOCKS : t === "reports" ? REPORTS :  (t === "spots" || t === "spots_visible") ? SPOTS : t === "catches" ? CATCHES.concat(PUBC) : t === "sessions" ? w.__db.sessions : t === "profiles" ? [{user_id:'str9',handle:'badguy',display_name:'Bad Guy'},{user_id:'str1',handle:'stan',display_name:'Stan the Man',home_area:'Stuart',bio:'Tarpon nut'},{user_id:'other',handle:'mike',display_name:'Mike',home_area:'Miami'},{user_id:'u3',handle:'sam',display_name:'Sam'},{user_id:'u4',handle:'zed',display_name:'Zed'},{user_id:'u-rico',handle:'rico',display_name:'Rico'},{user_id:'u-rich',handle:'richard',display_name:'Richard'}] : t === "friendships" ? [{user_a:'other',user_b:'u-rich',status:'accepted',requested_by:'other'},{user_a:'u-rich',user_b:'u-rico',status:'accepted',requested_by:'u-rich'},{user_a:'u-rich',user_b:'u3',status:'pending',requested_by:'u3'}] : t === "trip_plans" ? [{id:'pnow',spot_id:'s1',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()-30*60000).toISOString(),note:'now'},{id:'ppast',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()-48*3600000).toISOString(),note:'old'},{id:'p1',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()+86400000).toISOString(),note:'live shrimp'},{id:'p2',spot_id:'s3',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()+2*86400000).toISOString(),note:null}] : t === "notifications" ? NOTIFS : t === "fish_rules" ? RULES : t === "spot_follows" ? [] : t === "float_plans" ? FP : t === "photos" ? [{ id: "ph1", catch_id: "x1", path: "u/x1.jpg", spot_id: "s1", created_by: "u-rich", created_at: new Date().toISOString() }] : t === "group_messages" ? GM : t === "tournaments" ? TOURS : t === "tournament_members" ? TMEM : t === "trip_plan_rsvps" ? [{plan_id:'p1',user_id:'other',name:'Mike'},{plan_id:'ppast',user_id:'u-rich',name:'Richard'}] : t === "catch_reactions" ? [{catch_id:'c1',user_id:'other'},{catch_id:'c1',user_id:'other2'}] : t === "catch_comments" ? [{id:'m1',catch_id:'c1',created_by:'other',author:'Mike',body:'Nice snook!',created_at:new Date().toISOString()}] : []),
+    functions: { invoke: async () => ({ data: { fish_visible: true, suggestions: [{ name: "Snook", confidence: "high", clue: "dark stripe" }, { name: "Tarpon", confidence: "low" }] }, error: null }) },
+    from: t => ({ select: () => chainT(t, t === "tackle" ? TK : t === "members" ? PEND : t === "messages" ? MSGS : t === "blocks" ? BLOCKS : t === "reports" ? REPORTS :  (t === "spots" || t === "spots_visible") ? SPOTS : t === "catches" ? CATCHES.concat(PUBC) : t === "sessions" ? w.__db.sessions : t === "profiles" ? [{user_id:'str9',handle:'badguy',display_name:'Bad Guy'},{user_id:'str1',handle:'stan',display_name:'Stan the Man',home_area:'Stuart',bio:'Tarpon nut'},{user_id:'other',handle:'mike',display_name:'Mike',home_area:'Miami'},{user_id:'u3',handle:'sam',display_name:'Sam'},{user_id:'u4',handle:'zed',display_name:'Zed'},{user_id:'u-rico',handle:'rico',display_name:'Rico'},{user_id:'u-rich',handle:'richard',display_name:'Richard'}] : t === "friendships" ? [{user_a:'other',user_b:'u-rich',status:'accepted',requested_by:'other'},{user_a:'u-rich',user_b:'u-rico',status:'accepted',requested_by:'u-rich'},{user_a:'u-rich',user_b:'u3',status:'pending',requested_by:'u3'}] : t === "trip_plans" ? [{id:'pnow',spot_id:'s1',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()-30*60000).toISOString(),note:'now'},{id:'ppast',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()-48*3600000).toISOString(),note:'old'},{id:'p1',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()+86400000).toISOString(),note:'live shrimp'},{id:'p2',spot_id:'s3',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()+2*86400000).toISOString(),note:null}] : t === "notifications" ? NOTIFS : t === "fish_rules" ? RULES : t === "spot_follows" ? [] : t === "float_plans" ? FP : t === "photos" ? [{ id: "ph1", catch_id: "x1", path: "u/x1.jpg", spot_id: "s1", created_by: "u-rich", created_at: new Date().toISOString() }] : t === "group_messages" ? GM : t === "tournaments" ? TOURS : t === "tournament_members" ? TMEM : t === "trip_plan_rsvps" ? [{plan_id:'p1',user_id:'other',name:'Mike'},{plan_id:'ppast',user_id:'u-rich',name:'Richard'}] : t === "catch_reactions" ? [{catch_id:'c1',user_id:'other'},{catch_id:'c1',user_id:'other2'}] : t === "catch_comments" ? [{id:'m1',catch_id:'c1',created_by:'other',author:'Mike',body:'Nice snook!',created_at:new Date().toISOString()}] : []),
       delete: () => { const o = { eq: (c, v) => { w.__db.deletes.push(t + ":" + c + "=" + v); if (t === "blocks") BLOCKS = BLOCKS.filter(b => b.blocked !== v); return o; }, then: (x, y) => Promise.resolve({ error: null }).then(x, y) }; return o; },
       insert: row => { w.__db.inserts.push({ t, row }); if (t === "group_messages") GM.push({ id: "g" + GM.length, sender: "u-rich", created_at: new Date().toISOString(), ...row }); if (t === "messages") { const m = { id: "mm" + MSGS.length, created_at: new Date().toISOString(), sender: "u-rich", read_at: null, ...row }; MSGS.push(m); return { select: () => ({ single: () => Promise.resolve({ data: m, error: null }) }) }; } if (t === "catches") CATCHES.unshift({ id: "n" + CATCHES.length, ...row }); return chain(null); },
       upsert: row => { w.__db.upserts.push({ t, row }); return Promise.resolve({ error: null }); },
@@ -147,70 +149,45 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   const ev = (el, t) => el.dispatchEvent(new w.Event(t, { bubbles: true }));
   w.eval("conditionsFor = async () => ({ tide_stage: null })");
 
-  // mocks: camera, canvas, orientation
-  let stopped = 0, gum = 0;
-  Object.defineProperty(w.navigator, "mediaDevices", { value: { getUserMedia: async () => { gum++; return { getTracks: () => [{ stop: () => { stopped++; } }] }; } }, configurable: true });
-  w.HTMLMediaElement.prototype.play = async () => {};
-  w.HTMLCanvasElement.prototype.getContext = () => new Proxy({}, { get: (o, k) => k === "measureText" ? () => ({ width: 10 }) : () => {}, set: () => true });
-  const setFiles = []; w.DataTransfer = class { constructor() { this.files = []; this.items = { add: f => { setFiles.push(f.name); } }; } };
-  w.HTMLCanvasElement.prototype.toBlob = function (cb) { cb(new w.Blob(["x"], { type: "image/jpeg" })); };
-  w.URL.createObjectURL = () => "blob:fake"; w.URL.revokeObjectURL = () => {};
-  const orient = (b, g) => { const e = new w.Event("deviceorientation"); e.beta = b; e.gamma = g; w.dispatchEvent(e); };
-  // ---- open the catch form with no photo -> live camera ----
+  // mocks for measure camera
+  Object.defineProperty(w.navigator, "mediaDevices", { value: { getUserMedia: async () => ({ getTracks: () => [{ stop() {} }] }) }, configurable: true });
+  w.HTMLMediaElement.prototype.play = async () => {}; w.URL.createObjectURL = () => "blob:fake"; w.URL.revokeObjectURL = () => {};
+  w.eval("photoB64 = async () => 'x'");
+  // ---- 6 tackle box ----
+  click($("tab-insights")); await wait(300);
+  const tk = txt("tk-list");
+  console.log("tackle rows:", tk.slice(0, 160));
+  w.eval("catchesBySpot['s1'].push({ id: 'cz', spot_id: 's1', species: 'Snook', how_many: 1, caught_at: new Date().toISOString(), created_by: 'u-rich', bait: 'White bucktail', length_in: 24 }); renderTackle()");
+  console.log("suggestion chip:", [...d.querySelectorAll("#tk-sugg .fchip")].map(b => b.textContent).join(" | "));
+  w.__db.inserts = [];
+  click(d.querySelector("#tk-sugg .fchip")); await wait(100);
+  const ins = w.__db.inserts.find(x => x.t === "tackle");
+  console.log("chip adds:", ins && JSON.stringify(ins.row));
+  $("tk-name").value = "Gulp shrimp"; $("tk-kind").value = "bait"; $("tk-form").dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true })); await wait(100);
+  console.log("form adds:", JSON.stringify(w.__db.inserts.filter(x => x.t === "tackle").map(x => x.row.name + ":" + x.row.kind)));
+  w.__db.updates = []; click(d.querySelector("#tk-list .danger")); await wait(100);
+  console.log("remove = soft delete:", (w.__db.updates || []).some(u => u.t === "tackle" && u.row.deleted_at));
+  console.log("bait suggestions:", [...d.querySelectorAll("#bait-list option")].map(o => o.value).join(" | "));
+  console.log("c-bait uses list:", w.eval("catchForm.querySelector(\"#c-bait\").getAttribute(\"list\")"));
+  // ---- 7 identify -> measure -> keeper ----
+  w.eval("fishRules = fishRules.length ? fishRules : [{ id: 'r1', species: 'Snook', match: ['snook'], min_in: 28, max_in: 32, measure: 'total', bag: '1', active: true, verified_on: new Date().toISOString().slice(0,10) }]");
   w.eval("openCatchForm('s1')"); await wait(100);
-  click($("c-measure")); await wait(150);
-  console.log("overlay open:", !$("measure").hidden, "| camera asked:", gum, "| video shown:", !$("m-video").hidden, "| reticle:", !$("m-reticle").hidden, "| shutter enabled:", !$("m-shot").disabled);
-  console.log("level text (no sensor yet):", txt("m-level"));
-  orient(3, 2); console.log("flat:", txt("m-level"), "|", $("m-level").className);
-  orient(25, 5); console.log("tilted:", txt("m-level"), "|", $("m-level").className);
-  // ---- freeze ----
-  const v = $("m-video"); Object.defineProperty(v, "videoWidth", { value: 1280 }); Object.defineProperty(v, "videoHeight", { value: 720 });
-  click($("m-shot")); await wait(100);
-  console.log("after freeze -> edit shown:", !$("m-edit").hidden, "| live hidden:", $("m-live").hidden, "| video hidden:", $("m-video").hidden, "| retake:", !$("m-retake").hidden, "| camera stopped:", stopped);
-  console.log("tilt warning:", txt("m-note").slice(0, 70));
-  // ---- dots + live readout ----
-  const img = $("m-img"); Object.defineProperty(img, "naturalWidth", { value: 1000, configurable: true }); Object.defineProperty(img, "naturalHeight", { value: 750, configurable: true });
-  img.getBoundingClientRect = () => ({ left: 0, top: 0, width: 500, height: 375 });
-  w.eval("mPlace()");
-  console.log("dots:", w.eval("ms.pts.length"), "| readout (card ref, fish 600px / ref 250px):", txt("m-readout"), "| use enabled:", !$("m-use").disabled);
-  console.log("labels on picture:", [...d.querySelectorAll("#m-svg text")].map(t => t.textContent).join(" | "));
-  const svg = $("m-svg"), pe = (t, x, y) => svg.dispatchEvent(new w.MouseEvent(t, { bubbles: true, clientX: x, clientY: y }));
-  pe("pointerdown", 100, 150); console.log("grabbed dot:", w.eval("ms.drag"), "| loupe shown:", !$("m-loupe").hidden);
-  pe("pointermove", 50, 150); pe("pointerup", 50, 150);
-  console.log("after drag readout:", txt("m-readout"), "| loupe hidden:", $("m-loupe").hidden);
-  pe("pointerdown", 250, 20); console.log("tap far from dots grabs nothing:", w.eval("ms.drag"));
-  // ---- reference chips ----
-  const chip = t => [...d.querySelectorAll("#m-refs .m-ref")].find(b => b.textContent.includes(t));
-  click(chip("Ruler")); console.log("ruler chip -> inches box:", !$("m-ref-in").hidden, "| readout:", txt("m-readout"), "| note:", txt("m-note").slice(0, 40));
-  $("m-ref-in").value = "12"; ev($("m-ref-in"), "input"); console.log("ruler 12in -> readout:", txt("m-readout"));
-  click(chip("Dollar")); console.log("bill -> readout:", txt("m-readout"), "| box hidden:", $("m-ref-in").hidden);
-  // ---- tilt warning ----
-  w.eval("ms.shotTilt = 20; mDraw()"); console.log("tilt note:", txt("m-note").slice(0, 60), "|", $("m-note").className);
-  // ---- zoom, pan, nudge, keep lines (new) ----
-  const ptr = (t, id, x, y) => { const e = new w.MouseEvent(t, { bubbles: true, clientX: x, clientY: y }); e.pointerId = id; $("m-svg").dispatchEvent(e); };
-  click($("m-zin")); console.log("zoom in button:", w.eval("ms.z.toFixed(2)"), "|", $("m-wrap").style.transform);
-  click($("m-zreset")); console.log("reset:", w.eval("ms.z"), "| transform cleared:", $("m-wrap").style.transform === "");
-  ptr("pointerdown", 1, 100, 300); ptr("pointerdown", 2, 200, 300); ptr("pointermove", 2, 300, 300); ptr("pointerup", 2, 300, 300); ptr("pointerup", 1, 100, 300);
-  console.log("pinch out doubles zoom:", w.eval("ms.z.toFixed(2)"), "| dot size shrinks with zoom (r attr):", d.querySelector("#m-svg circle[data-i]").getAttribute("r"));
-  ptr("pointerdown", 1, 250, 20); ptr("pointermove", 1, 230, 40); ptr("pointerup", 1, 230, 40);
-  console.log("one-finger pan moves the picture:", w.eval("Math.round(ms.tx) + ',' + Math.round(ms.ty)"));
-  click($("m-zreset"));
-  ptr("pointerdown", 1, 100, 150); ptr("pointerup", 1, 100, 150);
-  const x0 = w.eval("ms.pts[0].x"); click($("m-nr")); click($("m-nr")); click($("m-nd"));
-  console.log("selected dot:", w.eval("ms.sel"), "| nudged right by", w.eval("ms.pts[0].x") - x0, "(2 taps) | label:", txt("m-sel").slice(0, 40));
-  console.log("keep-lines option shown:", !$("m-keep-row").hidden);
-  $("m-keep").checked = true; setFiles.length = 0;
-  // ---- use ----
-  click($("m-use")); await wait(50);
-  console.log("closed:", $("measure").hidden, "| c-length:", $("c-length").value, "| camera stopped total:", stopped);
-  await wait(100); console.log("marked photo attached:", setFiles.length, setFiles.every(n => /^measure-/.test(n)));
-  // ---- photo path: no camera ----
-  gum = 0; w.eval("openMeasure('data:image/png;base64,AAAA', len => { window.__len = len; })");
-  console.log("photo mode: camera asked:", gum, "| edit shown:", !$("m-edit").hidden, "| video hidden:", $("m-video").hidden, "| retake hidden:", $("m-retake").hidden);
-  click($("m-cancel")); console.log("cancel closes:", $("measure").hidden);
-  // ---- no camera support ----
-  Object.defineProperty(w.navigator, "mediaDevices", { value: undefined, configurable: true });
-  w.eval("openMeasure(null, () => {}, { camera: true })"); await wait(50);
-  console.log("no-camera message:", txt("m-help").slice(0, 60), "| shutter disabled:", $("m-shot").disabled);
+  w.eval("catchFormPhoto = () => 'data:image/png;base64,AAAA'");
+  click($("c-identify")); await wait(200);
+  const sg = [...d.querySelectorAll("#c-id-sugg button")].find(b => /Snook/.test(b.textContent)); click(sg);
+  console.log("species filled:", $("c-species").value, "| next button:", [...d.querySelectorAll("#c-id-sugg .id-next")].map(b => b.textContent).join(","), "| keeper:", txt("c-keeper").slice(0, 60));
+  click(d.querySelector("#c-id-sugg .id-next")); await wait(150);
+  console.log("measure opened by next:", !$("measure").hidden, "| camera view:", !$("m-video").hidden);
+  click($("m-cancel"));
+  $("c-length").value = "30"; ev($("c-length"), "input");
+  click($("c-identify")); await wait(200); click([...d.querySelectorAll("#c-id-sugg button")].find(b => /Snook/.test(b.textContent)));
+  console.log("with a length already: next button shown:", !!d.querySelector("#c-id-sugg .id-next"), "| keeper:", txt("c-keeper").slice(0, 50));
+  // quick catch
+  w.eval("openQuickCatch()"); await wait(100);
+  w.eval("qc.blob = new Blob(['x']); qc.pos = { lat: 26.257, lng: -80.081, acc: 12, at: new Date().toISOString() }; qc.source = 'test'; showReview()"); await wait(200);
+  click($("qc-identify")); await wait(200); click([...d.querySelectorAll("#qc-id-sugg button")].find(b => /Snook/.test(b.textContent)));
+  console.log("qc species chosen:", ($("qc-species-other").value || (d.querySelector("#qc-species .fchip.on") || {}).textContent), "| next:", !!d.querySelector("#qc-id-sugg .id-next"), "| keeper:", txt("qc-keeper").slice(0, 50));
+  click(d.querySelector("#qc-id-sugg .id-next")); await wait(150);
+  console.log("qc measure opened:", !$("measure").hidden, "| photo mode:", $("m-video").hidden);
   console.log("DONE");
 } catch (e) { console.log("ERR", e.stack); } process.exit(0); })();
