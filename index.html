@@ -39,6 +39,9 @@
     padding: 10px 0; border-bottom: 1px solid var(--line);
   }
   li:last-child { border-bottom: 0; }
+  ol.steps { list-style: decimal; margin: 8px 0 12px; padding-left: 24px; font-size: .95rem; line-height: 1.5; }
+  ol.steps li { display: list-item; border: 0; padding: 0 0 8px 4px; }
+  ol.steps li::marker { font-weight: 700; color: var(--accent); }
   .kind { font-weight: 600; }
   .ft { color: var(--muted); font-size: .9rem; margin-left: 8px; }
   .past { opacity: .5; }
@@ -466,7 +469,7 @@
 
   <template id="a2hs-tpl">
         <div class="spot-meta" style="margin-top:6px"><b>iPhone</b> (needs iOS 16.4 or newer)</div>
-        <ol style="margin:6px 0 10px 20px;padding:0;line-height:1.5;font-size:.9rem">
+        <ol class="steps">
           <li>Open this page in <b>Safari</b> (the blue compass icon).</li>
           <li>Tap the <b>Share</b> button — a square with an arrow pointing up. It's at the bottom of the screen. If you don't see it, tap the <b>•••</b> button first.</li>
           <li>Scroll down the menu and tap <b>Add to Home Screen</b>.</li>
