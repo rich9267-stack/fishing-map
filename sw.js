@@ -2,7 +2,7 @@
 // - The page itself: try the network first (so updates show up), fall back to the saved copy.
 // - Code libraries from CDNs: use the saved copy right away, refresh it in the background.
 // - Live data (database, tides, weather, map tiles) is never cached here.
-const CACHE = "fishing-map-v3";
+const CACHE = "fishing-map-v4";
 const APP_FILES = ["./", "./index.html", "./privacy.html"];
 const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com"];
 
@@ -43,4 +43,21 @@ self.addEventListener("fetch", event => {
       }))
     );
   }
+});
+
+// Phone alerts: show the alert, and open the right place when it's tapped
+self.addEventListener("push", event => {
+  let d = {};
+  try { d = event.data.json(); } catch (e) { d = { title: "Fishing Map", body: event.data ? event.data.text() : "" }; }
+  event.waitUntil(self.registration.showNotification(d.title || "Fishing Map", { body: d.body || "", data: { url: d.url || "./" } }));
+});
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "./";
+  const go = url.startsWith("?") ? url : "";
+  event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+    const c = list.find(x => x.url.startsWith(self.registration.scope));
+    if (c) { c.postMessage({ go }); return c.focus(); }
+    return self.clients.openWindow(self.registration.scope + go);
+  }));
 });

@@ -1,0 +1,12 @@
+-- 19: Phone alerts (web push). Applied as migrations: push_tables, push_extensions, push_enqueue_fn,
+-- push_triggers_social, push_triggers_contest_access, push_scheduled. Edge function: send-push (verify_jwt off; protected by a secret kept in push_config).
+-- Tables: push_config (id=1: public_key, private_key, hook_secret — RLS on, NO access for app users; created by the function on first call),
+--   push_subscriptions (own rows: select/insert/delete), notif_prefs (own rows: social/contests/trips/conditions),
+--   notifications (own rows: select only; written only by enqueue_notification).
+-- Functions (no client access except send_test_push): push_name(uid), enqueue_notification(uid, kind, title, body, url, dedupe) -- skips users with no device or the category off,
+--   inserts a notification and calls the send-push function through pg_net; send_test_push() (authenticated).
+-- Triggers -> alerts: messages insert (recipient), friendships insert/accept, trip_plan_rsvps insert (planner), catch_comments insert (catch owner),
+--   tournament_members invited (invitee), members pending (admins).
+-- push_scheduled() every 5 min (pg_cron job 'push-scheduled'): trip within ~1 h (planner + "I'm in"), contest starting within ~1 h, contest ended (joined members). Dedupe keys stop repeats.
+-- Not built yet: fishing-conditions alerts (notif_prefs.conditions is reserved, default off), "you were overtaken" alerts, quiet hours.
+-- Full bodies: Supabase migrations list / pg_get_functiondef.
