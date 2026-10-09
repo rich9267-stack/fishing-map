@@ -94,15 +94,28 @@
   .id-sugg button.on { background: var(--accent); color: #fff; }
   .id-sugg small { opacity: .75; font-weight: 400; }
   #measure { position: fixed; inset: 0; z-index: 1300; background: #000; color: #fff; display: flex; flex-direction: column; }
-  #measure .m-top { padding: 12px 16px; display: flex; gap: 10px; align-items: center; justify-content: space-between; background: rgba(0,0,0,.85); }
-  #m-step { font-weight: 700; font-size: 1rem; }
+  #measure .m-top { padding: 10px 14px; display: flex; gap: 10px; align-items: center; justify-content: space-between; background: rgba(0,0,0,.85); }
+  #m-readout { font-weight: 800; font-size: 1.5rem; letter-spacing: .5px; color: #ffd400; min-width: 4ch; text-align: center; }
   #m-stage { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; }
   #m-wrap { position: relative; line-height: 0; }
-  #m-img { max-width: 100vw; max-height: 100%; display: block; user-select: none; -webkit-user-select: none; }
+  #m-img, #m-video { max-width: 100vw; max-height: 100%; display: block; user-select: none; -webkit-user-select: none; }
+  #m-video { width: 100vw; object-fit: contain; }
   #m-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #m-reticle { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; pointer-events: none; }
+  #m-reticle::before, #m-reticle::after { content: ""; position: absolute; background: rgba(255,255,255,.9); box-shadow: 0 0 3px #000; }
+  #m-reticle::before { left: 21px; top: 0; width: 2px; height: 44px; } #m-reticle::after { top: 21px; left: 0; height: 2px; width: 44px; }
+  #m-level { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); padding: 6px 14px; border-radius: 999px; font-size: .9rem; font-weight: 700; background: rgba(0,0,0,.65); white-space: nowrap; }
+  #m-level.ok { background: rgba(32,150,80,.9); } #m-level.bad { background: rgba(200,110,0,.92); }
+  #m-loupe { position: absolute; top: 10px; width: 120px; height: 120px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,.6); pointer-events: none; background: #000; }
   #measure .m-bottom { padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: #12262e; color: #e6f0f2; }
-  #measure .m-bottom select, #measure .m-bottom input { width: 100%; }
-  #m-result { font-size: 1.3rem; font-weight: 700; margin: 8px 0; }
+  #measure .m-bottom input { width: 100%; }
+  .m-shutter { display: block; margin: 4px auto 6px; width: 72px; height: 72px; border-radius: 50%; border: 5px solid #fff; background: #e8453c; color: #fff; font-size: 1.6rem; }
+  .m-shutter:disabled { opacity: .4; }
+  .m-refs { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+  .m-ref { border: 1px solid #3b5762; background: transparent; color: #e6f0f2; border-radius: 999px; padding: 6px 10px; font-size: .85rem; }
+  .m-ref.on { background: #2c9bff; border-color: #2c9bff; color: #fff; font-weight: 700; }
+  #m-note { font-size: .82rem; color: #9db2ba; margin: 6px 0; }
+  #m-note.warn { color: #ffb347; }
   #measure .linkbtn { color: #4fc3cc; }
   #viewer { position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
   #viewer img { max-width: 100%; max-height: 78vh; border-radius: 8px; }
@@ -1022,7 +1035,7 @@
         <div><label for="qc-length">Length (inches)</label><input id="qc-length" type="number" min="0.5" max="199" step="0.25" inputmode="decimal"></div>
         <div><label for="qc-weight">Weight (lb)</label><input id="qc-weight" type="number" min="0.05" max="1999" step="0.05" inputmode="decimal" placeholder="Optional"></div>
       </div>
-      <button class="btn ghost small" id="qc-measure" type="button" style="margin-top:8px">📏 Measure from the photo</button>
+      <button class="btn ghost small" id="qc-measure" type="button" style="margin-top:8px">📏 Measure (camera or photo)</button>
       <div class="spot-meta" id="qc-size-note" style="margin-top:6px"></div>
       <div class="keeper" id="qc-keeper" hidden></div>
       <label for="qc-vis">Who can see this catch?</label>
@@ -1101,27 +1114,28 @@
 
 <div id="measure" hidden>
   <div class="m-top">
-    <div id="m-step"></div>
-    <button type="button" id="m-cancel" class="linkbtn">Cancel</button>
+    <button type="button" id="m-cancel" class="linkbtn">✕ Cancel</button>
+    <div id="m-readout">—</div>
+    <button type="button" id="m-retake" class="linkbtn" hidden>↺ Retake</button>
   </div>
-  <div id="m-stage"><div id="m-wrap"><img id="m-img" alt="Catch photo"><svg id="m-svg"></svg></div></div>
+  <div id="m-stage">
+    <div id="m-wrap"><video id="m-video" playsinline muted autoplay hidden></video><img id="m-img" alt="Catch photo" hidden><svg id="m-svg"></svg></div>
+    <div id="m-reticle" hidden></div>
+    <div id="m-level" hidden></div>
+    <canvas id="m-loupe" width="240" height="240" hidden></canvas>
+  </div>
   <div class="m-bottom">
-    <div id="m-help" class="spot-meta" style="color:#9db2ba"></div>
-    <div id="m-ref-box" hidden>
-      <label for="m-ref" style="color:#e6f0f2">The two blue taps are…</label>
-      <select id="m-ref">
-        <option value="ruler">Marks on a ruler or tape (enter the inches)</option>
-        <option value="6.14">A dollar bill — long side (6.1″)</option>
-        <option value="3.37">A credit card or driver's license — long side (3.4″)</option>
-        <option value="4.83">A soda can — height (4.8″)</option>
-        <option value="custom">Something else I know the size of</option>
-      </select>
-      <input id="m-ref-in" type="number" min="0.5" max="120" step="0.25" placeholder="Inches between the blue taps" style="margin-top:8px">
-      <div id="m-result"></div>
+    <div id="m-live">
+      <div id="m-help" class="spot-meta" style="color:#9db2ba;text-align:center">Lay a dollar bill or card flat next to the fish, hold the phone flat above both, and tap the red button.</div>
+      <button type="button" class="m-shutter" id="m-shot" aria-label="Freeze the picture">📸</button>
+      <div style="text-align:center"><button type="button" id="m-pick" class="linkbtn">Choose a photo instead</button><input id="m-file" type="file" accept="image/*" hidden></div>
     </div>
-    <div class="row" style="margin-top:8px">
-      <button type="button" id="m-undo" class="linkbtn">↶ Undo tap</button>
-      <button type="button" class="btn" id="m-use" disabled>Use this length</button>
+    <div id="m-edit" hidden>
+      <div class="spot-meta" style="color:#9db2ba">🟡 Drag the yellow dots to the fish's nose and tail. 🔵 Drag the blue dots to the two ends of what you laid beside it.</div>
+      <div class="m-refs" id="m-refs"></div>
+      <input id="m-ref-in" type="number" min="0.5" max="120" step="0.25" placeholder="Inches between the blue dots" hidden>
+      <div id="m-note"></div>
+      <button type="button" class="btn" id="m-use" disabled style="width:100%">Use this length</button>
     </div>
   </div>
 </div>
@@ -3592,7 +3606,7 @@
       <div><label for="c-weight">Weight (lb)</label><input id="c-weight" type="number" min="0.05" max="1999" step="0.05" inputmode="decimal" placeholder="Optional"></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-      <button class="btn ghost small" id="c-measure" type="button">📏 Measure from the photo</button>
+      <button class="btn ghost small" id="c-measure" type="button">📏 Measure (camera or photo)</button>
       <button class="btn ghost small" id="c-identify" type="button">🔍 Identify fish</button>
     </div>
     <div class="spot-meta" id="c-id-msg"></div>
@@ -3856,78 +3870,180 @@
   }
   ["#c-length", "#c-weight", "#c-species"].forEach(id => catchForm.querySelector(id).addEventListener("input", updateSizeNote));
 
-  // ---- Tap-to-measure: nose, tail, then both ends of something of known size ----
-  const M_STEPS = ["Tap the tip of the fish's nose", "Now tap the end of the tail", "Tap one end of your reference (ruler mark, bill, card…)", "Tap the other end of the reference"];
-  const ms = { pts: [], drag: -1, onUse: null, url: null };
-  function openMeasure(src, onUse) {
-    ms.pts = []; ms.onUse = onUse;
-    if (ms.url) { URL.revokeObjectURL(ms.url); ms.url = null; }
-    const img = $("m-img");
-    if (src instanceof Blob) { ms.url = URL.createObjectURL(src); img.src = ms.url; } else img.src = src;
-    let last = null; try { last = localStorage.getItem("fm-measure-ref"); } catch (e) { /* none */ }
-    if (last) { $("m-ref").value = last.split("|")[0]; $("m-ref-in").value = last.split("|")[1] || ""; }
-    $("measure").hidden = false;
-    img.onload = () => drawMeasure();
-    drawMeasure();
-  }
-  function closeMeasure() { $("measure").hidden = true; }
-  function refInches() {
-    const v = $("m-ref").value;
-    $("m-ref-in").hidden = !(v === "ruler" || v === "custom");
-    return v === "ruler" || v === "custom" ? parseFloat($("m-ref-in").value) : parseFloat(v);
-  }
+  // ---- Tap-to-measure: live camera → freeze → drag 4 dots (fish nose/tail + something of known size) with a magnifier and a live readout ----
+  // A web page can't use the iPhone's depth sensor (LiDAR/ARKit), so scale comes from a reference lying beside the fish; the level indicator helps keep the shot flat.
+  const M_REFS = [["6.14", "💵 Dollar bill"], ["3.37", "💳 Card"], ["4.83", "🥤 Can"], ["ruler", "📏 Ruler / tape"], ["custom", "✏️ Other"]];
+  const ms = { pts: [], drag: -1, onUse: null, onPhoto: null, url: null, stream: null, ref: "3.37", refIn: "", tilt: null, shotTilt: null, camera: false, W: 0, H: 0 };
+  const mNeedsIn = () => ms.ref === "ruler" || ms.ref === "custom";
   const mDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  function mOri(e) {
+    if (e.beta == null || e.gamma == null) return;
+    const r = Math.PI / 180;
+    ms.tilt = Math.acos(Math.min(1, Math.max(-1, Math.cos(e.beta * r) * Math.cos(e.gamma * r)))) / r;   // 0° = lying flat
+    mLevel();
+  }
+  function mTiltStart() {
+    try {
+      if (typeof DeviceOrientationEvent !== "undefined" && DeviceOrientationEvent.requestPermission) {
+        DeviceOrientationEvent.requestPermission().then(r => { if (r === "granted") window.addEventListener("deviceorientation", mOri); }).catch(() => {});
+      } else window.addEventListener("deviceorientation", mOri);
+    } catch (e) { /* no tilt sensor */ }
+  }
+  function mLevel() {
+    const L = $("m-level"); if (!ms.camera || $("m-video").hidden) return;
+    L.hidden = false;
+    if (ms.tilt == null) { L.className = ""; L.textContent = "Hold the phone flat above the fish"; return; }
+    const t = Math.round(ms.tilt);
+    L.className = t <= 7 ? "ok" : "bad";
+    L.textContent = t <= 7 ? "✓ Level" : `Tilted ${t}° — hold it flat above the fish`;
+  }
+  function mStopCamera() {
+    if (ms.stream) { ms.stream.getTracks().forEach(t => t.stop()); ms.stream = null; }
+    $("m-video").srcObject = null;
+    try { window.removeEventListener("deviceorientation", mOri); } catch (e) { /* ok */ }
+  }
+  async function mStartCamera() {
+    ms.camera = true;
+    $("m-live").hidden = false; $("m-edit").hidden = true; $("m-retake").hidden = true;
+    $("m-img").hidden = true; $("m-svg").innerHTML = ""; $("m-readout").textContent = "—";
+    $("m-help").textContent = "Lay a dollar bill or card flat next to the fish, hold the phone flat above both, and tap the red button.";
+    const v = $("m-video");
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $("m-help").textContent = "This phone won't open the camera here — tap “Choose a photo instead”."; $("m-shot").disabled = true; return; }
+    try {
+      ms.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } }, audio: false });
+      v.srcObject = ms.stream; v.hidden = false; $("m-reticle").hidden = false; $("m-shot").disabled = false;
+      try { await v.play(); } catch (e) { /* autoplay does it */ }
+      mLevel();
+    } catch (e) {
+      $("m-help").textContent = "Couldn't open the camera (allow Camera for this site in your phone's settings) — tap “Choose a photo instead”.";
+      $("m-shot").disabled = true;
+    }
+  }
+  function openMeasure(src, onUse, opts) {
+    opts = opts || {};
+    ms.pts = []; ms.onUse = onUse; ms.onPhoto = opts.onPhoto || null; ms.shotTilt = null; ms.tilt = null;
+    if (ms.url) { URL.revokeObjectURL(ms.url); ms.url = null; }
+    let last = null; try { last = localStorage.getItem("fm-measure-ref"); } catch (e) { /* none */ }
+    if (last) { const [r, i] = last.split("|"); if (M_REFS.some(x => x[0] === r)) ms.ref = r; ms.refIn = i || ""; }
+    $("m-ref-in").value = ms.refIn;
+    mBuildRefs();
+    $("measure").hidden = false;
+    if (opts.camera) { mTiltStart(); mStartCamera(); } else mShowPhoto(src, false);
+  }
+  function mBuildRefs() {
+    const box = $("m-refs"); box.innerHTML = "";
+    M_REFS.forEach(([v, label]) => {
+      const b = el("button", "m-ref" + (ms.ref === v ? " on" : ""), label); b.type = "button"; b.dataset.v = v;
+      b.addEventListener("click", () => { ms.ref = v; mBuildRefs(); mDraw(); });
+      box.appendChild(b);
+    });
+    $("m-ref-in").hidden = !mNeedsIn();
+  }
+  // Show a still picture (a photo, or a frame frozen from the camera) with the four dots ready to drag
+  function mShowPhoto(src, fromCamera) {
+    ms.camera = false;
+    $("m-video").hidden = true; $("m-reticle").hidden = true; $("m-level").hidden = true;
+    $("m-live").hidden = true; $("m-edit").hidden = false; $("m-retake").hidden = !fromCamera;
+    const img = $("m-img"); img.hidden = false;
+    img.onload = () => mPlace();
+    if (src instanceof Blob) { ms.url = URL.createObjectURL(src); img.src = ms.url; } else img.src = src;
+    if (img.complete && img.naturalWidth) mPlace(); else mDraw();
+  }
+  function mPlace() {
+    const img = $("m-img"), W = img.naturalWidth || 1000, H = img.naturalHeight || 750;
+    ms.W = W; ms.H = H;
+    ms.pts = [{ x: W * .2, y: H * .4 }, { x: W * .8, y: H * .4 }, { x: W * .3, y: H * .75 }, { x: W * .55, y: H * .75 }];
+    mDraw();
+  }
+  function closeMeasure() { mStopCamera(); $("m-loupe").hidden = true; $("measure").hidden = true; }
+  function refInches() { return mNeedsIn() ? parseFloat($("m-ref-in").value) : parseFloat(ms.ref); }
   function measuredLength() {
     if (ms.pts.length < 4) return null;
     const ref = refInches(), refPx = mDist(ms.pts[2], ms.pts[3]);
     if (!(ref > 0) || refPx < 3) return null;
     return mDist(ms.pts[0], ms.pts[1]) / refPx * ref;
   }
-  function drawMeasure() {
+  function mDraw() {
     const img = $("m-img"), svg = $("m-svg");
-    const W = img.naturalWidth || 1000, H = img.naturalHeight || 750, r = Math.max(W, H) / 90;
+    const W = ms.W || img.naturalWidth || 1000, H = ms.H || img.naturalHeight || 750, r = Math.max(W, H) / 90;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    const line = (a, b, col) => `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="${r / 2.5}" stroke-dasharray="${r} ${r / 2}"/>`;
-    const dot = (p, col, i) => `<circle cx="${p.x}" cy="${p.y}" r="${r * 1.6}" fill="none" stroke="#fff" stroke-width="${r / 3}"/><circle data-i="${i}" cx="${p.x}" cy="${p.y}" r="${r}" fill="${col}" fill-opacity=".85"/>`;
+    const P = ms.pts, len = measuredLength(), q = len ? Math.round(len * 4) / 4 : null;
+    $("m-readout").textContent = q ? `${q}″` : "—";
+    $("m-use").disabled = !q || q > 199;
     let out = "";
-    const P = ms.pts;
-    if (P.length >= 2) out += line(P[0], P[1], "#ffd400");
-    if (P.length >= 4) out += line(P[2], P[3], "#2c9bff");
-    P.forEach((p, i) => { out += dot(p, i < 2 ? "#ffd400" : "#2c9bff", i); });
+    if (P.length === 4) {
+      const line = (a, b, col) => `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="${r / 2.2}"/>`;
+      const dot = (p, col, i) => `<circle cx="${p.x}" cy="${p.y}" r="${r * 1.7}" fill="${col}" fill-opacity=".25" stroke="#fff" stroke-width="${r / 3.5}"/><circle data-i="${i}" cx="${p.x}" cy="${p.y}" r="${r / 3}" fill="#fff"/>`;
+      const label = (a, b, text, col) => {
+        const x = (a.x + b.x) / 2, y = (a.y + b.y) / 2 - r * 2.4, fs = r * 2.3, w = text.length * fs * .62 + fs;
+        return `<rect x="${x - w / 2}" y="${y - fs * .85}" width="${w}" height="${fs * 1.4}" rx="${fs * .4}" fill="#000" fill-opacity=".72"/><text x="${x}" y="${y + fs * .22}" font-size="${fs}" font-weight="700" fill="${col}" text-anchor="middle" font-family="-apple-system,Arial,sans-serif">${text}</text>`;
+      };
+      out += line(P[0], P[1], "#ffd400") + line(P[2], P[3], "#2c9bff");
+      out += label(P[0], P[1], q ? `${q}″` : "?", "#ffd400");
+      const ri = refInches(); out += label(P[2], P[3], ri > 0 ? `${+ri.toFixed(2)}″ ref` : "ref?", "#6cc0ff");
+      P.forEach((p, i) => { out += dot(p, i < 2 ? "#ffd400" : "#2c9bff", i); });
+    }
     svg.innerHTML = out;
-    const n = P.length;
-    $("m-step").textContent = n < 4 ? `${n + 1} of 4 · ${M_STEPS[n]}` : "Done — check the result";
-    $("m-help").textContent = n < 4
-      ? (n < 2 ? "Yellow = the fish. You can drag a dot to fine-tune it." : "Blue = something of known size lying right next to the fish.")
-      : "Drag any dot to adjust. For best results the reference should lie flat beside the fish and the photo should be taken from straight above.";
-    $("m-ref-box").hidden = n < 4;
-    const len = measuredLength();
-    $("m-result").textContent = len ? `Fish length ≈ ${(Math.round(len * 4) / 4)}″` : (n >= 4 ? "Enter the reference size above" : "");
-    $("m-use").disabled = !len || len > 199;
-    $("m-undo").disabled = !n;
+    const note = $("m-note");
+    if (ms.shotTilt != null && ms.shotTilt > 10) { note.className = "warn"; note.textContent = `⚠️ The phone was tilted ${Math.round(ms.shotTilt)}° — the length can be off. Retake it flat above the fish for best accuracy.`; }
+    else { note.className = ""; note.textContent = mNeedsIn() && !(refInches() > 0) ? "Type the inches between the two blue dots above." : "Most accurate when the reference lies flat right beside the fish and the picture is taken from straight above (within about an inch)."; }
   }
   function mPoint(e) {
     const img = $("m-img"), b = img.getBoundingClientRect();
-    const W = img.naturalWidth || b.width, H = img.naturalHeight || b.height;
-    return { x: (e.clientX - b.left) / b.width * W, y: (e.clientY - b.top) / b.height * H };
+    return { x: (e.clientX - b.left) / b.width * (ms.W || b.width), y: (e.clientY - b.top) / b.height * (ms.H || b.height), sx: e.clientX, sy: e.clientY };
+  }
+  function mLoupe(p) {
+    const cv = $("m-loupe"), img = $("m-img");
+    if (p == null) { cv.hidden = true; return; }
+    const c = cv.getContext && cv.getContext("2d"); if (!c) return;
+    const S = Math.max(ms.W, ms.H) / 14;
+    cv.hidden = false;
+    const stage = $("m-stage").getBoundingClientRect();
+    cv.style.left = (p.sx - stage.left > stage.width / 2 ? 10 : stage.width - 130) + "px";
+    try { c.drawImage(img, p.x - S / 2, p.y - S / 2, S, S, 0, 0, 240, 240); } catch (e) { /* not ready */ }
+    c.strokeStyle = "#fff"; c.lineWidth = 2; c.beginPath(); c.moveTo(120, 100); c.lineTo(120, 140); c.moveTo(100, 120); c.lineTo(140, 120); c.stroke();
   }
   $("m-svg").addEventListener("pointerdown", e => {
+    if (ms.camera || ms.pts.length < 4) return;
     e.preventDefault();
-    const p = mPoint(e), img = $("m-img"), scale = (img.naturalWidth || 1) / img.getBoundingClientRect().width;
-    const near = ms.pts.map((q, i) => ({ i, d: mDist(p, q) })).sort((a, b) => a.d - b.d)[0];
-    if (near && near.d < 28 * scale) { ms.drag = near.i; $("m-svg").setPointerCapture && $("m-svg").setPointerCapture(e.pointerId); return; }
-    if (ms.pts.length < 4) { ms.pts.push(p); drawMeasure(); }
+    const p = mPoint(e), b = $("m-img").getBoundingClientRect(), scale = (ms.W || 1) / b.width;
+    const near = ms.pts.map((q, i) => ({ i, d: mDist(p, q) })).sort((a, b2) => a.d - b2.d)[0];
+    if (near && near.d < 56 * scale) { ms.drag = near.i; $("m-svg").setPointerCapture && $("m-svg").setPointerCapture(e.pointerId); mLoupe(ms.pts[near.i] && Object.assign({}, ms.pts[near.i], { sx: p.sx, sy: p.sy })); }
   });
-  $("m-svg").addEventListener("pointermove", e => { if (ms.drag < 0) return; ms.pts[ms.drag] = mPoint(e); drawMeasure(); });
-  ["pointerup", "pointercancel"].forEach(t => $("m-svg").addEventListener(t, () => { ms.drag = -1; }));
-  $("m-undo").addEventListener("click", () => { ms.pts.pop(); drawMeasure(); });
+  $("m-svg").addEventListener("pointermove", e => {
+    if (ms.drag < 0) return;
+    const p = mPoint(e); ms.pts[ms.drag] = { x: Math.min(ms.W, Math.max(0, p.x)), y: Math.min(ms.H, Math.max(0, p.y)) };
+    mDraw(); mLoupe(Object.assign({}, ms.pts[ms.drag], { sx: p.sx, sy: p.sy }));
+  });
+  ["pointerup", "pointercancel"].forEach(t => $("m-svg").addEventListener(t, () => { ms.drag = -1; mLoupe(null); }));
+  // Freeze the live picture
+  $("m-shot").addEventListener("click", () => {
+    const v = $("m-video"); if (!v.videoWidth) return;
+    const k = Math.min(1, 1600 / Math.max(v.videoWidth, v.videoHeight)), cv = document.createElement("canvas");
+    cv.width = Math.round(v.videoWidth * k); cv.height = Math.round(v.videoHeight * k);
+    cv.getContext("2d").drawImage(v, 0, 0, cv.width, cv.height);
+    ms.shotTilt = ms.tilt;
+    cv.toBlob(blob => {
+      if (!blob) { $("m-help").textContent = "Couldn't capture the picture — try again."; return; }
+      mStopCamera();
+      mShowPhoto(blob, true);
+      if (ms.onPhoto) { try { ms.onPhoto(blob); } catch (e) { /* optional */ } }
+    }, "image/jpeg", 0.9);
+  });
+  $("m-retake").addEventListener("click", () => { ms.pts = []; ms.shotTilt = null; mTiltStart(); mStartCamera(); });
+  $("m-pick").addEventListener("click", () => $("m-file").click());
+  $("m-file").addEventListener("change", () => {
+    const f = $("m-file").files && $("m-file").files[0]; $("m-file").value = "";
+    if (!f) return;
+    mStopCamera(); ms.shotTilt = null; mShowPhoto(f, false);
+    if (ms.onPhoto) { try { ms.onPhoto(f); } catch (e) { /* optional */ } }
+  });
   $("m-cancel").addEventListener("click", closeMeasure);
-  $("m-ref").addEventListener("change", drawMeasure);
-  $("m-ref-in").addEventListener("input", drawMeasure);
+  $("m-ref-in").addEventListener("input", () => { ms.refIn = $("m-ref-in").value; mDraw(); });
   $("m-use").addEventListener("click", () => {
     const len = measuredLength();
     if (!len) return;
-    try { localStorage.setItem("fm-measure-ref", $("m-ref").value + "|" + $("m-ref-in").value); } catch (e) { /* fine */ }
+    try { localStorage.setItem("fm-measure-ref", ms.ref + "|" + $("m-ref-in").value); } catch (e) { /* fine */ }
     closeMeasure();
     if (ms.onUse) ms.onUse(Math.round(len * 4) / 4);
   });
@@ -3956,8 +4072,13 @@
       const ph = (photosBySpot[editingCatch.spot_id] || []).find(p => p.catch_id === editingCatch.id);
       if (ph && photoUrls[ph.path]) src = photoUrls[ph.path];
     }
-    if (!src) { q("#c-size-note").textContent = "📷 Choose the catch photo first (just above), then tap 📏 again."; return; }
-    openMeasure(src, len => { q("#c-length").value = len; updateSizeNote(); });
+    // With a photo: measure it. Without: open the live camera, and the frozen picture becomes the catch photo.
+    openMeasure(src, len => { q("#c-length").value = len; updateSizeNote(); }, src ? {} : { camera: true, onPhoto: blob => {
+      try {
+        const f = new File([blob], "measure-" + Date.now() + ".jpg", { type: blob.type || "image/jpeg" }), dt = new DataTransfer();
+        dt.items.add(f); q("#c-photo").files = dt.files; q("#c-photo").dispatchEvent(new Event("change", { bubbles: true }));
+      } catch (e) { /* the length still works without attaching */ }
+    } });
   });
 
   // ---- 🔍 Fish ID: one photo → Google Gemini (free tier) via our Supabase function → up to 3 suggestions ----

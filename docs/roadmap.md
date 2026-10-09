@@ -21,7 +21,7 @@ Order = suggested build order. Each item is small enough to ship + test on its o
 ## D. App polish (QOL)
 11. ✅ done Oct 9 (all six; see build_history) — Spot search/sort, edit/undo catch, export my data (CSV), offline map-area download, blur-for-review after 3 reports, admin dashboard.
 
-## E. Measure tool rework
+## E. Measure tool rework — ✅ built Oct 9 (live camera, freeze, 4 dots with live readout + magnifier, level indicator, reference chips). Not built: pinch-zoom, fine-nudge arrows, saving the overlay onto the photo, auto-detecting the reference.
 Goal: feel like the iPhone Measure app. Limit: a web page cannot use the iPhone's AR/LiDAR (Safari doesn't expose ARKit), so true "walk the phone along it" measuring is impossible here. What we can do:
 - **Live camera view** (no photo step): point at the fish next to a reference (bill/card/ruler), lines and the length update live as you drag the ends.
 - **Reference auto-lock**: pick the reference once; it stays calibrated while you move the end markers.
