@@ -566,6 +566,23 @@
   </div>
 
   <div id="view-insights" hidden>
+    <div class="card" id="rec-card" style="margin-bottom:14px">
+      <div class="label">🏆 Records &amp; leaderboard</div>
+      <div id="rec-scope" style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap">
+        <button class="btn small" id="rec-s-me" type="button">👤 Me</button>
+        <button class="btn ghost small" id="rec-s-circle" type="button">👥 My circle</button>
+        <button class="btn ghost small" id="rec-s-public" type="button">🌎 Public</button>
+      </div>
+      <div class="two">
+        <div id="rec-board-wrap"><label for="rec-board">Board</label>
+          <select id="rec-board"><option value="length">Longest fish</option><option value="weight">Heaviest fish</option><option value="fish">Most fish</option><option value="species">Most species</option></select></div>
+        <div><label for="rec-period">Period</label>
+          <select id="rec-period"><option value="all">All time</option><option value="year">This year</option><option value="month">This month</option></select></div>
+      </div>
+      <label for="rec-species">Species</label><select id="rec-species"><option value="">All species</option></select>
+      <div id="rec-body"></div>
+      <p class="spot-meta" id="rec-note" style="margin:8px 0 0"></p>
+    </div>
     <div class="card">
       <div class="label">Catch insights</div>
       <div class="two" style="margin-top:4px">
@@ -1740,6 +1757,7 @@
 
   function renderInsights() {
     if ($("view-insights").hidden) return;
+    renderRecords();
     fillInsightPickers();
     const list = insightCatches();
     const fish = list.reduce((n, c) => n + (c.how_many || 1), 0);
@@ -2293,6 +2311,132 @@
     } else if (sightLayer) map.removeLayer(sightLayer);
   }
   $("map-sight").addEventListener("click", () => { initMap(); setSightOn(!sightOn); });
+
+  // ---- Records & leaderboards (V4 step 5): personal bests, longest / heaviest fish, most fish, most species ----
+  let recScope = "me", recPublic = [], recPublicAt = 0, recPublicErr = null, recAsked = new Set();
+  const MEDALS = ["🥇", "🥈", "🥉"];
+  const spKey = c => (c.species || "").trim().toLowerCase();
+  function recStart(p) { const n = new Date(); return p === "month" ? new Date(n.getFullYear(), n.getMonth(), 1) : p === "year" ? new Date(n.getFullYear(), 0, 1) : null; }
+  // The catches this scope can count (before the period and species filters)
+  function recBase() {
+    if (recScope === "public") return recPublic;
+    const all = Object.values(catchesBySpot).flat();
+    if (recScope === "me") return all.filter(c => me && c.created_by === me.id);
+    return all.filter(c => (c.visibility || "friends") !== "private");
+  }
+  async function loadRecPublic(force) {
+    if (!force && Date.now() - recPublicAt < 60000) return;
+    try {
+      const { data, error } = await db.from("catches").select("id,spot_id,species,how_many,caught_at,created_by,caught_by,visibility,length_in,weight_lb,weight_est")
+        .eq("visibility", "public").is("deleted_at", null).order("caught_at", { ascending: false }).limit(2000);
+      if (error) throw error;
+      recPublic = data; recPublicAt = Date.now(); recPublicErr = null;
+    } catch (e) { recPublicErr = "Couldn't load the public leaderboard right now."; }
+    renderRecords();
+  }
+  function recWho(uid, c) { return me && uid === me.id ? "You" : (profName(uid) || c.caught_by || "Someone"); }
+  const recDate = c => new Date(c.caught_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  const recPlace = c => { const sp = spotsAll.find(x => x.id === c.spot_id); return sp ? sp.name : null; };
+  const recSize = c => [c.length_in > 0 ? `${+Number(c.length_in).toFixed(2)}″` : null, c.weight_lb > 0 ? (c.weight_est ? "≈" : "") + lbText(Number(c.weight_lb)) : null].filter(Boolean).join(", ");
+  function renderRecords() {
+    if (!$("rec-card")) return;
+    ["me", "circle", "public"].forEach(k => { $("rec-s-" + k).className = "btn small" + (recScope === k ? "" : " ghost"); });
+    $("rec-board-wrap").hidden = recScope === "me";
+    const base = recBase();
+    // species picker (keeps the current choice when still available)
+    const sel = $("rec-species"), cur = sel.value;
+    const names = new Map(); base.forEach(c => { if (spKey(c)) names.set(spKey(c), cap((c.species || "").trim())); });
+    const opts = [...names.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+    if (sel.options.length !== opts.length + 1 || [...sel.options].slice(1).some((o, i) => o.value !== opts[i][0])) {
+      sel.innerHTML = ""; sel.appendChild(new Option("All species", ""));
+      opts.forEach(([k, n]) => sel.appendChild(new Option(n, k)));
+      sel.value = names.has(cur) ? cur : "";
+    }
+    const start = recStart($("rec-period").value), sp = sel.value;
+    const list = base.filter(c => (!start || new Date(c.caught_at) >= start) && (!sp || spKey(c) === sp));
+    const box = $("rec-body"); box.innerHTML = "";
+    $("rec-note").textContent = recScope === "me" ? "Your own catches (private ones too). Tap-to-measure lengths make records fair — add a length when you log a catch."
+      : recScope === "circle" ? "You and your friends. Only catches shared with Friends or Public count. “Heaviest” skips weights estimated from length."
+      : "Catches people marked 🌎 Public. “Heaviest” skips weights estimated from length.";
+    if (recScope === "public") { if (recPublicErr) { box.appendChild(el("div", "msg err", recPublicErr)); return; } if (!recPublicAt) { box.appendChild(el("div", "spot-meta", "Loading…")); loadRecPublic(); return; } }
+    if (!list.length) { box.appendChild(el("div", "empty", recScope === "me" ? "No catches in this period yet." : "No catches here yet.")); return; }
+    if (recScope === "me") return renderBests(box, list);
+    // who needs a name?
+    const ids = [...new Set(list.map(c => c.created_by).filter(Boolean))].filter(id => !profOf(id) && !recAsked.has(id));
+    if (ids.length) { ids.forEach(id => recAsked.add(id)); ensureProfiles(ids).then(renderRecords).catch(() => {}); }
+    renderBoard(box, list);
+  }
+  function renderBests(box, list) {
+    const tiles = el("div", "tiles");
+    const fish = list.reduce((n, c) => n + (c.how_many || 1), 0), nSp = new Set(list.map(spKey).filter(Boolean)).size;
+    const longest = list.filter(c => c.length_in > 0).sort((a, b) => b.length_in - a.length_in)[0];
+    tiles.appendChild(tile(fish, "fish caught")); tiles.appendChild(tile(nSp, "species")); tiles.appendChild(tile(longest ? `${+Number(longest.length_in).toFixed(1)}″` : "—", "longest"));
+    box.appendChild(tiles);
+    box.appendChild(el("div", "label", "Personal bests"));
+    const by = new Map();
+    list.forEach(c => { const k = spKey(c); if (!k) return; (by.get(k) || by.set(k, []).get(k)).push(c); });
+    const rows = [...by.entries()].map(([k, cs]) => {
+      const len = cs.filter(c => c.length_in > 0).sort((a, b) => b.length_in - a.length_in)[0];
+      const wt = cs.filter(c => c.weight_lb > 0 && !c.weight_est).sort((a, b) => b.weight_lb - a.weight_lb)[0];
+      return { name: cap((cs[0].species || "").trim()), cs, len, wt };
+    }).sort((a, b) => ((b.len && b.len.length_in) || 0) - ((a.len && a.len.length_in) || 0) || b.cs.length - a.cs.length);
+    rows.forEach(r => {
+      const line = el("div", "feed-item");
+      const top = el("div", "feed-top");
+      top.appendChild(el("b", null, r.name));
+      top.appendChild(el("span", "feed-when", `${r.cs.reduce((n, c) => n + (c.how_many || 1), 0)} caught`));
+      line.appendChild(top);
+      const best = r.len || r.wt;
+      if (best) {
+        line.appendChild(el("div", null, "🏆 " + recSize(best) + (r.wt && r.len && r.wt !== r.len ? ` · heaviest ${lbText(Number(r.wt.weight_lb))}` : "")));
+        line.appendChild(el("div", "spot-meta", [recPlace(best), recDate(best)].filter(Boolean).join(" · ")));
+      } else line.appendChild(el("div", "spot-meta", "No length or weight logged yet — add one when you log a catch."));
+      box.appendChild(line);
+    });
+  }
+  function renderBoard(box, list) {
+    const board = $("rec-board").value;
+    const byUser = new Map();
+    list.forEach(c => { const uid = c.created_by || ("n:" + (c.caught_by || "?")); (byUser.get(uid) || byUser.set(uid, []).get(uid)).push(c); });
+    let rows = [...byUser.entries()].map(([uid, cs]) => {
+      let value = 0, detail = "";
+      if (board === "length" || board === "weight") {
+        const pool = cs.filter(c => board === "length" ? c.length_in > 0 : (c.weight_lb > 0 && !c.weight_est));
+        if (!pool.length) return null;
+        const b = pool.sort((x, y) => board === "length" ? y.length_in - x.length_in : y.weight_lb - x.weight_lb)[0];
+        value = board === "length" ? b.length_in : b.weight_lb;
+        detail = `${cap((b.species || "").trim())}${recPlace(b) ? " · " + recPlace(b) : ""} · ${recDate(b)}`;
+        return { uid, c: b, value, label: board === "length" ? `${+Number(b.length_in).toFixed(2)}″` : lbText(Number(b.weight_lb)), detail };
+      }
+      if (board === "fish") { value = cs.reduce((n, c) => n + (c.how_many || 1), 0); return { uid, c: cs[0], value, label: `${value} fish`, detail: `${cs.length} catch${cs.length === 1 ? "" : "es"}` }; }
+      const set = new Map(); cs.forEach(c => { if (spKey(c)) set.set(spKey(c), cap((c.species || "").trim())); });
+      value = set.size; if (!value) return null;
+      return { uid, c: cs[0], value, label: `${value} species`, detail: [...set.values()].slice(0, 4).join(", ") + (set.size > 4 ? "…" : "") };
+    }).filter(Boolean).sort((a, b) => b.value - a.value);
+    if (!rows.length) { box.appendChild(el("div", "empty", board === "length" ? "No lengths logged in this selection yet." : board === "weight" ? "No measured weights logged yet." : "Nothing to rank yet.")); return; }
+    const mineIdx = rows.findIndex(r => me && r.uid === me.id);
+    rows.slice(0, 10).forEach((r, i) => box.appendChild(boardRow(i, r)));
+    if (mineIdx >= 10) { box.appendChild(el("div", "spot-meta", "…")); box.appendChild(boardRow(mineIdx, rows[mineIdx])); }
+  }
+  function boardRow(i, r) {
+    const mine = !!(me && r.uid === me.id);
+    const row = el("div", "feed-item");
+    const top = el("div", "feed-top");
+    const who = el("span", "feed-what");
+    who.appendChild(document.createTextNode((MEDALS[i] || `${i + 1}.`) + " "));
+    if (r.uid && !String(r.uid).startsWith("n:") && !mine) {
+      const b = el("button", "linkbtn", recWho(r.uid, r.c)); b.type = "button";
+      b.style.fontSize = "1rem"; b.addEventListener("click", () => showProfile(r.uid)); who.appendChild(b);
+    } else who.appendChild(el("b", null, recWho(r.uid, r.c)));
+    top.appendChild(who); top.appendChild(el("b", null, r.label));
+    row.appendChild(top); row.appendChild(el("div", "spot-meta", r.detail));
+    if (mine) row.style.background = "color-mix(in srgb, var(--accent) 8%, transparent)";
+    return row;
+  }
+  [["me", "rec-s-me"], ["circle", "rec-s-circle"], ["public", "rec-s-public"]].forEach(([k, id]) => $(id).addEventListener("click", () => {
+    recScope = k; $("rec-species").value = ""; renderRecords(); if (k === "public") loadRecPublic(true);
+  }));
+  ["rec-board", "rec-period", "rec-species"].forEach(id => $(id).addEventListener("change", renderRecords));
 
   // ---- Quick catch: snap a photo, the app does the rest ----
   const QC_NEAR_MI = 0.15;           // within ~800 ft counts as "at" a saved spot
