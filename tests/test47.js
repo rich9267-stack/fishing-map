@@ -24,6 +24,7 @@ const MEMBER = () => ST === "admin" ? { data: { email: "rich9267@gmail.com", dis
 let PEND = [{ email: "new@x.com", display_name: "Newbie", is_admin: false, status: "pending", note: "Rico's cousin", requested_at: new Date().toISOString() },
   { email: "rich9267@gmail.com", display_name: "Richard", is_admin: true, status: "approved" }, { email: "d@x.com", display_name: "Dee", status: "blocked" }];
 const RPCS = [];
+const GM = [{ id: "g1", scope: "trip", scope_id: "pnow", sender: "other", body: "Bring shrimp!", created_at: new Date().toISOString() }, { id: "g2", scope: "contest", scope_id: "t2", sender: "other", body: "Game on", created_at: new Date().toISOString() }];
 const NOW = Date.now(), H = 3600000;
 const TOURS = [
   { id: "t1", kind: "official", title: "October Snook Slam", description: "Biggest snook wins", created_by: "u-rich", starts_at: new Date(NOW - 5 * H).toISOString(), ends_at: new Date(NOW + 48 * H).toISOString(), boards: ["length", "fish"], species: null, require_photo: true, require_length: true, geo_lat: null, geo_lng: null, geo_radius_mi: null, geo_label: null, cancelled_at: null },
@@ -70,12 +71,21 @@ const dom = new JSDOM(html, { runScripts: "dangerously", url: "https://example.o
   w.supabase = { createClient: () => ({
     auth: { getSession: async () => ({ data: { session: { user: { id: ME, email: "rich9267@gmail.com", user_metadata: {} } } } }), onAuthStateChange: () => {}, signOut: async () => {} },
     rpc: async (fn, a) => { RPCS.push([fn, a]); if (fn === 'trip_review') return { data: [{ catch_id: 'x1', user_id: 'u-rich', caught_at: new Date().toISOString(), species: 'Snook', how_many: 1, length_in: 30, weight_lb: 8, weight_est: true, spot_id: 's1', lat: 26.2571, lng: -80.0812, accuracy_m: 9 }, { catch_id: 'x2', user_id: 'other', caught_at: new Date().toISOString(), species: 'Tarpon', how_many: 2, length_in: null, weight_lb: null, weight_est: false, spot_id: 's1', lat: null, lng: null, accuracy_m: null }], error: null }; if (fn === 'tournament_standings') return { data: STAND, error: null }; if (fn === 'tournament_my_catches') return { data: MYC, error: null }; if (fn === 'create_tournament') { TOURS.push({ id: 't9', kind: a.p_kind, title: a.p_title, description: a.p_desc, created_by: 'u-rich', starts_at: a.p_starts, ends_at: a.p_ends, boards: a.p_boards, species: a.p_species || null, require_photo: a.p_photo, require_length: a.p_length, geo_lat: a.p_lat, geo_lng: a.p_lng, geo_radius_mi: a.p_radius, geo_label: a.p_geo_label, cancelled_at: null }); TMEM.push({ tournament_id: 't9', user_id: 'u-rich', status: 'joined' }); return { data: 't9', error: null }; } if (fn === 'join_tournament') { const m = TMEM.find(x => x.tournament_id === a.p_id && x.user_id === 'u-rich'); if (m) m.status = 'joined'; else TMEM.push({ tournament_id: a.p_id, user_id: 'u-rich', status: 'joined' }); return { error: null }; } if (fn === 'leave_tournament') { const m = TMEM.find(x => x.tournament_id === a.p_id && x.user_id === 'u-rich'); if (m) m.status = 'left'; return { error: null }; } if (fn === 'cancel_tournament') { TOURS.find(x => x.id === a.p_id).cancelled_at = new Date().toISOString(); return { error: null }; } if (fn === 'block_user') BLOCKS.push({ blocker: 'u-rich', blocked: a.p_user }); if (fn === 'mark_read') MSGS.forEach(m => { if (m.sender === a.p_other && m.recipient === 'u-rich') m.read_at = new Date().toISOString(); }); if (fn === 'request_access') { status = 'pending'; } if (fn === 'review_access') PEND = PEND.map(m => m.email === a.p_email ? { ...m, status: a.p_approve ? 'approved' : 'blocked' } : m); return fn === 'ensure_profile' ? { data: { user_id: 'u-rich', handle: 'richard', display_name: 'Richard', home_area: 'Pompano' }, error: null } : { error: null }; }, storage: { from: () => ({ createSignedUrls: async paths => ({ data: paths.map(p => ({ path: p, signedUrl: 'https://img.test/' + p })) }) }) },
-    from: t => ({ select: () => chainT(t, t === "members" ? PEND : t === "messages" ? MSGS : t === "blocks" ? BLOCKS : t === "reports" ? REPORTS :  (t === "spots" || t === "spots_visible") ? SPOTS : t === "catches" ? CATCHES.concat(PUBC) : t === "sessions" ? w.__db.sessions : t === "profiles" ? [{user_id:'str9',handle:'badguy',display_name:'Bad Guy'},{user_id:'str1',handle:'stan',display_name:'Stan the Man',home_area:'Stuart',bio:'Tarpon nut'},{user_id:'other',handle:'mike',display_name:'Mike',home_area:'Miami'},{user_id:'u3',handle:'sam',display_name:'Sam'},{user_id:'u4',handle:'zed',display_name:'Zed'},{user_id:'u-rich',handle:'richard',display_name:'Richard'}] : t === "friendships" ? [{user_a:'other',user_b:'u-rich',status:'accepted',requested_by:'other'},{user_a:'u-rich',user_b:'u3',status:'pending',requested_by:'u3'}] : t === "trip_plans" ? [{id:'pnow',spot_id:'s1',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()-30*60000).toISOString(),note:'now'},{id:'ppast',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()-48*3600000).toISOString(),note:'old'},{id:'p1',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()+86400000).toISOString(),note:'live shrimp'},{id:'p2',spot_id:'s3',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()+2*86400000).toISOString(),note:null}] : t === "photos" ? [{ id: "ph1", catch_id: "x1", path: "u/x1.jpg", spot_id: "s1", created_by: "u-rich", created_at: new Date().toISOString() }] : t === "tournaments" ? TOURS : t === "tournament_members" ? TMEM : t === "trip_plan_rsvps" ? [{plan_id:'p1',user_id:'other',name:'Mike'},{plan_id:'ppast',user_id:'u-rich',name:'Richard'}] : t === "catch_reactions" ? [{catch_id:'c1',user_id:'other'},{catch_id:'c1',user_id:'other2'}] : t === "catch_comments" ? [{id:'m1',catch_id:'c1',created_by:'other',author:'Mike',body:'Nice snook!',created_at:new Date().toISOString()}] : []),
+    from: t => ({ select: () => chainT(t, t === "members" ? PEND : t === "messages" ? MSGS : t === "blocks" ? BLOCKS : t === "reports" ? REPORTS :  (t === "spots" || t === "spots_visible") ? SPOTS : t === "catches" ? CATCHES.concat(PUBC) : t === "sessions" ? w.__db.sessions : t === "profiles" ? [{user_id:'str9',handle:'badguy',display_name:'Bad Guy'},{user_id:'str1',handle:'stan',display_name:'Stan the Man',home_area:'Stuart',bio:'Tarpon nut'},{user_id:'other',handle:'mike',display_name:'Mike',home_area:'Miami'},{user_id:'u3',handle:'sam',display_name:'Sam'},{user_id:'u4',handle:'zed',display_name:'Zed'},{user_id:'u-rich',handle:'richard',display_name:'Richard'}] : t === "friendships" ? [{user_a:'other',user_b:'u-rich',status:'accepted',requested_by:'other'},{user_a:'u-rich',user_b:'u3',status:'pending',requested_by:'u3'}] : t === "trip_plans" ? [{id:'pnow',spot_id:'s1',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()-30*60000).toISOString(),note:'now'},{id:'ppast',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()-48*3600000).toISOString(),note:'old'},{id:'p1',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()+86400000).toISOString(),note:'live shrimp'},{id:'p2',spot_id:'s3',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()+2*86400000).toISOString(),note:null}] : t === "photos" ? [{ id: "ph1", catch_id: "x1", path: "u/x1.jpg", spot_id: "s1", created_by: "u-rich", created_at: new Date().toISOString() }] : t === "group_messages" ? GM : t === "tournaments" ? TOURS : t === "tournament_members" ? TMEM : t === "trip_plan_rsvps" ? [{plan_id:'p1',user_id:'other',name:'Mike'},{plan_id:'ppast',user_id:'u-rich',name:'Richard'}] : t === "catch_reactions" ? [{catch_id:'c1',user_id:'other'},{catch_id:'c1',user_id:'other2'}] : t === "catch_comments" ? [{id:'m1',catch_id:'c1',created_by:'other',author:'Mike',body:'Nice snook!',created_at:new Date().toISOString()}] : []),
       delete: () => { const o = { eq: (c, v) => { w.__db.deletes.push(t + ":" + c + "=" + v); if (t === "blocks") BLOCKS = BLOCKS.filter(b => b.blocked !== v); return o; }, then: (x, y) => Promise.resolve({ error: null }).then(x, y) }; return o; },
-      insert: row => { w.__db.inserts.push({ t, row }); if (t === "messages") { const m = { id: "mm" + MSGS.length, created_at: new Date().toISOString(), sender: "u-rich", read_at: null, ...row }; MSGS.push(m); return { select: () => ({ single: () => Promise.resolve({ data: m, error: null }) }) }; } if (t === "catches") CATCHES.unshift({ id: "n" + CATCHES.length, ...row }); return chain(null); },
+      insert: row => { w.__db.inserts.push({ t, row }); if (t === "group_messages") GM.push({ id: "g" + GM.length, sender: "u-rich", created_at: new Date().toISOString(), ...row }); if (t === "messages") { const m = { id: "mm" + MSGS.length, created_at: new Date().toISOString(), sender: "u-rich", read_at: null, ...row }; MSGS.push(m); return { select: () => ({ single: () => Promise.resolve({ data: m, error: null }) }) }; } if (t === "catches") CATCHES.unshift({ id: "n" + CATCHES.length, ...row }); return chain(null); },
       upsert: row => { w.__db.upserts.push({ t, row }); return Promise.resolve({ error: null }); },
       update: row => { w.__db.updates = (w.__db.updates || []).concat([{ t, row }]); return chain(t === 'profiles' ? { user_id: 'u-rich', ...row } : null); } }) }) };
   w.fetch = async url => {
+    if (/myfwc\.com/.test(url)) {
+      calls.push(url);
+      if (/Boat_Ramp/.test(url)) return { ok: true, json: async () => ({ features: [{ attributes: { RampName: "Hillsboro Inlet Ramp", WaterBodyName: "Intracoastal", TotalLanes: 2, isFeeRequired: "Yes", FeeAmount: "$10", Hours: "Sunrise-sunset", Status: "Open" }, geometry: { x: -80.08, y: 26.26 } }] }) };
+      return { ok: true, json: async () => ({ features: [{ attributes: { Name: "Bill Boyd Reef", MatDescrip: "Concrete culverts", Depth: 60, Relief: 8, County: "Broward", DeployDate: Date.UTC(2005, 5, 1) }, geometry: { x: -80.05, y: 26.25 } },
+        { attributes: { Name: "Two", Depth: 90 }, geometry: { x: -80.04, y: 26.2 } }], exceededTransferLimit: false }) };
+    }
+    if (/Marine_Protected_Areas__MPAIs_/.test(url)) { calls.push(url); if (process.env.ZONEFAIL) return { ok: false, json: async () => ({}) };
+      return { ok: true, json: async () => ({ type: "FeatureCollection", features: [{ type: "Feature", properties: { Site_Name: "Test No-Take Zone", Fishing_Restriction: "No Take" }, geometry: { type: "Polygon", coordinates: [[[-80.1, 26.2], [-80.0, 26.2], [-80.0, 26.3], [-80.1, 26.3], [-80.1, 26.2]]] } }] }) }; }
+    if (/oceandata\.rad/.test(url)) { calls.push(url); throw new Error("down"); }
     if (url.includes("inaturalist")) {
       calls.push(url);
       const u = new URL(url);
@@ -110,33 +120,64 @@ const dom = new JSDOM(html, { runScripts: "dangerously", url: "https://example.o
 }});
 const w = dom.window; w.eval(leaf);
 const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
-(async () => {
+process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
+(async () => { try {
   await wait(1200);
-  const txt = id => d.getElementById(id).textContent.replace(/\s+/g, " ");
-  // 1) Quick catch: length + measure + trip line
-  w.eval("qc.pos = { lat: 26.257, lng: -80.081, acc: 12, at: new Date().toISOString() }; qc.source = 'test'; showReview()"); await wait(300);
-  console.log("qc fields:", !!d.getElementById("qc-length"), !!d.getElementById("qc-weight"), !!d.getElementById("qc-measure"));
-  console.log("measure w/o photo:", (d.getElementById("qc-measure").click(), txt("qc-size-note")).slice(0, 50));
-  console.log("trip line:", txt("qc-contest-hint"));
-  w.eval("qc.blob = new Blob(['x'])"); w.URL.createObjectURL = () => "blob:x";
-  d.getElementById("qc-measure").click(); await wait(100);
-  console.log("measure overlay opened:", !d.getElementById("measure").hidden);
-  w.eval("ms.onUse(31.5)"); 
-  console.log("length filled:", d.getElementById("qc-length").value);
-  d.querySelector("#qc-species .fchip").click(); await wait(50);
-  w.eval("conditionsFor = async () => ({ tide_stage: null })");
-  d.getElementById("qc-save").click(); await wait(800);
-  const row = w.__db.inserts.filter(i => i.t === "catches").pop().row;
-  console.log("saved size:", row.length_in, row.weight_lb, row.weight_est, "| geo stamp:", w.__db.inserts.filter(i => i.t === "catch_geo").length);
-  // 2) Trip review
-  d.getElementById("tab-feed").click(); await wait(500);
-  console.log("plan card review button:", [...d.querySelectorAll("#plan-list button")].map(b => b.textContent).filter(t => /Review/.test(t)).join(","));
-  console.log("past trips card:", !d.getElementById("feed-trips-card").hidden, "|", txt("feed-trips-list").slice(0, 80));
-  d.querySelector("#feed-trips-list .feed-item").click(); await wait(600);
-  console.log("review:", txt("trip-review-body").slice(0, 330));
-  console.log("trip photos:", d.querySelectorAll("#trip-review-body .feed-item img").length, "| src:", (d.querySelector("#trip-review-body .feed-item img")||{}).src);
-  console.log("map div:", !!d.getElementById("trip-map"), "| rpc:", JSON.stringify(RPCS.filter(r => r[0] === "trip_review").map(r => r[1].p_plan)));
-  d.getElementById("trip-review-back").click(); await wait(100);
-  console.log("back -> past list visible:", !d.getElementById("feed-trips-card").hidden, "| review hidden:", d.getElementById("trip-review").hidden);
-  process.exit(0);
-})();
+  d.getElementById("tab-map").click(); await wait(600);
+  const note = () => d.getElementById("mx-note").textContent;
+  const onc = id => d.getElementById(id).classList.contains("on");
+  console.log("buttons:", ["mx-chart","mx-reef","mx-ramp","mx-zone"].map(id => d.getElementById(id).textContent).join(" | "));
+  d.getElementById("mx-chart").click(); await wait(200);
+  const imgs = [...d.querySelectorAll("#map img.leaflet-tile")].map(i => i.src).filter(u => /NOAAChartDisplay/.test(u));
+  console.log("chart on:", onc("mx-chart"), "tiles:", imgs.length > 0, /bboxSR=3857/.test(imgs[0] || ""), "note:", note());
+  d.getElementById("mx-reef").click(); await wait(900);
+  console.log("zoom:", "reef calls:", calls.filter(u => /Artificial_Reef/.test(u)).length, "note:", JSON.stringify(note()));
+  const mk = () => d.querySelectorAll("#map path.leaflet-interactive");
+  console.log("markers after reef:", mk().length);
+  d.getElementById("mx-ramp").click(); await wait(900);
+  console.log("markers after ramp:", mk().length);
+  // open a ramp popup
+  [...mk()].forEach(p => p.dispatchEvent(new w.MouseEvent("click", { bubbles: true })));
+  await wait(200);
+  const pop = d.querySelector(".leaflet-popup-content");
+  console.log("popup:", pop && pop.textContent.replace(/\s+/g, " "));
+  d.getElementById("mx-zone").click(); await wait(1000);
+  console.log("zone note:", JSON.stringify(note()), "zone calls:", calls.filter(u => /MPAIs|oceandata/.test(u)).length);
+  console.log("polygons:", d.querySelectorAll("#map path.leaflet-interactive").length);
+  d.getElementById("mx-reef").click(); await wait(100);
+  console.log("reef off:", !onc("mx-reef"), "markers:", mk().length);
+  d.getElementById("mx-chart").click(); await wait(100);
+  console.log("chart off:", !onc("mx-chart"));
+  // ---- Boat mode ----
+  let watchCb = null, wakeReq = 0; w.eval("conditionsFor = async () => ({ tide_stage: null })");
+  w.navigator.geolocation.watchPosition = cb => { watchCb = cb; return 7; };
+  w.navigator.geolocation.clearWatch = () => { watchCb = "cleared"; };
+  Object.defineProperty(w.navigator, "wakeLock", { value: { request: async () => { wakeReq++; return { release() { wakeReq = -99; } }; } }, configurable: true });
+  d.getElementById("boat-open").click(); await wait(300);
+  console.log("boat open:", !d.getElementById("boat").hidden, "wake requested:", wakeReq === 1, "foot:", d.getElementById("boat-foot").textContent);
+  console.log("chips:", [...d.querySelectorAll("#boat-species button")].map(b => b.textContent).join(","), "on:", d.querySelector("#boat-species .on").textContent);
+  console.log("before fix:", d.getElementById("boat-speed").textContent, d.getElementById("boat-gps").textContent);
+  d.getElementById("boat-catch").click(); await wait(100);
+  console.log("catch w/o fix:", d.getElementById("boat-msg").textContent);
+  const fix = (lat, lng, speed, heading) => watchCb({ coords: { latitude: lat, longitude: lng, accuracy: 5, speed, heading } });
+  fix(26.2572, -80.0810, 11.2, 90); await wait(50);
+  console.log("speed mph:", d.getElementById("boat-speed").textContent, "heading:", d.getElementById("boat-head").textContent, d.getElementById("boat-card").textContent);
+  d.getElementById("boat-units").click();
+  console.log("knots:", d.getElementById("boat-speed").textContent, d.getElementById("boat-unit").textContent);
+  fix(26.2572, -80.0810, null, null); await wait(50);
+  console.log("no speed, no move:", d.getElementById("boat-speed").textContent);
+  d.getElementById("boat-species").querySelectorAll("button")[1].click();
+  console.log("dbg state:", w.eval("JSON.stringify({busy:boat.busy,pos:boat.pos,now:Date.now()})"));
+  console.log("dbg disabled:", d.getElementById("boat-catch").disabled, d.getElementById("boat-gps").textContent);
+  d.getElementById("boat-catch").click(); await wait(800);
+  const ci = w.__db.inserts.filter(x => x.t === "catches");
+  console.log("catch inserted:", ci.length, ci[0] && ci[0].row.species, "msg:", d.getElementById("boat-msg").textContent);
+  console.log("geo saved:", w.__db.upserts.filter(x => x.t === "catch_geo").length + w.__db.inserts.filter(x => x.t === "catch_geo").length);
+  await wait(1300);
+  d.getElementById("boat-mark").click(); await wait(500);
+  const si = w.__db.inserts.filter(x => x.t === "spots");
+  console.log("spot marked:", si.length, si[0] && si[0].row.is_private, si[0] && si[0].row.name, "msg:", d.getElementById("boat-msg").textContent);
+  d.getElementById("boat-close").click();
+  console.log("closed:", d.getElementById("boat").hidden, "watch cleared:", watchCb === "cleared", "wake released:", wakeReq === -99);
+  console.log("DONE");
+} catch (e) { console.log("TEST ERROR", e); process.exit(1); } process.exit(0); })();

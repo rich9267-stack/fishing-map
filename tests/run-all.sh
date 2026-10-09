@@ -2,7 +2,7 @@
 # Runs every check against ../index.html. Usage: cd tests && npm install (first time only) && sh run-all.sh
 cd "$(dirname "$0")" || exit 1
 fail=0
-for t in test27 test28 test29 test30 test31 test32 test33 test35 test36 test37 test38 test39 test40 test41 test42 test43 test44; do
+for t in test27 test28 test29 test30 test31 test32 test33 test35 test36 test37 test38 test39 test40 test41 test42 test43 test44 test45 test46 test47; do
   if timeout 90 node $t.js > "/tmp/$t.out" 2>&1; then echo "ok   $t"; else echo "FAIL $t (see /tmp/$t.out)"; fail=1; fi
 done
 for st in admin none pending blocked error; do

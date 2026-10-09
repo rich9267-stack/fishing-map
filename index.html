@@ -207,6 +207,26 @@
   .stepper button { width: 44px; border: 1px solid var(--line); background: var(--card); color: var(--text); font-size: 20px; cursor: pointer; }
   .stepper button:first-child { border-radius: 10px 0 0 10px; } .stepper button:last-child { border-radius: 0 10px 10px 0; }
   #qc-review .stepper input { border-radius: 0; text-align: center; border-left: 0; border-right: 0; }
+  #boat { position: fixed; inset: 0; z-index: 1150; background: #06141a; color: #fff; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); overflow: auto; }
+  #boat[hidden] { display: none; }
+  .boat-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 1rem; }
+  .boat-top button { background: #1c3a46; color: #fff; border: 0; border-radius: 12px; padding: 12px 16px; font-size: 1.05rem; font-weight: 700; }
+  .boat-read { display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; }
+  .boat-box { background: #0d2a35; border-radius: 18px; padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 26vh; }
+  .boat-box b { font-size: clamp(3.6rem, 22vw, 7rem); line-height: 1; font-variant-numeric: tabular-nums; }
+  .boat-box span { font-size: 1.3rem; color: #9fc3d0; }
+  #boat-arrow { font-size: 2.2rem; transition: transform .4s; }
+  .boat-box.stale b { opacity: .45; }
+  .boat-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .boat-chips button { flex: 1 1 auto; background: #1c3a46; color: #fff; border: 2px solid transparent; border-radius: 14px; padding: 14px 10px; font-size: 1.15rem; font-weight: 700; }
+  .boat-chips button.on { border-color: #3fd36b; background: #14503a; }
+  #boat-catch, #boat-mark { border: 0; border-radius: 22px; font-weight: 800; color: #fff; font-size: 1.9rem; min-height: 17vh; }
+  #boat-catch { background: #1f9d55; }
+  #boat-mark { background: #1d6fd6; }
+  #boat-catch:disabled, #boat-mark:disabled { opacity: .55; }
+  #boat-msg { min-height: 1.6em; font-size: 1.15rem; text-align: center; color: #bff0cf; }
+  #boat-msg.err { color: #ffb4a8; }
+  #boat-foot { font-size: .85rem; color: #7fa3b0; text-align: center; }
   #qc-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom)); background: #12262e; color: #fff;
     padding: 10px 16px; border-radius: 999px; z-index: 1200; font-size: .92rem; box-shadow: 0 4px 14px rgba(0,0,0,.3); max-width: 90vw; text-align: center; }
   #welcome { position: fixed; inset: 0; z-index: 1200; background: var(--bg); overflow: auto; padding: 16px; }
@@ -229,7 +249,7 @@
   .sat-title { font-weight: 600; font-size: .9rem; }
   .sat-bar { height: 10px; border-radius: 4px; margin: 8px 0 4px; }
   .sat-scale { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-  #map-sst.on, #map-chl.on, #map-sight.on, #map-pub.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #map-sst.on, #map-chl.on, #map-sight.on, #map-pub.on, #mx-tools .on { background: var(--accent); color: #fff; border-color: var(--accent); }
   .check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; font-size: .9rem; color: var(--text); cursor: pointer; }
   .check-row input { width: auto; margin-top: 3px; transform: scale(1.2); }
   .btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; padding: 12px;
@@ -382,6 +402,12 @@
         <label class="check-row" for="push-p-social"><input id="push-p-social" type="checkbox"><span>👥 Messages, friend requests, comments, “I’m in”</span></label>
         <label class="check-row" for="push-p-contests"><input id="push-p-contests" type="checkbox"><span>🏁 Contest invites, starting soon, ended</span></label>
         <label class="check-row" for="push-p-trips"><input id="push-p-trips" type="checkbox"><span>🎣 Reminder an hour before a planned trip</span></label>
+        <label class="check-row" for="push-q-on" style="margin-top:8px"><input id="push-q-on" type="checkbox"><span>🌙 Quiet hours — no buzzing during these times</span></label>
+        <div class="two" id="push-q-times" hidden>
+          <div><label for="push-q-start">From</label><input id="push-q-start" type="time" value="22:00"></div>
+          <div><label for="push-q-end">Until</label><input id="push-q-end" type="time" value="06:00"></div>
+        </div>
+        <div class="spot-meta" id="push-q-note" hidden>Alerts that arrive in quiet hours don't buzz your phone. Test alerts always do.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
         <button class="btn small" id="push-on" type="button" hidden>Turn on alerts</button>
@@ -610,6 +636,14 @@
       <button class="btn ghost small" id="map-sight" type="button">👀 Sightings</button>
       <button class="btn ghost small" id="map-pub" type="button">🌎 Public spots</button>
     </div>
+    <div class="map-tools" id="mx-tools">
+      <button class="btn small" id="boat-open" type="button">🚤 Boat mode</button>
+      <button class="btn ghost small" id="mx-chart" type="button">🧭 Nautical chart</button>
+      <button class="btn ghost small" id="mx-reef" type="button">🪸 Artificial reefs</button>
+      <button class="btn ghost small" id="mx-ramp" type="button">⛵ Boat ramps</button>
+      <button class="btn ghost small" id="mx-zone" type="button">🚫 Protected zones</button>
+    </div>
+    <div class="spot-meta" id="mx-note" hidden></div>
     <div class="legend">
       <span><span class="dot" style="background:#1d6fd6"></span>Saltwater</span>
       <span><span class="dot" style="background:#16a085"></span>Brackish / tidal canal</span>
@@ -900,6 +934,22 @@
   </div>
 </div>
 
+<div id="boat" hidden>
+  <div class="boat-top">
+    <button type="button" id="boat-close">✕ Exit</button>
+    <span id="boat-gps">📡 Finding GPS…</span>
+    <button type="button" id="boat-units">mph</button>
+  </div>
+  <div class="boat-read">
+    <div class="boat-box"><b id="boat-speed">--</b><span id="boat-unit">mph</span></div>
+    <div class="boat-box"><b id="boat-head">--</b><span id="boat-card">heading</span><div id="boat-arrow" aria-hidden="true">⬆</div></div>
+  </div>
+  <div id="boat-species" class="boat-chips"></div>
+  <button type="button" id="boat-catch">🎣 CATCH</button>
+  <button type="button" id="boat-mark">📍 MARK THIS SPOT</button>
+  <div id="boat-msg"></div>
+  <div id="boat-foot"></div>
+</div>
 <div id="qc-toast" hidden></div>
 
 <div id="measure" hidden>
@@ -4014,10 +4064,16 @@
         b.addEventListener("click", () => toggleRsvp(pl));
         acts.appendChild(b);
       }
+      if (onTrip(pl)) {
+        const cb = el("button", "btn ghost small", openPlanChats.has(pl.id) ? "💬 Hide chat" : "💬 Chat"); cb.type = "button";
+        cb.addEventListener("click", () => { if (openPlanChats.has(pl.id)) openPlanChats.delete(pl.id); else openPlanChats.add(pl.id); renderPlans(); });
+        acts.appendChild(cb);
+      }
       if (onTrip(pl) && Date.now() >= tripWindow(pl)[0]) {
         const rv = el("button", "btn ghost small", "📖 Review trip"); rv.type = "button"; rv.addEventListener("click", () => openTripReview(pl)); acts.appendChild(rv);
       }
       item.appendChild(acts);
+      if (onTrip(pl) && openPlanChats.has(pl.id)) item.appendChild(groupChatPanel("trip", pl.id));
       box.appendChild(item);
     });
   }
@@ -5221,6 +5277,348 @@
   $("map-sst").addEventListener("click", () => { initMap(); showSat(satOn === "sst" ? null : "sst"); });
   $("map-chl").addEventListener("click", () => { initMap(); showSat(satOn === "chl" ? null : "chl"); });
 
+  // ---- Map extras: nautical chart, artificial reefs, boat ramps, protected zones (free public data) ----
+  // Reefs and ramps come from Florida Fish & Wildlife (FWC); the chart from NOAA. Only the part of the map you're
+  // looking at is requested, and if a service is down you get a plain message instead of an error.
+  const MX = {
+    chartUrl: "https://gis.charttools.noaa.gov/arcgis/rest/services/MCS/NOAAChartDisplay/MapServer/export",
+    reef: { url: "https://gis.myfwc.com/mapping/rest/services/Open_Data/Artificial_Reef_Locations_in_Florida/MapServer/12/query", minZoom: 9,
+            fields: "Name,MatDescrip,Depth,Relief,County,DeployDate,DDate,Tonnage", color: "#0e9aa7", label: "artificial reefs" },
+    ramp: { url: "https://gis.myfwc.com/mapping/rest/services/Open_Data/FWC_Florida_Boat_Ramp_Inventory/MapServer/4/query", minZoom: 9,
+            fields: "RampName,WaterBodyName,TotalLanes,isFeeRequired,FeeAmount,Hours,Status,Amenities,ContactPhone,Street1,City,DockType,RampCondition", color: "#e67e22", label: "boat ramps" },
+    zoneUrls: ["https://services1.arcgis.com/eGSDp8lpKe5izqVc/ArcGIS/rest/services/Marine_Protected_Areas__MPAIs_/FeatureServer/0/query",
+               "https://oceandata.rad.rutgers.edu/arcgis/rest/services/Administrative/NOAAMarineProtectedAreasInventory2023/MapServer/0/query"],
+    zoneMinZoom: 8
+  };
+  const mxOn = { chart: false, reef: false, ramp: false, zone: false };
+  const mxLayers = { chart: null, reef: null, ramp: null, zone: null };
+  let mxTimer = null, mxSeq = { reef: 0, ramp: 0, zone: 0 };
+  const mxMsg = {};
+
+  function mxNote() {
+    const parts = Object.keys(mxMsg).filter(k => mxOn[k] && mxMsg[k]).map(k => mxMsg[k]);
+    if (mxOn.zone) parts.push("Protected-zone outlines are a guide only — always check current FWC / NOAA rules before you fish.");
+    if (mxOn.chart) parts.push("Chart: NOAA — not for navigation.");
+    const n = $("mx-note");
+    n.hidden = !parts.length; n.textContent = parts.join(" ");
+  }
+
+  function mxChartLayer() {
+    // The chart service draws pictures on request; each map square asks for its own picture in Web Mercator meters.
+    const Chart = L.TileLayer.extend({
+      getTileUrl(c) {
+        const size = 256, R = 6378137, world = 2 * Math.PI * R, res = world / (size * Math.pow(2, c.z));
+        const x0 = -world / 2 + c.x * size * res, y1 = world / 2 - c.y * size * res;
+        const bbox = [x0, y1 - size * res, x0 + size * res, y1].join(",");
+        return `${MX.chartUrl}?bbox=${bbox}&bboxSR=3857&imageSR=3857&size=${size},${size}&format=png32&transparent=true&f=image`;
+      }
+    });
+    return new Chart("", { maxZoom: 19, opacity: 0.85, attribution: "Charts &copy; NOAA" });
+  }
+
+  function mxVal(v) { return v == null || v === "" || v === " " ? null : String(v).trim(); }
+  function mxPopup(title, rows, ll) {
+    const box = document.createElement("div");
+    box.appendChild(el("div", "pop-name", title));
+    rows.forEach(([k, v]) => { v = mxVal(v); if (v) box.appendChild(el("div", "pop-meta", `${k}: ${v}`)); });
+    if (ll) {
+      const a = el("a", "pop-meta", "Directions ↗");
+      a.href = `https://www.google.com/maps/dir/?api=1&destination=${ll[0]},${ll[1]}`; a.target = "_blank"; a.rel = "noopener";
+      box.appendChild(a);
+    }
+    return box;
+  }
+  function reefPopup(a, ll) {
+    const when = mxVal(a.DeployDate) || mxVal(a.DDate);
+    return mxPopup("🪸 " + (mxVal(a.Name) || "Artificial reef"), [["Material", a.MatDescrip], ["Depth", mxVal(a.Depth) && a.Depth + " ft"],
+      ["Relief", mxVal(a.Relief) && a.Relief + " ft"], ["County", a.County], ["Deployed", when && (isNaN(+when) ? when : new Date(+when).getFullYear())],
+      ["Tons", a.Tonnage]], ll);
+  }
+  function rampPopup(a, ll) {
+    const lanes = mxVal(a.TotalLanes);
+    const fee = a.isFeeRequired === "Yes" || a.isFeeRequired === 1 || a.isFeeRequired === "Y" ? ("Yes" + (mxVal(a.FeeAmount) ? " — " + a.FeeAmount : "")) : mxVal(a.isFeeRequired) && "No";
+    return mxPopup("⛵ " + (mxVal(a.RampName) || "Boat ramp"), [["Water", a.WaterBodyName], ["Lanes", lanes], ["Fee", fee], ["Hours", a.Hours],
+      ["Status", a.Status], ["Condition", a.RampCondition], ["Dock", a.DockType], ["Amenities", a.Amenities], ["Phone", a.ContactPhone],
+      ["Address", [a.Street1, a.City].filter(mxVal).join(", ")]], ll);
+  }
+
+  function mxBounds() {
+    const b = map.getBounds();
+    return `${b.getWest().toFixed(4)},${b.getSouth().toFixed(4)},${b.getEast().toFixed(4)},${b.getNorth().toFixed(4)}`;
+  }
+  function mxQueryUrl(base, fields, geomType, extra) {
+    return `${base}?where=1%3D1&geometry=${mxBounds()}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects` +
+      `&outFields=${encodeURIComponent(fields)}&returnGeometry=true&outSR=4326&f=${geomType}${extra || ""}`;
+  }
+
+  async function mxLoadPoints(kind) {
+    const def = MX[kind], seq = ++mxSeq[kind];
+    if (mxLayers[kind]) { map.removeLayer(mxLayers[kind]); mxLayers[kind] = null; }
+    if (map.getZoom() < def.minZoom) { mxMsg[kind] = `Zoom in a little to see ${def.label}.`; mxNote(); return; }
+    mxMsg[kind] = `Loading ${def.label}…`; mxNote();
+    try {
+      const r = await fetch(mxQueryUrl(def.url, def.fields, "json", "&resultRecordCount=1500"));
+      if (!r.ok) throw new Error("bad answer");
+      const d = await r.json();
+      if (seq !== mxSeq[kind] || !mxOn[kind]) return;
+      if (d.error || !Array.isArray(d.features)) throw new Error("bad data");
+      const g = L.layerGroup();
+      d.features.forEach(f => {
+        if (!f.geometry || f.geometry.y == null) return;
+        const ll = [f.geometry.y, f.geometry.x], a = f.attributes || {};
+        const m = L.circleMarker(ll, { radius: kind === "reef" ? 6 : 7, color: "#fff", weight: 1.5, fillColor: def.color, fillOpacity: 0.95 });
+        m.bindPopup(() => kind === "reef" ? reefPopup(a, ll) : rampPopup(a, ll));
+        m.addTo(g);
+      });
+      g.addTo(map); mxLayers[kind] = g;
+      mxMsg[kind] = d.features.length ? (d.exceededTransferLimit ? `Showing many ${def.label} — zoom in to see them all.` : "") : `No ${def.label} in this view.`;
+    } catch (e) {
+      if (seq === mxSeq[kind]) mxMsg[kind] = `Couldn't load ${def.label} right now (the state's map service may be down) — try again later.`;
+    }
+    mxNote();
+  }
+
+  async function mxLoadZones() {
+    const seq = ++mxSeq.zone;
+    if (mxLayers.zone) { map.removeLayer(mxLayers.zone); mxLayers.zone = null; }
+    if (map.getZoom() < MX.zoneMinZoom) { mxMsg.zone = "Zoom in a little to see protected zones."; mxNote(); return; }
+    mxMsg.zone = "Loading protected zones…"; mxNote();
+    const simplify = "&maxAllowableOffset=" + (360 / (256 * Math.pow(2, map.getZoom()))).toFixed(6);
+    for (const base of MX.zoneUrls) {
+      try {
+        const r = await fetch(mxQueryUrl(base, "*", "geojson", simplify + "&resultRecordCount=300"));
+        if (!r.ok) continue;
+        const d = await r.json();
+        if (seq !== mxSeq.zone || !mxOn.zone) return;
+        if (d.error || !Array.isArray(d.features)) continue;
+        const layer = L.geoJSON(d, { style: { color: "#c0392b", weight: 2, fillColor: "#c0392b", fillOpacity: 0.12, dashArray: "6 4" },
+          onEachFeature: (f, l) => l.bindPopup(() => zonePopup(f.properties || {})) });
+        layer.addTo(map); mxLayers.zone = layer;
+        mxMsg.zone = d.features.length ? "" : "No protected zones in this view.";
+        mxNote(); return;
+      } catch (e) { /* try the next source */ }
+    }
+    if (seq === mxSeq.zone) mxMsg.zone = "Couldn't load protected zones right now — try again later.";
+    mxNote();
+  }
+  // The zone lists name their columns differently, so look for the usual ones.
+  function zonePopup(p) {
+    const find = re => { const k = Object.keys(p).find(k => re.test(k) && mxVal(p[k])); return k ? p[k] : null; };
+    return mxPopup("🚫 " + (find(/^(site_?name|name|area_?name|mpa_?name)$/i) || "Protected area"),
+      [["Fishing rules", find(/fish.*(restrict|rule|regul)|no_?take|restrict/i)], ["Level of protection", find(/protection|level/i)],
+       ["Managed by", find(/manag|agency|authority|^gov/i)], ["Type", find(/type|designation/i)]], null);
+  }
+
+  function mxRefresh() {
+    clearTimeout(mxTimer);
+    mxTimer = setTimeout(() => {
+      if (mxOn.reef) mxLoadPoints("reef");
+      if (mxOn.ramp) mxLoadPoints("ramp");
+      if (mxOn.zone) mxLoadZones();
+    }, 400);
+  }
+
+  function mxToggle(kind) {
+    initMap();
+    if (!map) return;
+    mxOn[kind] = !mxOn[kind];
+    $("mx-" + kind).classList.toggle("on", mxOn[kind]);
+    if (kind === "chart") {
+      if (mxOn.chart) { mxLayers.chart = mxLayers.chart || mxChartLayer(); mxLayers.chart.addTo(map); mxLayers.chart.bringToFront && mxLayers.chart.bringToFront(); }
+      else if (mxLayers.chart) map.removeLayer(mxLayers.chart);
+      mxNote(); return;
+    }
+    if (!mxOn[kind]) {
+      mxSeq[kind]++; mxMsg[kind] = "";
+      if (mxLayers[kind]) { map.removeLayer(mxLayers[kind]); mxLayers[kind] = null; }
+      mxNote(); return;
+    }
+    kind === "zone" ? mxLoadZones() : mxLoadPoints(kind);
+    if (!map._mxBound) { map._mxBound = true; map.on("moveend", mxRefresh); }
+  }
+  ["chart", "reef", "ramp", "zone"].forEach(k => $("mx-" + k).addEventListener("click", () => mxToggle(k)));
+
+  // ---- 🚤 Boat mode: big, glanceable screen for use on the water ----
+  // Shows speed and heading from the phone's GPS, keeps the screen awake, and has two huge buttons:
+  // one-tap catch (uses your chosen species) and mark-this-spot (saves a private spot right where you are).
+  const boat = { watch: null, pos: null, prev: null, speed: null, heading: null, lock: null, units: "mph", species: null, logged: 0, busy: false, tick: null };
+  try { boat.units = localStorage.getItem("fm-boat-units") === "kn" ? "kn" : "mph"; boat.species = localStorage.getItem("fm-boat-species"); } catch (e) {}
+  const BOAT_MARKS_KEY = () => `fm-boat-marks-${me ? me.id : "x"}`;
+  const COMPASS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+
+  function boatMsg(t, err) { const m = $("boat-msg"); m.textContent = t; m.className = err ? "err" : ""; }
+
+  function boatSpeciesChips() {
+    const mine = Object.values(catchesBySpot).flat().filter(isMine);
+    const counts = {}; mine.forEach(c => { counts[c.species] = (counts[c.species] || 0) + 1; });
+    let names = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 5);
+    if (names.length < 4) names = [...new Set(names.concat(COMMON_SPECIES))].slice(0, 5);
+    if (boat.species && !names.includes(boat.species)) names = [boat.species].concat(names).slice(0, 5);
+    if (!boat.species) boat.species = names[0];
+    const box = $("boat-species"); box.innerHTML = "";
+    names.forEach(n => {
+      const b = el("button", n === boat.species ? "on" : "", n); b.type = "button";
+      b.addEventListener("click", () => {
+        boat.species = n; try { localStorage.setItem("fm-boat-species", n); } catch (e) {}
+        box.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+      });
+      box.appendChild(b);
+    });
+  }
+
+  function boatRender() {
+    const fresh = boat.pos && Date.now() - boat.pos.t < 15000;
+    $("boat-gps").textContent = !boat.pos ? "📡 Finding GPS…" : fresh ? `📡 GPS good (±${Math.round(boat.pos.acc * 3.28)} ft)` : "📡 GPS signal lost…";
+    const conv = boat.units === "kn" ? 1.94384 : 2.23694;
+    $("boat-unit").textContent = boat.units === "kn" ? "knots" : "mph";
+    $("boat-units").textContent = boat.units === "kn" ? "knots" : "mph";
+    const sp = fresh && boat.speed != null ? boat.speed * conv : null;
+    $("boat-speed").textContent = sp == null ? "--" : (sp < 10 ? sp.toFixed(1) : String(Math.round(sp)));
+    $("boat-speed").parentNode.classList.toggle("stale", !fresh);
+    const h = boat.heading;
+    $("boat-head").textContent = h == null ? "--" : String(Math.round(h)).padStart(3, "0") + "°";
+    $("boat-card").textContent = h == null ? "heading" : COMPASS[Math.round(h / 22.5) % 16];
+    $("boat-arrow").style.transform = h == null ? "none" : `rotate(${h}deg)`;
+    $("boat-head").parentNode.classList.toggle("stale", !fresh || h == null);
+    $("boat-catch").disabled = boat.busy; $("boat-mark").disabled = boat.busy;
+  }
+
+  function boatOnFix(p) {
+    const c = p.coords, now = Date.now();
+    const cur = { lat: c.latitude, lng: c.longitude, acc: c.accuracy || 0, t: now };
+    let speed = typeof c.speed === "number" && isFinite(c.speed) ? c.speed : null;
+    const prev = boat.prev;
+    if (prev) {
+      const dt = (now - prev.t) / 1000, dm = miles(prev.lat, prev.lng, cur.lat, cur.lng) * 1609.34;
+      if (speed == null && dt > 0.5 && dt < 20) speed = dm / dt;
+      // Heading: the phone's own reading when moving; otherwise work it out from where we went (ignore tiny GPS wobble)
+      if (typeof c.heading === "number" && isFinite(c.heading) && (speed || 0) > 0.5) boat.heading = (c.heading + 360) % 360;
+      else if (dm > 8) {
+        const y = Math.sin((cur.lng - prev.lng) * Math.PI / 180) * Math.cos(cur.lat * Math.PI / 180);
+        const x = Math.cos(prev.lat * Math.PI / 180) * Math.sin(cur.lat * Math.PI / 180) - Math.sin(prev.lat * Math.PI / 180) * Math.cos(cur.lat * Math.PI / 180) * Math.cos((cur.lng - prev.lng) * Math.PI / 180);
+        boat.heading = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+      }
+      if (dm > 8) boat.prev = cur;
+    } else {
+      boat.prev = cur;
+      if (typeof c.heading === "number" && isFinite(c.heading) && (speed || 0) > 0.5) boat.heading = (c.heading + 360) % 360;
+    }
+    if (speed != null && speed < 0.25) speed = 0; // GPS jitter while drifting
+    boat.speed = speed; boat.pos = cur;
+    boatRender();
+  }
+
+  async function boatWake() {
+    const foot = $("boat-foot");
+    try {
+      if (!navigator.wakeLock) throw new Error("none");
+      boat.lock = await navigator.wakeLock.request("screen");
+      foot.textContent = "🔆 Screen will stay on while this is open.";
+      boat.lock.addEventListener && boat.lock.addEventListener("release", () => { boat.lock = null; });
+    } catch (e) {
+      foot.textContent = "⚠ This phone won't let the app keep the screen on — set Auto-Lock to Never in your phone's Settings while you're out.";
+    }
+  }
+  document.addEventListener("visibilitychange", () => { if (!$("boat").hidden && document.visibilityState === "visible" && !boat.lock) boatWake(); });
+
+  function openBoat() {
+    if (!me) return;
+    $("boat").hidden = false; document.body.style.overflow = "hidden";
+    boat.logged = 0; boat.busy = false; boat.pos = null; boat.prev = null; boat.speed = null; boat.heading = null;
+    boatMsg(""); boatSpeciesChips(); boatRender(); boatWake(); boatFlushMarks();
+    if (!navigator.geolocation) { boatMsg("This phone can't share its location.", true); return; }
+    boat.watch = navigator.geolocation.watchPosition(boatOnFix, err => {
+      boatMsg(err && err.code === 1 ? "Location is blocked — allow location for this site in your phone's settings." : "Can't get a GPS fix yet…", true);
+    }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
+    boat.tick = setInterval(boatRender, 3000);
+  }
+  function closeBoat() {
+    $("boat").hidden = true; document.body.style.overflow = "";
+    if (boat.watch != null) navigator.geolocation.clearWatch(boat.watch);
+    boat.watch = null; clearInterval(boat.tick);
+    if (boat.lock) { try { boat.lock.release(); } catch (e) {} boat.lock = null; }
+  }
+
+  function boatNeedFix() {
+    if (!boat.pos || Date.now() - boat.pos.t > 30000) { boatMsg("Waiting for a GPS fix — try again in a moment.", true); return null; }
+    return { lat: boat.pos.lat, lng: boat.pos.lng, acc: boat.pos.acc };
+  }
+  function boatBuzz() { try { navigator.vibrate && navigator.vibrate(60); } catch (e) {} }
+
+  async function boatCatch() {
+    const pos = boatNeedFix(); if (!pos || boat.busy) return;
+    if (!boat.species) { boatMsg("Tap a species first.", true); return; }
+    boat.busy = true; boatRender(); boatBuzz();
+    const near = nearbySpots(pos)[0];
+    const atSpot = near && near.d <= QC_NEAR_MI ? near.s : null;
+    const item = {
+      id: newId(), when: new Date().toISOString(), pos, choice: atSpot ? atSpot.id : "__new", species: boat.species, count: 1, bait: null,
+      name: me.name, blob: null, user: me.id, vis: atSpot ? (atSpot.visibility || (atSpot.is_private ? "private" : "friends")) : "private", length: "", weight: ""
+    };
+    const trip = activeSession();
+    if (trip && atSpot && trip.spot_id === atSpot.id) item.session = trip.id;
+    const stamp = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    boatMsg("Saving…");
+    try {
+      if (!navigator.onLine) { await queueCatch(item); boat.logged++; boatMsg(`✓ ${item.species} saved on phone (no signal) · ${stamp} · #${boat.logged}`); }
+      else {
+        const r = await saveQuickCatch(item);
+        boat.logged++; boatMsg(`✓ ${item.species} logged at ${r.spot.name} · ${stamp} · #${boat.logged} this outing`);
+        loadSpots().catch(() => {});
+      }
+    } catch (err) {
+      if (isNetErr(err)) { await queueCatch(item); boat.logged++; boatMsg(`✓ ${item.species} saved on phone (no signal) · ${stamp}`); }
+      else boatMsg("Couldn't save: " + (err.message || err), true);
+    }
+    setTimeout(() => { boat.busy = false; boatRender(); }, 1200); // short pause so a double-tap doesn't log two fish
+  }
+
+  async function boatMakeMark(m) {
+    const st = stationFor({ lat: m.lat, lng: m.lng });
+    const d = new Date(m.when);
+    const row = {
+      name: "Marked · " + d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+      spot_type: "dock", water_type: st.dist != null && st.dist < 1.5 ? "saltwater" : "brackish",
+      public_access: "unsure", added_by: me.name, lat: +m.lat.toFixed(5), lng: +m.lng.toFixed(5), is_private: true,
+      notes: "Marked from Boat mode — rename it and fill in the details when you're back."
+    };
+    const { data, error } = await db.from("spots").insert(row).select("*").single();
+    if (error) throw error;
+    if (!(spots || []).some(x => x.id === data.id)) spots = (spots || []).concat(data);
+    return data;
+  }
+  async function boatFlushMarks() {
+    let list; try { list = JSON.parse(localStorage.getItem(BOAT_MARKS_KEY()) || "[]"); } catch (e) { list = []; }
+    if (!list.length || !navigator.onLine) return;
+    const left = [];
+    for (const m of list) { try { await boatMakeMark(m); } catch (e) { left.push(m); } }
+    try { localStorage.setItem(BOAT_MARKS_KEY(), JSON.stringify(left)); } catch (e) {}
+    if (left.length < list.length) { try { await loadSpots(); } catch (e) {} }
+  }
+  window.addEventListener("online", () => { if (me) boatFlushMarks(); });
+
+  async function boatMark() {
+    const pos = boatNeedFix(); if (!pos || boat.busy) return;
+    boat.busy = true; boatRender(); boatBuzz();
+    const m = { lat: pos.lat, lng: pos.lng, when: new Date().toISOString() };
+    const stamp = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    const keep = () => { let l; try { l = JSON.parse(localStorage.getItem(BOAT_MARKS_KEY()) || "[]"); } catch (e) { l = []; } l.push(m); try { localStorage.setItem(BOAT_MARKS_KEY(), JSON.stringify(l)); } catch (e) {} };
+    try {
+      if (!navigator.onLine) { keep(); boatMsg(`📍 Spot saved on phone (no signal) · ${stamp} — it uploads when you're back online.`); }
+      else { const sp = await boatMakeMark(m); boatMsg(`📍 Marked "${sp.name}" · private spot saved`); loadSpots().catch(() => {}); }
+    } catch (err) {
+      if (isNetErr(err)) { keep(); boatMsg(`📍 Spot saved on phone (no signal) · ${stamp}`); }
+      else boatMsg("Couldn't save the spot: " + (err.message || err), true);
+    }
+    setTimeout(() => { boat.busy = false; boatRender(); }, 1200);
+  }
+
+  $("boat-open").addEventListener("click", openBoat);
+  $("boat-close").addEventListener("click", closeBoat);
+  $("boat-catch").addEventListener("click", boatCatch);
+  $("boat-mark").addEventListener("click", boatMark);
+  $("boat-units").addEventListener("click", () => { boat.units = boat.units === "mph" ? "kn" : "mph"; try { localStorage.setItem("fm-boat-units", boat.units); } catch (e) {} boatRender(); });
+
   // ---- Sign-in (Supabase Auth) and the invite list ----
   const SITE = location.origin + location.pathname;
   // Arriving from a password-reset email: show "choose a new password" first
@@ -6329,6 +6727,10 @@
         box.appendChild(ch);
       }
     }
+    if ((mineSt === "joined" || t.created_by === me.id) && !t.cancelled_at) {
+      box.appendChild(groupChatPanel("contest", t.id));
+      if (t.kind === "official") box.appendChild(el("div", "spot-meta", "This chat is open to everyone in the tournament. It doesn't send phone alerts."));
+    }
     if (t.geo_lat != null) box.appendChild(el("div", "spot-meta", "📍 Location is checked from the GPS stamp saved when you log a catch live. Catches added later from the photo or by hand can't count here."));
   }
 
@@ -6360,6 +6762,9 @@
         const { data } = await db.from("notif_prefs").select("*").eq("user_id", me.id).maybeSingle();
         const p = data || { social: true, contests: true, trips: true };
         $("push-p-social").checked = p.social !== false; $("push-p-contests").checked = p.contests !== false; $("push-p-trips").checked = p.trips !== false;
+        $("push-q-on").checked = !!p.quiet_enabled;
+        $("push-q-start").value = String(p.quiet_start || "22:00").slice(0, 5); $("push-q-end").value = String(p.quiet_end || "06:00").slice(0, 5);
+        $("push-q-times").hidden = $("push-q-note").hidden = !p.quiet_enabled;
       } catch (e) {}
     } else { st.textContent = "Alerts are off on this phone."; on.hidden = false; }
   }
@@ -6395,7 +6800,10 @@
     pushRefresh();
   }
   async function pushSavePrefs() {
-    const { error } = await db.from("notif_prefs").upsert({ user_id: me.id, social: $("push-p-social").checked, contests: $("push-p-contests").checked, trips: $("push-p-trips").checked, updated_at: new Date().toISOString() });
+    $("push-q-times").hidden = $("push-q-note").hidden = !$("push-q-on").checked;
+    let tz = "America/New_York"; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch (e) {}
+    const { error } = await db.from("notif_prefs").upsert({ user_id: me.id, social: $("push-p-social").checked, contests: $("push-p-contests").checked, trips: $("push-p-trips").checked,
+      quiet_enabled: $("push-q-on").checked, quiet_start: $("push-q-start").value || "22:00", quiet_end: $("push-q-end").value || "06:00", tz, updated_at: new Date().toISOString() });
     pushSay(error ? "Couldn't save: " + error.message : "Saved ✓", !!error);
   }
   $("push-on").addEventListener("click", pushTurnOn);
@@ -6404,7 +6812,7 @@
     const { error } = await db.rpc("send_test_push");
     pushSay(error ? "Couldn't send: " + error.message : "Sent — it should buzz in a few seconds.", !!error);
   });
-  ["push-p-social", "push-p-contests", "push-p-trips"].forEach(id => $(id).addEventListener("change", pushSavePrefs));
+  ["push-p-social", "push-p-contests", "push-p-trips", "push-q-on", "push-q-start", "push-q-end"].forEach(id => $(id).addEventListener("change", pushSavePrefs));
 
   // Tapping an alert opens the right place: ?go=chat&with=ID · friends · contest&id=ID · feed · invite
   let pendingGo = /[?&]go=/.test(location.search) ? location.search : null;
@@ -6415,6 +6823,15 @@
     stopPlacing();
     if (go === "chat" && q.get("with")) openChatWith(q.get("with"));
     else if (go === "friends") $("friends-btn").click();
+    else if (go === "group" && q.get("scope") === "contest" && q.get("id")) { ctId = q.get("id"); ctView = "detail"; feedMode = "contests"; showView("feed"); window.scrollTo({ top: 0 }); }
+    else if (go === "group" && q.get("scope") === "trip" && q.get("id")) {
+      feedMode = "circle"; showView("feed");
+      (async () => {
+        let pl = plans.find(x => x.id === q.get("id")) || pastTrips.find(x => x.id === q.get("id"));
+        if (!pl) { const { data } = await db.from("trip_plans").select("*").eq("id", q.get("id")).maybeSingle(); pl = data; }
+        if (pl) openTripReview(pl);
+      })();
+    }
     else if (go === "contest" && q.get("id")) { ctId = q.get("id"); ctView = "detail"; feedMode = "contests"; showView("feed"); window.scrollTo({ top: 0 }); }
     else if (go === "invite" && me.isAdmin) $("invite-btn").click();
     else { feedMode = "circle"; showView("feed"); window.scrollTo({ top: 0 }); }
@@ -6519,9 +6936,60 @@
   $("wl-skip").addEventListener("click", async () => { await wlSet({ welcomed_at: new Date().toISOString() }); $("welcome").hidden = true; });
   fillA2hs($("a2hs-body"));
 
+  // ---- 💬 Group chat: one chat per planned trip (people on the trip) and per contest (people in it) ----
+  function groupChatPanel(scope, id) {
+    const box = el("div"); box.className = "gchat"; box.style.cssText = "border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px";
+    box.appendChild(el("div", "label", scope === "trip" ? "💬 Trip chat" : "💬 Contest chat"));
+    const list = el("div"); list.style.cssText = "max-height:260px;overflow:auto;margin:8px 0";
+    const form = el("form"); form.style.cssText = "display:flex;gap:8px";
+    const inp = document.createElement("input"); inp.maxLength = 1000; inp.placeholder = "Message the group…"; inp.style.flex = "1"; inp.setAttribute("aria-label", "Message");
+    const send = el("button", "btn small", "Send"); send.type = "submit";
+    form.appendChild(inp); form.appendChild(send);
+    const msg = el("div", "msg");
+    box.appendChild(list); box.appendChild(form); box.appendChild(msg);
+    let last = null;
+    async function load() {
+      const { data, error } = await db.from("group_messages").select("*").eq("scope", scope).eq("scope_id", id).order("created_at", { ascending: true }).limit(200);
+      if (error) { msg.className = "msg err"; msg.textContent = "Couldn't load the chat."; return; }
+      msg.textContent = "";
+      await ensureProfiles(data.map(m => m.sender));
+      const sig = data.map(m => m.id).join(",");
+      if (sig === last) return; last = sig;
+      list.innerHTML = "";
+      if (!data.length) list.appendChild(el("div", "empty", "No messages yet — say something."));
+      data.forEach(m => {
+        const mine = !!(me && m.sender === me.id);
+        const row = el("div"); row.style.cssText = "padding:5px 0;border-bottom:1px solid var(--line)";
+        const top = el("div", "spot-meta");
+        top.appendChild(el("b", null, mine ? "You" : (profName(m.sender) || "Someone")));
+        top.appendChild(document.createTextNode(" · " + new Date(m.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })));
+        if (mine) {
+          const x = el("button", "linkbtn", " ✕"); x.type = "button"; x.title = "Delete my message"; x.style.cssText = "float:right";
+          x.addEventListener("click", async () => { await db.from("group_messages").delete().eq("id", m.id); last = null; load(); });
+          top.appendChild(x);
+        }
+        row.appendChild(top); row.appendChild(el("div", null, m.body)); list.appendChild(row);
+      });
+      list.scrollTop = list.scrollHeight;
+    }
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const body = inp.value.trim(); if (!body) return;
+      send.disabled = true;
+      const { error } = await db.from("group_messages").insert({ scope, scope_id: id, body });
+      send.disabled = false;
+      if (error) { msg.className = "msg err"; msg.textContent = "Couldn't send: " + error.message; return; }
+      inp.value = ""; last = null; load();
+    });
+    const timer = setInterval(() => { if (!box.isConnected) { clearInterval(timer); return; } if (!document.hidden) load(); }, 10000);
+    load();
+    return box;
+  }
+
   // ---- 📖 Trip review: catches by everyone on a planned trip, with exact catch pins (only people on the trip see them, only here) ----
   const TRIP_BEFORE_H = 1, TRIP_AFTER_H = 12;
   let pastTrips = [], tripMap = null, tripOpen = null;
+  const openPlanChats = new Set();
   const onTrip = (pl, rs) => !!(me && (pl.created_by === me.id || (rs || planRsvps[pl.id] || []).some(x => x.user_id === me.id)));
   const tripWindow = pl => { const t = new Date(pl.plan_at).getTime(); return [t - TRIP_BEFORE_H * 3600000, t + TRIP_AFTER_H * 3600000]; };
   // the planned trip a catch made now would belong to (mine, in its window, at its spot or within a mile)
@@ -6571,19 +7039,23 @@
     body.appendChild(el("b", null, `${planWhen(new Date(pl.plan_at))}${spot ? " · " + spot.name : ""}`));
     body.appendChild(el("div", "spot-meta", "📍 Exact catch locations are only visible to the people on this trip, and only here. Private catches stay private. Counts catches from 1 hour before to 12 hours after the start, at this spot or within a mile."));
     const st = el("div", "spot-meta", "Loading…"); body.appendChild(st);
+    const content = el("div"); body.appendChild(content);
+    body.appendChild(groupChatPanel("trip", pl.id));
     $("trip-review").scrollIntoView({ behavior: "smooth", block: "start" });
     const { data, error } = await db.rpc("trip_review", { p_plan: pl.id });
     if (tripOpen !== pl) return;
     if (error) { st.className = "msg err"; st.textContent = "Couldn't load the trip: " + error.message; return; }
     const rows = data || [];
     await ensureProfiles(rows.map(r => r.user_id));
+    try { await loadPubPhotos(rows.map(r => ({ id: r.catch_id }))); } catch (e) { /* photos are a bonus */ }
+    if (tripOpen !== pl) return;
     if (!rows.length) { st.textContent = "No catches logged for this trip yet."; return; }
     const fish = rows.reduce((n, r) => n + (r.how_many || 1), 0), people = [...new Set(rows.map(r => r.user_id))];
     st.textContent = `${fish} fish · ${rows.length} catch${rows.length === 1 ? "" : "es"} · ${people.length} angler${people.length === 1 ? "" : "s"}`;
     const nm = id => (me && id === me.id ? "You" : (profName(id) || ((planRsvps[pl.id] || []).find(x => x.user_id === id) || {}).name || "Someone"));
     const geo = rows.filter(r => r.lat != null && r.lng != null);
     if (geo.length) {
-      const mapDiv = el("div"); mapDiv.id = "trip-map"; mapDiv.style.cssText = "height:260px;border-radius:10px;margin:10px 0;border:1px solid var(--line)"; body.appendChild(mapDiv);
+      const mapDiv = el("div"); mapDiv.id = "trip-map"; mapDiv.style.cssText = "height:260px;border-radius:10px;margin:10px 0;border:1px solid var(--line)"; content.appendChild(mapDiv);
       try {
         if (tripMap) { tripMap.remove(); tripMap = null; }
         tripMap = L.map(mapDiv, { zoomControl: true });
@@ -6600,12 +7072,23 @@
     }
     const byUser = new Map(); rows.forEach(r => (byUser.get(r.user_id) || byUser.set(r.user_id, []).get(r.user_id)).push(r));
     byUser.forEach((list, uid) => {
-      body.appendChild(el("div", "label", nm(uid))); body.lastChild.style.marginTop = "12px";
+      content.appendChild(el("div", "label", nm(uid))); content.lastChild.style.marginTop = "12px";
       list.forEach(r => {
         const it = el("div", "feed-item"); const tp = el("div", "feed-top");
         tp.appendChild(el("b", null, `${cap(r.species || "Fish")}${r.how_many > 1 ? " ×" + r.how_many : ""}${sizeText(r)}`));
         tp.appendChild(el("span", "spot-meta", new Date(r.caught_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + (r.lat != null ? " · 📍" : "")));
-        it.appendChild(tp); body.appendChild(it);
+        it.appendChild(tp);
+        const phs = (pubPhotos[r.catch_id] || []).filter(x => photoUrls[x.path]);
+        if (phs.length) {
+          const strip = el("div"); strip.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;margin-top:6px";
+          phs.forEach(ph => {
+            const im = document.createElement("img"); im.src = photoUrls[ph.path]; im.alt = "Catch photo"; im.loading = "lazy";
+            im.style.cssText = "width:84px;height:84px;object-fit:cover;border-radius:8px;cursor:pointer";
+            im.addEventListener("click", () => openViewer(ph)); strip.appendChild(im);
+          });
+          it.appendChild(strip);
+        }
+        content.appendChild(it);
       });
     });
   }

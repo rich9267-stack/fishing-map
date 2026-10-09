@@ -1,0 +1,7 @@
+-- 21: overtaken alerts, quiet hours, group chat (migrations: tournament_standings_raw, tournament_overtaken_fn, quiet_hours, group_chat_tables, group_chat_alerts).
+-- Overtaken: tournament_standings_raw(id) (internal) feeds tournament_rank_check(id): keeps last ranks in tournament_ranks (locked table) and alerts
+--   people who dropped a place ("X passed you in <board> — you're now #n"); triggers on catches/photos/catch_geo re-check the contests a person is in. tournament_standings() now wraps raw.
+-- Quiet hours: notif_prefs.quiet_enabled/quiet_start/quiet_end/tz; enqueue_notification logs the alert (result 'quiet hours') but doesn't push; test alerts bypass.
+-- Group chat: group_messages(scope 'trip'|'contest', scope_id, sender, body) + can_group_chat(scope,id) (trip: planner or "I'm in"; contest: creator or joined).
+--   RLS: read if allowed and sender not blocked; insert as yourself if allowed; delete own; no edits. Alerts (trg_push_group): trips and friend contests only (official contest chats send no alerts).
+-- Full bodies: Supabase migrations list / pg_get_functiondef.

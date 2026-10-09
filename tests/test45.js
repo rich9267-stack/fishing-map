@@ -57,25 +57,31 @@ const CATCHES = [mk("c1", "s1", "Snook", 30), mk("c2", "s1", "Snook", 54), mk("c
   mk("c5", "s3", "Mangrove snapper", 30), mk("c8", "s2", "Peacock bass", 40), mk("c6", "s3", "Mangrove snapper", 50), mk("c7", "s3", "Mangrove snapper", 70)];
 const dom = new JSDOM(html, { runScripts: "dangerously", url: "https://example.org/", beforeParse(w) {
   w.eval(sun); w.Element.prototype.scrollIntoView = () => {};
-  Object.defineProperty(w.navigator, "geolocation", { value: { getCurrentPosition: () => {}, watchPosition: () => 1, clearWatch: () => {} }, configurable: true });
   w.__db = { inserts: [], upserts: [], sessions: [], deletes: [] };
   const chain = (data, tn) => { const fl = []; const rows = () => Array.isArray(data) ? data.filter(r => fl.every(f => f(r))) : data;
     const p = () => Promise.resolve({ data: rows(), error: null }); const o = {
       eq: (c, v) => { fl.push(r => r[c] === v); return o; }, in: (c, vs) => { fl.push(r => vs.includes(r[c])); return o; },
-      is: () => o, or: () => o, ilike: () => o, gte: () => o, lt: () => o, order: () => o, select: () => o, limit: () => p(),
+      is: () => o, or: () => o, ilike: () => o, gte: () => o, order: () => o, select: () => o, limit: () => p(),
       single: () => Promise.resolve({ data: { id: "new-" + Math.random().toString(36).slice(2) }, error: null }),
       then: (x, y) => p().then(x, y),
       maybeSingle: () => tn === "members" ? Promise.resolve(MEMBER()) : p().then(r => ({ data: (r.data || [])[0] || null, error: null })) }; return o; };
   const chainT = (t, d) => chain(d, t);
   w.supabase = { createClient: () => ({
     auth: { getSession: async () => ({ data: { session: { user: { id: ME, email: "rich9267@gmail.com", user_metadata: {} } } } }), onAuthStateChange: () => {}, signOut: async () => {} },
-    rpc: async (fn, a) => { RPCS.push([fn, a]); if (fn === 'trip_review') return { data: [{ catch_id: 'x1', user_id: 'u-rich', caught_at: new Date().toISOString(), species: 'Snook', how_many: 1, length_in: 30, weight_lb: 8, weight_est: true, spot_id: 's1', lat: 26.2571, lng: -80.0812, accuracy_m: 9 }, { catch_id: 'x2', user_id: 'other', caught_at: new Date().toISOString(), species: 'Tarpon', how_many: 2, length_in: null, weight_lb: null, weight_est: false, spot_id: 's1', lat: null, lng: null, accuracy_m: null }], error: null }; if (fn === 'tournament_standings') return { data: STAND, error: null }; if (fn === 'tournament_my_catches') return { data: MYC, error: null }; if (fn === 'create_tournament') { TOURS.push({ id: 't9', kind: a.p_kind, title: a.p_title, description: a.p_desc, created_by: 'u-rich', starts_at: a.p_starts, ends_at: a.p_ends, boards: a.p_boards, species: a.p_species || null, require_photo: a.p_photo, require_length: a.p_length, geo_lat: a.p_lat, geo_lng: a.p_lng, geo_radius_mi: a.p_radius, geo_label: a.p_geo_label, cancelled_at: null }); TMEM.push({ tournament_id: 't9', user_id: 'u-rich', status: 'joined' }); return { data: 't9', error: null }; } if (fn === 'join_tournament') { const m = TMEM.find(x => x.tournament_id === a.p_id && x.user_id === 'u-rich'); if (m) m.status = 'joined'; else TMEM.push({ tournament_id: a.p_id, user_id: 'u-rich', status: 'joined' }); return { error: null }; } if (fn === 'leave_tournament') { const m = TMEM.find(x => x.tournament_id === a.p_id && x.user_id === 'u-rich'); if (m) m.status = 'left'; return { error: null }; } if (fn === 'cancel_tournament') { TOURS.find(x => x.id === a.p_id).cancelled_at = new Date().toISOString(); return { error: null }; } if (fn === 'block_user') BLOCKS.push({ blocker: 'u-rich', blocked: a.p_user }); if (fn === 'mark_read') MSGS.forEach(m => { if (m.sender === a.p_other && m.recipient === 'u-rich') m.read_at = new Date().toISOString(); }); if (fn === 'request_access') { status = 'pending'; } if (fn === 'review_access') PEND = PEND.map(m => m.email === a.p_email ? { ...m, status: a.p_approve ? 'approved' : 'blocked' } : m); return fn === 'ensure_profile' ? { data: { user_id: 'u-rich', handle: 'richard', display_name: 'Richard', home_area: 'Pompano' }, error: null } : { error: null }; }, storage: { from: () => ({ createSignedUrls: async paths => ({ data: paths.map(p => ({ path: p, signedUrl: 'https://img.test/' + p })) }) }) },
-    from: t => ({ select: () => chainT(t, t === "members" ? PEND : t === "messages" ? MSGS : t === "blocks" ? BLOCKS : t === "reports" ? REPORTS :  (t === "spots" || t === "spots_visible") ? SPOTS : t === "catches" ? CATCHES.concat(PUBC) : t === "sessions" ? w.__db.sessions : t === "profiles" ? [{user_id:'str9',handle:'badguy',display_name:'Bad Guy'},{user_id:'str1',handle:'stan',display_name:'Stan the Man',home_area:'Stuart',bio:'Tarpon nut'},{user_id:'other',handle:'mike',display_name:'Mike',home_area:'Miami'},{user_id:'u3',handle:'sam',display_name:'Sam'},{user_id:'u4',handle:'zed',display_name:'Zed'},{user_id:'u-rich',handle:'richard',display_name:'Richard'}] : t === "friendships" ? [{user_a:'other',user_b:'u-rich',status:'accepted',requested_by:'other'},{user_a:'u-rich',user_b:'u3',status:'pending',requested_by:'u3'}] : t === "trip_plans" ? [{id:'pnow',spot_id:'s1',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()-30*60000).toISOString(),note:'now'},{id:'ppast',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()-48*3600000).toISOString(),note:'old'},{id:'p1',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()+86400000).toISOString(),note:'live shrimp'},{id:'p2',spot_id:'s3',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()+2*86400000).toISOString(),note:null}] : t === "photos" ? [{ id: "ph1", catch_id: "x1", path: "u/x1.jpg", spot_id: "s1", created_by: "u-rich", created_at: new Date().toISOString() }] : t === "tournaments" ? TOURS : t === "tournament_members" ? TMEM : t === "trip_plan_rsvps" ? [{plan_id:'p1',user_id:'other',name:'Mike'},{plan_id:'ppast',user_id:'u-rich',name:'Richard'}] : t === "catch_reactions" ? [{catch_id:'c1',user_id:'other'},{catch_id:'c1',user_id:'other2'}] : t === "catch_comments" ? [{id:'m1',catch_id:'c1',created_by:'other',author:'Mike',body:'Nice snook!',created_at:new Date().toISOString()}] : []),
+    rpc: async (fn, a) => { RPCS.push([fn, a]); if (fn === 'tournament_standings') return { data: STAND, error: null }; if (fn === 'tournament_my_catches') return { data: MYC, error: null }; if (fn === 'create_tournament') { TOURS.push({ id: 't9', kind: a.p_kind, title: a.p_title, description: a.p_desc, created_by: 'u-rich', starts_at: a.p_starts, ends_at: a.p_ends, boards: a.p_boards, species: a.p_species || null, require_photo: a.p_photo, require_length: a.p_length, geo_lat: a.p_lat, geo_lng: a.p_lng, geo_radius_mi: a.p_radius, geo_label: a.p_geo_label, cancelled_at: null }); TMEM.push({ tournament_id: 't9', user_id: 'u-rich', status: 'joined' }); return { data: 't9', error: null }; } if (fn === 'join_tournament') { const m = TMEM.find(x => x.tournament_id === a.p_id && x.user_id === 'u-rich'); if (m) m.status = 'joined'; else TMEM.push({ tournament_id: a.p_id, user_id: 'u-rich', status: 'joined' }); return { error: null }; } if (fn === 'leave_tournament') { const m = TMEM.find(x => x.tournament_id === a.p_id && x.user_id === 'u-rich'); if (m) m.status = 'left'; return { error: null }; } if (fn === 'cancel_tournament') { TOURS.find(x => x.id === a.p_id).cancelled_at = new Date().toISOString(); return { error: null }; } if (fn === 'block_user') BLOCKS.push({ blocker: 'u-rich', blocked: a.p_user }); if (fn === 'mark_read') MSGS.forEach(m => { if (m.sender === a.p_other && m.recipient === 'u-rich') m.read_at = new Date().toISOString(); }); if (fn === 'request_access') { status = 'pending'; } if (fn === 'review_access') PEND = PEND.map(m => m.email === a.p_email ? { ...m, status: a.p_approve ? 'approved' : 'blocked' } : m); return fn === 'ensure_profile' ? { data: { user_id: 'u-rich', handle: 'richard', display_name: 'Richard', home_area: 'Pompano' }, error: null } : { error: null }; }, storage: { from: () => ({ createSignedUrls: async () => ({ data: [] }) }) },
+    from: t => ({ select: () => chainT(t, t === "members" ? PEND : t === "messages" ? MSGS : t === "blocks" ? BLOCKS : t === "reports" ? REPORTS :  (t === "spots" || t === "spots_visible") ? SPOTS : t === "catches" ? CATCHES.concat(PUBC) : t === "sessions" ? w.__db.sessions : t === "profiles" ? [{user_id:'str9',handle:'badguy',display_name:'Bad Guy'},{user_id:'str1',handle:'stan',display_name:'Stan the Man',home_area:'Stuart',bio:'Tarpon nut'},{user_id:'other',handle:'mike',display_name:'Mike',home_area:'Miami'},{user_id:'u3',handle:'sam',display_name:'Sam'},{user_id:'u4',handle:'zed',display_name:'Zed'},{user_id:'u-rich',handle:'richard',display_name:'Richard'}] : t === "friendships" ? [{user_a:'other',user_b:'u-rich',status:'accepted',requested_by:'other'},{user_a:'u-rich',user_b:'u3',status:'pending',requested_by:'u3'}] : t === "trip_plans" ? [{id:'p1',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()+86400000).toISOString(),note:'live shrimp'},{id:'p2',spot_id:'s3',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()+2*86400000).toISOString(),note:null}] : t === "notif_prefs" ? PREFS : t === "tournaments" ? TOURS : t === "tournament_members" ? TMEM : t === "trip_plan_rsvps" ? [{plan_id:'p1',user_id:'other',name:'Mike'}] : t === "catch_reactions" ? [{catch_id:'c1',user_id:'other'},{catch_id:'c1',user_id:'other2'}] : t === "catch_comments" ? [{id:'m1',catch_id:'c1',created_by:'other',author:'Mike',body:'Nice snook!',created_at:new Date().toISOString()}] : []),
       delete: () => { const o = { eq: (c, v) => { w.__db.deletes.push(t + ":" + c + "=" + v); if (t === "blocks") BLOCKS = BLOCKS.filter(b => b.blocked !== v); return o; }, then: (x, y) => Promise.resolve({ error: null }).then(x, y) }; return o; },
       insert: row => { w.__db.inserts.push({ t, row }); if (t === "messages") { const m = { id: "mm" + MSGS.length, created_at: new Date().toISOString(), sender: "u-rich", read_at: null, ...row }; MSGS.push(m); return { select: () => ({ single: () => Promise.resolve({ data: m, error: null }) }) }; } if (t === "catches") CATCHES.unshift({ id: "n" + CATCHES.length, ...row }); return chain(null); },
       upsert: row => { w.__db.upserts.push({ t, row }); return Promise.resolve({ error: null }); },
       update: row => { w.__db.updates = (w.__db.updates || []).concat([{ t, row }]); return chain(t === 'profiles' ? { user_id: 'u-rich', ...row } : null); } }) }) };
+  let subbed = null; const SWLISTENERS = [];
+  w.PushManager = function () {}; w.Notification = { permission: "default", requestPermission: async () => { w.Notification.permission = "granted"; return "granted"; } };
+  const regObj = { pushManager: { getSubscription: async () => subbed, subscribe: async o => { w.__subOpts = o; subbed = { endpoint: "https://push.test/abc", toJSON: () => ({ endpoint: "https://push.test/abc", keys: { p256dh: "P", auth: "A" } }), unsubscribe: async () => { subbed = null; } }; return subbed; } } };
+  Object.defineProperty(w.navigator, "serviceWorker", { value: { register: async () => regObj, ready: Promise.resolve(regObj), getRegistration: async () => regObj, addEventListener: (t, f) => SWLISTENERS.push(f) }, configurable: true });
+  w.__swl = SWLISTENERS;
+  const PREFS = [];
   w.fetch = async url => {
+    if (url.includes("functions/v1/send-push")) return { ok: true, json: async () => ({ publicKey: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSMfUcG4kDOAHOe6GXHgy3xnHe0Jy5RgK4" }) };
     if (url.includes("inaturalist")) {
       calls.push(url);
       const u = new URL(url);
@@ -110,33 +116,16 @@ const dom = new JSDOM(html, { runScripts: "dangerously", url: "https://example.o
 }});
 const w = dom.window; w.eval(leaf);
 const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
-(async () => {
-  await wait(1200);
+(async () => { try {
+  await wait(900);
   const txt = id => d.getElementById(id).textContent.replace(/\s+/g, " ");
-  // 1) Quick catch: length + measure + trip line
-  w.eval("qc.pos = { lat: 26.257, lng: -80.081, acc: 12, at: new Date().toISOString() }; qc.source = 'test'; showReview()"); await wait(300);
-  console.log("qc fields:", !!d.getElementById("qc-length"), !!d.getElementById("qc-weight"), !!d.getElementById("qc-measure"));
-  console.log("measure w/o photo:", (d.getElementById("qc-measure").click(), txt("qc-size-note")).slice(0, 50));
-  console.log("trip line:", txt("qc-contest-hint"));
-  w.eval("qc.blob = new Blob(['x'])"); w.URL.createObjectURL = () => "blob:x";
-  d.getElementById("qc-measure").click(); await wait(100);
-  console.log("measure overlay opened:", !d.getElementById("measure").hidden);
-  w.eval("ms.onUse(31.5)"); 
-  console.log("length filled:", d.getElementById("qc-length").value);
-  d.querySelector("#qc-species .fchip").click(); await wait(50);
-  w.eval("conditionsFor = async () => ({ tide_stage: null })");
-  d.getElementById("qc-save").click(); await wait(800);
-  const row = w.__db.inserts.filter(i => i.t === "catches").pop().row;
-  console.log("saved size:", row.length_in, row.weight_lb, row.weight_est, "| geo stamp:", w.__db.inserts.filter(i => i.t === "catch_geo").length);
-  // 2) Trip review
-  d.getElementById("tab-feed").click(); await wait(500);
-  console.log("plan card review button:", [...d.querySelectorAll("#plan-list button")].map(b => b.textContent).filter(t => /Review/.test(t)).join(","));
-  console.log("past trips card:", !d.getElementById("feed-trips-card").hidden, "|", txt("feed-trips-list").slice(0, 80));
-  d.querySelector("#feed-trips-list .feed-item").click(); await wait(600);
-  console.log("review:", txt("trip-review-body").slice(0, 330));
-  console.log("trip photos:", d.querySelectorAll("#trip-review-body .feed-item img").length, "| src:", (d.querySelector("#trip-review-body .feed-item img")||{}).src);
-  console.log("map div:", !!d.getElementById("trip-map"), "| rpc:", JSON.stringify(RPCS.filter(r => r[0] === "trip_review").map(r => r[1].p_plan)));
-  d.getElementById("trip-review-back").click(); await wait(100);
-  console.log("back -> past list visible:", !d.getElementById("feed-trips-card").hidden, "| review hidden:", d.getElementById("trip-review").hidden);
+  d.getElementById("profile-btn").click(); await wait(300);
+  d.getElementById("push-on").click(); await wait(600);
+  console.log("quiet hidden until ticked:", d.getElementById("push-q-times").hidden);
+  d.getElementById("push-q-on").checked = true; d.getElementById("push-q-on").dispatchEvent(new w.Event("change")); await wait(200);
+  d.getElementById("push-q-start").value = "23:30"; d.getElementById("push-q-start").dispatchEvent(new w.Event("change"));
+  d.getElementById("push-q-end").value = "05:15"; d.getElementById("push-q-end").dispatchEvent(new w.Event("change")); await wait(300);
+  const u = w.__db.upserts.filter(x => x.t === "notif_prefs").pop().row;
+  console.log("times shown:", !d.getElementById("push-q-times").hidden, "| saved:", JSON.stringify({ on: u.quiet_enabled, s: u.quiet_start, e: u.quiet_end, tz: !!u.tz }));
   process.exit(0);
-})();
+} catch (e) { console.log("ERR", e.stack); process.exit(1); } })();
