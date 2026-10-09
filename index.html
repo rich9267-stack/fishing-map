@@ -282,6 +282,7 @@
   <div class="userbar" id="userbar" hidden>
     <span id="who"></span>
     <span class="userbar-links">
+      <button class="linkbtn" id="profile-btn" type="button">🙂 Profile</button>
       <button class="linkbtn" id="invite-btn" type="button" hidden>👥 Invite friends</button>
       <button class="linkbtn" id="refresh-btn" type="button" aria-label="Refresh">↻ Refresh</button>
       <button class="linkbtn" id="signout-btn" type="button">Sign out</button>
@@ -326,6 +327,26 @@
     <div class="label">Not on the invite list yet</div>
     <p id="not-member-text"></p>
     <button class="btn ghost" id="not-member-out" type="button">Sign out</button>
+  </div>
+
+  <div class="card" id="profile-card" hidden>
+    <div class="row">
+      <div class="label">Your profile</div>
+      <button class="linkbtn" id="profile-close" type="button">Close</button>
+    </div>
+    <form id="profile-form">
+      <label for="pf-name">Name</label>
+      <input id="pf-name" required maxlength="40">
+      <label for="pf-handle">Username</label>
+      <input id="pf-handle" required maxlength="20" autocapitalize="none" autocomplete="off" placeholder="letters, numbers, _ (3–20)">
+      <div class="spot-meta">Friends find you by this. It shows as @username.</div>
+      <label for="pf-area">Home waters (optional)</label>
+      <input id="pf-area" maxlength="60" placeholder="e.g., Pompano Beach, FL">
+      <label for="pf-bio">About you (optional)</label>
+      <textarea id="pf-bio" maxlength="300" placeholder="What you fish for, favorite bait…"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="pf-save" type="submit">Save profile</button></div>
+      <div class="msg" id="pf-msg"></div>
+    </form>
   </div>
 
   <div class="card" id="invite-card" hidden>
@@ -556,9 +577,15 @@
       <label for="f-by">Added by *</label>
       <input id="f-by" required maxlength="40" placeholder="Your name">
 
-      <label class="check-row" for="f-private">
-        <input id="f-private" type="checkbox">
-        <span><strong>🔒 Private</strong> — only you can see this spot and its catches</span>
+      <label for="f-vis">Who can see this spot?</label>
+      <select id="f-vis">
+        <option value="friends">👥 Friends — people you've added as friends</option>
+        <option value="private">🔒 Private — only you</option>
+        <option value="public">🌎 Public — everyone on the app (their map pin is blurred to about ¼ mile)</option>
+      </select>
+      <label class="check-row" for="f-hide" id="f-hide-row">
+        <input id="f-hide" type="checkbox">
+        <span><strong>🤫 Hide the exact spot from friends too</strong> — they only see a pin blurred to about ¼ mile; only you see the real spot</span>
       </label>
 
       <label>Location</label>
@@ -928,6 +955,8 @@
   let spotsError = null;
   let pickedLoc = null;
 
+  const VIS_LABEL = { private: "🔒 Private", friends: "👥 Friends", public: "🌎 Public" };
+  const visIcon = s => (s.visibility === "public" ? "🌎 " : s.visibility === "private" || s.is_private ? "🔒 " : "");
   const WATER_LABEL = { saltwater: "Saltwater", brackish: "Brackish / tidal canal", freshwater: "Freshwater" };
   const $ = id => document.getElementById(id);
 
@@ -2768,6 +2797,12 @@
     <input id="c-by" maxlength="40" placeholder="Your name">
     <label for="c-notes">Notes</label>
     <input id="c-notes" maxlength="500" placeholder="Where on the spot, etc.">
+    <label for="c-vis">Who can see this catch?</label>
+    <select id="c-vis">
+      <option value="friends">👥 Friends</option>
+      <option value="private">🔒 Private — only you</option>
+      <option value="public">🌎 Public — everyone on the app (the spot stays hidden unless it's public too)</option>
+    </select>
     <label for="c-photo">📷 Photo (optional)</label>
     <input id="c-photo" type="file" accept="image/*">
     <div class="spot-meta" id="c-photo-info" style="margin-top:6px"></div>
@@ -3220,6 +3255,7 @@
       q("#c-tide").value = existing.tide_stage || "";
       q("#c-by").value = existing.caught_by || "";
       q("#c-notes").value = existing.notes || "";
+      q("#c-vis").value = existing.visibility || "friends";
       q("#c-length").value = existing.length_in != null ? +Number(existing.length_in).toFixed(2) : "";
       q("#c-weight").value = existing.weight_lb != null && !existing.weight_est ? +Number(existing.weight_lb).toFixed(2) : "";
       updateSizeNote();
@@ -3239,6 +3275,7 @@
       const sp = (spots || []).find(x => x.id === spotId);
       q("#c-tide").value = sp && sp.water_type === "freshwater" ? "" : (cond.tideStage || "");
       q("#c-by").value = (me && me.name) || "";
+      q("#c-vis").value = (sp && sp.visibility) || (sp && sp.is_private ? "private" : "friends"); // starts at the spot's level
       renderSpots();
       lookupCatchConditions();
     }
@@ -3283,6 +3320,7 @@
       bait: txt("#c-bait"),
       tide_stage: q("#c-tide").value || null,
       notes: txt("#c-notes"),
+      visibility: q("#c-vis").value,
       caught_by: txt("#c-by"),
       pressure_inhg: c.pressure != null ? c.pressure : null,
       pressure_trend: c.trend || null,
@@ -4038,7 +4076,7 @@
     if (!shown.length) list.appendChild(el("div", "empty", "No spots match these filters."));
     shown.forEach(s => {
       const item = el("div", "spot");
-      item.appendChild(el("div", "spot-name", (s.is_private ? "🔒 " : "") + s.name));
+      item.appendChild(el("div", "spot-name", visIcon(s) + s.name));
       item.appendChild(el("div", "spot-meta",
         `${cap(s.spot_type)} · ${WATER_LABEL[s.water_type] || s.water_type}` + (s.added_by ? ` · added by ${s.added_by}` : "")));
       const condEl = el("div", "spot-cond", spotConditions(s));
@@ -4053,7 +4091,9 @@
       [accessText, s.parking && `Parking: ${s.parking}`, s.getting_there && cap(s.getting_there)]
         .filter(Boolean).forEach(t => chips.appendChild(el("span", "chip", t)));
       if (s.faces_deg != null) chips.appendChild(el("span", "chip", "🧭 Water to the " + compass(s.faces_deg)));
-      if (s.lat != null && s.lng != null) {
+      chips.appendChild(el("span", "chip", VIS_LABEL[s.visibility || (s.is_private ? "private" : "friends")]));
+      if (s.is_exact === false) chips.appendChild(el("span", "chip", "📍 Approximate pin (within ¼ mile)"));
+      if (s.lat != null && s.lng != null && s.is_exact !== false) {
         const a = el("a", "chip", "📍 Directions");
         a.href = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
         a.target = "_blank"; a.rel = "noopener";
@@ -4087,7 +4127,7 @@
   async function loadSpots() {
     try {
       if (!window.supabase) throw new Error("Database library didn't load");
-      const { data, error } = await db.from("spots").select("*").order("name");
+      const { data, error } = await db.from("spots_visible").select("*").order("name");
       if (error) throw error;
       spots = data;
       spotsError = null;
@@ -4135,7 +4175,9 @@
       $("f-tide-offset").value = existing.tide_offset_min ? existing.tide_offset_min : "";
       $("f-faces").value = existing.faces_deg != null ? String(existing.faces_deg) : "";
       $("f-by").value = existing.added_by || "";
-      $("f-private").checked = !!existing.is_private;
+      $("f-vis").value = existing.visibility || (existing.is_private ? "private" : "friends");
+      $("f-hide").checked = !!existing.hide_exact_from_friends;
+      syncHideRow();
       $("f-tide-box").hidden = existing.water_type === "freshwater";
       pickedLoc = hasLoc(existing) ? { lat: existing.lat, lng: existing.lng } : null;
       $("loc-text").textContent = pickedLoc ? "Set ✓ (keep, or pick a new one)" : "Not set";
@@ -4148,7 +4190,7 @@
     $("f-name").focus();
   }
   function closeSpotForm() {
-    $("spot-form").reset(); pickedLoc = null; editingSpot = null; $("f-tide-msg").textContent = "";
+    $("spot-form").reset(); pickedLoc = null; editingSpot = null; $("f-tide-msg").textContent = ""; syncHideRow();
     $("loc-text").textContent = "Not set";
     openForm(false);
   }
@@ -4189,6 +4231,8 @@
   }
   $("f-tide-high").addEventListener("click", () => tideTurnNow(true));
   $("f-tide-low").addEventListener("click", () => tideTurnNow(false));
+  function syncHideRow() { $("f-hide-row").hidden = $("f-vis").value === "private"; }
+  $("f-vis").addEventListener("change", syncHideRow);
   $("f-water").addEventListener("change", () => { $("f-tide-box").hidden = $("f-water").value === "freshwater"; });
 
   $("spot-form").addEventListener("submit", async e => {
@@ -4209,7 +4253,9 @@
       tide_offset_min: Math.max(-300, Math.min(300, Math.round((parseFloat($("f-tide-offset").value) || 0) / 5) * 5)),
       faces_deg: $("f-faces").value === "" ? null : parseInt($("f-faces").value, 10),
       added_by: val("f-by"),
-      is_private: $("f-private").checked,
+      visibility: $("f-vis").value,
+      is_private: $("f-vis").value === "private",
+      hide_exact_from_friends: $("f-vis").value !== "private" && $("f-hide").checked,
       lat: pickedLoc ? pickedLoc.lat : null,
       lng: pickedLoc ? pickedLoc.lng : null
     };
@@ -4316,8 +4362,9 @@
 
   function popupFor(s) {
     const box = document.createElement("div");
-    box.appendChild(el("div", "pop-name", (s.is_private ? "🔒 " : "") + s.name));
+    box.appendChild(el("div", "pop-name", visIcon(s) + s.name));
     if (s.is_private) box.appendChild(el("div", "pop-meta", "Private — only you can see this"));
+    else if (s.is_exact === false) box.appendChild(el("div", "pop-meta", "Approximate pin — within about ¼ mile"));
     box.appendChild(el("div", "pop-meta", `${cap(s.spot_type)} · ${WATER_LABEL[s.water_type] || s.water_type}`));
     box.appendChild(el("div", "pop-cond", spotConditions(s)));
     const n = (catchesBySpot[s.id] || []).reduce((t, c) => t + (c.how_many || 1), 0);
@@ -4876,6 +4923,7 @@
     $("auth-card").hidden = true; $("not-member").hidden = true;
     $("userbar").hidden = false; $("app").hidden = false; $("qc-fab").hidden = false;
     $("who").textContent = `Signed in as ${me.name}`;
+    ensureProfile();
     $("invite-btn").hidden = !me.isAdmin;
     setTimeout(() => { updatePendingBar(); flushQueue(); }, 1500);
     if (!appStarted) {
@@ -4893,6 +4941,46 @@
     showAuth("signin");
   }
   $("signout-btn").addEventListener("click", signOut);
+
+  // ---- Profile (V4 social): a username, home waters and a short bio ----
+  async function ensureProfile() {
+    try {
+      const { data, error } = await db.rpc("ensure_profile");
+      if (error || !data) return;
+      me.profile = data; me.handle = data.handle;
+      $("who").textContent = `Signed in as ${me.name} (@${data.handle})`;
+    } catch (e) { /* offline — try again next time */ }
+  }
+  $("profile-btn").addEventListener("click", async () => {
+    $("profile-card").hidden = false; $("pf-msg").textContent = "";
+    if (!me.profile) await ensureProfile();
+    const p = me.profile || {};
+    $("pf-name").value = p.display_name || me.name || ""; $("pf-handle").value = p.handle || "";
+    $("pf-area").value = p.home_area || ""; $("pf-bio").value = p.bio || "";
+    $("profile-card").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  $("profile-close").addEventListener("click", () => { $("profile-card").hidden = true; });
+  $("profile-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = $("pf-msg");
+    const name = $("pf-name").value.trim(), handle = $("pf-handle").value.trim().toLowerCase().replace(/^@/, "");
+    if (!/^[a-z0-9_]{3,20}$/.test(handle)) { msg.className = "msg err"; msg.textContent = "Username: 3–20 letters, numbers or _ (no spaces)."; return; }
+    msg.className = "msg"; msg.textContent = "Saving…"; $("pf-save").disabled = true;
+    try {
+      const { data, error } = await db.from("profiles").update({
+        display_name: name, handle, home_area: $("pf-area").value.trim() || null, bio: $("pf-bio").value.trim() || null
+      }).eq("user_id", me.id).select("*").single();
+      if (error) throw error;
+      if (name !== me.name) { await db.rpc("set_my_name", { new_name: name }); me.name = name; }
+      me.profile = { ...(me.profile || {}), ...(data || {}), display_name: name, handle, home_area: $("pf-area").value.trim() || null, bio: $("pf-bio").value.trim() || null };
+      me.handle = handle;
+      $("who").textContent = `Signed in as ${me.name} (@${handle})`;
+      msg.textContent = "Saved ✓";
+    } catch (err) {
+      msg.className = "msg err";
+      msg.textContent = err && err.code === "23505" ? "That username is taken — try another." : "Couldn't save: " + (err.message || err);
+    } finally { $("pf-save").disabled = false; }
+  });
   $("not-member-out").addEventListener("click", signOut);
 
   // Invite list (admins only)
