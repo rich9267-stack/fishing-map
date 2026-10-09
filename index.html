@@ -179,6 +179,12 @@
   #qc-review .stepper input { border-radius: 0; text-align: center; border-left: 0; border-right: 0; }
   #qc-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom)); background: #12262e; color: #fff;
     padding: 10px 16px; border-radius: 999px; z-index: 1200; font-size: .92rem; box-shadow: 0 4px 14px rgba(0,0,0,.3); max-width: 90vw; text-align: center; }
+  .session-bar { position: sticky; top: 6px; z-index: 50; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    background: var(--accent); color: #fff; border-radius: 12px; padding: 8px 10px 8px 14px; margin: -6px 0 12px; font-size: .9rem; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+  .session-bar .btn { background: #fff; color: var(--accent); white-space: nowrap; flex: none; }
+  .session-ask { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 10px; border: 2px solid var(--accent);
+    background: var(--card); border-radius: 12px; padding: 10px 12px; margin: -6px 0 12px; font-size: .92rem; }
+  .session-ask-btns { display: flex; gap: 10px; align-items: center; }
   .offline-bar { background: #5b6f78; color: #fff; border-radius: 10px; padding: 8px 12px; font-size: .85rem; margin: -6px 0 12px; }
   .pending-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--card);
     border-radius: 10px; padding: 8px 12px; font-size: .88rem; margin: -6px 0 12px; }
@@ -241,6 +247,14 @@
   <div class="pending-bar" id="pending-bar" hidden>
     <span id="pending-text"></span>
     <button class="linkbtn" id="pending-send" type="button">Send now</button>
+  </div>
+  <div class="session-bar" id="session-bar" hidden>
+    <span id="session-text"></span>
+    <button class="btn small" id="session-end" type="button">End trip</button>
+  </div>
+  <div class="session-ask" id="session-ask" hidden>
+    <span id="session-ask-text"></span>
+    <span class="session-ask-btns"><button class="btn small" id="session-ask-yes" type="button">Start trip</button><button class="linkbtn" id="session-ask-no" type="button">Not now</button></span>
   </div>
 
   <div class="userbar" id="userbar" hidden>
@@ -1514,6 +1528,15 @@
     tiles.appendChild(tile(fish, "fish caught"));
     tiles.appendChild(tile(list.length, "catches logged"));
     tiles.appendChild(tile(topSpecies ? topSpecies[0] : "—", "most caught"));
+    const spotId = $("ins-spot").value, mineOnly = $("ins-mine").checked;
+    const trips = Object.values(sessionsBySpot).flat().filter(x => x.ended_at && (!spotId || x.spot_id === spotId) && (!mineOnly || (me && x.created_by === me.id)));
+    if (trips.length) {
+      const hrs = trips.reduce((n, x) => n + tripHours(x), 0), tf = trips.reduce((n, x) => n + tripFish(x), 0);
+      const skunks = trips.filter(x => !tripFish(x)).length;
+      tiles.appendChild(tile(trips.length, "trips logged"));
+      tiles.appendChild(tile((tf / hrs).toFixed(1), "fish per hour"));
+      tiles.appendChild(tile(Math.round(100 * skunks / trips.length) + "%", "trips skunked"));
+    }
     $("ins-note").textContent = !list.length ? "No catches match yet — log some catches and the patterns will show up here."
       : (list.length < 20 ? `Based on ${list.length} catch${list.length === 1 ? "" : "es"}. Patterns get more trustworthy after about 20. ` : "") +
         "Counts also reflect when you fish — if you mostly go on outgoing tides, outgoing will look best.";
@@ -2243,9 +2266,11 @@
       if (!spot) throw new Error("That spot no longer exists");
     }
     const c = await conditionsFor(spot, when);
-    const { data: saved, error } = await db.from("catches").insert({
-      spot_id: spot.id, caught_at: when.toISOString(), species: item.species, how_many: item.count, bait: item.bait, caught_by: item.name, ...c
-    }).select("id").single();
+    const base = { spot_id: spot.id, caught_at: when.toISOString(), species: item.species, how_many: item.count, bait: item.bait, caught_by: item.name, ...c };
+    if (item.session) await syncSessions();
+    let { data: saved, error } = await db.from("catches").insert(item.session ? { ...base, session_id: item.session } : base).select("id").single();
+    if (error && item.session && /foreign key|session/i.test(error.message || "")) // the trip didn't reach the database — keep the catch anyway
+      ({ data: saved, error } = await db.from("catches").insert(base).select("id").single());
     if (error) throw error;
     let photoOk = true;
     if (item.blob) {
@@ -2267,6 +2292,8 @@
       count: Math.max(1, Math.min(500, parseInt($("qc-count").value, 10) || 1)),
       bait: $("qc-bait").value.trim() || null, name: me.name, blob: qc.blob || null, user: me.id
     };
+    const trip = activeSession();
+    if (trip && trip.spot_id === choice) item.session = trip.id;
     closeQuickCatch();
     if (!navigator.onLine) {
       await queueCatch(item);
@@ -2278,6 +2305,7 @@
       await loadSpots();
       toast(`✓ ${item.count > 1 ? item.count + " " : ""}${item.species} logged at ${r.spot.name}${r.c.tide_stage ? " · " + r.c.tide_stage + " tide" : ""}` +
             (r.photoOk ? "" : " (photo didn't upload)"));
+      if (!activeSession() && Date.now() - new Date(item.when) < 30 * 60000) showAsk(r.spot, `🎣 Fishing at ${r.spot.name} for a while? Start a trip so the hours count.`);
     } catch (err) {
       if (isNetErr(err)) await queueCatch(item); // signal dropped mid-save — keep it for later
       else toast("Couldn't save the catch: " + (err.message || err), 8000);
@@ -2338,6 +2366,7 @@
     const items = (await queueAll()).filter(i => i.user === me.id).sort((a, b) => a.when.localeCompare(b.when));
     if (!items.length) { updatePendingBar(); return; }
     flushing = true;
+    await syncSessions(); // a catch may belong to a trip that started without signal
     $("pending-text").textContent = "⏳ Uploading saved catches…";
     let sent = 0, stuck = null;
     for (const item of items) {
@@ -2363,6 +2392,141 @@
   window.addEventListener("offline", () => setOffline(true));
   document.addEventListener("visibilitychange", () => { if (!document.hidden) flushQueue(); });
   setInterval(() => flushQueue(), 60000);
+
+  // ---- Fishing trips ("sessions"): every trip counts, even with no fish ----
+  // Knowing when people fished and caught nothing lets the predictions learn what doesn't work.
+  let sessionsBySpot = {};
+  const uuid4 = () => crypto.randomUUID ? crypto.randomUUID()
+    : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16); });
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage full */ } };
+  const activeSession = () => me ? lsGet(`fm-session-${me.id}`, null) : null;
+  function setActive(a) { lsSet(`fm-session-${me.id}`, a); renderSessionBar(); renderSpots(); }
+  const pendingSessions = () => me ? lsGet(`fm-session-pending-${me.id}`, []) : [];
+  function addPending(row) {
+    const list = pendingSessions(), i = list.findIndex(r => r.id === row.id);
+    if (i >= 0) list[i] = { ...list[i], ...row }; else list.push(row);
+    lsSet(`fm-session-pending-${me.id}`, list);
+  }
+  // Send trips saved on this phone to the database (full rows, so it works whether or not the start ever reached it)
+  async function syncSessions() {
+    if (!me || !db || !navigator.onLine) return;
+    const list = pendingSessions();
+    if (!list.length) return;
+    const left = [];
+    for (let i = 0; i < list.length; i++) {
+      try { const { error } = await db.from("sessions").upsert(list[i]); if (error) throw error; }
+      catch (e) { if (isNetErr(e)) { left.push(...list.slice(i)); break; } left.push(list[i]); }
+    }
+    lsSet(`fm-session-pending-${me.id}`, left.length ? left : null);
+  }
+  const dur = ms => { const m = Math.max(1, Math.round(ms / 60000)); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} hr${m % 60 ? " " + (m % 60) + " min" : ""}`; };
+  const sessionCatches = id => Object.values(catchesBySpot).flat().filter(c => c.session_id === id);
+  // Fish on a finished trip: the catches linked to it (edits and deletes included), or what was counted when it ended
+  const tripFish = x => { const n = sessionCatches(x.id).reduce((k, c) => k + (c.how_many || 1), 0); return n || x.fish || 0; };
+  const tripHours = x => Math.max(1 / 60, (new Date(x.ended_at) - new Date(x.started_at)) / 3600000);
+
+  async function startSession(spot) {
+    if (activeSession()) await endSession(true);
+    const row = { id: uuid4(), spot_id: spot.id, started_at: new Date().toISOString(), created_by: me.id };
+    setActive({ ...row, spotName: spot.name });
+    $("session-ask").hidden = true;
+    addPending(row); syncSessions();
+    toast(`🎣 Trip started at ${spot.name}. Catches you log here count toward it — tap End trip when you leave.`, 5000);
+  }
+
+  // Conditions for each hour of a trip (tide, time of day, solunar, moon, wind, water temp)
+  function sessionHours(spot, start, end) {
+    const out = [];
+    for (let t = start.getTime() + 30 * 60000; t < end.getTime() && out.length < 24; t += 3600000) out.push(factorsAt(spot, new Date(t)));
+    if (!out.length) out.push(factorsAt(spot, new Date((start.getTime() + end.getTime()) / 2)));
+    return out;
+  }
+
+  async function endSession(quiet, endAt) {
+    const a = activeSession();
+    if (!a) return;
+    const spot = (spots || []).find(x => x.id === a.spot_id);
+    const start = new Date(a.started_at);
+    let end = endAt || new Date();
+    if (end - start < 60000) end = new Date(start.getTime() + 60000);
+    const queued = (await queueAll()).filter(i => i.session === a.id).reduce((n, i) => n + (i.count || 1), 0);
+    const fish = sessionCatches(a.id).reduce((n, c) => n + (c.how_many || 1), 0) + queued;
+    addPending({ id: a.id, spot_id: a.spot_id, started_at: a.started_at, created_by: me.id, ended_at: end.toISOString(),
+      fish: Math.min(1000, fish), hours: spot ? sessionHours(spot, start, end) : null, notes: endAt ? "Ended automatically" : null });
+    setActive(null);
+    await syncSessions();
+    loadSessions();
+    if (!quiet) toast(fish ? `✓ Trip saved: ${dur(end - start)} at ${a.spotName}, ${fish} fish 🎣`
+      : `✓ Trip saved: ${dur(end - start)} at ${a.spotName}. Skunked — but it still counts, and it helps the predictions.`, 6000);
+  }
+
+  // A trip left running (phone forgotten in the truck) is closed for you after 12 hours
+  function closeStaleSession() {
+    const a = activeSession();
+    if (!a) return;
+    const start = new Date(a.started_at);
+    if (Date.now() - start < 12 * 3600000) return;
+    const last = sessionCatches(a.id).map(c => new Date(c.caught_at).getTime()).sort((x, y) => y - x)[0];
+    const end = new Date(Math.min(start.getTime() + 8 * 3600000, Math.max(start.getTime() + 2 * 3600000, (last || 0) + 30 * 60000)));
+    endSession(true, end).then(() => toast(`Your trip at ${a.spotName} was still running — it was ended at ${clock(end)}.`, 6000));
+  }
+
+  function renderSessionBar() {
+    const a = activeSession();
+    $("session-bar").hidden = !a;
+    if (!a) return;
+    const fish = sessionCatches(a.id).reduce((n, c) => n + (c.how_many || 1), 0);
+    $("session-text").textContent = `🎣 Fishing at ${a.spotName} · ${dur(Date.now() - new Date(a.started_at))} · ${fish} fish`;
+  }
+  setInterval(renderSessionBar, 60000);
+  $("session-end").addEventListener("click", () => endSession(false));
+
+  async function loadSessions() {
+    if (!db || !me) return;
+    try {
+      const { data, error } = await db.from("sessions").select("*").is("deleted_at", null).order("started_at", { ascending: false }).limit(2000);
+      if (error) throw error;
+      sessionsBySpot = {};
+      data.forEach(x => (sessionsBySpot[x.spot_id] = sessionsBySpot[x.spot_id] || []).push(x));
+      saveCopy("sessions", data);
+    } catch (e) {
+      const copy = loadCopy("sessions");
+      if (copy) { sessionsBySpot = {}; copy.forEach(x => (sessionsBySpot[x.spot_id] = sessionsBySpot[x.spot_id] || []).push(x)); }
+    }
+    closeStaleSession();
+    renderSessionBar(); renderBest(); renderInsights();
+  }
+
+  // "You're at Hillsboro — start a fishing trip here?" (only if location is already allowed, so it never nags)
+  function showAsk(spot, text) {
+    $("session-ask-text").textContent = text || `📍 You're at ${spot.name} — start a fishing trip here?`;
+    $("session-ask").dataset.spot = spot.id;
+    $("session-ask").hidden = false;
+  }
+  async function maybeAskSession() {
+    if (!me || !spots || activeSession() || !navigator.geolocation || !$("session-ask").hidden) return;
+    try {
+      if (!navigator.permissions) return;
+      const p = await navigator.permissions.query({ name: "geolocation" });
+      if (p.state !== "granted") return;
+    } catch (e) { return; }
+    navigator.geolocation.getCurrentPosition(pos => {
+      const near = nearbySpots({ lat: pos.coords.latitude, lng: pos.coords.longitude })[0];
+      if (!near || near.d > QC_NEAR_MI || activeSession()) return;
+      if (Date.now() - (lsGet("fm-ask-" + near.s.id, 0) || 0) < 4 * 3600000) return; // said "not now" recently
+      showAsk(near.s);
+    }, () => {}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 120000 });
+  }
+  $("session-ask-yes").addEventListener("click", () => {
+    const sp = (spots || []).find(x => x.id === $("session-ask").dataset.spot);
+    if (sp) startSession(sp);
+  });
+  $("session-ask-no").addEventListener("click", () => {
+    lsSet("fm-ask-" + $("session-ask").dataset.spot, Date.now());
+    $("session-ask").hidden = true;
+  });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { renderSessionBar(); maybeAskSession(); } });
 
   $("qc-fab").addEventListener("click", openQuickCatch);
   $("qc-close").addEventListener("click", closeQuickCatch);
@@ -3051,6 +3215,8 @@
       water_temp_source: c.waterSource || null,
       ...sizeFields(txt("#c-species"), q("#c-length").value, q("#c-weight").value)
     };
+    const trip = activeSession();
+    if (!editingCatch && trip && trip.spot_id === openCatchSpot && Math.abs(when - new Date()) < 3 * 3600000) { row.session_id = trip.id; await syncSessions(); }
     try {
       if (!db) throw new Error("Not connected to the database");
       const { data: savedRow, error } = editingCatch
@@ -3142,8 +3308,21 @@
     logBtn.type = "button";
     logBtn.hidden = openCatchSpot === s.id;
     logBtn.addEventListener("click", () => openCatchForm(s.id));
-    row.appendChild(toggle); row.appendChild(logBtn);
+    const trip = activeSession(), here = trip && trip.spot_id === s.id;
+    const tripBtn = el("button", "btn ghost small", here ? "⏹ End trip" : "▶ Start trip");
+    tripBtn.type = "button";
+    tripBtn.addEventListener("click", () => here ? endSession(false) : startSession(s));
+    const btns = el("span"); btns.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end";
+    btns.appendChild(tripBtn); btns.appendChild(logBtn);
+    row.appendChild(toggle); row.appendChild(btns);
+    const trips = (sessionsBySpot[s.id] || []).filter(x => x.ended_at);
     wrap.appendChild(row);
+    if (trips.length) {
+      const hrs = trips.reduce((n, x) => n + (new Date(x.ended_at) - new Date(x.started_at)) / 3600000, 0);
+      const skunks = trips.filter(x => !tripFish(x)).length;
+      wrap.appendChild(el("div", "spot-meta", `🕑 ${trips.length} trip${trips.length === 1 ? "" : "s"} · ${hrs.toFixed(hrs < 10 ? 1 : 0)} hrs fished` +
+        (skunks ? ` · ${skunks} skunk${skunks === 1 ? "" : "s"}` : "")));
+    }
     if (openCatchSpot === s.id) wrap.appendChild(catchForm);
     if (expanded.has(s.id) && list.length) {
       const ul = el("ul", "catch-list");
@@ -3246,16 +3425,25 @@
   }
 
   // Score one moment against a set of catches. Returns { score, reasons }.
-  function scoreMoment(now, history) {
+  // exposure: the hour-by-hour conditions of logged trips. When there are enough of them, "how often was it
+  // like this while people were fishing" replaces the textbook baseline — so a tide you fish a lot doesn't
+  // look magic just because most catches happened on it.
+  function scoreMoment(now, history, exposure) {
     let score = 0; const reasons = [];
     Object.keys(BASELINE).forEach(f => {
       const v = now[f];
       if (!v || !BASELINE[f][v]) return;
+      let base = BASELINE[f][v];
+      if (exposure && exposure.length >= 12) {
+        let n = 0, h = 0;
+        exposure.forEach(e => { if (!e || !e[f]) return; n++; if (e[f] === v) h++; });
+        if (n >= 12) base = Math.min(0.95, Math.max(0.02, (h + 12 * base) / (n + 12)));
+      }
       let total = 0, hits = 0;
       history.forEach(h => { const hv = h.f[f]; if (!hv) return; total += h.n; if (hv === v) hits += h.n; });
       if (total < 2) return;
       const prior = 2; // pulls small samples toward "no effect"
-      const lift = (hits + prior * BASELINE[f][v]) / (total + prior) / BASELINE[f][v];
+      const lift = (hits + prior * base) / (total + prior) / base;
       // Moon phase changes slowly, so a few recent catches all share it — count it at half weight
       // and only call it a reason once there's more history
       const weight = f === "moon" ? 0.5 : 1;
@@ -3277,6 +3465,9 @@
     const start = new Date(); start.setMinutes(0, 0, 0);
     const hours = []; for (let i = 0; i <= 12; i++) hours.push(new Date(start.getTime() + i * 3600000));
     const ranked = [], skipped = [];
+    const allTrips = Object.values(sessionsBySpot).flat().filter(x => x.ended_at);
+    const gHrs = allTrips.reduce((n, x) => n + tripHours(x), 0);
+    const groupRate = allTrips.length >= 3 ? allTrips.reduce((n, x) => n + tripFish(x), 0) / gHrs : null;
     filteredSpots().forEach(s => {
       const own = (catchesBySpot[s.id] || []).filter(c => c.moon_phase || c.tide_stage || c.pressure_trend);
       const ownFish = own.reduce((n, c) => n + (c.how_many || 1), 0);
@@ -3284,14 +3475,23 @@
       if (ownFish >= 3) { hist = toHist(own); basis = `${ownFish} fish caught here`; }
       else if (groupHist.reduce((n, h) => n + h.n, 0) >= 5) { hist = groupHist; basis = "few catches here yet — using everyone's catches"; }
       else { skipped.push(s); return; }
+      const trips = (sessionsBySpot[s.id] || []).filter(x => x.ended_at);
+      const expo = (trips.length >= 3 ? trips : allTrips).flatMap(x => x.hours || []);
       let best = null;
       hours.forEach((t, i) => {
-        const r = scoreMoment(factorsAt(s, i === 0 ? new Date() : t), hist);
+        const r = scoreMoment(factorsAt(s, i === 0 ? new Date() : t), hist, expo);
         if (!best || r.score > best.score + 0.01) best = { ...r, t, now: i === 0 };
       });
       const sameWater = all.filter(c => { const cs = spots.find(x => x.id === c.spot_id); return cs && cs.water_type === s.water_type; });
       const extra = spotExtras(s, ownFish >= 3 ? own : sameWater);
       best.score += extra.bonus;
+      // Catch rate from logged trips (skunks included) vs. the group's overall rate
+      if (trips.length >= 3) {
+        const hrs = trips.reduce((n, x) => n + tripHours(x), 0), fish = trips.reduce((n, x) => n + tripFish(x), 0);
+        const rate = fish / hrs, skunks = trips.filter(x => !tripFish(x)).length;
+        if (groupRate != null) best.score += Math.max(-0.4, Math.min(0.4, 0.3 * Math.log((rate + 0.05) / (groupRate + 0.05))));
+        basis += ` · ${trips.length} trips, ${rate.toFixed(1)} fish/hr` + (skunks ? `, ${skunks} skunked` : "");
+      }
       ranked.push({ s, best, basis, own: ownFish >= 3, extra });
     });
     ranked.sort((a, b) => (b.own - a.own) || (b.best.score - a.best.score));
@@ -3388,6 +3588,7 @@
       setOffline(false);
       loadCatches();
       loadPhotos();
+      syncSessions().then(loadSessions).then(maybeAskSession);
       renderPins();
       if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); } // centred on your spots
       loadSightings();
