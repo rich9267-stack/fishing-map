@@ -31,3 +31,7 @@ begin
   where email = lower(btrim(p_email)) and status in ('pending', 'blocked') and not is_admin;
 end $$;
 grant execute on function public.review_access(text, boolean) to authenticated;
+
+-- (Step D, migration "public_spots_hide_directions": spots_visible_fn now returns notes, getting_there and access_notes
+--  only when the viewer gets the EXACT pin — anyone with a blurred pin gets no written directions. Re-create the
+--  function with those three columns wrapped in `case when e.exact then s.<col> end`.)

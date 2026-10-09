@@ -74,7 +74,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   await w.eval("new Promise(r => setTimeout(r, 300))");
   console.log("who:", d.getElementById("who").textContent);
   const card = n => [...d.querySelectorAll(".spot")].find(e => e.querySelector(".spot-name").textContent.includes(n));
-  console.log("Mike Public:", card("Mike Public").querySelector(".spot-name").textContent, "|", [...card("Mike Public").querySelectorAll(".chip")].map(c => c.textContent).join(" | "));
+  console.log("stranger public spot hidden from main list:", !card("Mike Public"), "| kept for Public tab:", w.eval("spotsAll.some(x => x.name === 'Mike Public')"));
   console.log("Hillsboro chips:", [...card("Hillsboro").querySelectorAll(".chip")].map(c => c.textContent).join(" | "));
   // spot form
   w.eval("openForm(true, spots.find(x => x.id === 's1'))");

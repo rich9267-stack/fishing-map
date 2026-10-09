@@ -236,8 +236,9 @@
   .linkbtn { appearance: none; background: none; border: 0; padding: 4px 0; font: inherit; font-size: .85rem; color: var(--accent); cursor: pointer; }
   .linkbtn.danger { color: var(--falling); }
   /* List / Map tabs */
-  .tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--line); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
-  .tabs button { appearance: none; border: 0; border-radius: 9px; padding: 9px 1px; font: inherit; font-size: .78rem; font-weight: 600; white-space: nowrap; background: transparent; color: var(--muted); cursor: pointer; }
+  .tabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; background: var(--line); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
+  .tabs button { appearance: none; border: 0; border-radius: 9px; padding: 9px 0; font: inherit; font-size: .7rem; font-weight: 600; white-space: nowrap; background: transparent; color: var(--muted); cursor: pointer; }
+  @media (max-width: 340px) { .tabs button { font-size: .62rem; } }
   .tabs button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
   /* Map */
   #map { height: 62vh; min-height: 340px; border-radius: 12px; border: 1px solid var(--line); z-index: 0; }
@@ -423,6 +424,7 @@
     <button id="tab-insights" type="button" role="tab">📊 Insights</button>
     <button id="tab-seasons" type="button" role="tab">📅 Seasons</button>
     <button id="tab-feed" type="button" role="tab">🎣 Feed</button>
+    <button id="tab-public" type="button" role="tab">🌎 Public</button>
   </div>
 
   <div id="view-feed" hidden>
@@ -436,6 +438,27 @@
       <div class="label">Catch feed</div>
       <div class="spot-meta">Latest catches from everyone. Tap 👍 to cheer a fish, 💬 to comment. Catches at private spots only show for their owner.</div>
       <div id="feed-list"></div>
+    </div>
+  </div>
+
+  <div id="view-public" hidden>
+    <div class="card">
+      <div class="label">🌎 Public</div>
+      <div class="spot-meta">Catches and spots that people marked 🌎 Public. Spots you don't share a circle with show an approximate pin (within about ¼ mile) and no directions. To share your own, set a catch or spot to 🌎 Public.</div>
+      <div id="pub-sub" style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn small" id="pub-sub-feed" type="button">🎣 Catches</button>
+        <button class="btn ghost small" id="pub-sub-map" type="button">🗺 Spots map</button>
+      </div>
+    </div>
+    <div class="card" id="pub-feed" style="margin-top:14px"><div id="pub-feed-list"></div></div>
+    <div class="card" id="pub-mapwrap" style="margin-top:14px" hidden>
+      <div id="pub-map" style="height:60vh;min-height:320px;border-radius:12px;border:1px solid var(--line);z-index:0"></div>
+      <div class="map-tools"><button class="btn ghost small" id="pub-layer" type="button">🛰 Satellite</button></div>
+      <div class="spot-meta" id="pub-map-note"></div>
+    </div>
+    <div class="card" id="pub-profile" style="margin-top:14px" hidden>
+      <button class="btn ghost small" id="pub-back" type="button">← Back</button>
+      <div id="pub-profile-body"></div>
     </div>
   </div>
 
@@ -980,7 +1003,21 @@
   const db = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
   let me = null;           // { id, email, name, isAdmin } once signed in and on the invite list
   const isMine = row => !!(me && row && row.created_by === me.id);
-  let spots = null;       // null = still loading
+  let spots = null;       // null = still loading (your circle: you + friends)
+  let spotsAll = [];      // every spot you can see, including strangers' public ones (🌎 Public tab only)
+  // Your circle = you + accepted friends. The main tabs only use the circle; strangers' public posts stay in 🌎 Public.
+  let circlePromise = null, friendSig = null;
+  function getCircle(fresh) {
+    if (fresh || !circlePromise) circlePromise = (async () => {
+      try {
+        const { data, error } = await db.from("friendships").select("user_a,user_b").eq("status", "accepted");
+        if (error) throw error;
+        return new Set(data.map(r => (r.user_a === me.id ? r.user_b : r.user_a)));
+      } catch (e) { circlePromise = null; return null; }
+    })();
+    return circlePromise;
+  }
+  const inCircle = (set, id) => !id || !set || (me && id === me.id) || set.has(id);
   let spotsError = null;
   let pickedLoc = null;
 
@@ -1440,7 +1477,10 @@
 
   async function loadPhotos() {
     try {
-      const { data, error } = await db.from("photos").select("*").order("created_at", { ascending: false }).limit(500);
+      const circle = await getCircle();
+      let pq = db.from("photos").select("*");
+      if (circle) pq = pq.in("created_by", [me.id, ...circle]);
+      const { data, error } = await pq.order("created_at", { ascending: false }).limit(500);
       if (error) throw error;
       photosBySpot = {};
       data.forEach(p => (photosBySpot[p.spot_id] = photosBySpot[p.spot_id] || []).push(p));
@@ -3393,8 +3433,10 @@
 
   async function loadCatches() {
     try {
-      const { data, error } = await db.from("catches").select("*").is("deleted_at", null).order("caught_at", { ascending: false }).limit(1000);
+      const { data: rawCatches, error } = await db.from("catches").select("*").is("deleted_at", null).order("caught_at", { ascending: false }).limit(1000);
       if (error) throw error;
+      const circle = await getCircle();
+      const data = rawCatches.filter(c => inCircle(circle, c.created_by));
       catchesBySpot = {};
       data.forEach(c => (catchesBySpot[c.spot_id] = catchesBySpot[c.spot_id] || []).push(c));
       saveCopy("catches", data);
@@ -3413,7 +3455,8 @@
   // ---- Catch feed (V4): latest catches with 👍 reactions and short comments ----
   let feedReacts = {}, feedComments = {}, feedError = null, feedShown = 30;
   const feedOpen = new Set(), feedDraft = {};
-  const feedRefresh = () => { if ($("view-feed") && !$("view-feed").hidden) renderFeed(); };
+  const feedRefresh = () => { if ($("view-feed") && !$("view-feed").hidden) renderFeed(); if (typeof pubOpen === "function" && pubOpen()) renderPublic(); };
+  const redrawFeeds = () => { renderFeed(); if (typeof pubOpen === "function" && pubOpen()) renderPublic(); };
   async function loadFeed() {
     try {
       const [r, c] = await Promise.all([
@@ -3440,14 +3483,14 @@
     const set = feedReacts[c.id] || (feedReacts[c.id] = new Set());
     const had = set.has(me.id);
     had ? set.delete(me.id) : set.add(me.id);
-    renderFeed();
+    redrawFeeds();
     try {
       const { error } = had ? await db.from("catch_reactions").delete().eq("catch_id", c.id).eq("user_id", me.id)
                             : await db.from("catch_reactions").insert({ catch_id: c.id });
       if (error) throw error;
     } catch (e) {
       had ? set.add(me.id) : set.delete(me.id);
-      renderFeed(); alert("Couldn't save that — check your signal and try again.");
+      redrawFeeds(); alert("Couldn't save that — check your signal and try again.");
     }
   }
   async function sendComment(c, input) {
@@ -3460,35 +3503,32 @@
       (feedComments[c.id] = feedComments[c.id] || []).push({ created_at: new Date().toISOString(), created_by: me.id, author: me.name, body, ...data });
       delete feedDraft[c.id];
     } catch (e) { input.disabled = false; alert("Couldn't post that comment — check your signal and try again."); return; }
-    renderFeed();
+    redrawFeeds();
   }
   async function deleteComment(c, cm) {
     if (!confirm("Delete your comment?")) return;
     const { error } = await db.from("catch_comments").update({ deleted_at: new Date().toISOString() }).eq("id", cm.id);
     if (error) return alert("Couldn't delete: " + (error.message || error));
     feedComments[c.id] = (feedComments[c.id] || []).filter(x => x !== cm);
-    renderFeed();
+    redrawFeeds();
   }
-  function renderFeed() {
-    const box = $("feed-list");
-    if (!box) return;
-    renderPlans();
-    box.innerHTML = "";
-    if (feedError) box.appendChild(el("div", "msg err", feedError));
-    const all = Object.values(catchesBySpot).flat().sort((a, b) => new Date(b.caught_at) - new Date(a.caught_at));
-    if (!all.length) { box.appendChild(el("div", "empty", "No catches yet — log one and it shows up here.")); return; }
-    all.slice(0, feedShown).forEach(c => {
+  function feedCard(c, o) {
       const spot = (spots || []).find(x => x.id === c.spot_id);
       const item = el("div", "feed-item");
       const top = el("div", "feed-top");
-      const what = `${c.caught_by || "Someone"} caught ${c.how_many > 1 ? c.how_many + " " : "a "}${c.species}` + sizeText(c);
-      top.appendChild(el("span", "feed-what", what));
+      const rest = `caught ${c.how_many > 1 ? c.how_many + " " : "a "}${c.species}` + sizeText(c);
+      if (o.who) {
+        const sp = el("span", "feed-what"), nm = el("button", "linkbtn", o.who); nm.type = "button";
+        nm.addEventListener("click", () => o.onWho && o.onWho());
+        sp.appendChild(nm); sp.appendChild(document.createTextNode(" " + rest)); top.appendChild(sp);
+      } else top.appendChild(el("span", "feed-what", `${c.caught_by || "Someone"} ${rest}`));
       top.appendChild(el("span", "feed-when", feedWhen(new Date(c.caught_at))));
       item.appendChild(top);
-      item.appendChild(el("div", "spot-meta", [spot ? (spot.is_private ? "🔒 " : "📍 ") + spot.name : null,
+      const place = o.place !== undefined ? o.place : (spot ? (spot.is_private ? "🔒 " : "📍 ") + spot.name : null);
+      item.appendChild(el("div", "spot-meta", [place,
         c.bait && `on ${c.bait}`, c.tide_stage && STAGE_LABEL[c.tide_stage], c.water_temp_f != null && `${Math.round(c.water_temp_f)}°F water`]
-        .filter(Boolean).join(" · ") + (spot && spot.is_private ? " — private, only you see this" : "")));
-      const ph = (photosBySpot[c.spot_id] || []).filter(x => x.catch_id === c.id && photoUrls[x.path]);
+        .filter(Boolean).join(" · ") + (o.place === undefined && spot && spot.is_private ? " — private, only you see this" : "")));
+      const ph = o.photos || (photosBySpot[c.spot_id] || []).filter(x => x.catch_id === c.id && photoUrls[x.path]);
       if (ph.length) {
         const img = document.createElement("img");
         img.className = "feed-photo"; img.src = photoUrls[ph[0].path]; img.alt = "Photo of the catch"; img.loading = "lazy";
@@ -3505,7 +3545,7 @@
       like.addEventListener("click", () => toggleReact(c));
       const cbtn = el("button", "btn ghost small" + (feedOpen.has(c.id) ? " on" : ""), `💬 ${cms.length || ""}`.trim());
       cbtn.type = "button";
-      cbtn.addEventListener("click", () => { feedOpen.has(c.id) ? feedOpen.delete(c.id) : feedOpen.add(c.id); renderFeed(); });
+      cbtn.addEventListener("click", () => { feedOpen.has(c.id) ? feedOpen.delete(c.id) : feedOpen.add(c.id); redrawFeeds(); });
       acts.appendChild(like); acts.appendChild(cbtn);
       item.appendChild(acts);
       if (feedOpen.has(c.id)) {
@@ -3531,11 +3571,20 @@
         wrap.appendChild(form);
         item.appendChild(wrap);
       }
-      box.appendChild(item);
-    });
+      return item;
+  }
+  function renderFeed() {
+    const box = $("feed-list");
+    if (!box) return;
+    renderPlans();
+    box.innerHTML = "";
+    if (feedError) box.appendChild(el("div", "msg err", feedError));
+    const all = Object.values(catchesBySpot).flat().sort((a, b) => new Date(b.caught_at) - new Date(a.caught_at));
+    if (!all.length) { box.appendChild(el("div", "empty", "No catches yet — log one and it shows up here.")); return; }
+    all.slice(0, feedShown).forEach(c => box.appendChild(feedCard(c, {})));
     if (all.length > feedShown) {
       const more = el("button", "btn ghost small", "Show more"); more.type = "button";
-      more.addEventListener("click", () => { feedShown += 30; renderFeed(); });
+      more.addEventListener("click", () => { feedShown += 30; redrawFeeds(); });
       box.appendChild(more);
     }
   }
@@ -4158,9 +4207,11 @@
       if (!window.supabase) throw new Error("Database library didn't load");
       const { data, error } = await db.from("spots_visible").select("*").order("name");
       if (error) throw error;
-      spots = data;
+      const circle = await getCircle();
+      spotsAll = data;
+      spots = data.filter(x => inCircle(circle, x.created_by));
       spotsError = null;
-      saveCopy("spots", data);
+      saveCopy("spots", spots);
       setOffline(false);
       loadCatches();
       loadPhotos();
@@ -4346,6 +4397,9 @@
     $("view-seasons").hidden = which !== "seasons";
     $("tab-seasons").classList.toggle("on", which === "seasons");
     if (which === "seasons") renderSeasons();
+    $("view-public").hidden = which !== "public";
+    $("tab-public").classList.toggle("on", which === "public");
+    if (which === "public") { renderPublic(); loadPublic(); loadFeed(); }
     $("view-feed").hidden = which !== "feed";
     $("tab-feed").classList.toggle("on", which === "feed");
     if (which === "feed") { renderFeed(); loadFeed(); }
@@ -4367,6 +4421,7 @@
   $("tab-insights").addEventListener("click", () => { stopPlacing(); showView("insights"); });
   $("tab-seasons").addEventListener("click", () => { stopPlacing(); showView("seasons"); });
   $("tab-feed").addEventListener("click", () => { stopPlacing(); showView("feed"); });
+  $("tab-public").addEventListener("click", () => { stopPlacing(); showView("public"); });
 
   function initMap() {
     if (map || !window.L) return;
@@ -4983,6 +5038,162 @@
   }
   $("signout-btn").addEventListener("click", signOut);
 
+  // ---- 🌎 Public (V4.5 step D): public catches, a map of public spots, and profile pages ----
+  let pubCatches = [], pubShown = 30, pubMore = false, pubProfiles = {}, pubPhotos = {}, pubError = null;
+  let pubSub = "feed", pubProfileId = null, profView = null, pubFocus = null;
+  let pubMap = null, pubPins = null, pubStreet = null, pubSatTiles = null, pubSat = false, pubMarkers = {}, pubFitted = false;
+  function pubOpen() { return !!$("view-public") && !$("view-public").hidden; }
+  const profOf = id => pubProfiles[id] || friendProfiles[id] || (me && id === me.id && me.profile) || null;
+  const profName = id => { const p = profOf(id); return p ? (p.display_name || "@" + p.handle) : null; };
+  async function ensureProfiles(ids) {
+    const need = [...new Set(ids.filter(Boolean))].filter(id => !profOf(id));
+    if (!need.length) return;
+    const { data } = await db.from("profiles").select("user_id,handle,display_name,home_area,bio").in("user_id", need);
+    (data || []).forEach(x => { pubProfiles[x.user_id] = x; });
+  }
+  async function loadPubPhotos(list) {
+    const ids = list.map(c => c.id);
+    if (!ids.length) return;
+    const { data } = await db.from("photos").select("*").in("catch_id", ids).order("created_at", { ascending: false });
+    (data || []).forEach(ph => { (pubPhotos[ph.catch_id] = (pubPhotos[ph.catch_id] || []).filter(x => x.id !== ph.id)).push(ph); });
+    const need = (data || []).map(x => x.path).filter(path => !photoUrls[path]);
+    if (need.length) {
+      const { data: links } = await db.storage.from("photos").createSignedUrls(need, 3600);
+      (links || []).forEach(l => { if (l.signedUrl) photoUrls[l.path] = l.signedUrl; });
+    }
+  }
+  async function loadPublic() {
+    try {
+      const { data, error } = await db.from("catches").select("*").eq("visibility", "public").is("deleted_at", null).order("caught_at", { ascending: false }).limit(pubShown + 1);
+      if (error) throw error;
+      pubMore = data.length > pubShown; pubCatches = data.slice(0, pubShown);
+      await ensureProfiles(pubCatches.map(c => c.created_by));
+      await loadPubPhotos(pubCatches);
+      pubError = null;
+    } catch (e) { pubError = "Couldn't load the public feed right now."; }
+    renderPublic();
+  }
+  const pubPlace = c => { const sp = spotsAll.find(x => x.id === c.spot_id); return sp ? "📍 " + sp.name : "📍 Location kept private"; };
+  function pubCard(c) {
+    return feedCard(c, { who: profName(c.created_by) || c.caught_by || "Someone", onWho: () => openProfile(c.created_by),
+      place: pubPlace(c), photos: (pubPhotos[c.id] || []).filter(x => photoUrls[x.path]) });
+  }
+  function renderPublic() {
+    if (!pubOpen()) return;
+    const prof = !!pubProfileId;
+    $("pub-sub").hidden = prof;
+    $("pub-feed").hidden = prof || pubSub !== "feed";
+    $("pub-mapwrap").hidden = prof || pubSub !== "map";
+    $("pub-profile").hidden = !prof;
+    $("pub-sub-feed").className = "btn small" + (pubSub === "feed" ? "" : " ghost");
+    $("pub-sub-map").className = "btn small" + (pubSub === "map" ? "" : " ghost");
+    if (prof) renderProfilePage();
+    else if (pubSub === "feed") renderPubFeed();
+    else renderPubMap();
+  }
+  function renderPubFeed() {
+    const box = $("pub-feed-list"); box.innerHTML = "";
+    if (pubError) box.appendChild(el("div", "msg err", pubError));
+    if (!pubCatches.length && !pubError) { box.appendChild(el("div", "empty", "No public catches yet. Set one of your catches to 🌎 Public and it shows up here.")); return; }
+    pubCatches.forEach(c => box.appendChild(pubCard(c)));
+    if (pubMore) {
+      const more = el("button", "btn ghost small", "Show more"); more.type = "button";
+      more.addEventListener("click", () => { pubShown += 30; loadPublic(); });
+      box.appendChild(more);
+    }
+  }
+  async function renderPubMap() {
+    if (!window.L) { $("pub-map").textContent = "The map couldn't load — check your connection and refresh."; return; }
+    if (!pubMap) {
+      pubMap = L.map("pub-map", { zoomControl: true }).setView([LAT, LNG], 10);
+      pubStreet = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }).addTo(pubMap);
+      pubSatTiles = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics" });
+      pubPins = L.layerGroup().addTo(pubMap);
+    }
+    setTimeout(() => { pubMap.invalidateSize(); }, 50);
+    const list = spotsAll.filter(x => x.visibility === "public" && x.lat != null && x.lng != null);
+    try { await ensureProfiles(list.map(x => x.created_by)); } catch (e) { /* names are optional */ }
+    pubPins.clearLayers(); pubMarkers = {};
+    list.forEach(x => {
+      const col = WATER_COLOR[x.water_type] || "#555";
+      if (x.is_exact === false) L.circle([x.lat, x.lng], { radius: 400, color: col, weight: 1, dashArray: "4 4", fillColor: col, fillOpacity: 0.08, interactive: false }).addTo(pubPins);
+      pubMarkers[x.id] = L.circleMarker([x.lat, x.lng], { radius: 9, weight: 3, color: "#ffffff", fillColor: col, fillOpacity: 1 }).bindPopup(() => pubPopup(x)).addTo(pubPins);
+    });
+    $("pub-map-note").textContent = list.length ? `${list.length} public spot${list.length === 1 ? "" : "s"}. Dashed circles mean the pin is approximate (the real spot is within about ¼ mile).` : "No public spots yet. Set a spot to 🌎 Public and it shows up here.";
+    if (pubFocus && pubMarkers[pubFocus]) { const mk = pubMarkers[pubFocus]; pubMap.setView(mk.getLatLng(), 15); mk.openPopup(); pubFocus = null; pubFitted = true; }
+    else if (!pubFitted && list.length) { pubFitted = true; pubMap.fitBounds(list.map(x => [x.lat, x.lng]), { padding: [30, 30], maxZoom: 14 }); }
+  }
+  function pubPopup(x) {
+    const box = document.createElement("div");
+    box.appendChild(el("div", "pop-name", "🌎 " + x.name));
+    box.appendChild(el("div", "pop-meta", `${cap(x.spot_type)} · ${WATER_LABEL[x.water_type] || x.water_type}`));
+    box.appendChild(el("div", "pop-meta", x.is_exact === false ? "Approximate pin — within about ¼ mile" : "Exact pin (yours or a friend's)"));
+    const who = profName(x.created_by);
+    if (who) {
+      const b = el("button", "linkbtn", "Shared by " + who); b.type = "button";
+      b.addEventListener("click", () => { pubMap.closePopup(); openProfile(x.created_by); });
+      box.appendChild(b);
+    }
+    return box;
+  }
+  async function openProfile(id) {
+    pubProfileId = id; profView = { loading: true, catches: [] };
+    renderPublic();
+    try {
+      const [pr, ct] = await Promise.all([
+        db.from("profiles").select("user_id,handle,display_name,home_area,bio").eq("user_id", id).maybeSingle(),
+        db.from("catches").select("*").eq("created_by", id).eq("visibility", "public").is("deleted_at", null).order("caught_at", { ascending: false }).limit(30)
+      ]);
+      if (pr.data && pr.data.user_id) pubProfiles[id] = pr.data;
+      if (ct.error) throw ct.error;
+      profView = { catches: ct.data || [] };
+      await loadPubPhotos(profView.catches);
+    } catch (e) { profView = { catches: [], error: true }; }
+    if (pubProfileId === id) renderPublic();
+  }
+  function renderProfilePage() {
+    const id = pubProfileId, box = $("pub-profile-body"); box.innerHTML = "";
+    const p = profOf(id), mine = !!(me && id === me.id);
+    const head = el("div"); head.style.marginTop = "10px";
+    head.appendChild(el("div", "label", p ? (p.display_name || "@" + p.handle) : "Someone"));
+    if (p) head.appendChild(el("div", "spot-meta", `@${p.handle}` + (p.home_area ? ` · ${p.home_area}` : "")));
+    if (p && p.bio) head.appendChild(el("p", null, p.bio));
+    box.appendChild(head);
+    if (!mine && p) {
+      const r = friendRows.find(x => otherOf(x) === id);
+      const done = ok => { if (ok !== false) renderPublic(); };
+      let act;
+      if (!r) act = frBtn("Add friend", async () => { friendProfiles[id] = p; done(await sendRequest(id)); }, "btn small");
+      else if (r.status === "accepted") act = el("span", "spot-meta", "✓ Friends");
+      else if (r.requested_by === me.id) act = el("span", "spot-meta", "Friend request sent");
+      else act = frBtn("Accept friend request", async () => { done(await acceptRequest(r)); }, "btn small");
+      act.style.marginTop = "8px"; box.appendChild(act);
+    }
+    const sp = spotsAll.filter(x => x.created_by === id && x.visibility === "public");
+    box.appendChild(el("div", "label", `Public spots (${sp.length})`));
+    if (!sp.length) box.appendChild(el("div", "spot-meta", "None shared yet."));
+    sp.forEach(x => {
+      const row = el("div", "feed-top"); row.style.cssText = "padding:6px 0;align-items:center";
+      row.appendChild(el("span", null, "🌎 " + x.name));
+      const b = frBtn("Show on map", () => { pubFocus = x.id; pubProfileId = null; pubSub = "map"; renderPublic(); }); row.appendChild(b);
+      box.appendChild(row);
+    });
+    box.appendChild(el("div", "label", "Public catches"));
+    if (profView && profView.loading) box.appendChild(el("div", "spot-meta", "Loading…"));
+    else if (profView && profView.error) box.appendChild(el("div", "msg err", "Couldn't load their catches right now."));
+    else if (!profView || !profView.catches.length) box.appendChild(el("div", "spot-meta", "No public catches yet."));
+    else profView.catches.forEach(c => box.appendChild(pubCard(c)));
+  }
+  $("pub-sub-feed").addEventListener("click", () => { pubSub = "feed"; renderPublic(); });
+  $("pub-sub-map").addEventListener("click", () => { pubSub = "map"; renderPublic(); });
+  $("pub-back").addEventListener("click", () => { pubProfileId = null; profView = null; renderPublic(); });
+  $("pub-layer").addEventListener("click", () => {
+    if (!pubMap) return;
+    pubSat = !pubSat;
+    if (pubSat) { pubMap.removeLayer(pubStreet); pubSatTiles.addTo(pubMap); } else { pubMap.removeLayer(pubSatTiles); pubStreet.addTo(pubMap); }
+    $("pub-layer").textContent = pubSat ? "🗺 Street map" : "🛰 Satellite";
+  });
+
   // ---- Friends (V4 social) ----
   let friendRows = [], friendProfiles = {};
   const otherOf = r => (r.user_a === me.id ? r.user_b : r.user_a);
@@ -4999,6 +5210,9 @@
       if (error) throw error;
       friendRows = data;
       me.friendIds = new Set(data.filter(r => r.status === "accepted").map(otherOf));
+      const sig = [...me.friendIds].sort().join();
+      if (friendSig !== null && sig !== friendSig) { getCircle(true); loadSpots(); }
+      friendSig = sig;
       const ids = [...new Set(data.map(otherOf))];
       if (ids.length) {
         const { data: ps, error: e2 } = await db.from("profiles").select("user_id,handle,display_name,home_area").in("user_id", ids);
