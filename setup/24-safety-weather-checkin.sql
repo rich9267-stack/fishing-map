@@ -1,0 +1,9 @@
+-- 24: Severe weather alerts + "Heading out / I'm back" check-in (float plans).
+-- Applied as Supabase migrations `safety_float_plans_weather` and `notifications_allow_safety_weather`.
+-- notif_prefs.weather (default true). enqueue_notification: kinds weather / weather_urgent; safety + weather_urgent + test ignore quiet hours.
+-- notifications.kind check now also allows safety, weather, weather_urgent.
+-- Table float_plans (owner + chosen buddies can read; writes only via functions):
+--   start_float_plan(spot, place, note, due, grace_min, buddies[], lat, lng)  one active plan each, buddies must be friends
+--   ping_float_plan(id, lat, lng) · extend_float_plan(id, minutes) · end_float_plan(id, cancel)
+-- Service functions: float_check() (cron float-check */5: reminder at due time, buddy alert after grace), weather_targets().
+-- Edge function weather-watch (cron weather-watch */10): NWS alerts at each person's position -> push.

@@ -230,6 +230,25 @@
   #boat-msg { min-height: 1.6em; font-size: 1.15rem; text-align: center; color: #bff0cf; }
   #boat-msg.err { color: #ffb4a8; }
   #boat-foot { font-size: .85rem; color: #7fa3b0; text-align: center; }
+  #safety-strip { margin-bottom: 4px; }
+  .wx-item { border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: .92rem; cursor: pointer; border: 1px solid #e0b100; background: #fff7d6; color: #5a4500; }
+  .wx-item.urgent { border-color: #c0392b; background: #fde8e6; color: #7b1d14; }
+  .wx-item .wx-more { margin-top: 6px; font-size: .85rem; white-space: pre-wrap; }
+  .ci-box { border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--line); background: var(--card); font-size: .92rem; }
+  .ci-box.late { border-color: #c0392b; background: #fde8e6; color: #7b1d14; }
+  .ci-box.mine { border-color: #1f9d55; }
+  .ci-box .ci-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  #ci-sheet { position: fixed; inset: 0; z-index: 1210; background: rgba(0,0,0,.55); overflow: auto; padding: 16px; }
+  #ci-sheet[hidden] { display: none; }
+  .ci-card { max-width: 520px; margin: 0 auto; background: var(--card); color: var(--text); border-radius: 14px; padding: 16px; }
+  .ci-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ci-chips button, .ci-bud { border: 2px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px; padding: 8px 14px; font: inherit; cursor: pointer; }
+  .ci-chips button.on, .ci-bud.on { border-color: #1f9d55; background: #e6f6ec; color: #14503a; font-weight: 700; }
+  #boat-wx { border-radius: 14px; padding: 10px 12px; font-size: 1.05rem; font-weight: 700; background: #5a4500; color: #ffe8a0; text-align: center; }
+  #boat-wx.urgent { background: #7b1d14; color: #fff; }
+  #boat-ci { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .95rem; color: #9fc3d0; }
+  #boat-ci button { background: #1c3a46; color: #fff; border: 0; border-radius: 12px; padding: 12px 14px; font-size: 1rem; font-weight: 700; }
+  #boat-ci.on button { background: #1f9d55; }
   #qc-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom)); background: #12262e; color: #fff;
     padding: 10px 16px; border-radius: 999px; z-index: 1200; font-size: .92rem; box-shadow: 0 4px 14px rgba(0,0,0,.3); max-width: 90vw; text-align: center; }
   #welcome { position: fixed; inset: 0; z-index: 1200; background: var(--bg); overflow: auto; padding: 16px; }
@@ -418,6 +437,8 @@
           <div class="spot-meta" id="push-c-note">Looks at moving tide, dawn/dusk light, falling pressure, light wind and your own catches. Includes nearby friends' and public spots you can see. It stays quiet on ordinary days. Location: your saved spots' middle until you set it.</div>
           <div class="spot-meta" id="push-c-out" hidden></div>
         </div>
+        <label class="check-row" for="push-p-wx"><input id="push-p-wx" type="checkbox"><span>⛈️ Severe weather — storms, small-craft advisories, rip currents at your spots</span></label>
+        <div class="spot-meta" style="margin:0 0 6px 26px">Storm <i>warnings</i> and 🛟 check-in alerts always get through, even in quiet hours.</div>
         <label class="check-row" for="push-q-on" style="margin-top:8px"><input id="push-q-on" type="checkbox"><span>🌙 Quiet hours — no buzzing during these times</span></label>
         <div class="two" id="push-q-times" hidden>
           <div><label for="push-q-start">From</label><input id="push-q-start" type="time" value="22:00"></div>
@@ -558,6 +579,13 @@
     </div>
     <div class="msg" id="pl-msg"></div>
   </form>
+  </div>
+
+  <div id="safety-strip" hidden>
+    <div id="wx-banner" hidden></div>
+    <div id="ci-mine" hidden></div>
+    <div id="ci-watch"></div>
+    <button class="btn ghost small" id="ci-start" type="button" style="margin-bottom:10px">🛟 Heading out? Check in with a buddy</button>
   </div>
 
   <div class="tabs" role="tablist">
@@ -950,6 +978,32 @@
   </div>
 </div>
 
+<div id="ci-sheet" hidden>
+  <form class="ci-card" id="ci-form">
+    <div class="label" style="font-size:1.15rem">🛟 Heading out</div>
+    <div class="spot-meta">Your buddies get a heads-up now, and an alert if you haven't checked back in by your time + the wait you choose.</div>
+    <label for="ci-place">Where are you going?</label>
+    <input id="ci-place" maxlength="80" list="ci-places" autocomplete="off" placeholder="e.g., Hillsboro Inlet, offshore of the pier" required>
+    <datalist id="ci-places"></datalist>
+    <label>I'll be back by</label>
+    <div id="ci-presets" class="ci-chips"></div>
+    <div class="spot-meta" id="ci-due-text"></div>
+    <label for="ci-time">…or pick a time (today or tomorrow)</label>
+    <input id="ci-time" type="time">
+    <label>Who's watching out for you?</label>
+    <div id="ci-buddies"></div>
+    <label for="ci-grace">If I'm late, alert them after</label>
+    <select id="ci-grace"><option value="15">15 minutes</option><option value="30" selected>30 minutes</option><option value="60">1 hour</option></select>
+    <label for="ci-note">Note (optional)</label>
+    <input id="ci-note" maxlength="200" placeholder="e.g., 22 ft Boston Whaler, 2 people aboard">
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn" id="ci-go" type="submit">Start check-in</button>
+      <button class="btn ghost" id="ci-cancel" type="button">Not now</button>
+    </div>
+    <div class="msg" id="ci-msg"></div>
+  </form>
+</div>
+
 <div id="boat" hidden>
   <div class="boat-top">
     <button type="button" id="boat-close">✕ Exit</button>
@@ -964,6 +1018,8 @@
   <div id="boat-other" hidden><input id="boat-other-in" type="text" maxlength="40" placeholder="Type the fish…" autocomplete="off"><button type="button" id="boat-other-ok">Use</button></div>
   <button type="button" id="boat-catch">🎣 CATCH</button>
   <button type="button" id="boat-mark">📍 MARK THIS SPOT</button>
+  <div id="boat-wx" hidden></div>
+  <div id="boat-ci"><span id="boat-ci-text"></span><button type="button" id="boat-ci-btn">🛟 Check in</button></div>
   <div id="boat-msg"></div>
   <div id="boat-foot"></div>
 </div>
@@ -5543,7 +5599,7 @@
     }
     if (speed != null && speed < 0.25) speed = 0; // GPS jitter while drifting
     boat.speed = speed; boat.pos = cur;
-    boatRender();
+    boatRender(); ciMaybePing(cur);
   }
 
   async function boatWake() {
@@ -5563,12 +5619,12 @@
     if (!me) return;
     $("boat").hidden = false; document.body.style.overflow = "hidden";
     boat.logged = 0; boat.busy = false; boat.pos = null; boat.prev = null; boat.speed = null; boat.heading = null;
-    boatMsg(""); boatSpeciesChips(); boatRender(); boatWake(); boatFlushMarks();
+    boatMsg(""); boatSpeciesChips(); boatRender(); boatWake(); boatFlushMarks(); ciBoatRender(); ciLoad(); wxRefresh();
     if (!navigator.geolocation) { boatMsg("This phone can't share its location.", true); return; }
     boat.watch = navigator.geolocation.watchPosition(boatOnFix, err => {
       boatMsg(err && err.code === 1 ? "Location is blocked — allow location for this site in your phone's settings." : "Can't get a GPS fix yet…", true);
     }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
-    boat.tick = setInterval(boatRender, 3000);
+    boat.tick = setInterval(() => { boatRender(); if (Date.now() - (boat.wxAt || 0) > 300000 && boat.pos) { boat.wxAt = Date.now(); wxRefresh(true); } }, 3000);
   }
   function closeBoat() {
     $("boat").hidden = true; document.body.style.overflow = "";
@@ -5656,6 +5712,189 @@
   $("boat-catch").addEventListener("click", boatCatch);
   $("boat-mark").addEventListener("click", boatMark);
   $("boat-units").addEventListener("click", () => { boat.units = boat.units === "mph" ? "kn" : "mph"; try { localStorage.setItem("fm-boat-units", boat.units); } catch (e) {} boatRender(); });
+
+  // ---- 🛟 Safety: severe-weather banner + "Heading out / I'm back" check-in (float plan) ----
+  // Weather: National Weather Service alerts for where you are (Boat mode GPS, else the map centre, else the middle of your spots).
+  // Check-in: tell chosen friends where you're going and when you'll be back; if you don't check in, they get an alert.
+  const WX_URGENT = /^(Tornado Warning|Severe Thunderstorm Warning|Special Marine Warning|Flash Flood Warning|Hurricane Warning|Tropical Storm Warning|Storm Surge Warning|Extreme Wind Warning|Gale Warning|Storm Warning|Hurricane Force Wind Warning|Tsunami Warning|Waterspout Warning)$/;
+  const WX_NORMAL = /^(Tornado Watch|Severe Thunderstorm Watch|Flash Flood Watch|Hurricane Watch|Tropical Storm Watch|Storm Surge Watch|Gale Watch|Small Craft Advisory.*|Rip Current Statement|High Surf Advisory|High Surf Warning|Coastal Flood Warning|Coastal Flood Advisory|Dense Fog Advisory|Dense Fog Warning|Heat Advisory|Excessive Heat Warning)$/;
+  const wx = { cache: {}, list: [], open: null, timer: null };
+  const ci = { mine: null, watch: [], lastPing: 0, timer: null, pick: new Set(), hours: 4, sending: false };
+  const CI_BUD_KEY = () => `fm-ci-buddies-${me ? me.id : "x"}`;
+  const fmtClock = d => new Date(d).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+  function wxPoint() {
+    if (!$("boat").hidden && boat.pos) return { lat: boat.pos.lat, lng: boat.pos.lng };
+    if (ci.mine && ci.mine.last_lat != null) return { lat: ci.mine.last_lat, lng: ci.mine.last_lng };
+    try { if (map && !$("view-map").hidden) { const c = map.getCenter(); return { lat: c.lat, lng: c.lng }; } } catch (e) {}
+    const mine = (spots || []).filter(s => s.created_by === me.id && hasLoc(s));
+    if (mine.length) return { lat: mine.reduce((n, s) => n + s.lat, 0) / mine.length, lng: mine.reduce((n, s) => n + s.lng, 0) / mine.length };
+    return { lat: 26.24, lng: -80.12 }; // Pompano Beach
+  }
+  async function wxFetch(pt, force) {
+    const key = pt.lat.toFixed(2) + "," + pt.lng.toFixed(2), c = wx.cache[key];
+    if (c && !force && Date.now() - c.t < 300000) return c.list;
+    try {
+      const r = await fetch(`https://api.weather.gov/alerts/active?point=${pt.lat.toFixed(4)},${pt.lng.toFixed(4)}`, { headers: { Accept: "application/geo+json" } });
+      if (!r.ok) throw new Error("NWS " + r.status);
+      const list = ((await r.json()).features || []).map(f => f.properties || {}).filter(a => (WX_URGENT.test(a.event || "") || WX_NORMAL.test(a.event || "")) && a.messageType !== "Cancel")
+        .map(a => ({ event: a.event, urgent: WX_URGENT.test(a.event), ends: a.ends || a.expires, area: String(a.areaDesc || "").split(";")[0], headline: a.headline || "", text: String(a.description || "").replace(/\s+/g, " ").trim() }))
+        .sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
+      wx.cache[key] = { t: Date.now(), list }; return list;
+    } catch (e) { return c ? c.list : []; }
+  }
+  function wxRender() {
+    const box = $("wx-banner"); box.innerHTML = "";
+    wx.list.slice(0, 4).forEach((a, i) => {
+      const d = el("div", "wx-item" + (a.urgent ? " urgent" : ""));
+      d.appendChild(el("b", null, (a.urgent ? "⛈️ " : "🌊 ") + a.event));
+      d.appendChild(el("span", null, (a.ends ? " — until " + fmtClock(a.ends) : "") + (a.area ? " · " + a.area : "")));
+      if (wx.open === i) d.appendChild(el("div", "wx-more", a.text.slice(0, 600) + (a.text.length > 600 ? "…" : "") + "\nSource: National Weather Service"));
+      d.addEventListener("click", () => { wx.open = wx.open === i ? null : i; wxRender(); });
+      box.appendChild(d);
+    });
+    box.hidden = !wx.list.length;
+    const bw = $("boat-wx"), top = wx.list[0];
+    bw.hidden = !top; bw.className = top && top.urgent ? "urgent" : "";
+    if (top) bw.textContent = (top.urgent ? "⛈️ " : "🌊 ") + top.event + (top.ends ? " until " + fmtClock(top.ends) : "") + (wx.list.length > 1 ? ` (+${wx.list.length - 1} more)` : "");
+    safetyStripShow();
+  }
+  async function wxRefresh(force) {
+    if (!me) return;
+    wx.list = await wxFetch(wxPoint(), force); wxRender();
+  }
+
+  function safetyStripShow() {
+    $("safety-strip").hidden = !me;
+    $("ci-start").hidden = !!ci.mine;
+  }
+  async function ciLoad() {
+    if (!me) return;
+    try {
+      const { data, error } = await db.from("float_plans").select("*").in("status", ["active", "alerted"]).order("created_at", { ascending: false });
+      if (error) throw error;
+      ci.mine = (data || []).find(p => p.user_id === me.id) || null;
+      ci.watch = (data || []).filter(p => p.user_id !== me.id);
+    } catch (e) { /* keep what we had */ }
+    ciRender();
+  }
+  const ciWho = id => { const p = friendProfiles[id]; return p ? p.display_name : "A friend"; };
+  const ciLeft = due => { const m = Math.round((new Date(due) - Date.now()) / 60000); const a = Math.abs(m), t = a >= 60 ? `${Math.floor(a / 60)} h ${a % 60} min` : `${a} min`; return m >= 0 ? `in ${t}` : `${t} ago`; };
+  const mapsLink = (lat, lng) => `https://maps.google.com/?q=${lat},${lng}`;
+  function ciRender() {
+    const mine = $("ci-mine"), w = $("ci-watch"); mine.innerHTML = ""; w.innerHTML = "";
+    const p = ci.mine;
+    if (p) {
+      const late = p.status === "alerted" || new Date(p.due_at) < Date.now();
+      mine.className = "ci-box mine" + (late ? " late" : "");
+      mine.appendChild(el("b", null, late ? "🛟 You're past your check-in time" : "🛟 Check-in running"));
+      mine.appendChild(el("div", null, `${p.place} · back by ${fmtClock(p.due_at)} (${ciLeft(p.due_at)})`));
+      mine.appendChild(el("div", "spot-meta", p.status === "alerted" ? "Your buddies have been alerted. Tap “I'm back” as soon as you can." : `Watching: ${(p.buddies || []).map(ciWho).join(", ")} · alert ${p.grace_min} min after`));
+      const row = el("div", "ci-btns");
+      row.appendChild(frBtn("✅ I'm back", () => ciBack(p.id, false), "btn small"));
+      row.appendChild(frBtn("+1 hour", () => ciExtend(p.id)));
+      row.appendChild(frBtn("Cancel", () => ciBack(p.id, true)));
+      mine.appendChild(row); mine.hidden = false;
+    } else mine.hidden = true;
+    ci.watch.forEach(x => {
+      const late = x.status === "alerted";
+      const d = el("div", "ci-box" + (late ? " late" : ""));
+      d.appendChild(el("b", null, late ? `⚠️ ${ciWho(x.user_id)} hasn't checked back in` : `👀 You're watching out for ${ciWho(x.user_id)}`));
+      d.appendChild(el("div", null, `${x.place} · back by ${fmtClock(x.due_at)} (${ciLeft(x.due_at)})`));
+      if (x.note) d.appendChild(el("div", "spot-meta", x.note));
+      const row = el("div", "ci-btns");
+      if (x.last_lat != null) { const a = el("a", "btn ghost small", `📍 Last seen ${fmtClock(x.last_at)}`); a.href = mapsLink(x.last_lat, x.last_lng); a.target = "_blank"; a.rel = "noopener"; row.appendChild(a); }
+      else d.appendChild(el("div", "spot-meta", "No position shared (it only updates while they have Boat mode open)."));
+      row.appendChild(frBtn("💬 Message", () => openChatWith(x.user_id), "btn small"));
+      d.appendChild(row); w.appendChild(d);
+    });
+    safetyStripShow(); ciBoatRender();
+  }
+  function ciBoatRender() {
+    const p = ci.mine, box = $("boat-ci");
+    box.classList.toggle("on", !!p);
+    $("boat-ci-text").textContent = p ? `🛟 Back by ${fmtClock(p.due_at)} · ${p.place}` : "🛟 No check-in running";
+    $("boat-ci-btn").textContent = p ? "✅ I'm back" : "🛟 Check in";
+  }
+  async function ciBack(id, cancel) {
+    if (cancel && !confirm("Cancel this check-in? Your buddies will be told it was cancelled.")) return;
+    const { error } = await db.rpc("end_float_plan", { p_id: id, p_cancel: !!cancel });
+    if (error) { toast("Couldn't update: " + error.message); return; }
+    toast(cancel ? "Check-in cancelled — buddies told." : "Welcome back 👋 — your buddies were told you're safe.", 4500);
+    ci.mine = null; await ciLoad();
+  }
+  async function ciExtend(id) {
+    const { error } = await db.rpc("extend_float_plan", { p_id: id, p_minutes: 60 });
+    if (error) { toast("Couldn't extend: " + error.message); return; }
+    toast("Back-by time pushed 1 hour."); await ciLoad();
+  }
+  // Boat mode shares your position about every 2 minutes, so buddies can see where you were last
+  function ciMaybePing(cur) {
+    const p = ci.mine;
+    if (!p || p.status !== "active" || !navigator.onLine || Date.now() - ci.lastPing < 120000) return;
+    ci.lastPing = Date.now();
+    db.rpc("ping_float_plan", { p_id: p.id, p_lat: +cur.lat.toFixed(5), p_lng: +cur.lng.toFixed(5) }).then(() => {}, () => {});
+  }
+
+  // --- the "Heading out" form ---
+  function ciDue() {
+    const t = $("ci-time").value;
+    if (t) { const [h, m] = t.split(":").map(Number), d = new Date(); d.setHours(h, m, 0, 0); if (d.getTime() < Date.now() + 300000) d.setDate(d.getDate() + 1); return d; }
+    return new Date(Date.now() + ci.hours * 3600000);
+  }
+  function ciDueText() { $("ci-due-text").textContent = "Back by " + fmtClock(ciDue()) + (ciDue().getDate() !== new Date().getDate() ? " tomorrow" : ""); }
+  function ciOpen() {
+    if (!me || ci.mine) return;
+    if (!me.friendIds && !ciOpen.tried) { ciOpen.tried = true; loadFriends().then(ciOpen); return; }
+    const friends = [...(me.friendIds || [])];
+    $("ci-msg").textContent = ""; $("ci-time").value = ""; $("ci-note").value = ""; $("ci-grace").value = "30";
+    $("ci-places").innerHTML = ""; (spots || []).filter(s => s.created_by === me.id).slice(0, 40).forEach(s => { const o = document.createElement("option"); o.value = s.name; $("ci-places").appendChild(o); });
+    const last = (() => { try { return JSON.parse(localStorage.getItem(CI_BUD_KEY()) || "[]"); } catch (e) { return []; } })().filter(id => friends.includes(id));
+    ci.pick = new Set(last);
+    if (!ci.pick.size) { const rico = friends.find(id => /rico/i.test(((friendProfiles[id] || {}).display_name || "") + " " + ((friendProfiles[id] || {}).handle || ""))); if (rico) ci.pick.add(rico); }
+    const pr = $("ci-presets"); pr.innerHTML = "";
+    [2, 4, 6, 8].forEach(h => { const b = el("button", ci.hours === h ? "on" : "", `${h} hours`); b.type = "button"; b.addEventListener("click", () => { ci.hours = h; $("ci-time").value = ""; pr.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); ciDueText(); }); pr.appendChild(b); });
+    const bx = $("ci-buddies"); bx.innerHTML = "";
+    if (!friends.length) bx.appendChild(el("div", "spot-meta", "You need at least one friend first — add one in 👥 Friends."));
+    friends.slice(0, 40).forEach(id => {
+      const b = el("button", "ci-bud" + (ci.pick.has(id) ? " on" : ""), ciWho(id)); b.type = "button"; b.style.margin = "0 8px 8px 0";
+      b.addEventListener("click", () => { if (ci.pick.has(id)) ci.pick.delete(id); else if (ci.pick.size < 5) ci.pick.add(id); b.classList.toggle("on", ci.pick.has(id)); });
+      bx.appendChild(b);
+    });
+    ciDueText(); $("ci-sheet").hidden = false;
+    // a spot you're standing near is a good guess for "where"
+    if (!$("ci-place").value && navigator.geolocation) navigator.geolocation.getCurrentPosition(p => {
+      const n = nearbySpots({ lat: p.coords.latitude, lng: p.coords.longitude })[0];
+      if (n && n.d <= 1 && !$("ci-place").value) $("ci-place").value = n.s.name;
+    }, () => {}, { timeout: 4000, maximumAge: 300000 });
+  }
+  $("ci-time").addEventListener("input", ciDueText);
+  $("ci-cancel").addEventListener("click", () => { $("ci-sheet").hidden = true; });
+  $("ci-start").addEventListener("click", ciOpen);
+  $("ci-form").addEventListener("submit", async e => {
+    e.preventDefault(); if (ci.sending) return;
+    const place = $("ci-place").value.trim(), msg = $("ci-msg");
+    if (!place) { msg.className = "msg err"; msg.textContent = "Say where you're going."; return; }
+    if (!ci.pick.size) { msg.className = "msg err"; msg.textContent = "Pick at least one buddy to watch out for you."; return; }
+    ci.sending = true; $("ci-go").disabled = true; msg.className = "msg"; msg.textContent = "Starting…";
+    const spot = (spots || []).find(s => s.created_by === me.id && s.name === place);
+    const pos = await new Promise(res => { if (!navigator.geolocation) return res(null); navigator.geolocation.getCurrentPosition(p => res(p.coords), () => res(null), { timeout: 5000, maximumAge: 120000 }); });
+    const { error } = await db.rpc("start_float_plan", { p_spot: spot ? spot.id : null, p_place: place, p_note: $("ci-note").value.trim(), p_due: ciDue().toISOString(),
+      p_grace: +$("ci-grace").value, p_buddies: [...ci.pick], p_lat: pos ? +pos.latitude.toFixed(5) : null, p_lng: pos ? +pos.longitude.toFixed(5) : null });
+    ci.sending = false; $("ci-go").disabled = false;
+    if (error) { msg.className = "msg err"; msg.textContent = "Couldn't start: " + error.message; return; }
+    try { localStorage.setItem(CI_BUD_KEY(), JSON.stringify([...ci.pick])); } catch (e2) {}
+    $("ci-sheet").hidden = true; toast("🛟 Check-in started — your buddies know.", 4500);
+    ci.lastPing = 0; await ciLoad(); wxRefresh(true);
+  });
+  $("boat-ci-btn").addEventListener("click", () => { if (ci.mine) ciBack(ci.mine.id, false); else ciOpen(); });
+
+  function safetyStart() {
+    safetyStripShow(); ciLoad(); wxRefresh();
+    clearInterval(ci.timer); ci.timer = setInterval(() => { if (document.visibilityState === "visible" && me) { ciLoad(); wxRefresh(); } }, 60000);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && me) { ciLoad(); wxRefresh(); } });
+  }
+  function safetyStop() { clearInterval(ci.timer); ci.mine = null; ci.watch = []; wx.list = []; $("safety-strip").hidden = true; }
 
   // ---- Sign-in (Supabase Auth) and the invite list ----
   const SITE = location.origin + location.pathname;
@@ -5790,6 +6029,7 @@
     checkRequests();
     startChat();
     loadBlocks();
+    safetyStart();
     setTimeout(() => { updatePendingBar(); flushQueue(); }, 1500);
     if (!appStarted) {
       appStarted = true;
@@ -5802,7 +6042,7 @@
 
   async function signOut() {
     await db.auth.signOut();
-    me = null; spots = null; catchesBySpot = {};
+    me = null; spots = null; catchesBySpot = {}; safetyStop();
     $("invite-card").hidden = true;
     showAuth("signin");
   }
@@ -6837,7 +7077,7 @@
         const { data } = await db.from("notif_prefs").select("*").eq("user_id", me.id).maybeSingle();
         const p = data || { social: true, contests: true, trips: true };
         $("push-p-social").checked = p.social !== false; $("push-p-contests").checked = p.contests !== false; $("push-p-trips").checked = p.trips !== false;
-        $("push-p-cond").checked = !!p.conditions; $("push-c-opts").hidden = !p.conditions;
+        $("push-p-wx").checked = p.weather !== false; $("push-p-cond").checked = !!p.conditions; $("push-c-opts").hidden = !p.conditions;
         $("push-c-time").value = String(p.cond_time || "06:30").slice(0, 5); $("push-c-radius").value = String(p.cond_radius_mi || 25);
         pushCondLoc = p.cond_lat != null && p.cond_lng != null ? { lat: p.cond_lat, lng: p.cond_lng } : null;
         $("push-c-loc").textContent = pushCondLoc ? "📍 Location saved — update it" : "📍 Use my current location";
@@ -6883,7 +7123,7 @@
     $("push-c-opts").hidden = !$("push-p-cond").checked;
     let tz = "America/New_York"; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch (e) {}
     const { error } = await db.from("notif_prefs").upsert({ user_id: me.id, social: $("push-p-social").checked, contests: $("push-p-contests").checked, trips: $("push-p-trips").checked,
-      conditions: $("push-p-cond").checked, cond_time: $("push-c-time").value || "06:30", cond_radius_mi: +$("push-c-radius").value || 25,
+      weather: $("push-p-wx").checked, conditions: $("push-p-cond").checked, cond_time: $("push-c-time").value || "06:30", cond_radius_mi: +$("push-c-radius").value || 25,
       ...(pushCondLoc ? { cond_lat: pushCondLoc.lat, cond_lng: pushCondLoc.lng } : {}),
       quiet_enabled: $("push-q-on").checked, quiet_start: $("push-q-start").value || "22:00", quiet_end: $("push-q-end").value || "06:00", tz, updated_at: new Date().toISOString() });
     pushSay(error ? "Couldn't save: " + error.message : "Saved ✓", !!error);
@@ -6894,7 +7134,7 @@
     const { error } = await db.rpc("send_test_push");
     pushSay(error ? "Couldn't send: " + error.message : "Sent — it should buzz in a few seconds.", !!error);
   });
-  ["push-p-social", "push-p-contests", "push-p-trips", "push-p-cond", "push-c-time", "push-c-radius", "push-q-on", "push-q-start", "push-q-end"].forEach(id => $(id).addEventListener("change", pushSavePrefs));
+  ["push-p-social", "push-p-contests", "push-p-trips", "push-p-wx", "push-p-cond", "push-c-time", "push-c-radius", "push-q-on", "push-q-start", "push-q-end"].forEach(id => $(id).addEventListener("change", pushSavePrefs));
   $("push-c-loc").addEventListener("click", () => {
     if (!navigator.geolocation) { pushSay("This phone can't share its location.", true); return; }
     pushSay("Finding you…");
@@ -6934,6 +7174,7 @@
     }
     else if (go === "contest" && q.get("id")) { ctId = q.get("id"); ctView = "detail"; feedMode = "contests"; showView("feed"); window.scrollTo({ top: 0 }); }
     else if (go === "spot" && q.get("id")) { goToSpot(q.get("id"), false); }
+    else if (go === "plan" || go === "weather") { showView("list"); ciLoad(); wxRefresh(true); setTimeout(() => $("safety-strip").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }
     else if (go === "invite" && me.isAdmin) $("invite-btn").click();
     else { feedMode = "circle"; showView("feed"); window.scrollTo({ top: 0 }); }
   }
