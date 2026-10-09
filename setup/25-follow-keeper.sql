@@ -1,0 +1,5 @@
+-- 25: Follow ⭐ spots + keeper-size checker. Applied as Supabase migrations `spot_follows` and `fish_rules`.
+-- spot_follows(user_id, spot_id): you read/add/remove only your own rows. morning_inputs() now flags each spot `followed`.
+-- fish_rules: one row per species (match words, min_in, max_in, measure total|fork, one_over, bag, release_only, closed / open_only date lists,
+--   note, source_url, verified_on, active). Members read; only admin inserts/updates (edited in the app: Invite card -> 🐟 Size & bag rules).
+--   Seeded Oct 9, 2026 from the FWC species pages (Atlantic / Southeast Florida).

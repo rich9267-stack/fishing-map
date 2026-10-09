@@ -79,14 +79,15 @@ export function planDay(spots, hist, day, from = 5, to = 20) {
     const rare = r => r.pts.some(t => RARE.test(t));
     const tops = rows.filter(r => r.score === best);
     // tide + light + light wind happens almost every day — only worth a buzz at 4+ points or with a rarer reason
-    if (best < STRONG_SCORE && !tops.some(rare)) continue;
+    // (a spot you follow ⭐ gets a buzz at 3 points too — that's what following it means)
+    if (best < STRONG_SCORE && !tops.some(rare) && !s.followed) continue;
     const peak = tops.find(rare) || tops[0];
     let a = peak.h, b = peak.h;
     while (a - 1 >= from && rows.find(r => r.h === a - 1).score >= best - 1 && b - a < 3) a--;
     while (b + 1 <= to && rows.find(r => r.h === b + 1).score >= best - 1 && b - a < 3) b++;
     results.push({ spot: s, score: best, from: a, to: b + 1, reasons: [...peak.pts].sort((x, y) => (RARE.test(y) ? 1 : 0) - (RARE.test(x) ? 1 : 0)) }); // the unusual reasons lead
   }
-  results.sort((x, y) => y.score - x.score || (y.spot.mine ? 1 : 0) - (x.spot.mine ? 1 : 0));
+  results.sort((x, y) => y.score - x.score || (y.spot.followed ? 1 : 0) - (x.spot.followed ? 1 : 0) || (y.spot.mine ? 1 : 0) - (x.spot.mine ? 1 : 0));
   return results;
 }
 
@@ -96,9 +97,10 @@ export function composeAlert(results) {
   const mine = results.find(r => r.spot.mine), fresh = results.find(r => !r.spot.mine);
   const top = results[0];
   const win = r => `${hLabel(r.from)}–${hLabel(r.to)}`;
-  const first = mine && (!fresh || mine.score >= fresh.score - 1) ? mine : top;
-  let body = `${first.spot.name} ${win(first)}: ${first.reasons.slice(0, 3).join(", ")}`;
-  const other = first === fresh ? mine : fresh;
-  if (other && other.spot.id !== first.spot.id) body += ` · ${other.spot.mine ? "Also" : "New to try"}: ${other.spot.name} ${win(other)}`;
+  const fol = results.find(r => r.spot.followed);
+  const first = fol && fol.score >= top.score - 1 ? fol : mine && (!fresh || mine.score >= fresh.score - 1) ? mine : top;
+  let body = `${first.spot.followed ? "⭐ " : ""}${first.spot.name} ${win(first)}: ${first.reasons.slice(0, 3).join(", ")}`;
+  const other = first === fresh ? (fol && fol !== first ? fol : mine) : fresh;
+  if (other && other.spot.id !== first.spot.id) body += ` · ${other.spot.followed || other.spot.mine ? "Also" : "New to try"}: ${other.spot.followed ? "⭐ " : ""}${other.spot.name} ${win(other)}`;
   return { title: "🎣 Good bite window today", body, spotId: first.spot.id };
 }

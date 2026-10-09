@@ -230,6 +230,17 @@
   #boat-msg { min-height: 1.6em; font-size: 1.15rem; text-align: center; color: #bff0cf; }
   #boat-msg.err { color: #ffb4a8; }
   #boat-foot { font-size: .85rem; color: #7fa3b0; text-align: center; }
+  .keeper { margin-top: 8px; border-radius: 10px; padding: 10px 12px; font-size: .9rem; line-height: 1.35; border: 1px solid var(--line); }
+  .keeper.ok { background: #e6f6ec; border-color: #1f9d55; color: #14503a; }
+  .keeper.bad { background: #fde8e6; border-color: #c0392b; color: #7b1d14; }
+  .keeper.warn { background: #fff7d6; border-color: #e0b100; color: #5a4500; }
+  .keeper.info { background: var(--card); }
+  .heat { display: grid; grid-template-columns: 2.4em repeat(8, 1fr); gap: 3px; font-size: .72rem; text-align: center; }
+  .heat-h { color: var(--muted); align-self: center; } .heat-c { border-radius: 4px; min-height: 24px; line-height: 24px; font-weight: 600; }
+  .bait-table { width: 100%; border-collapse: collapse; font-size: .88rem; } .bait-table th { text-align: left; color: var(--muted); font-weight: 600; padding: 4px 6px 4px 0; }
+  .bait-table td { padding: 5px 6px 5px 0; border-top: 1px solid var(--line); }
+  .tide-svg { width: 100%; height: auto; display: block; }
+  .rule-row { border-top: 1px solid var(--line); padding: 8px 0; } .rule-form { margin: 8px 0; }
   #safety-strip { margin-bottom: 4px; }
   .wx-item { border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: .92rem; cursor: pointer; border: 1px solid #e0b100; background: #fff7d6; color: #5a4500; }
   .wx-item.urgent { border-color: #c0392b; background: #fde8e6; color: #7b1d14; }
@@ -531,6 +542,7 @@
     </form>
     <div class="msg" id="invite-msg"></div>
     <div id="report-admin"></div>
+    <div id="rules-admin"></div>
     <ul id="member-list"></ul>
   </div>
 
@@ -968,6 +980,7 @@
       </div>
       <button class="btn ghost small" id="qc-measure" type="button" style="margin-top:8px">📏 Measure from the photo</button>
       <div class="spot-meta" id="qc-size-note" style="margin-top:6px"></div>
+      <div class="keeper" id="qc-keeper" hidden></div>
       <label for="qc-vis">Who can see this catch?</label>
       <select id="qc-vis">
         <option value="friends">👥 Friends</option>
@@ -1287,7 +1300,8 @@
   let pickedLoc = null;
 
   const VIS_LABEL = { private: "🔒 Private", friends: "👥 Friends", public: "🌎 Public" };
-  const visIcon = s => (s.visibility === "public" ? "🌎 " : s.visibility === "private" || s.is_private ? "🔒 " : "");
+  const follows = new Set(); // spots I follow ⭐ (morning bite alerts include them)
+  const visIcon = s => (follows.has(s.id) ? "⭐ " : "") + (s.visibility === "public" ? "🌎 " : s.visibility === "private" || s.is_private ? "🔒 " : "");
   const WATER_LABEL = { saltwater: "Saltwater", brackish: "Brackish / tidal canal", freshwater: "Freshwater" };
   const $ = id => document.getElementById(id);
 
@@ -1961,6 +1975,100 @@
     return t;
   }
 
+  // ---- More insights: bait scoreboard, best days & times heat map, and a tide graph for one spot ----
+  const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  function heatCard(list) {
+    const grid = DOW.map(() => Array(8).fill(0)); let known = 0;
+    list.forEach(c => { const d = new Date(c.caught_at); if (isNaN(d)) return; const n = c.how_many || 1; grid[d.getDay()][Math.floor(d.getHours() / 3)] += n; known += n; });
+    if (known < 3) return null;
+    const max = Math.max(...grid.flat());
+    const card = el("div", "card chart"); card.id = "ins-heat";
+    card.appendChild(el("h3", null, "Best days & times"));
+    card.appendChild(el("div", "chart-sub", `Darker = more fish · ${known} fish · it also shows when you go fishing`));
+    const t = el("div", "heat");
+    t.appendChild(el("span", "heat-h", ""));
+    ["12a", "3a", "6a", "9a", "12p", "3p", "6p", "9p"].forEach(h => t.appendChild(el("span", "heat-h", h)));
+    grid.forEach((row, di) => {
+      t.appendChild(el("span", "heat-h", DOW[di]));
+      row.forEach((n, bi) => {
+        const c = el("span", "heat-c", n ? String(n) : ""); c.style.background = n ? `rgba(31,157,85,${(0.18 + 0.82 * n / max).toFixed(2)})` : "var(--line)";
+        c.style.color = n / max > 0.55 ? "#fff" : "inherit"; c.title = `${DOW[di]} ${TIME_BLOCKS[bi]}: ${n} fish`; t.appendChild(c);
+      });
+    });
+    card.appendChild(t);
+    let best = null; grid.forEach((row, di) => row.forEach((n, bi) => { if (!best || n > best.n) best = { n, di, bi }; }));
+    if (best && best.n) card.appendChild(el("div", "chart-sub", `Best slot so far: ${DOW[best.di]} ${TIME_BLOCKS[best.bi]} (${best.n} fish).`));
+    return card;
+  }
+  function baitCard(list) {
+    const m = new Map();
+    list.forEach(c => {
+      const b = c.bait && c.bait.trim().toLowerCase(); if (!b) return;
+      const o = m.get(b) || { fish: 0, n: 0, lens: [], sp: new Map() };
+      const k = c.how_many || 1; o.fish += k; o.n++; if (c.length_in > 0) o.lens.push(+c.length_in);
+      if (c.species) { const s = cap(c.species.trim()); o.sp.set(s, (o.sp.get(s) || 0) + k); }
+      m.set(b, o);
+    });
+    if (!m.size) return null;
+    const rows = [...m.entries()].sort((a, b) => b[1].fish - a[1].fish).slice(0, 8);
+    const card = el("div", "card chart"); card.id = "ins-bait";
+    card.appendChild(el("h3", null, "Bait & lure scoreboard"));
+    card.appendChild(el("div", "chart-sub", "What was on the line when fish came in · average length where you measured"));
+    const t = el("table", "bait-table");
+    const hr = el("tr"); ["Bait / lure", "Fish", "Avg size", "Mostly"].forEach(h => hr.appendChild(el("th", null, h))); t.appendChild(hr);
+    rows.forEach(([b, o]) => {
+      const tr = el("tr"); const top = [...o.sp.entries()].sort((a, b2) => b2[1] - a[1])[0];
+      tr.appendChild(el("td", null, cap(b))); tr.appendChild(el("td", null, String(o.fish)));
+      tr.appendChild(el("td", null, o.lens.length ? (o.lens.reduce((a, x) => a + x, 0) / o.lens.length).toFixed(1) + "″" : "—"));
+      tr.appendChild(el("td", null, top ? top[0] : "—")); t.appendChild(tr);
+    });
+    card.appendChild(t);
+    if (rows.length === 1) card.appendChild(el("div", "chart-sub", "Add the bait when you log catches and this fills in with comparisons."));
+    return card;
+  }
+  let tideGraphWait = {};
+  function tideCard(spotId, list) {
+    const s = (spots || []).find(x => x.id === spotId); if (!s || !hasLoc(s)) return null;
+    const st = stationFor(s); if (!st || !st.id) return null;
+    const card = el("div", "card chart"); card.id = "ins-tide";
+    card.appendChild(el("h3", null, "Tide at " + s.name));
+    const p = stationTides(st.id);
+    if (!p.done || p.done === "error") {
+      card.appendChild(el("div", "chart-sub", p.done === "error" ? "Tide times unavailable right now." : "Loading tide…"));
+      if (!p.done && !tideGraphWait[st.id]) { tideGraphWait[st.id] = true; p.then(() => { tideGraphWait[st.id] = false; renderInsights(); }, () => { tideGraphWait[st.id] = false; }); }
+      return card;
+    }
+    const tides = p.done, now = Date.now(), H = 3600000, N = 24 * 4;
+    // how much of this spot's tide-stage catches came at each stage → shade the graph
+    const share = {}; let tot = 0;
+    list.forEach(c => { if (c.tide_stage) { share[c.tide_stage] = (share[c.tide_stage] || 0) + (c.how_many || 1); tot += (c.how_many || 1); } });
+    const mx = Math.max(0, ...Object.values(share));
+    const W = 320, Ht = 130, top = 12, bot = 22, y = h => top + (1 - h) * (Ht - top - bot);
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", `0 0 ${W} ${Ht}`); svg.setAttribute("class", "tide-svg");
+    const mk = (tag, attrs) => { const e = document.createElementNS("http://www.w3.org/2000/svg", tag); Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v)); svg.appendChild(e); return e; };
+    const height = t => { const prev = [...tides].reverse().find(x => x.when <= t), next = tides.find(x => x.when > t); if (!prev || !next) return null;
+      const f = (t - prev.when) / (next.when - prev.when), c = (1 - Math.cos(Math.PI * f)) / 2; return prev.high ? 1 - c : c; };
+    const pts = [];
+    for (let i = 0; i <= N; i++) {
+      const t = now + i * 15 * 60000, h = height(t); if (h == null) continue;
+      const x = i / N * W, sg = stageFrom(tides, t); pts.push([x, y(h)]);
+      if (i < N && sg && mx) { const a = 0.12 + 0.55 * ((share[sg.stage] || 0) / mx); mk("rect", { x, y: top, width: W / N + 0.5, height: Ht - top - bot, fill: `rgba(31,157,85,${a.toFixed(2)})` }); }
+    }
+    mk("path", { d: pts.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" "), fill: "none", stroke: "#1d6fd6", "stroke-width": 2.5 });
+    tides.filter(x => x.when > now && x.when < now + 24 * H).forEach(x => {
+      const px = (x.when - now) / (24 * H) * W, py = y(x.high ? 1 : 0);
+      mk("circle", { cx: px, cy: py, r: 3, fill: "#1d6fd6" });
+      const tx = mk("text", { x: Math.min(Math.max(px, 18), W - 18), y: x.high ? py - 5 : py + 13, "text-anchor": "middle", "font-size": 9, fill: "currentColor" });
+      tx.textContent = (x.high ? "H " : "L ") + x.when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(" ", "").toLowerCase();
+    });
+    [0, 6, 12, 18, 24].forEach(h => { const tx = mk("text", { x: Math.min(Math.max(h / 24 * W, 10), W - 10), y: Ht - 6, "text-anchor": "middle", "font-size": 9, fill: "currentColor", opacity: 0.7 });
+      tx.textContent = h ? new Date(now + h * H).toLocaleTimeString([], { hour: "numeric" }).replace(" ", "").toLowerCase() : "now"; });
+    card.appendChild(el("div", "chart-sub", tot ? `Next 24 hours · green = the tide stages where you've caught the most here (${tot} fish with tide info)` : "Next 24 hours · log catches here and the best tide stages will light up green"));
+    card.appendChild(svg);
+    if (tot) { const bs = Object.entries(share).sort((a, b) => b[1] - a[1])[0]; card.appendChild(el("div", "chart-sub", `Best stage here so far: ${bs[0]} (${Math.round(100 * bs[1] / tot)}% of fish). Station: ${st.name}.`)); }
+    return card;
+  }
+
   function renderInsights() {
     if ($("view-insights").hidden) return;
     renderRecords();
@@ -1993,6 +2101,8 @@
       const card = barChart(def, list);
       if (card) charts.appendChild(card);
     });
+    const tc = spotId ? tideCard(spotId, list) : null; if (tc) charts.insertBefore(tc, charts.firstChild);
+    [heatCard(list), baitCard(list)].forEach(c => { if (c) charts.appendChild(c); });
   }
   ["ins-spot", "ins-species", "ins-mine"].forEach(id => $(id).addEventListener("change", renderInsights));
 
@@ -2770,9 +2880,11 @@
     const chip = $("qc-species").querySelector(".fchip.on"), sp = ($("qc-species-other").value.trim() || (chip && chip.textContent) || "");
     const est = len > 0 && !(w > 0) ? estWeight(sp, len) : null;
     $("qc-size-note").textContent = est ? `⚖️ About ${lbText(est)} (estimated from length — type a weight if you weighed it)` : "";
+    keeperShow($("qc-keeper"), sp, len, new Date());
     qcContestHint();
   }
   $("qc-length").addEventListener("input", updateQcSize); $("qc-weight").addEventListener("input", updateQcSize);
+  $("qc-species").addEventListener("click", () => setTimeout(updateQcSize, 0)); $("qc-species-other").addEventListener("input", updateQcSize);
   // Tells you which of your joined, running contests this catch will count in (the app checks the same rules the scoreboard does)
   function qcContestHint() {
     const box = $("qc-contest-hint"); if (!box) return;
@@ -3332,6 +3444,7 @@
     <div class="spot-meta" id="c-id-msg"></div>
     <div class="id-sugg" id="c-id-sugg"></div>
     <div class="spot-meta" id="c-size-note" style="margin-top:6px"></div>
+    <div class="keeper" id="c-keeper" hidden></div>
     <div class="spot-meta" id="c-cond" style="margin-top:10px"></div>
     <div class="row" style="margin-top:14px">
       <button class="btn ghost" id="c-cancel" type="button">Cancel</button>
@@ -3580,6 +3693,7 @@
     const q = id => catchForm.querySelector(id);
     const len = parseFloat(q("#c-length").value), w = parseFloat(q("#c-weight").value), sp = q("#c-species").value;
     const note = q("#c-size-note");
+    keeperShow(q("#c-keeper"), sp, len, new Date());
     if (w > 0) { note.textContent = ""; return; }
     if (!(len > 0)) { note.textContent = "Tip: lay a ruler, dollar bill or card next to the fish and shoot from straight above — then tap 📏 to measure."; return; }
     const est = estWeight(sp, len);
@@ -4236,6 +4350,23 @@
     return li;
   }
 
+  async function loadFollows() {
+    if (!me) return;
+    try {
+      const { data, error } = await db.from("spot_follows").select("spot_id");
+      if (error) throw error;
+      follows.clear(); (data || []).forEach(r => follows.add(r.spot_id));
+      if (spots) renderSpots();
+    } catch (e) { /* keep what we had */ }
+  }
+  async function toggleFollow(s) {
+    const on = follows.has(s.id);
+    const { error } = on ? await db.from("spot_follows").delete().eq("spot_id", s.id).eq("user_id", me.id) : await db.from("spot_follows").insert({ spot_id: s.id });
+    if (error) { toast("Couldn't update: " + error.message); return; }
+    if (on) follows.delete(s.id); else follows.add(s.id);
+    toast(on ? `Stopped following ${s.name}` : `⭐ Following ${s.name} — your morning heads-up will include it`, 4500);
+    renderSpots();
+  }
   function catchSection(s) {
     const wrap = el("div", "catches");
     const list = catchesBySpot[s.id] || [];
@@ -4258,7 +4389,9 @@
     tripBtn.type = "button";
     tripBtn.addEventListener("click", () => here ? endSession(false) : startSession(s));
     const btns = el("span"); btns.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end";
-    btns.appendChild(tripBtn); btns.appendChild(logBtn);
+    const folBtn = el("button", "btn ghost small", follows.has(s.id) ? "⭐ Following" : "☆ Follow"); folBtn.type = "button";
+    folBtn.addEventListener("click", () => toggleFollow(s));
+    btns.appendChild(folBtn); btns.appendChild(tripBtn); btns.appendChild(logBtn);
     row.appendChild(toggle); row.appendChild(btns);
     const trips = (sessionsBySpot[s.id] || []).filter(x => x.ended_at);
     wrap.appendChild(row);
@@ -4925,11 +5058,13 @@
     const dir = el("a", null, "Directions");
     dir.href = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
     dir.target = "_blank"; dir.rel = "noopener";
+    const fol = el("button", null, follows.has(s.id) ? "⭐ Following" : "☆ Follow"); fol.type = "button";
+    fol.addEventListener("click", async () => { await toggleFollow(s); fol.textContent = follows.has(s.id) ? "⭐ Following" : "☆ Follow"; });
     const move = el("button", null, "Move pin"); move.type = "button";
     move.addEventListener("click", () => { map.closePopup(); startPlacing({ mode: "move", spot: s }); });
     const edit = el("button", null, "Edit"); edit.type = "button";
     edit.addEventListener("click", () => { map.closePopup(); showView("list"); openForm(true, s); });
-    [open, log, dir].concat(isMine(s) ? [move, edit] : []).forEach(b => actions.appendChild(b));
+    [open, log, fol, dir].concat(isMine(s) ? [move, edit] : []).forEach(b => actions.appendChild(b));
     box.appendChild(actions);
     return box;
   }
@@ -5740,6 +5875,117 @@
   $("boat-mark").addEventListener("click", boatMark);
   $("boat-units").addEventListener("click", () => { boat.units = boat.units === "mph" ? "kn" : "mph"; try { localStorage.setItem("fm-boat-units", boat.units); } catch (e) {} boatRender(); });
 
+  // ---- 📏 Keeper checker: size / season rules from the fish_rules table (admin-editable), shown while logging a catch ----
+  // Always a guide only — the message always says to check FWC.
+  let fishRules = [];
+  async function loadRules() {
+    if (!me) return;
+    try {
+      const { data, error } = await db.from("fish_rules").select("*").eq("active", true);
+      if (error) throw error;
+      fishRules = data || [];
+    } catch (e) { /* no rules yet: the checker just stays quiet */ }
+  }
+  function ruleFor(species) {
+    const sp = String(species || "").toLowerCase().trim(); if (!sp) return null;
+    let best = null, bl = 0;
+    fishRules.forEach(r => (r.match || []).forEach(w => { if (w && sp.includes(w.toLowerCase()) && w.length > bl) { best = r; bl = w.length; } }));
+    return best;
+  }
+  const mdOf = d => String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const inMd = (md, a, b) => a <= b ? (md >= a && md <= b) : (md >= a || md <= b); // may wrap past New Year
+  function seasonState(r, when) {
+    const md = mdOf(when), ymd0 = when.getFullYear() + "-" + md;
+    if (Array.isArray(r.closed) && r.closed.some(([a, b]) => inMd(md, a, b))) return "closed";
+    if (Array.isArray(r.open_only) && r.open_only.length && !r.open_only.some(([a, b]) => a.length > 5 ? (ymd0 >= a && ymd0 <= b) : inMd(md, a, b))) return "closed";
+    return "open";
+  }
+  const inch = n => (+n).toFixed(2).replace(/\.?0+$/, "") + "″";
+  function keeperCheck(species, len, when) {
+    const r = ruleFor(species); if (!r) return null;
+    when = when || new Date();
+    const lenName = r.measure === "fork" ? "fork length" : "total length";
+    const size = r.min_in != null && r.max_in != null ? `${inch(r.min_in)}–${inch(r.max_in)}` : r.min_in != null ? `${inch(r.min_in)} minimum` : r.max_in != null ? `${inch(r.max_in)} maximum` : "";
+    const foot = ` Rule: ${size ? size + " " + lenName + " · " : ""}${r.bag ? r.bag + " · " : ""}${r.note ? r.note + " " : ""}Always check FWC (checked ${r.verified_on || "?"}).`;
+    if (r.release_only) return { level: "bad", text: `🚫 ${r.species}: catch-and-release only — let it go.${r.note ? " " + r.note : ""} Always check FWC.` };
+    if (seasonState(r, when) === "closed") return { level: "bad", text: `🚫 ${r.species} is out of season right now — release it.${foot}` };
+    if (!(len > 0)) return { level: "info", text: `📏 ${r.species} —${foot} Add a length to check this fish.` };
+    const near = r.measure === "fork" ? " Measure to the fork of the tail (fork length is a bit shorter than nose-to-tip)." : "";
+    if (r.min_in != null && len < r.min_in) return { level: "bad", text: `❌ Under size — ${inch(len)} is ${inch(r.min_in - len)} short of the ${inch(r.min_in)} minimum. Release it.${near}${foot}` };
+    if (r.max_in != null && len > r.max_in) {
+      return r.one_over ? { level: "warn", text: `⚠️ Over the ${inch(r.max_in)} slot — only one fish this big is allowed per the rule (see below), otherwise release it.${foot}` }
+        : { level: "bad", text: `❌ Over the ${inch(r.max_in)} slot — release it.${foot}` };
+    }
+    if (r.measure === "fork" && r.min_in != null && len < r.min_in + 1.5) return { level: "warn", text: `⚠️ Close call — ${inch(len)} vs the ${inch(r.min_in)} fork-length minimum. Re-measure to the fork of the tail before keeping it.${foot}` };
+    return { level: "ok", text: `✅ Keeper size (${inch(len)}).${foot}` };
+  }
+  function keeperShow(box, species, len, when) {
+    const k = keeperCheck(species, len, when);
+    box.hidden = !k; if (!k) return;
+    box.className = "keeper " + k.level; box.textContent = k.text;
+  }
+
+  // Admin: edit the rules table (Invite card → 🐟 Size & bag rules)
+  const mdList = t => String(t || "").split(/[;,]/).map(x => x.trim()).filter(Boolean).map(x => x.split(/\s*(?:\.\.|to|–|-(?=\d{2}-))\s*/)).filter(a => a.length === 2);
+  const mdText = j => (Array.isArray(j) ? j : []).map(([a, b]) => `${a}..${b}`).join("; ");
+  function ruleForm(r) {
+    const f = el("div", "rule-form");
+    const fld = (label, id, type, val, ph) => { const w = el("div"); w.appendChild(el("label", null, label)); const i = el("input"); i.type = type; i.id = id; i.value = val == null ? "" : val; if (ph) i.placeholder = ph; if (type === "number") i.step = "0.25"; w.appendChild(i); f.appendChild(w); return i; };
+    if (!r.id) { fld("Species name", "rf-species", "text", r.species, "e.g., Tripletail"); fld("Words that match a catch", "rf-match", "text", (r.match || []).join(", "), "e.g., tripletail, triple tail"); }
+    const two = el("div", "two"); f.appendChild(two);
+    const a = fld("Minimum (in)", "rf-min", "number", r.min_in), b = fld("Maximum / slot top (in)", "rf-max", "number", r.max_in);
+    two.appendChild(a.parentNode); two.appendChild(b.parentNode);
+    const ms = el("select"); ms.id = "rf-measure"; [["total", "Total length"], ["fork", "Fork length"]].forEach(([v, t]) => { const o = el("option", null, t); o.value = v; ms.appendChild(o); }); ms.value = r.measure || "total";
+    f.appendChild(el("label", null, "Measured as")); f.appendChild(ms);
+    const chk = (label, id, v) => { const l = el("label", "check-row"); const c = el("input"); c.type = "checkbox"; c.id = id; c.checked = !!v; l.appendChild(c); l.appendChild(el("span", null, label)); f.appendChild(l); };
+    chk("One fish over the maximum is allowed", "rf-oneover", r.one_over); chk("Catch-and-release only", "rf-release", r.release_only);
+    fld("Bag limit", "rf-bag", "text", r.bag, "e.g., 3 per person");
+    fld("Closed dates (MM-DD..MM-DD; …)", "rf-closed", "text", mdText(r.closed), "e.g., 12-15..01-31; 06-01..08-31");
+    fld("Open ONLY these dates (optional)", "rf-open", "text", mdText(r.open_only), "e.g., 2026-10-09..2026-10-22");
+    fld("Note", "rf-note", "text", r.note);
+    chk("Show this rule in the app", "rf-active", r.active !== false);
+    return f;
+  }
+  async function saveRule(r, f) {
+    const g = id => f.querySelector("#" + id), num = id => { const v = parseFloat(g(id).value); return isFinite(v) ? v : null; };
+    const row = { min_in: num("rf-min"), max_in: num("rf-max"), measure: g("rf-measure").value, one_over: g("rf-oneover").checked, release_only: g("rf-release").checked,
+      bag: g("rf-bag").value.trim() || null, closed: mdList(g("rf-closed").value).length ? mdList(g("rf-closed").value) : null,
+      open_only: mdList(g("rf-open").value).length ? mdList(g("rf-open").value) : null, note: g("rf-note").value.trim() || null, active: g("rf-active").checked,
+      verified_on: new Date().toISOString().slice(0, 10), updated_at: new Date().toISOString() };
+    let res;
+    if (r.id) res = await db.from("fish_rules").update(row).eq("id", r.id);
+    else {
+      const species = g("rf-species").value.trim(), match = g("rf-match").value.split(",").map(x => x.trim().toLowerCase()).filter(Boolean);
+      if (!species || !match.length) { toast("Add a species name and at least one matching word."); return false; }
+      res = await db.from("fish_rules").insert({ ...row, species, match });
+    }
+    if (res.error) { toast("Couldn't save: " + res.error.message); return false; }
+    toast("Rule saved ✓ (marked checked today)"); await loadRules(); return true;
+  }
+  let rulesOpen = false;
+  function renderRulesAdmin() {
+    const box = $("rules-admin"); box.innerHTML = "";
+    if (!me || !me.isAdmin) return;
+    const head = frBtn(rulesOpen ? "🐟 Size & bag rules ▴" : "🐟 Size & bag rules ▾", async () => { rulesOpen = !rulesOpen; if (rulesOpen) await loadRulesAll(); renderRulesAdmin(); });
+    head.style.marginTop = "10px"; box.appendChild(head);
+    if (!rulesOpen) return;
+    box.appendChild(el("div", "spot-meta", "These power the ✅ / ❌ keeper check when logging a catch. Check the FWC page, then edit — saving stamps today's date."));
+    (rulesAll || []).slice().sort((a, b) => a.species.localeCompare(b.species)).forEach(r => {
+      const row = el("div", "rule-row");
+      const size = r.release_only ? "release only" : [r.min_in != null ? "min " + inch(r.min_in) : "", r.max_in != null ? "max " + inch(r.max_in) : ""].filter(Boolean).join(" · ") || "no size limit";
+      row.appendChild(el("b", null, r.species + (r.active === false ? " (hidden)" : "")));
+      row.appendChild(el("div", "spot-meta", `${size} · ${r.bag || "bag: —"} · checked ${r.verified_on || "never"}`));
+      const edit = frBtn("✏️ Edit", () => { if (row.querySelector(".rule-form")) return; const f = ruleForm(r); row.appendChild(f);
+        const bar = el("div", "ci-btns"); bar.appendChild(frBtn("Save", async () => { if (await saveRule(r, f)) { await loadRulesAll(); renderRulesAdmin(); } }, "btn small")); bar.appendChild(frBtn("Close", () => { f.remove(); bar.remove(); })); row.appendChild(bar); });
+      row.appendChild(edit); box.appendChild(row);
+    });
+    const add = frBtn("+ Add a species", () => { if (box.querySelector(".rule-new")) return; const w = el("div", "rule-row rule-new"); const f = ruleForm({ measure: "total" }); w.appendChild(f);
+      const bar = el("div", "ci-btns"); bar.appendChild(frBtn("Save", async () => { if (await saveRule({}, f)) { await loadRulesAll(); renderRulesAdmin(); } }, "btn small")); bar.appendChild(frBtn("Close", () => w.remove())); w.appendChild(bar); box.appendChild(w); });
+    box.appendChild(add);
+  }
+  let rulesAll = [];
+  async function loadRulesAll() { const { data } = await db.from("fish_rules").select("*"); rulesAll = data || []; }
+
   // ---- 🛟 Safety: severe-weather banner + "Heading out / I'm back" check-in (float plan) ----
   // Weather: National Weather Service alerts for where you are (Boat mode GPS, else the map centre, else the middle of your spots).
   // Check-in: tell chosen friends where you're going and when you'll be back; if you don't check in, they get an alert.
@@ -6056,7 +6302,7 @@
     checkRequests();
     startChat();
     loadBlocks();
-    safetyStart();
+    safetyStart(); loadFollows(); loadRules();
     setTimeout(() => { updatePendingBar(); flushQueue(); }, 1500);
     if (!appStarted) {
       appStarted = true;
@@ -6718,7 +6964,7 @@
     catch (e) { prompt("Copy this and send it to your friend:", text); }
   }
 
-  $("invite-btn").addEventListener("click", () => { $("invite-card").hidden = false; loadMembers(); $("invite-card").scrollIntoView({ behavior: "smooth" }); });
+  $("invite-btn").addEventListener("click", () => { $("invite-card").hidden = false; loadMembers(); renderRulesAdmin(); $("invite-card").scrollIntoView({ behavior: "smooth" }); });
   $("invite-close").addEventListener("click", () => { $("invite-card").hidden = true; });
   $("invite-form").addEventListener("submit", async e => {
     e.preventDefault();

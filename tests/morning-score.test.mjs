@@ -37,4 +37,13 @@ const alert = composeAlert(planDay(spots, hist, day));
 ok(alert && alert.title && alert.body.length < 200 && alert.spotId, "alert text: " + (alert && alert.body));
 const withNew = composeAlert(planDay([spots[2], spots[0]], [], { ...day, pressure: falling0 }));
 ok(withNew && /New to try|Hillsboro|Newbie/.test(withNew.body), "mixes new spot: " + (withNew && withNew.body));
+// following a spot: an ordinary 3-point day still buzzes for a followed spot, and it leads the alert
+{
+  const fs = [{ id: "a", name: "Hillsboro Inlet", water_type: "saltwater", mine: true }, { id: "c", name: "Newbie Pier", water_type: "saltwater", mine: false, followed: true }];
+  const rr = planDay(fs, [], day);
+  ok(rr.length === 1 && rr[0].spot.id === "c", "followed spot alerts on an ordinary day (unfollowed doesn't): " + JSON.stringify(rr.map(x => [x.spot.name, x.score])));
+  const al = composeAlert(rr);
+  ok(/^⭐ Newbie Pier/.test(al.body) && al.spotId === "c", "alert leads with the followed spot: " + al.body);
+}
+
 process.exit(bad ? 1 : 0);

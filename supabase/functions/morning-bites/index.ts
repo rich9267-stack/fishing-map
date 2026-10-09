@@ -48,14 +48,15 @@ async function planFor(userId: string) {
   const { data: inp, error } = await db.rpc("morning_inputs", { p_user: userId });
   if (error) throw error;
   const spotsAll: any[] = inp.spots || [];
-  const mine = spotsAll.filter(s => s.mine);
+  const mine = spotsAll.filter(s => s.mine || s.followed);
   let lat = inp.lat, lng = inp.lng;
   if (lat == null || lng == null) { // no saved location: use the middle of their own spots
     if (!mine.length) return { skip: "no location and no saved spots" };
     lat = mine.reduce((n, s) => n + s.lat, 0) / mine.length; lng = mine.reduce((n, s) => n + s.lng, 0) / mine.length;
   }
   const radius = inp.radius || 25;
-  const spots = spotsAll.filter(s => miles(lat, lng, s.lat, s.lng) <= radius);
+  // spots you follow ⭐ count even a bit beyond your radius (but the weather is the area's, so not too far)
+  const spots = spotsAll.filter(s => miles(lat, lng, s.lat, s.lng) <= (s.followed ? Math.max(radius, 50) : radius));
   if (!spots.length) return { skip: "no spots within " + radius + " miles" };
   const tz = inp.tz || "America/New_York";
   const wx = await getJson(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&hourly=pressure_msl,wind_speed_10m&daily=sunrise,sunset&wind_speed_unit=mph&timezone=${encodeURIComponent(tz)}&past_hours=4&forecast_days=1`);

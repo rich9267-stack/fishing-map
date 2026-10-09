@@ -8,9 +8,9 @@ Order = suggested build order. Each item is small enough to ship + test on its o
 3. **Boat mode extras** — ✅ next tide + sunset countdown (Richard declined man-overboard marker and anchor alarm).
 
 ## B. Smarter fishing help
-4. **Follow ⭐ spots** — morning bite alerts for followed spots + nearby (builds on morning-bites).
-5. **Keeper checker** — at logging: "Keeper ✓ / Under slot — release" for common species from an admin-editable FWC rules table (min/max/slot, bag, season, "verified <date>"). Always says "check FWC".
-6. **Insights** — bait/lure performance, per-spot tide graph, best-hour heat map.
+4. **Follow ⭐ spots** — ✅ done Oct 9 — morning bite alerts for followed spots + nearby (builds on morning-bites).
+5. **Keeper checker** — ✅ done Oct 9 — at logging: "Keeper ✓ / Under slot — release" for common species from an admin-editable FWC rules table (min/max/slot, bag, season, "verified <date>"). Always says "check FWC".
+6. **Insights** — ✅ done Oct 9 — bait/lure performance, per-spot tide graph, best-hour heat map.
 
 ## C. Social & competition
 7. **Hall of Fame** — winners of each monthly/official contest, trophies on profiles.
