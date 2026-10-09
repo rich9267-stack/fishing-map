@@ -162,6 +162,19 @@
   .ol-c.off { background: transparent; cursor: default; }
   .ol-c.sel { outline: 2px solid var(--text); outline-offset: 1px; }
   .ol-axis { display: flex; justify-content: space-between; font-size: .68rem; color: var(--muted); }
+  .feed-item { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .feed-item:last-child { border-bottom: 0; }
+  .feed-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .feed-what { font-weight: 700; }
+  .feed-when { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+  .feed-photo { width: 100%; max-height: 360px; object-fit: cover; border-radius: 10px; margin-top: 8px; cursor: pointer; display: block; }
+  .feed-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .feed-actions .btn.on { border-color: var(--accent); color: var(--accent); }
+  .feed-cm { margin-top: 8px; padding-left: 10px; border-left: 3px solid var(--line); }
+  .feed-cm p { margin: 4px 0; font-size: .9rem; }
+  .feed-cm p b { font-weight: 700; }
+  .feed-cm form { display: flex; gap: 6px; margin-top: 6px; }
+  .feed-cm input { flex: 1; min-width: 0; }
   #qc-fab { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom)); width: 64px; height: 64px; border-radius: 50%; border: 0;
     background: var(--accent); color: #fff; font-size: 28px; box-shadow: 0 4px 14px rgba(0,0,0,.3); z-index: 900; cursor: pointer; }
   #qc { position: fixed; inset: 0; z-index: 1100; background: #000; }
@@ -223,8 +236,8 @@
   .linkbtn { appearance: none; background: none; border: 0; padding: 4px 0; font: inherit; font-size: .85rem; color: var(--accent); cursor: pointer; }
   .linkbtn.danger { color: var(--falling); }
   /* List / Map tabs */
-  .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--line); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
-  .tabs button { appearance: none; border: 0; border-radius: 9px; padding: 9px 2px; font: inherit; font-size: .9rem; font-weight: 600; white-space: nowrap; background: transparent; color: var(--muted); cursor: pointer; }
+  .tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--line); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
+  .tabs button { appearance: none; border: 0; border-radius: 9px; padding: 9px 1px; font: inherit; font-size: .78rem; font-weight: 600; white-space: nowrap; background: transparent; color: var(--muted); cursor: pointer; }
   .tabs button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
   /* Map */
   #map { height: 62vh; min-height: 340px; border-radius: 12px; border: 1px solid var(--line); z-index: 0; }
@@ -336,6 +349,15 @@
     <button id="tab-map" type="button" role="tab">🗺 Map</button>
     <button id="tab-insights" type="button" role="tab">📊 Insights</button>
     <button id="tab-seasons" type="button" role="tab">📅 Seasons</button>
+    <button id="tab-feed" type="button" role="tab">🎣 Feed</button>
+  </div>
+
+  <div id="view-feed" hidden>
+    <div class="card">
+      <div class="label">Catch feed</div>
+      <div class="spot-meta">Latest catches from everyone. Tap 👍 to cheer a fish, 💬 to comment. Catches at private spots only show for their owner.</div>
+      <div id="feed-list"></div>
+    </div>
   </div>
 
   <div id="view-seasons" hidden>
@@ -1342,6 +1364,7 @@
       }
     } catch (e) { /* the app works without photos */ }
     renderSpots();
+    feedRefresh();
   }
 
   // Shrink a phone photo (often 4–8 MB) to ~300 KB before uploading
@@ -3288,6 +3311,136 @@
       if (copy) copy.forEach(c => (catchesBySpot[c.spot_id] = catchesBySpot[c.spot_id] || []).push(c));
     }
     renderSpots();
+    feedRefresh();
+  }
+
+  // ---- Catch feed (V4): latest catches with 👍 reactions and short comments ----
+  let feedReacts = {}, feedComments = {}, feedError = null, feedShown = 30;
+  const feedOpen = new Set(), feedDraft = {};
+  const feedRefresh = () => { if ($("view-feed") && !$("view-feed").hidden) renderFeed(); };
+  async function loadFeed() {
+    try {
+      const [r, c] = await Promise.all([
+        db.from("catch_reactions").select("catch_id,user_id").limit(5000),
+        db.from("catch_comments").select("*").is("deleted_at", null).order("created_at", { ascending: true }).limit(2000)
+      ]);
+      if (r.error) throw r.error;
+      if (c.error) throw c.error;
+      feedReacts = {}; r.data.forEach(x => (feedReacts[x.catch_id] = feedReacts[x.catch_id] || new Set()).add(x.user_id));
+      feedComments = {}; c.data.forEach(x => (feedComments[x.catch_id] = feedComments[x.catch_id] || []).push(x));
+      feedError = null;
+    } catch (e) { feedError = "Couldn't load 👍s and comments right now."; }
+    feedRefresh();
+  }
+  function feedWhen(d) {
+    const m = (Date.now() - d) / 60000;
+    if (m < 2) return "just now";
+    if (m < 60) return Math.round(m) + " min ago";
+    if (m < 24 * 60) return Math.round(m / 60) + " h ago";
+    return d.toLocaleDateString([], { month: "short", day: "numeric" });
+  }
+  async function toggleReact(c) {
+    if (!me) return;
+    const set = feedReacts[c.id] || (feedReacts[c.id] = new Set());
+    const had = set.has(me.id);
+    had ? set.delete(me.id) : set.add(me.id);
+    renderFeed();
+    try {
+      const { error } = had ? await db.from("catch_reactions").delete().eq("catch_id", c.id).eq("user_id", me.id)
+                            : await db.from("catch_reactions").insert({ catch_id: c.id });
+      if (error) throw error;
+    } catch (e) {
+      had ? set.add(me.id) : set.delete(me.id);
+      renderFeed(); alert("Couldn't save that — check your signal and try again.");
+    }
+  }
+  async function sendComment(c, input) {
+    const body = input.value.trim().slice(0, 300);
+    if (!body || !me) return;
+    input.disabled = true;
+    try {
+      const { data, error } = await db.from("catch_comments").insert({ catch_id: c.id, body, author: me.name || null }).select("*").single();
+      if (error) throw error;
+      (feedComments[c.id] = feedComments[c.id] || []).push({ created_at: new Date().toISOString(), created_by: me.id, author: me.name, body, ...data });
+      delete feedDraft[c.id];
+    } catch (e) { input.disabled = false; alert("Couldn't post that comment — check your signal and try again."); return; }
+    renderFeed();
+  }
+  async function deleteComment(c, cm) {
+    if (!confirm("Delete your comment?")) return;
+    const { error } = await db.from("catch_comments").update({ deleted_at: new Date().toISOString() }).eq("id", cm.id);
+    if (error) return alert("Couldn't delete: " + (error.message || error));
+    feedComments[c.id] = (feedComments[c.id] || []).filter(x => x !== cm);
+    renderFeed();
+  }
+  function renderFeed() {
+    const box = $("feed-list");
+    if (!box) return;
+    box.innerHTML = "";
+    if (feedError) box.appendChild(el("div", "msg err", feedError));
+    const all = Object.values(catchesBySpot).flat().sort((a, b) => new Date(b.caught_at) - new Date(a.caught_at));
+    if (!all.length) { box.appendChild(el("div", "empty", "No catches yet — log one and it shows up here.")); return; }
+    all.slice(0, feedShown).forEach(c => {
+      const spot = (spots || []).find(x => x.id === c.spot_id);
+      const item = el("div", "feed-item");
+      const top = el("div", "feed-top");
+      const what = `${c.caught_by || "Someone"} caught ${c.how_many > 1 ? c.how_many + " " : "a "}${c.species}` + sizeText(c);
+      top.appendChild(el("span", "feed-what", what));
+      top.appendChild(el("span", "feed-when", feedWhen(new Date(c.caught_at))));
+      item.appendChild(top);
+      item.appendChild(el("div", "spot-meta", [spot ? (spot.is_private ? "🔒 " : "📍 ") + spot.name : null,
+        c.bait && `on ${c.bait}`, c.tide_stage && STAGE_LABEL[c.tide_stage], c.water_temp_f != null && `${Math.round(c.water_temp_f)}°F water`]
+        .filter(Boolean).join(" · ") + (spot && spot.is_private ? " — private, only you see this" : "")));
+      const ph = (photosBySpot[c.spot_id] || []).filter(x => x.catch_id === c.id && photoUrls[x.path]);
+      if (ph.length) {
+        const img = document.createElement("img");
+        img.className = "feed-photo"; img.src = photoUrls[ph[0].path]; img.alt = "Photo of the catch"; img.loading = "lazy";
+        img.addEventListener("click", () => openViewer(ph[0]));
+        item.appendChild(img);
+        if (ph.length > 1) item.appendChild(thumbStrip(ph.slice(1)));
+      }
+      if (c.notes) item.appendChild(el("div", "spot-meta", c.notes));
+      const reacts = feedReacts[c.id] || new Set(), cms = feedComments[c.id] || [];
+      const mine = !!(me && reacts.has(me.id));
+      const acts = el("div", "feed-actions");
+      const like = el("button", "btn ghost small" + (mine ? " on" : ""), `👍 ${reacts.size || ""}`.trim());
+      like.type = "button"; like.setAttribute("aria-pressed", mine);
+      like.addEventListener("click", () => toggleReact(c));
+      const cbtn = el("button", "btn ghost small" + (feedOpen.has(c.id) ? " on" : ""), `💬 ${cms.length || ""}`.trim());
+      cbtn.type = "button";
+      cbtn.addEventListener("click", () => { feedOpen.has(c.id) ? feedOpen.delete(c.id) : feedOpen.add(c.id); renderFeed(); });
+      acts.appendChild(like); acts.appendChild(cbtn);
+      item.appendChild(acts);
+      if (feedOpen.has(c.id)) {
+        const wrap = el("div", "feed-cm");
+        cms.forEach(cm => {
+          const p = el("p");
+          p.appendChild(el("b", null, (cm.author || "Someone") + ": "));
+          p.appendChild(document.createTextNode(cm.body));
+          if (me && cm.created_by === me.id) {
+            const x = el("button", "linkbtn danger", "✕"); x.type = "button"; x.setAttribute("aria-label", "Delete comment");
+            x.addEventListener("click", () => deleteComment(c, cm));
+            p.appendChild(document.createTextNode(" ")); p.appendChild(x);
+          }
+          wrap.appendChild(p);
+        });
+        const form = document.createElement("form");
+        const input = document.createElement("input");
+        input.type = "text"; input.maxLength = 300; input.placeholder = "Add a comment…"; input.value = feedDraft[c.id] || "";
+        input.addEventListener("input", () => { feedDraft[c.id] = input.value; });
+        const go = el("button", "btn small", "Send"); go.type = "submit";
+        form.appendChild(input); form.appendChild(go);
+        form.addEventListener("submit", e => { e.preventDefault(); sendComment(c, input); });
+        wrap.appendChild(form);
+        item.appendChild(wrap);
+      }
+      box.appendChild(item);
+    });
+    if (all.length > feedShown) {
+      const more = el("button", "btn ghost small", "Show more"); more.type = "button";
+      more.addEventListener("click", () => { feedShown += 30; renderFeed(); });
+      box.appendChild(more);
+    }
   }
 
   function catchLine(c) {
@@ -3937,6 +4090,9 @@
     $("view-seasons").hidden = which !== "seasons";
     $("tab-seasons").classList.toggle("on", which === "seasons");
     if (which === "seasons") renderSeasons();
+    $("view-feed").hidden = which !== "feed";
+    $("tab-feed").classList.toggle("on", which === "feed");
+    if (which === "feed") { renderFeed(); loadFeed(); }
     $("tab-map").classList.toggle("on", isMap);
     $("tab-list").classList.toggle("on", which === "list");
     $("tab-insights").classList.toggle("on", which === "insights");
@@ -3952,6 +4108,7 @@
   $("tab-map").addEventListener("click", () => showView("map"));
   $("tab-insights").addEventListener("click", () => { stopPlacing(); showView("insights"); });
   $("tab-seasons").addEventListener("click", () => { stopPlacing(); showView("seasons"); });
+  $("tab-feed").addEventListener("click", () => { stopPlacing(); showView("feed"); });
 
   function initMap() {
     if (map || !window.L) return;
