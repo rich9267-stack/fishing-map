@@ -1,10 +1,12 @@
 // Fishing Map service worker: keeps a copy of the app on the phone so it opens with no signal.
 // - The page itself: try the network first (so updates show up), fall back to the saved copy.
 // - Code libraries from CDNs: use the saved copy right away, refresh it in the background.
-// - Live data (database, tides, weather, map tiles) is never cached here.
-const CACHE = "fishing-map-v14";
+// - Live data (database, tides, weather) is never cached here. Map tiles are served from the phone only if saved for offline.
+const CACHE = "fishing-map-v15";
 const APP_FILES = ["./", "./index.html", "./privacy.html"];
 const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com"];
+const TILE_CACHE = "fishing-map-tiles";   // map tiles the person chose to save for offline (kept across updates)
+const TILE_HOSTS = ["tile.openstreetmap.org", "server.arcgisonline.com"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(c => c.addAll(APP_FILES)).then(() => self.skipWaiting()));
@@ -13,7 +15,7 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -31,6 +33,12 @@ self.addEventListener("fetch", event => {
         return res;
       }).catch(() => caches.match(req).then(r => r || caches.match("./index.html")))
     );
+    return;
+  }
+
+  // Map tiles: only ones saved on purpose ("Save map for offline"); otherwise the normal network request
+  if (TILE_HOSTS.includes(url.hostname)) {
+    event.respondWith(caches.open(TILE_CACHE).then(c => c.match(req.url)).then(hit => hit || fetch(req)));
     return;
   }
 

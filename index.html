@@ -165,6 +165,16 @@
   .ol-c.off { background: transparent; cursor: default; }
   .ol-c.sel { outline: 2px solid var(--text); outline-offset: 1px; }
   .ol-axis { display: flex; justify-content: space-between; font-size: .68rem; color: var(--muted); }
+  .under-review { position: relative; }
+  .under-review > *:not(.review-note) { filter: blur(7px); pointer-events: none; user-select: none; }
+  .under-review.peek > *:not(.review-note) { filter: none; pointer-events: auto; }
+  .review-note { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; z-index: 2; font-size: .85rem; font-weight: 700; color: #fff;
+    text-shadow: 0 1px 4px rgba(0,0,0,.85); pointer-events: none; }
+  .under-review.peek .review-note { display: none; }
+  .under-review.peekable { cursor: pointer; }
+  .dash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0; }
+  .dash-tile { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px; text-align: center; }
+  .dash-n { font-size: 1.4rem; font-weight: 700; }
   .feed-item { padding: 12px 0; border-bottom: 1px solid var(--line); }
   .feed-item:last-child { border-bottom: 0; }
   .feed-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
@@ -473,6 +483,13 @@
       </div>
       <div class="msg" id="push-msg"></div>
     </div>
+    <div class="label" style="margin-top:18px">Your data</div>
+    <p class="spot-meta" style="margin:4px 0 8px">Download your own catches and spots as spreadsheet files (CSV) — they open in Excel, Numbers or Google Sheets.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost small" id="export-catches" type="button">⬇ My catches</button>
+      <button class="btn ghost small" id="export-spots" type="button">⬇ My spots</button>
+    </div>
+    <div class="msg" id="export-msg"></div>
   </div>
 
   <div class="card" id="inbox-card" hidden>
@@ -555,6 +572,7 @@
       <button class="btn small" type="submit">Add</button>
     </form>
     <div class="msg" id="invite-msg"></div>
+    <div id="admin-dash"></div>
     <div id="report-admin"></div>
     <div id="rules-admin"></div>
     <ul id="member-list"></ul>
@@ -709,6 +727,7 @@
       <button class="btn ghost small" id="map-chl" type="button">🟢 Water clarity</button>
       <button class="btn ghost small" id="map-sight" type="button">👀 Sightings</button>
       <button class="btn ghost small" id="map-pub" type="button">🌎 Public spots</button>
+      <button class="btn ghost small" id="map-offline" type="button">⬇ Save map for offline</button>
     </div>
     <div class="map-tools" id="mx-tools">
       <button class="btn small" id="boat-open" type="button">🚤 Boat mode</button>
@@ -786,6 +805,13 @@
 
     <div id="filter-panel" hidden></div>
     <div class="filter-status" id="filter-status" hidden></div>
+    <div class="row" style="gap:8px;margin:8px 0 4px">
+      <input id="spot-search" type="search" placeholder="🔍 Search spots…" autocomplete="off" style="flex:1">
+      <select id="spot-sort" aria-label="Sort spots" style="width:auto">
+        <option value="name">A–Z</option><option value="near">Nearest</option><option value="catches">Most catches</option>
+        <option value="recent">Latest catch</option><option value="new">Newest</option>
+      </select>
+    </div>
 
     <form id="spot-form" hidden>
       <div class="label" id="f-title" style="margin-top:12px">New spot</div>
@@ -3436,8 +3462,23 @@
   }
   function activeFilterCount() { return FILTER_GROUPS.reduce((n, g) => n + filters[g.key].size, 0); }
 
+  let spotQuery = "", spotSort = "name", sortPos = null;
+  try { spotSort = localStorage.getItem("fm-spot-sort") || "name"; } catch (e) {}
   function filteredSpots() {
-    return (spots || []).filter(s => FILTER_GROUPS.every(g => !filters[g.key].size || g.test(s, filters[g.key])));
+    let l = (spots || []).filter(s => FILTER_GROUPS.every(g => !filters[g.key].size || g.test(s, filters[g.key])));
+    const q = spotQuery.trim().toLowerCase();
+    if (q) l = l.filter(s => [s.name, s.spot_type, s.water_type, s.notes, s.access_notes, s.added_by, s.parking].filter(Boolean).join(" ").toLowerCase().includes(q));
+    const n = s => (catchesBySpot[s.id] || []).length;
+    const last = s => { const c = (catchesBySpot[s.id] || [])[0]; return c ? new Date(c.caught_at).getTime() : 0; };
+    const byName = (a, b) => String(a.name).localeCompare(String(b.name));
+    if (spotSort === "catches") l = l.slice().sort((a, b) => n(b) - n(a) || byName(a, b));
+    else if (spotSort === "recent") l = l.slice().sort((a, b) => last(b) - last(a) || byName(a, b));
+    else if (spotSort === "new") l = l.slice().sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")) || byName(a, b));
+    else if (spotSort === "near" && sortPos) {
+      const d = s => (s.lat != null && s.lng != null) ? miles(sortPos.lat, sortPos.lng, s.lat, s.lng) : 1e9;
+      l = l.slice().sort((a, b) => d(a) - d(b) || byName(a, b));
+    } else l = l.slice().sort(byName);
+    return l;
   }
 
   function buildFilterPanel() {
@@ -4028,12 +4069,16 @@
 
   async function deleteCatch(c) {
     const label = `${c.how_many > 1 ? c.how_many + " " : ""}${c.species}`;
-    if (!confirm(`Delete this catch (${label})?`)) return;
     try {
-      // Soft delete: hidden from the app, but recoverable in Supabase if it was a mistake
+      // Soft delete: hidden from the app; the "Undo" button (8 seconds) brings it straight back
       const { error } = await db.from("catches").update({ deleted_at: new Date().toISOString() }).eq("id", c.id);
       if (error) throw error;
       await loadCatches();
+      undoToast(`Deleted ${label}.`, async () => {
+        const { error: e2 } = await db.from("catches").update({ deleted_at: null }).eq("id", c.id);
+        if (e2) { toast("Couldn't undo — " + (e2.message || e2), 5000); return; }
+        await loadCatches(); toast("✓ Catch restored");
+      });
     } catch (err) {
       alert("Couldn't delete: " + (err.message || err));
     }
@@ -4231,6 +4276,7 @@
         const wrap = el("div", "feed-cm");
         cms.forEach(cm => {
           const p = el("p");
+          if (cm.review_state === "blurred") markReview(p, true, cm.id);
           p.appendChild(el("b", null, (cm.author || "Someone") + ": "));
           p.appendChild(document.createTextNode(cm.body));
           if (me && cm.created_by === me.id) {
@@ -4254,6 +4300,7 @@
         wrap.appendChild(form);
         item.appendChild(wrap);
       }
+      if (c.review_state === "blurred") markReview(item, false, c.id);
       return item;
   }
   function renderFeed() {
@@ -4450,6 +4497,7 @@
     if (cphotos.length) li.appendChild(thumbStrip(cphotos));
     if (extra) li.appendChild(el("div", "spot-meta", extra));
     if (c.notes) li.appendChild(el("div", "spot-meta", c.notes));
+    if (c.review_state === "blurred") markReview(li, false, c.id);
     if (!isMine(c)) return li;
     const actions = el("div", "catch-actions");
     const shr = el("button", "linkbtn", "📤 Share"); shr.type = "button"; shr.addEventListener("click", () => shareCatchCard(c));
@@ -4868,7 +4916,7 @@
     if (!shown.length) list.appendChild(el("div", "empty", "No spots match these filters."));
     shown.forEach(s => {
       const item = el("div", "spot");
-      item.appendChild(el("div", "spot-name", visIcon(s) + s.name));
+      item.appendChild(el("div", "spot-name", visIcon(s) + s.name + (spotSort === "near" && sortPos && s.lat != null && s.lng != null ? ` · ${miles(sortPos.lat, sortPos.lng, s.lat, s.lng).toFixed(1)} mi` : "")));
       item.appendChild(el("div", "spot-meta",
         `${cap(s.spot_type)} · ${WATER_LABEL[s.water_type] || s.water_type}` + (s.added_by ? ` · added by ${s.added_by}` : "")));
       const condEl = el("div", "spot-cond", spotConditions(s));
@@ -6195,6 +6243,146 @@
   });
   $("inbox-close").addEventListener("click", () => { $("inbox-card").hidden = true; });
 
+  // ---- 🧰 Polish (D): spot search & sort, undo delete, export CSV, offline map area, admin dashboard ----
+  function undoToast(text, onUndo) {
+    const t = $("qc-toast"); t.textContent = ""; t.hidden = false;
+    t.appendChild(document.createTextNode(text + " "));
+    const b = el("button", "linkbtn", "Undo"); b.type = "button"; b.id = "undo-btn"; b.style.cssText = "color:#8fe3ff;font-weight:700";
+    b.addEventListener("click", () => { clearTimeout(toast.t); t.hidden = true; onUndo(); });
+    t.appendChild(b);
+    clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 8000);
+  }
+  // Anything that got 3 reports is blurred for everyone with a warning; tap once to view it anyway (remembered until you reload)
+  const reviewPeeked = new Set();
+  function markReview(node, tiny, id) {
+    node.classList.add("under-review", "peekable");
+    if (id && reviewPeeked.has(id)) node.classList.add("peek");
+    node.appendChild(el("div", "review-note", tiny ? "⚠️ reported — tap to view" : "⚠️ Reported by others — may be offensive. Tap to view anyway."));
+    node.addEventListener("click", () => { if (!node.classList.contains("peek")) { node.classList.add("peek"); if (id) reviewPeeked.add(id); } });
+    return node;
+  }
+  // Search + sort
+  $("spot-sort").value = spotSort;
+  $("spot-search").addEventListener("input", e => { spotQuery = e.target.value; renderSpots(); });
+  $("spot-sort").addEventListener("change", e => {
+    spotSort = e.target.value;
+    try { localStorage.setItem("fm-spot-sort", spotSort); } catch (x) {}
+    if (spotSort === "near" && !sortPos) {
+      if (!navigator.geolocation) { toast("This phone can't tell where you are — sorted A–Z"); spotSort = "name"; e.target.value = "name"; renderSpots(); return; }
+      toast("Finding where you are…", 8000);
+      navigator.geolocation.getCurrentPosition(
+        p => { sortPos = { lat: p.coords.latitude, lng: p.coords.longitude }; $("qc-toast").hidden = true; renderSpots(); },
+        () => { toast("Couldn't get your location — sorted A–Z", 4000); spotSort = "name"; e.target.value = "name"; renderSpots(); },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+    } else renderSpots();
+  });
+  // Export my data (CSV)
+  function csvCell(v) {
+    if (v == null) return "";
+    let t = String(v);
+    if (/^[=+\-@]/.test(t)) t = "'" + t;      // stop spreadsheet formulas
+    return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  }
+  function toCsv(cols, rows) {
+    return "﻿" + [cols.map(c => c[0]).join(",")].concat(rows.map(r => cols.map(c => csvCell(c[1](r))).join(","))).join("\r\n") + "\r\n";
+  }
+  function downloadText(name, text) {
+    const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+  function exportCatches() {
+    const spotName = id => ((spotsAll || []).concat(spots || []).find(x => x.id === id) || {}).name || "";
+    const rows = myCatches().slice().sort((a, b) => new Date(a.caught_at) - new Date(b.caught_at));
+    const cols = [["Date/time", c => c.caught_at], ["Species", c => c.species], ["How many", c => c.how_many], ["Length (in)", c => c.length_in], ["Weight (lb)", c => c.weight_lb],
+      ["Spot", c => spotName(c.spot_id)], ["Bait/lure", c => c.bait], ["Tide", c => c.tide_stage], ["Wind", c => c.wind_dir && c.wind_mph != null ? c.wind_dir + " " + c.wind_mph + " mph" : ""],
+      ["Pressure (inHg)", c => c.pressure_inhg], ["Water temp (F)", c => c.water_temp_f], ["Moon", c => c.moon_phase], ["Who can see", c => c.visibility], ["Notes", c => c.notes]];
+    downloadText("my-catches.csv", toCsv(cols, rows));
+    return rows.length;
+  }
+  function exportSpots() {
+    const rows = (spots || []).filter(isMine).slice().sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    const cols = [["Name", s => s.name], ["Type", s => s.spot_type], ["Water", s => s.water_type], ["Latitude", s => s.lat], ["Longitude", s => s.lng],
+      ["Who can see", s => s.visibility], ["Public access", s => s.public_access], ["Parking", s => s.parking], ["Getting there", s => s.getting_there],
+      ["Access notes", s => s.access_notes], ["Notes", s => s.notes], ["Catches logged", s => (catchesBySpot[s.id] || []).length]];
+    downloadText("my-spots.csv", toCsv(cols, rows));
+    return rows.length;
+  }
+  $("export-catches").addEventListener("click", () => { const n = exportCatches(); $("export-msg").className = "msg"; $("export-msg").textContent = n ? `Saved ${n} catches.` : "No catches to export yet."; });
+  $("export-spots").addEventListener("click", () => { const n = exportSpots(); $("export-msg").className = "msg"; $("export-msg").textContent = n ? `Saved ${n} spots.` : "No spots of yours to export yet."; });
+  // Offline map area: saves the street (or satellite) tiles for what's on screen, a few zoom levels in, so the map works with no signal
+  const TILE_CACHE = "fishing-map-tiles";
+  function tileUrls(b, z, tpl) {
+    const n = 2 ** z, rad = Math.PI / 180;
+    const x = lng => Math.floor((lng + 180) / 360 * n);
+    const y = lat => Math.floor((1 - Math.log(Math.tan(lat * rad) + 1 / Math.cos(lat * rad)) / Math.PI) / 2 * n);
+    const out = [];
+    for (let i = x(b.getWest()); i <= x(b.getEast()); i++) for (let j = y(b.getNorth()); j <= y(b.getSouth()); j++)
+      out.push(tpl.replace("{z}", z).replace("{x}", i).replace("{y}", j));
+    return out;
+  }
+  async function saveMapArea() {
+    const btn = $("map-offline");
+    if (!map || !window.caches) { toast("This phone can't save maps for offline use", 4000); return; }
+    const tpl = satellite ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" : "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+    const b = map.getBounds(), z0 = Math.min(Math.round(map.getZoom()), 17);
+    let urls = [];
+    for (let z = z0; z <= Math.min(z0 + 2, 17); z++) {
+      const u = tileUrls(b, z, tpl);
+      if (urls.length + u.length > 250) break;
+      urls = urls.concat(u);
+    }
+    if (!urls.length || urls.length > 250) { toast("Zoom in a bit first — that area is too big to save", 4500); return; }
+    btn.disabled = true;
+    try {
+      const cache = await caches.open(TILE_CACHE);
+      let done = 0, bad = 0;
+      for (let i = 0; i < urls.length; i += 6) {
+        await Promise.all(urls.slice(i, i + 6).map(async u => {
+          try { if (await cache.match(u)) { done++; return; } const r = await fetch(u, { mode: "cors" }); if (!r.ok) throw 0; await cache.put(u, r); done++; } catch (e) { bad++; }
+        }));
+        btn.textContent = `⬇ Saving… ${Math.min(i + 6, urls.length)}/${urls.length}`;
+      }
+      toast(bad ? `Saved ${done} map tiles (${bad} didn't download)` : `✓ Saved this map area (${done} tiles) for offline`, 5000);
+    } catch (e) { toast("Couldn't save the map — check your signal", 4500); }
+    btn.disabled = false; btn.textContent = "⬇ Save map for offline";
+  }
+  $("map-offline").addEventListener("click", saveMapArea);
+  // Admin dashboard (inside the Invite card)
+  async function loadAdminDash() {
+    const box = $("admin-dash"); if (!box) return;
+    box.innerHTML = "";
+    if (!me || !me.isAdmin) return;
+    const { data: st, error } = await db.rpc("admin_stats");
+    if (error || !st) { box.appendChild(el("div", "msg err", "Couldn't load the dashboard.")); return; }
+    box.appendChild(el("div", "label", "📊 Dashboard"));
+    const grid = el("div", "dash-grid");
+    [["People", st.members_approved, st.members_pending ? `${st.members_pending} waiting` : ""], ["Active this week", st.active_7d, ""], ["Spots", st.spots, ""],
+     ["Catches", st.catches, `${st.catches_7d} this week`], ["Alerts on", st.push_users, "phones"], ["Open reports", st.open_reports, st.members_blocked ? `${st.members_blocked} banned` : ""]]
+      .forEach(([k, v, sub]) => { const t = el("div", "dash-tile"); t.appendChild(el("div", "dash-n", String(v))); t.appendChild(el("div", "spot-meta", k)); if (sub) t.appendChild(el("div", "spot-meta", sub)); grid.appendChild(t); });
+    box.appendChild(grid);
+    if ((st.top_species || []).length) box.appendChild(el("div", "spot-meta", "Top species: " + st.top_species.map(x => `${x.species} (${x.n})`).join(" · ")));
+    if ((st.hidden || []).length) {
+      box.appendChild(el("div", "label", `🚩 Blurred — needs your decision (${st.hidden.length})`));
+      box.appendChild(el("div", "spot-meta", "Each got 3 reports and is blurred with a warning (anyone can tap to view it anyway). Keep = unblur for good; Remove = delete it."));
+      st.hidden.forEach(h => {
+        const row = el("div", "feed-item");
+        row.appendChild(el("div", null, `🚩 ${h.type}: ${h.snippet || "(gone)"}`));
+        row.appendChild(el("div", "spot-meta", `${h.reports} reports · hidden ${new Date(h.hidden_at).toLocaleDateString([], { month: "short", day: "numeric" })}`));
+        const decide = (action, ask) => async () => {
+          if (ask && !confirm(ask)) return;
+          const { error: e2 } = await db.rpc("review_flagged", { p_id: h.id, p_action: action });
+          if (e2) { alert("Couldn't do that: " + (e2.message || e2)); return; }
+          loadAdminDash(); loadReports(); loadCatches();
+        };
+        const acts = el("div", "feed-actions");
+        const keep = el("button", "btn ghost small", "✓ Keep (unblur)"); keep.type = "button"; keep.addEventListener("click", decide("keep"));
+        const rm = el("button", "btn ghost small danger", "🗑 Remove"); rm.type = "button"; rm.addEventListener("click", decide("remove", `Remove this ${h.type} for everyone?`));
+        acts.appendChild(keep); acts.appendChild(rm); row.appendChild(acts); box.appendChild(row);
+      });
+    }
+  }
+
   // ---- 🛟 Safety: severe-weather banner + "Heading out / I'm back" check-in (float plan) ----
   // Weather: National Weather Service alerts for where you are (Boat mode GPS, else the map centre, else the middle of your spots).
   // Check-in: tell chosen friends where you're going and when you'll be back; if you don't check in, they get an alert.
@@ -7117,7 +7305,7 @@
     if (error) { ul.appendChild(el("li", "empty", "Couldn't load the list: " + error.message)); return; }
     const pending = data.filter(m => m.status === "pending");
     updateRequestBadge(pending.length);
-    loadReports();
+    loadReports(); loadAdminDash();
     const review = async (m, ok) => {
       if (!ok && !confirm(`Decline ${m.display_name || m.email}? They won't get in (you can approve them later).`)) return;
       const { error: e2 } = await db.rpc("review_access", { p_email: m.email, p_approve: ok });

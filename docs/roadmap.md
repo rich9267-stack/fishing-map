@@ -19,7 +19,7 @@ Order = suggested build order. Each item is small enough to ship + test on its o
 10. **Year in review + badges.** ✅ done Oct 9
 
 ## D. App polish (QOL)
-11. Spot search/sort, edit/undo catch, export my data (CSV), offline map-area download, auto-hide after N reports, admin dashboard.
+11. ✅ done Oct 9 (all six; see build_history) — Spot search/sort, edit/undo catch, export my data (CSV), offline map-area download, blur-for-review after 3 reports, admin dashboard.
 
 ## E. Measure tool rework
 Goal: feel like the iPhone Measure app. Limit: a web page cannot use the iPhone's AR/LiDAR (Safari doesn't expose ARKit), so true "walk the phone along it" measuring is impossible here. What we can do:
