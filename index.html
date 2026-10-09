@@ -5281,7 +5281,7 @@
   // Reefs and ramps come from Florida Fish & Wildlife (FWC); the chart from NOAA. Only the part of the map you're
   // looking at is requested, and if a service is down you get a plain message instead of an error.
   const MX = {
-    chartUrl: "https://gis.charttools.noaa.gov/arcgis/rest/services/MCS/NOAAChartDisplay/MapServer/export",
+    chartUrl: "https://gis.charttools.noaa.gov/arcgis/rest/services/MCS/NOAAChartDisplay/MapServer/exts/MaritimeChartService/MapServer/export",
     reef: { url: "https://gis.myfwc.com/mapping/rest/services/Open_Data/Artificial_Reef_Locations_in_Florida/MapServer/12/query", minZoom: 9,
             fields: "Name,MatDescrip,Depth,Relief,County,DeployDate,DDate,Tonnage", color: "#0e9aa7", label: "artificial reefs" },
     ramp: { url: "https://gis.myfwc.com/mapping/rest/services/Open_Data/FWC_Florida_Boat_Ramp_Inventory/MapServer/4/query", minZoom: 9,
@@ -5313,7 +5313,11 @@
         return `${MX.chartUrl}?bbox=${bbox}&bboxSR=3857&imageSR=3857&size=${size},${size}&format=png32&transparent=true&f=image`;
       }
     });
-    return new Chart("", { maxZoom: 19, opacity: 0.85, attribution: "Charts &copy; NOAA" });
+    const layer = new Chart("", { maxZoom: 19, opacity: 0.85, attribution: "Charts &copy; NOAA" });
+    let ok = 0, bad = 0;
+    layer.on("tileload", () => { ok++; if (mxMsg.chart) { mxMsg.chart = ""; mxNote(); } });
+    layer.on("tileerror", () => { bad++; if (!ok && bad >= 3 && mxMsg.chart !== "NOAA's chart service isn't answering right now — try again later.") { mxMsg.chart = "NOAA's chart service isn't answering right now — try again later."; mxNote(); } });
+    return layer;
   }
 
   function mxVal(v) { return v == null || v === "" || v === " " ? null : String(v).trim(); }
