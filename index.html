@@ -7683,7 +7683,7 @@
   $("invite-form").addEventListener("submit", async e => {
     e.preventDefault();
     const email = $("i-email").value.trim().toLowerCase();
-    const { error } = await db.from("members").insert({ email });
+    const { error } = await db.from("members").insert({ email, invited_by: me && me.id || null });
     $("invite-msg").className = "msg" + (error ? " err" : "");
     $("invite-msg").textContent = error
       ? (/duplicate/i.test(error.message) ? "That email is already on the list." : "Couldn't add: " + error.message)

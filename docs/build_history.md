@@ -164,3 +164,6 @@ Spot list: 🔍 search box + sort (A–Z, Nearest [asks for your location, shows
 
 ## Plan a trip: find a spot on the map
 "🗺 Find a spot on the map" button under the Where dropdown (`#pl-map`). Saves the draft (spot/day/time/note) in `planPick`, opens the Map in `placing.mode="plan"` (banner, map taps ignored); pin popups get "✅ Use this spot" (public spots only); `finishPlanPick` returns to Feed and reopens the form via `openPlanForm(draft)`. Cancel returns with the draft; switching tabs drops the pick. Test: tests/test58.js. No DB change. sw v19.
+
+## Invite friends fix (setup/30)
+Bug: `members.crew` defaulted to true, so every new member auto-friended everyone. Now default false; new `members.invited_by` (set by the Invite form) auto-friends a new member with only their inviter (`ensure_profile`). Andrew + superadao set crew=false. sw v20.
