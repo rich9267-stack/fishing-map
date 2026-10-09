@@ -217,9 +217,12 @@
   .boat-box span { font-size: 1.3rem; color: #9fc3d0; }
   #boat-arrow { font-size: 2.2rem; transition: transform .4s; }
   .boat-box.stale b { opacity: .45; }
-  .boat-chips { display: flex; gap: 8px; flex-wrap: wrap; }
-  .boat-chips button { flex: 1 1 auto; background: #1c3a46; color: #fff; border: 2px solid transparent; border-radius: 14px; padding: 14px 10px; font-size: 1.15rem; font-weight: 700; }
+  .boat-chips { display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; padding-bottom: 4px; flex: none; }
+  .boat-chips button { flex: none; scroll-snap-align: start; white-space: nowrap; background: #1c3a46; color: #fff; border: 2px solid transparent; border-radius: 14px; padding: 14px 10px; font-size: 1.15rem; font-weight: 700; }
   .boat-chips button.on { border-color: #3fd36b; background: #14503a; }
+  #boat-other { display: flex; gap: 8px; } #boat-other[hidden] { display: none; }
+  #boat-other input { flex: 1; font-size: 1.2rem; padding: 12px; border-radius: 12px; border: 0; }
+  #boat-other button { background: #1f9d55; color: #fff; border: 0; border-radius: 12px; padding: 0 20px; font-size: 1.1rem; font-weight: 700; }
   #boat-catch, #boat-mark { border: 0; border-radius: 22px; font-weight: 800; color: #fff; font-size: 1.9rem; min-height: 17vh; }
   #boat-catch { background: #1f9d55; }
   #boat-mark { background: #1d6fd6; }
@@ -945,6 +948,7 @@
     <div class="boat-box"><b id="boat-head">--</b><span id="boat-card">heading</span><div id="boat-arrow" aria-hidden="true">⬆</div></div>
   </div>
   <div id="boat-species" class="boat-chips"></div>
+  <div id="boat-other" hidden><input id="boat-other-in" type="text" maxlength="40" placeholder="Type the fish…" autocomplete="off"><button type="button" id="boat-other-ok">Use</button></div>
   <button type="button" id="boat-catch">🎣 CATCH</button>
   <button type="button" id="boat-mark">📍 MARK THIS SPOT</button>
   <div id="boat-msg"></div>
@@ -5452,23 +5456,40 @@
 
   function boatMsg(t, err) { const m = $("boat-msg"); m.textContent = t; m.className = err ? "err" : ""; }
 
+  const BOAT_MORE = ["Redfish", "Black drum", "Cobia", "Mahi-mahi", "King mackerel", "Barracuda", "Permit", "Pompano", "Yellowtail snapper", "Lane snapper",
+    "Gag grouper", "Red grouper", "Goliath grouper", "Bonefish", "Bluefish", "Grunt", "Triggerfish", "Amberjack", "Wahoo", "Sailfish", "Blackfin tuna",
+    "Largemouth bass", "Peacock bass", "Bluegill", "Tilapia", "Catfish", "Shark", "Stingray"];
   function boatSpeciesChips() {
     const mine = Object.values(catchesBySpot).flat().filter(isMine);
     const counts = {}; mine.forEach(c => { counts[c.species] = (counts[c.species] || 0) + 1; });
-    let names = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 5);
-    if (names.length < 4) names = [...new Set(names.concat(COMMON_SPECIES))].slice(0, 5);
-    if (boat.species && !names.includes(boat.species)) names = [boat.species].concat(names).slice(0, 5);
+    const top = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    // Your most-caught first, then the usual suspects, then a long tail — swipe sideways to see them all
+    let names = [...new Set((boat.species ? [boat.species] : []).concat(top, COMMON_SPECIES, BOAT_MORE))];
     if (!boat.species) boat.species = names[0];
     const box = $("boat-species"); box.innerHTML = "";
+    const pick = (n, b) => {
+      boat.species = n; try { localStorage.setItem("fm-boat-species", n); } catch (e) {}
+      box.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+      $("boat-other").hidden = true;
+    };
     names.forEach(n => {
       const b = el("button", n === boat.species ? "on" : "", n); b.type = "button";
-      b.addEventListener("click", () => {
-        boat.species = n; try { localStorage.setItem("fm-boat-species", n); } catch (e) {}
-        box.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
-      });
+      b.addEventListener("click", () => pick(n, b));
       box.appendChild(b);
     });
+    const other = el("button", "", "✏️ Other…"); other.type = "button";
+    other.addEventListener("click", () => { $("boat-other").hidden = false; $("boat-other-in").focus(); });
+    box.appendChild(other);
+    box.scrollLeft = 0;
   }
+  $("boat-other-ok").addEventListener("click", () => {
+    const v = $("boat-other-in").value.trim();
+    if (!v) return;
+    boat.species = v.slice(0, 40); try { localStorage.setItem("fm-boat-species", boat.species); } catch (e) {}
+    $("boat-other-in").value = ""; $("boat-other").hidden = true;
+    boatSpeciesChips();
+    const on = $("boat-species").querySelector("button.on"); if (on) on.scrollIntoView && on.scrollIntoView({ inline: "center", block: "nearest" });
+  });
 
   function boatRender() {
     const fresh = boat.pos && Date.now() - boat.pos.t < 15000;
