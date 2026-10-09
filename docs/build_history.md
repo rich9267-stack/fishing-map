@@ -139,3 +139,9 @@ Everything below is the original README text, moved word for word. New step deta
 (4) ☆ Follow / ⭐ Following on each spot (list + map popup). Morning bite heads-up includes followed spots (even a bit past your radius, up to 50 mi), alerts for them at 3 points instead of 4, and leads with "⭐ <spot>". Edge fn `morning-bites` v3, table `spot_follows`.
 (5) Keeper checker: while logging (Quick catch and the catch form) a ✅ / ❌ / ⚠️ box compares species + length to the `fish_rules` table (min, slot, one-over, season, release-only; fork vs total length; "close call" for fork-length minimums) and always says "check FWC (checked <date>)". Admin edits the rules in Invite → 🐟 Size & bag rules (saving stamps today). Seeded with 25 Atlantic species from FWC pages on Oct 9, 2026 (permit uses Special Permit Zone rules; spotted seatrout has new 2026 regional rules — double-check).
 (6) Insights tab: 🌊 tide graph for the chosen spot (next 24 h, shaded by the stages where you catch the most), best days & times heat map (weekday × 3-hour block), bait & lure scoreboard (fish, average size, mostly what species).
+
+**Roadmap C: Hall of Fame, share card, alerts inbox, year in review** (setup/26; tests/test52.js; sw cache → v14):
+(7) Feed → Contests lists a 🏆 Hall of Fame (top 3 per board of recent ended official contests, 🥇🥈🥉); profiles show "Trophies". RPC `hall_of_fame()`.
+(8) "📤 Share" on a catch draws a picture (photo, species, size, area only) and opens the phone's share sheet, or saves it.
+(9) 🔔 Alerts button in the top bar: your recent notifications with an unread count.
+(10) Insights tab top: Year in review (catches, trips, best fish, top spot/species) and 18 badges.

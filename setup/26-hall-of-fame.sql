@@ -1,0 +1,5 @@
+-- 26: Hall of Fame (roadmap C). Migration `hall_of_fame` created function hall_of_fame():
+-- STABLE SECURITY DEFINER, members only, last 40 ended official non-cancelled tournaments,
+-- top 3 per board (row_number by value desc, caught_at asc), blocked users excluded.
+-- Columns: tournament_id, title, ends_at, series_month, board, rank, user_id, value, species.
+-- Alerts inbox reads the existing notifications table; share card and year in review are client-side only.

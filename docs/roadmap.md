@@ -13,10 +13,10 @@ Order = suggested build order. Each item is small enough to ship + test on its o
 6. **Insights** — ✅ done Oct 9 — bait/lure performance, per-spot tide graph, best-hour heat map.
 
 ## C. Social & competition
-7. **Hall of Fame** — winners of each monthly/official contest, trophies on profiles.
-8. **Share card** — catch photo + species/size/spot-area as one image for the phone's share sheet (respects privacy).
-9. **Alerts inbox** — in-app list of everything pushed to you (missed buzzes).
-10. **Year in review + badges.**
+7. **Hall of Fame** — ✅ done Oct 9 — winners of each monthly/official contest, trophies on profiles.
+8. **Share card** — ✅ done Oct 9 — catch photo + species/size/spot-area as one image for the phone's share sheet (respects privacy).
+9. **Alerts inbox** — ✅ done Oct 9 — in-app list of everything pushed to you (missed buzzes).
+10. **Year in review + badges.** ✅ done Oct 9
 
 ## D. App polish (QOL)
 11. Spot search/sort, edit/undo catch, export my data (CSV), offline map-area download, auto-hide after N reports, admin dashboard.

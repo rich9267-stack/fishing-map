@@ -235,6 +235,9 @@
   .keeper.bad { background: #fde8e6; border-color: #c0392b; color: #7b1d14; }
   .keeper.warn { background: #fff7d6; border-color: #e0b100; color: #5a4500; }
   .keeper.info { background: var(--card); }
+  .badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 8px; }
+  .badge { border: 1px solid var(--line); border-radius: 12px; padding: 8px; text-align: center; opacity: .5; filter: grayscale(1); font-size: .85rem; }
+  .badge.on { opacity: 1; filter: none; border-color: #1f9d55; background: #e6f6ec; color: #14503a; } .badge-i { font-size: 1.8rem; }
   .heat { display: grid; grid-template-columns: 2.4em repeat(8, 1fr); gap: 3px; font-size: .72rem; text-align: center; }
   .heat-h { color: var(--muted); align-self: center; } .heat-c { border-radius: 4px; min-height: 24px; line-height: 24px; font-weight: 600; }
   .bait-table { width: 100%; border-collapse: collapse; font-size: .88rem; } .bait-table th { text-align: left; color: var(--muted); font-weight: 600; padding: 4px 6px 4px 0; }
@@ -249,6 +252,7 @@
   .ci-box.late { border-color: #c0392b; background: #fde8e6; color: #7b1d14; }
   .ci-box.mine { border-color: #1f9d55; }
   .ci-box .ci-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  #share-modal { position: fixed; inset: 0; z-index: 1220; background: rgba(0,0,0,.65); overflow: auto; padding: 16px; } #share-modal[hidden] { display: none; }
   #ci-sheet { position: fixed; inset: 0; z-index: 1210; background: rgba(0,0,0,.55); overflow: auto; padding: 16px; }
   #ci-sheet[hidden] { display: none; }
   .ci-card { max-width: 520px; margin: 0 auto; background: var(--card); color: var(--text); border-radius: 14px; padding: 16px; }
@@ -350,6 +354,7 @@
     <span id="who"></span>
     <span class="userbar-links">
       <button class="linkbtn" id="profile-btn" type="button">🙂 Profile</button>
+      <button class="linkbtn" id="inbox-btn" type="button">🔔 Alerts</button>
       <button class="linkbtn" id="chat-btn" type="button">💬 Messages</button>
       <button class="linkbtn" id="friends-btn" type="button">👥 Friends</button>
       <button class="linkbtn" id="invite-btn" type="button" hidden>✉ Invite to app</button>
@@ -468,6 +473,15 @@
       </div>
       <div class="msg" id="push-msg"></div>
     </div>
+  </div>
+
+  <div class="card" id="inbox-card" hidden>
+    <div class="row">
+      <div class="label">🔔 Alerts</div>
+      <button class="linkbtn" id="inbox-close" type="button">Close</button>
+    </div>
+    <div class="spot-meta">Everything sent to your phone lately — including alerts held back by quiet hours or missed while your phone was off. Tap one to jump to it.</div>
+    <div id="inbox-list"></div>
   </div>
 
   <div class="card" id="friends-card" hidden>
@@ -725,6 +739,10 @@
   </div>
 
   <div id="view-insights" hidden>
+    <div class="card" id="yir-card" style="margin-bottom:14px">
+      <div class="row"><div class="label">🎉 Year in review &amp; badges</div><select id="yir-year" style="width:auto"></select></div>
+      <div id="yir-body"></div>
+    </div>
     <div class="card" id="rec-card" style="margin-bottom:14px">
       <div class="label">🏆 Records &amp; leaderboard</div>
       <div id="rec-scope" style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap">
@@ -1019,6 +1037,18 @@
     </div>
     <div class="msg" id="ci-msg"></div>
   </form>
+</div>
+
+<div id="share-modal" hidden>
+  <div class="ci-card" style="text-align:center">
+    <img id="share-img" alt="Share picture" style="width:100%;max-height:60vh;object-fit:contain;border-radius:10px">
+    <div class="spot-meta" id="share-note"></div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px">
+      <button class="btn" id="share-send" type="button">📤 Share</button>
+      <button class="btn ghost" id="share-save" type="button">⬇ Save picture</button>
+      <button class="btn ghost" id="share-close" type="button">Close</button>
+    </div>
+  </div>
 </div>
 
 <div id="boat" hidden>
@@ -2069,9 +2099,92 @@
     return card;
   }
 
+  // ---- 🎉 Year in review + 🏅 badges (all worked out on the phone from your own catches and trips) ----
+  const myCatches = () => Object.values(catchesBySpot).flat().filter(c => isMine(c) && c.caught_at);
+  const myTrips = () => Object.values(sessionsBySpot).flat().filter(x => x.ended_at && me && x.created_by === me.id);
+  const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const BADGES = [
+    { id: "first", icon: "🎣", name: "First fish", desc: "Log your first catch", n: x => x.fish, goal: 1 },
+    { id: "f10", icon: "🐟", name: "Ten fish", desc: "Log 10 fish", n: x => x.fish, goal: 10 },
+    { id: "f50", icon: "🐠", name: "Fifty fish", desc: "Log 50 fish", n: x => x.fish, goal: 50 },
+    { id: "f100", icon: "🐡", name: "Century", desc: "Log 100 fish", n: x => x.fish, goal: 100 },
+    { id: "f500", icon: "🦈", name: "Fish factory", desc: "Log 500 fish", n: x => x.fish, goal: 500 },
+    { id: "sp5", icon: "📚", name: "Variety pack", desc: "Catch 5 different species", n: x => x.species.size, goal: 5 },
+    { id: "sp10", icon: "🌈", name: "Collector", desc: "Catch 10 different species", n: x => x.species.size, goal: 10 },
+    { id: "slam", icon: "🏅", name: "Inshore slam", desc: "Snook, redfish and spotted seatrout — all caught", n: x => ["snook", "redfish", "seatrout"].filter(w => [...x.species].some(s => s.includes(w))).length, goal: 3 },
+    { id: "big", icon: "📏", name: "Big one", desc: "A fish 30″ or longer (measured)", n: x => x.maxLen, goal: 30 },
+    { id: "slot", icon: "✅", name: "Slot snook", desc: "A snook between 28″ and 32″", n: x => x.slotSnook, goal: 1 },
+    { id: "owl", icon: "🦉", name: "Night owl", desc: "A catch between 10 pm and 4 am", n: x => x.night, goal: 1 },
+    { id: "early", icon: "🌅", name: "Early bird", desc: "5 catches before 7 am", n: x => x.early, goal: 5 },
+    { id: "months", icon: "🗓", name: "Year-rounder", desc: "Catch fish in 6 different months", n: x => x.months.size, goal: 6 },
+    { id: "photo", icon: "📸", name: "Photographer", desc: "10 catches with a photo", n: x => x.photos, goal: 10 },
+    { id: "trips", icon: "⏱", name: "Dedicated", desc: "Log 10 trips", n: x => x.trips, goal: 10 },
+    { id: "skunk", icon: "🦨", name: "Skunk survivor", desc: "Get skunked 3 times and keep going", n: x => x.skunks, goal: 3 },
+    { id: "podium", icon: "🏆", name: "Podium", desc: "Finish top 3 in an official tournament", n: x => x.podium, goal: 1 },
+    { id: "champ", icon: "🥇", name: "Champion", desc: "Win a board in an official tournament", n: x => x.wins, goal: 1 }
+  ];
+  function badgeCtx() {
+    const cs = myCatches(), trips = myTrips(), x = { fish: 0, species: new Set(), maxLen: 0, slotSnook: 0, night: 0, early: 0, months: new Set(), photos: 0, trips: trips.length, skunks: trips.filter(t => !tripFish(t)).length, podium: 0, wins: 0 };
+    const withPhoto = new Set(Object.values(photosBySpot).flat().map(p => p.catch_id));
+    cs.forEach(c => {
+      const k = c.how_many || 1, sp = (c.species || "").toLowerCase().trim(), h = new Date(c.caught_at).getHours(), L = +c.length_in || 0;
+      x.fish += k; if (sp) x.species.add(sp); x.maxLen = Math.max(x.maxLen, L);
+      if (/snook/.test(sp) && L >= 28 && L <= 32) x.slotSnook++;
+      if (h >= 22 || h < 4) x.night++; if (h < 7) x.early++;
+      x.months.add(new Date(c.caught_at).getFullYear() + "-" + new Date(c.caught_at).getMonth());
+      if (withPhoto.has(c.id)) x.photos++;
+    });
+    const mineHof = hof.filter(r => me && r.user_id === me.id); x.podium = mineHof.length; x.wins = mineHof.filter(r => r.rank === 1).length;
+    return x;
+  }
+  function renderYearReview() {
+    const box = $("yir-body"); if (!box) return; box.innerHTML = "";
+    if (!me) return;
+    const cs = myCatches(), years = [...new Set(cs.map(c => new Date(c.caught_at).getFullYear()))].sort((a, b) => b - a);
+    const sel = $("yir-year"), keep = +sel.value;
+    sel.innerHTML = ""; (years.length ? years : [new Date().getFullYear()]).forEach(y => { const o = el("option", null, String(y)); o.value = y; sel.appendChild(o); });
+    if (keep && years.includes(keep)) sel.value = keep;
+    const y = +sel.value, yc = cs.filter(c => new Date(c.caught_at).getFullYear() === y);
+    if (!yc.length) { box.appendChild(el("div", "empty", "Log some catches and your year in review builds itself here.")); }
+    else {
+      const fish = yc.reduce((n, c) => n + (c.how_many || 1), 0), trips = myTrips().filter(t => new Date(t.started_at).getFullYear() === y);
+      const hrs = trips.reduce((n, t) => n + tripHours(t), 0), skunk = trips.filter(t => !tripFish(t)).length;
+      const tiles = el("div", "tiles"); tiles.appendChild(tile(fish, "fish")); tiles.appendChild(tile(yc.length, "catches"));
+      if (trips.length) { tiles.appendChild(tile(trips.length, "trips")); tiles.appendChild(tile(hrs.toFixed(hrs < 10 ? 1 : 0), "hours fished")); }
+      box.appendChild(tiles);
+      const tally = (fn) => { const m = new Map(); yc.forEach(c => { const k = fn(c); if (k) m.set(k, (m.get(k) || 0) + (c.how_many || 1)); }); return [...m.entries()].sort((a, b) => b[1] - a[1]); };
+      const lines = [];
+      const topSp = tally(c => c.species && cap(c.species.trim()))[0]; if (topSp) lines.push(`🐟 Most caught: ${topSp[0]} (${topSp[1]})`);
+      const prior = new Set(cs.filter(c => new Date(c.caught_at).getFullYear() < y).map(c => (c.species || "").toLowerCase().trim()));
+      const fresh = [...new Set(yc.map(c => (c.species || "").toLowerCase().trim()).filter(s => s && !prior.has(s)))];
+      if (fresh.length && prior.size) lines.push(`🆕 ${fresh.length} new species this year: ${fresh.slice(0, 6).map(cap).join(", ")}${fresh.length > 6 ? "…" : ""}`);
+      const big = yc.filter(c => +c.length_in > 0).sort((a, b) => b.length_in - a.length_in)[0]; if (big) lines.push(`📏 Longest fish: ${cap(big.species || "fish")}, ${+Number(big.length_in).toFixed(1)}″ on ${new Date(big.caught_at).toLocaleDateString([], { month: "short", day: "numeric" })}`);
+      const heavy = yc.filter(c => +c.weight_lb > 0 && !c.weight_est).sort((a, b) => b.weight_lb - a.weight_lb)[0]; if (heavy) lines.push(`⚖️ Heaviest (weighed): ${cap(heavy.species || "fish")}, ${lbText(Number(heavy.weight_lb))}`);
+      const spotN = tally(c => { const s = (spots || []).find(x => x.id === c.spot_id); return s && s.name; })[0]; if (spotN) lines.push(`📍 Favorite spot: ${spotN[0]} (${spotN[1]} fish)`);
+      const mo = tally(c => MONTH_NAMES[new Date(c.caught_at).getMonth()])[0]; if (mo) lines.push(`📅 Best month: ${mo[0]} (${mo[1]} fish)`);
+      const dw = tally(c => DOW[new Date(c.caught_at).getDay()])[0]; if (dw) lines.push(`🗓 Best weekday: ${dw[0]}`);
+      const bait = tally(c => c.bait && cap(c.bait.trim().toLowerCase()))[0]; if (bait) lines.push(`🪱 Top bait: ${bait[0]} (${bait[1]})`);
+      if (trips.length) lines.push(`⏱ ${(fish / Math.max(hrs, 0.1)).toFixed(1)} fish per hour · ${skunk} skunked trip${skunk === 1 ? "" : "s"} (${Math.round(100 * skunk / trips.length)}%)`);
+      lines.forEach(t => { const d = el("div", null, t); d.style.padding = "3px 0"; box.appendChild(d); });
+    }
+    // badges
+    const ctx = badgeCtx(), earned = BADGES.filter(b => b.n(ctx) >= b.goal);
+    box.appendChild(el("div", "label", `🏅 Badges (${earned.length}/${BADGES.length})`)); box.lastChild.style.marginTop = "14px";
+    const grid = el("div", "badges");
+    BADGES.forEach(b => {
+      const have = b.n(ctx) >= b.goal, d = el("div", "badge" + (have ? " on" : "")); d.title = b.desc;
+      d.appendChild(el("div", "badge-i", b.icon)); d.appendChild(el("b", null, b.name));
+      d.appendChild(el("div", "spot-meta", have ? "Earned" : `${Math.floor(Math.min(b.n(ctx), b.goal))}/${b.goal} · ${b.desc}`));
+      grid.appendChild(d);
+    });
+    box.appendChild(grid);
+  }
+  $("yir-year").addEventListener("change", renderYearReview);
+
   function renderInsights() {
     if ($("view-insights").hidden) return;
     renderRecords();
+    renderYearReview();
     fillInsightPickers();
     const list = insightCatches();
     const fish = list.reduce((n, c) => n + (c.how_many || 1), 0);
@@ -4339,6 +4452,8 @@
     if (c.notes) li.appendChild(el("div", "spot-meta", c.notes));
     if (!isMine(c)) return li;
     const actions = el("div", "catch-actions");
+    const shr = el("button", "linkbtn", "📤 Share"); shr.type = "button"; shr.addEventListener("click", () => shareCatchCard(c));
+    actions.appendChild(shr);
     const edit = el("button", "linkbtn", "Edit");
     edit.type = "button";
     edit.addEventListener("click", () => openCatchForm(c.spot_id, c));
@@ -5986,6 +6101,100 @@
   let rulesAll = [];
   async function loadRulesAll() { const { data } = await db.from("fish_rules").select("*"); rulesAll = data || []; }
 
+  // ---- 🖼 Share card: one picture of the catch (photo, species, size, date) for the phone's share sheet ----
+  // The place name is only printed when the catch is set to 🌎 Public; Private / Friends catches never show where.
+  function loadImg(src) {
+    return new Promise(res => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+  }
+  function wrapText(ctx, text, x, y, maxW, lh, maxLines) {
+    const words = String(text).split(/\s+/); let line = "", n = 0;
+    for (const w of words) {
+      const t = line ? line + " " + w : w;
+      if (ctx.measureText(t).width > maxW && line) { ctx.fillText(line, x, y); y += lh; line = w; if (++n >= maxLines) return y; } else line = t;
+    }
+    if (line) { ctx.fillText(line, x, y); y += lh; }
+    return y;
+  }
+  async function drawShareCard(c, withPhoto) {
+    const W = 1080, H = 1350, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    const g = cv.getContext("2d");
+    const grad = g.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, "#0d2a35"); grad.addColorStop(1, "#06141a"); g.fillStyle = grad; g.fillRect(0, 0, W, H);
+    const ph = (photosBySpot[c.spot_id] || []).find(p => p.catch_id === c.id);
+    const img = withPhoto && ph && photoUrls[ph.path] ? await loadImg(photoUrls[ph.path]) : null;
+    if (img) { // fill the top area like "cover"
+      const bw = W, bh = 960, r = Math.max(bw / img.width, bh / img.height), sw = bw / r, sh = bh / r;
+      g.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, 0, 0, bw, bh);
+    } else { g.font = "300px serif"; g.textAlign = "center"; g.fillText("🎣", W / 2, 620); }
+    const fade = g.createLinearGradient(0, 760, 0, 960); fade.addColorStop(0, "rgba(6,20,26,0)"); fade.addColorStop(1, "rgba(6,20,26,1)"); g.fillStyle = fade; g.fillRect(0, 760, W, 200);
+    g.textAlign = "left"; g.fillStyle = "#fff"; g.font = "bold 84px system-ui, -apple-system, sans-serif";
+    const title = `${c.how_many > 1 ? c.how_many + " " : ""}${cap(c.species || "Catch")}`;
+    let y = wrapText(g, title, 60, 1040, W - 120, 92, 2);
+    const size = [c.length_in != null && `${+Number(c.length_in).toFixed(1)}″`, c.weight_lb != null && (c.weight_est ? "≈" : "") + lbText(Number(c.weight_lb))].filter(Boolean).join("  ·  ");
+    g.font = "600 52px system-ui, -apple-system, sans-serif"; g.fillStyle = "#8fe3ad";
+    if (size) { g.fillText(size, 60, y + 4); y += 64; }
+    g.font = "40px system-ui, -apple-system, sans-serif"; g.fillStyle = "#cfe6ee";
+    const when = new Date(c.caught_at).toLocaleDateString([], { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    const sp = (spots || []).find(x => x.id === c.spot_id), place = c.visibility === "public" && sp ? sp.name : "";
+    g.fillText(when + (place ? "  ·  " + place : ""), 60, y + 6, W - 120);
+    g.font = "600 34px system-ui, -apple-system, sans-serif"; g.fillStyle = "#7fa3b0"; g.fillText("🎣 Fishing Map", 60, H - 50);
+    g.textAlign = "right"; g.fillText(c.caught_by || (me && me.name) || "", W - 60, H - 50);
+    return cv;
+  }
+  const canvasBlob = cv => new Promise(res => { try { cv.toBlob(b => res(b), "image/jpeg", 0.92); } catch (e) { res(null); } });
+  async function shareCatchCard(c) {
+    toast("Making your share picture…");
+    let cv = await drawShareCard(c, true), blob = await canvasBlob(cv);
+    if (!blob) { cv = await drawShareCard(c, false); blob = await canvasBlob(cv); } // the photo's host blocked drawing: share without it
+    if (!blob) { toast("Couldn't make the picture on this phone."); return; }
+    const url = URL.createObjectURL(blob), file = new File([blob], `catch-${(c.species || "fish").replace(/\W+/g, "-").toLowerCase()}.jpg`, { type: "image/jpeg" });
+    $("share-img").src = url; $("share-note").textContent = c.visibility === "public" ? "" : "🔒 The spot name is left off because this catch isn't set to 🌎 Public.";
+    $("share-modal").hidden = false; share.file = file; share.url = url;
+    $("share-send").hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));
+  }
+  const share = { file: null, url: null };
+  $("share-send").addEventListener("click", async () => { try { await navigator.share({ files: [share.file], title: "My catch" }); } catch (e) { /* cancelled */ } });
+  $("share-save").addEventListener("click", () => { const a = document.createElement("a"); a.href = share.url; a.download = share.file.name; document.body.appendChild(a); a.click(); a.remove(); });
+  $("share-close").addEventListener("click", () => { $("share-modal").hidden = true; try { URL.revokeObjectURL(share.url); } catch (e) {} });
+
+  // ---- 🔔 Alerts inbox: the notifications table (own rows), newest first ----
+  let inbox = [];
+  const INBOX_SEEN = () => `fm-inbox-seen-${me ? me.id : "x"}`;
+  const inboxSeen = () => { try { return +localStorage.getItem(INBOX_SEEN()) || 0; } catch (e) { return 0; } };
+  const ago = d => { const m = Math.round((Date.now() - new Date(d)) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : new Date(d).toLocaleDateString([], { month: "short", day: "numeric" }); };
+  function inboxBadge() {
+    const n = inbox.filter(x => +new Date(x.created_at) > inboxSeen() && x.kind !== "test").length;
+    $("inbox-btn").textContent = n ? `🔔 Alerts (${n})` : "🔔 Alerts";
+  }
+  async function inboxLoad() {
+    if (!me) return;
+    try {
+      const { data, error } = await db.from("notifications").select("*").order("created_at", { ascending: false }).limit(50);
+      if (error) throw error;
+      inbox = data || [];
+    } catch (e) { /* keep the last list */ }
+    inboxBadge(); if (!$("inbox-card").hidden) inboxRender();
+  }
+  function inboxRender(seenBefore) {
+    const box = $("inbox-list"); box.innerHTML = "";
+    if (!inbox.length) { box.appendChild(el("div", "empty", "Nothing yet. Alerts you get on your phone will be listed here too.")); return; }
+    inbox.forEach(x => {
+      const row = el("div", "feed-item"); row.style.cursor = x.url ? "pointer" : "default";
+      const fresh = +new Date(x.created_at) > (seenBefore || 0); if (fresh) row.style.borderLeft = "4px solid #1f9d55";
+      const top = el("div", "feed-top"); top.appendChild(el("b", null, x.title)); top.appendChild(el("span", "spot-meta", ago(x.created_at))); row.appendChild(top);
+      if (x.body) row.appendChild(el("div", null, x.body));
+      if (x.result === "quiet hours") row.appendChild(el("div", "spot-meta", "🌙 Held back — it arrived during your quiet hours"));
+      if (x.url) row.addEventListener("click", () => { $("inbox-card").hidden = true; handleGo(x.url); });
+      box.appendChild(row);
+    });
+  }
+  $("inbox-btn").addEventListener("click", async () => {
+    const seen = inboxSeen();
+    $("inbox-card").hidden = false; await inboxLoad(); inboxRender(seen);
+    try { localStorage.setItem(INBOX_SEEN(), String(Date.now())); } catch (e) {}
+    inboxBadge(); $("inbox-card").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  $("inbox-close").addEventListener("click", () => { $("inbox-card").hidden = true; });
+
   // ---- 🛟 Safety: severe-weather banner + "Heading out / I'm back" check-in (float plan) ----
   // Weather: National Weather Service alerts for where you are (Boat mode GPS, else the map centre, else the middle of your spots).
   // Check-in: tell chosen friends where you're going and when you'll be back; if you don't check in, they get an alert.
@@ -6164,7 +6373,7 @@
 
   function safetyStart() {
     safetyStripShow(); ciLoad(); wxRefresh();
-    clearInterval(ci.timer); ci.timer = setInterval(() => { if (document.visibilityState === "visible" && me) { ciLoad(); wxRefresh(); } }, 60000);
+    clearInterval(ci.timer); ci.timer = setInterval(() => { if (document.visibilityState === "visible" && me) { ciLoad(); wxRefresh(); inboxLoad(); } }, 60000);
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && me) { ciLoad(); wxRefresh(); } });
   }
   function safetyStop() { clearInterval(ci.timer); ci.mine = null; ci.watch = []; wx.list = []; $("safety-strip").hidden = true; }
@@ -6302,7 +6511,7 @@
     checkRequests();
     startChat();
     loadBlocks();
-    safetyStart(); loadFollows(); loadRules();
+    safetyStart(); loadFollows(); loadRules(); loadHof(); inboxLoad();
     setTimeout(() => { updatePendingBar(); flushQueue(); }, 1500);
     if (!appStarted) {
       appStarted = true;
@@ -6414,6 +6623,7 @@
   }
   function showProfile(id) { stopPlacing(); feedMode = "public"; showView("feed"); openProfile(id); }
   async function openProfile(id) {
+    loadHof().then(() => { if (pubProfileId === id && profView && !profView.loading) renderProfilePage(); });
     pubProfileId = id; profView = { loading: true, catches: [] };
     renderPublic();
     try {
@@ -6453,6 +6663,11 @@
       const bb = el("button", "linkbtn danger", blockedIds.has(id) ? "Unblock" : "🚫 Block"); bb.type = "button";
       bb.addEventListener("click", () => (blockedIds.has(id) ? unblockUser(id) : blockUser(id)));
       tools.appendChild(rb); tools.appendChild(bb); box.appendChild(tools);
+    }
+    const won = hof.filter(r => r.user_id === id);
+    if (won.length) {
+      box.appendChild(el("div", "label", `🏆 Trophies (${won.length})`)); box.lastChild.id = "prof-trophies";
+      won.forEach(r => box.appendChild(el("div", null, `${MEDAL[r.rank]} ${r.title} — ${CT_BOARDS[r.board]}: ${hofVal(r)}`)));
     }
     const sp = spotsAll.filter(x => x.created_by === id && x.visibility === "public");
     box.appendChild(el("div", "label", `Public spots (${sp.length})`));
@@ -7066,6 +7281,36 @@
       await ensureProfiles([...ctRows.map(t => t.created_by), ...ctMembers.map(m => m.user_id)]);
     } catch (e) { ctErr = "Couldn't load contests: " + (e.message || e); }
   }
+  // 🏛 Hall of Fame: top 3 on every board of each finished official tournament (rpc hall_of_fame)
+  let hof = [], hofAt = 0;
+  async function loadHof(force) {
+    if (!me || (!force && Date.now() - hofAt < 300000)) return;
+    try {
+      const { data, error } = await db.rpc("hall_of_fame");
+      if (error) throw error;
+      hof = data || []; hofAt = Date.now();
+      await ensureProfiles([...new Set(hof.map(r => r.user_id))]);
+    } catch (e) { /* keep the last list */ }
+  }
+  const MEDAL = ["", "🥇", "🥈", "🥉"];
+  const hofVal = r => r.board === "length" ? Number(r.value).toFixed(1).replace(/\.0$/, "") + "″" + (r.species ? " " + r.species : "") : r.board === "weight" ? Number(r.value).toFixed(1) + " lb" + (r.species ? " " + r.species : "")
+    : r.board === "fish" ? r.value + " fish" : r.value + " species";
+  const hofName = r => (profOf(r.user_id) || {}).display_name || "Someone";
+  function hofSection(box) {
+    box.appendChild(el("div", "label", "🏛 Hall of Fame")); box.lastChild.style.marginTop = "14px";
+    if (!hof.length) { box.appendChild(el("div", "empty", "Winners of finished official tournaments show up here.")); return; }
+    const groups = []; hof.forEach(r => { let g = groups.find(x => x.id === r.tournament_id); if (!g) groups.push(g = { id: r.tournament_id, title: r.title, ends: r.ends_at, rows: [] }); g.rows.push(r); });
+    groups.slice(0, 8).forEach(g => {
+      const d = el("div", "feed-item"); d.id = "hof-" + g.id;
+      const top = el("div", "feed-top"); top.appendChild(el("b", null, "🏆 " + g.title)); top.appendChild(el("span", "spot-meta", new Date(g.ends).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }))); d.appendChild(top);
+      ["length", "weight", "fish", "species"].forEach(b => {
+        const rows = g.rows.filter(r => r.board === b); if (!rows.length) return;
+        d.appendChild(el("div", "spot-meta", CT_BOARDS[b]));
+        rows.forEach(r => d.appendChild(el("div", null, `${MEDAL[r.rank]} ${hofName(r)} — ${hofVal(r)}`)));
+      });
+      box.appendChild(d);
+    });
+  }
   async function openContests() { ctView = ctId && ctView === "detail" ? "detail" : "list"; await ctLoad(); ctRender(); }
   function ctRender() {
     const box = $("ct-body"); box.innerHTML = "";
@@ -7105,6 +7350,8 @@
     if (inv.length) sect("📨 Invitations", inv, "");
     sect("🏆 Official tournaments", off, "No official tournaments yet.");
     sect("🎣 My competitions", mine, "None yet — tap + Create to start one with friends for a trip or a weekend.");
+    hofSection(box);
+    loadHof().then(() => { if (ctView === "list" && $("ct-body") && !$("ct-body").querySelector("[id^=hof-]") && hof.length) ctRender(); });
   }
 
   function ctLocalInput(d) { const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 16); }
