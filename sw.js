@@ -2,7 +2,7 @@
 // - The page itself: try the network first (so updates show up), fall back to the saved copy.
 // - Code libraries from CDNs: use the saved copy right away, refresh it in the background.
 // - Live data (database, tides, weather, map tiles) is never cached here.
-const CACHE = "fishing-map-v1";
+const CACHE = "fishing-map-v2";
 const APP_FILES = ["./", "./index.html", "./privacy.html"];
 const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com"];
 
@@ -26,7 +26,7 @@ self.addEventListener("fetch", event => {
   // The app page: network first, saved copy when offline
   if (url.origin === self.location.origin && (req.mode === "navigate" || url.pathname.endsWith(".html") || url.pathname.endsWith("/"))) {
     event.respondWith(
-      fetch(req).then(res => {
+      fetch(req, { cache: "no-cache" }).then(res => { // always check GitHub for a newer version (it's tiny if nothing changed)
         if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
         return res;
       }).catch(() => caches.match(req).then(r => r || caches.match("./index.html")))
