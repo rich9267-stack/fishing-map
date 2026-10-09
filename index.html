@@ -479,6 +479,10 @@
     <div id="feed-mode" style="display:flex;gap:8px;margin-bottom:14px">
       <button class="btn small" id="feed-mode-circle" type="button">👥 My circle</button>
       <button class="btn ghost small" id="feed-mode-public" type="button">🌎 Public</button>
+      <button class="btn ghost small" id="feed-mode-contests" type="button">🏁 Contests</button>
+    </div>
+    <div class="card" id="contests" hidden>
+      <div id="ct-body"></div>
     </div>
     <div class="card" id="feed-plans-card">
       <div class="label">Who's going?</div>
@@ -2481,7 +2485,7 @@
     qc.pos = null;
     if (!navigator.geolocation) { $("qc-where").textContent = "📍 Location not available"; return; }
     qc.watch = navigator.geolocation.watchPosition(p => {
-      qc.pos = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: p.coords.accuracy };
+      qc.pos = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: p.coords.accuracy, at: new Date().toISOString() };
       updateWhere();
       if (!$("qc-review").hidden) fillSpotChoices();
     }, () => { $("qc-where").textContent = "📍 Couldn't get location — you can pick the spot"; },
@@ -2638,6 +2642,7 @@
     if (error && item.session && /foreign key|session/i.test(error.message || "")) // the trip didn't reach the database — keep the catch anyway
       ({ data: saved, error } = await db.from("catches").insert(base).select("id").single());
     if (error) throw error;
+    await saveCatchGeo(saved.id, item.pos); // live GPS stamp for geo-locked contests
     let photoOk = true;
     if (item.blob) {
       try { await uploadPhoto(new File([item.blob], "catch.jpg", { type: "image/jpeg" }), spot.id, saved.id, { when, lat: item.pos ? item.pos.lat : null, lng: item.pos ? item.pos.lng : null }); }
@@ -3598,6 +3603,7 @@
         ? await db.from("catches").update(row).eq("id", editingCatch.id).select("id").single()
         : await db.from("catches").insert(row).select("id").single();
       if (error) throw error;
+      if (!editingCatch) { const gp = await liveGeoIfNeeded(); await saveCatchGeo(savedRow.id, gp); }
       const photoFile = q("#c-photo").files && q("#c-photo").files[0];
       if (photoFile) {
         msg.textContent = "Uploading photo…";
@@ -5244,7 +5250,12 @@
     const pub = m === "public";
     $("feed-mode-circle").className = "btn small" + (pub ? " ghost" : "");
     $("feed-mode-public").className = "btn small" + (pub ? "" : " ghost");
-    $("feed-plans-card").hidden = pub; $("feed-circle-card").hidden = pub;
+    const ct = m === "contests";
+    $("feed-mode-contests").className = "btn small" + (ct ? "" : " ghost");
+    if (ct) $("feed-mode-circle").className = "btn small ghost";
+    $("contests").hidden = !ct;
+    $("feed-plans-card").hidden = pub || ct; $("feed-circle-card").hidden = pub || ct;
+    if (ct) { $("pub-feed").hidden = true; $("pub-profile").hidden = true; openContests(); return; }
     if (pub) { loadPublic(); renderPublic(); } else { $("pub-feed").hidden = true; $("pub-profile").hidden = true; renderFeed(); }
   }
   const profOf = id => pubProfiles[id] || friendProfiles[id] || (me && id === me.id && me.profile) || null;
@@ -5378,6 +5389,7 @@
   $("pub-back").addEventListener("click", () => { pubProfileId = null; profView = null; renderPublic(); });
   $("feed-mode-circle").addEventListener("click", () => setFeedMode("circle"));
   $("feed-mode-public").addEventListener("click", () => setFeedMode("public"));
+  $("feed-mode-contests").addEventListener("click", () => setFeedMode("contests"));
   // Strangers' public spots on the regular map (a toggle; your circle's spots are always shown)
   function strangerSpots() { return spotsAll.filter(x => x.visibility === "public" && x.lat != null && x.lng != null && !(spots || []).some(sp => sp.id === x.id)); }
   async function setMapPublic(on) {
@@ -5891,6 +5903,273 @@
   loadPressure();
   loadMoon();
   gate();
+
+  // ---- 🏁 Contests (V4.6): official tournaments (admin only) and friend competitions ----
+  const CT_BOARDS = { length: "Longest fish", weight: "Heaviest fish", fish: "Most fish", species: "Most species" };
+  let ctRows = [], ctMine = {}, ctMembers = [], ctView = "list", ctId = null, ctErr = null, ctBusy = false;
+  const ctFmt = d => new Date(d).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  function ctState(t) {
+    const now = Date.now();
+    if (t.cancelled_at) return { k: "cancelled", label: "Cancelled" };
+    if (now < new Date(t.starts_at)) return { k: "soon", label: "Starts " + ctFmt(t.starts_at) };
+    if (now > new Date(t.ends_at)) return { k: "ended", label: "Ended" };
+    return { k: "live", label: "🔴 LIVE" };
+  }
+  const ctOpen = t => { const k = ctState(t).k; return k === "live" || k === "soon"; };
+
+  // A GPS stamp saved at the moment a catch is logged live — this is what geo-locked contests check.
+  async function saveCatchGeo(catchId, pos) {
+    if (!db || !catchId || !pos || pos.acc == null) return;
+    try {
+      await db.from("catch_geo").insert({ catch_id: catchId, lat: pos.lat, lng: pos.lng, accuracy_m: Math.round(pos.acc), captured_at: pos.at || new Date().toISOString() });
+    } catch (e) {}
+  }
+  async function liveGeoIfNeeded() {
+    try {
+      if (!db || !navigator.geolocation || !me) return null;
+      const [{ data: ts }, { data: ms }] = await Promise.all([
+        db.from("tournaments").select("id,geo_lat,ends_at,cancelled_at"),
+        db.from("tournament_members").select("tournament_id,status,user_id")
+      ]);
+      const joined = new Set((ms || []).filter(m => m.user_id === me.id && m.status === "joined").map(m => m.tournament_id));
+      const need = (ts || []).some(t => t.geo_lat != null && !t.cancelled_at && new Date(t.ends_at) > new Date() && joined.has(t.id));
+      if (!need) return null;
+      return await new Promise(res => navigator.geolocation.getCurrentPosition(
+        p => res({ lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: p.coords.accuracy, at: new Date().toISOString() }),
+        () => res(null), { enableHighAccuracy: true, timeout: 8000, maximumAge: 20000 }));
+    } catch (e) { return null; }
+  }
+
+  async function ctLoad() {
+    ctErr = null;
+    try {
+      const [a, b] = await Promise.all([
+        db.from("tournaments").select("*").order("starts_at", { ascending: false }),
+        db.from("tournament_members").select("*")
+      ]);
+      if (a.error) throw a.error;
+      if (b.error) throw b.error;
+      ctRows = a.data || []; ctMembers = b.data || [];
+      ctMine = {}; ctMembers.forEach(m => { if (m.user_id === me.id) ctMine[m.tournament_id] = m.status; });
+      await ensureProfiles([...ctRows.map(t => t.created_by), ...ctMembers.map(m => m.user_id)]);
+    } catch (e) { ctErr = "Couldn't load contests: " + (e.message || e); }
+  }
+  async function openContests() { ctView = ctId && ctView === "detail" ? "detail" : "list"; await ctLoad(); ctRender(); }
+  function ctRender() {
+    const box = $("ct-body"); box.innerHTML = "";
+    if (ctErr) { box.appendChild(el("div", "msg err", ctErr)); }
+    if (ctView === "form") return ctForm(box);
+    if (ctView === "detail") return ctDetail(box);
+    ctList(box);
+  }
+  function ctCard(t) {
+    const st = ctState(t);
+    const d = el("div", "feed-item"); d.style.cursor = "pointer";
+    const top = el("div", "feed-top");
+    top.appendChild(el("b", null, (t.kind === "official" ? "🏆 " : "🎣 ") + t.title));
+    top.appendChild(el("span", "spot-meta", st.label));
+    d.appendChild(top);
+    const n = ctMembers.filter(m => m.tournament_id === t.id && m.status === "joined").length;
+    d.appendChild(el("div", "spot-meta", `${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · ${t.boards.map(b => CT_BOARDS[b]).join(", ")}${n ? " · " + n + " in" : ""}${t.geo_lat != null ? " · 📍 " + (t.geo_label || "area") : ""}`));
+    d.addEventListener("click", () => { ctId = t.id; ctView = "detail"; ctRender(); });
+    return d;
+  }
+  function ctList(box) {
+    const top = el("div", "feed-top");
+    top.appendChild(el("div", "label", "🏁 Contests"));
+    const nb = el("button", "btn small", "+ Create"); nb.type = "button"; nb.id = "ct-new";
+    nb.addEventListener("click", () => { ctView = "form"; ctRender(); });
+    top.appendChild(nb); box.appendChild(top);
+    const inv = ctRows.filter(t => ctMine[t.id] === "invited" && ctOpen(t));
+    const off = ctRows.filter(t => t.kind === "official" && !t.cancelled_at);
+    const rank = t => ({ live: 0, soon: 1, ended: 2 })[ctState(t).k];
+    off.sort((a, b) => rank(a) - rank(b) || new Date(b.starts_at) - new Date(a.starts_at));
+    const mine = ctRows.filter(t => t.kind === "friends" && ctMine[t.id] === "joined");
+    mine.sort((a, b) => rank(a) - rank(b) || new Date(b.starts_at) - new Date(a.starts_at));
+    const sect = (title, list, empty) => {
+      box.appendChild(el("div", "label", title)); box.lastChild.style.marginTop = "14px";
+      if (!list.length) box.appendChild(el("div", "empty", empty)); else list.forEach(t => box.appendChild(ctCard(t)));
+    };
+    if (inv.length) sect("📨 Invitations", inv, "");
+    sect("🏆 Official tournaments", off, "No official tournaments yet.");
+    sect("🎣 My competitions", mine, "None yet — tap + Create to start one with friends for a trip or a weekend.");
+  }
+
+  function ctLocalInput(d) { const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 16); }
+  async function ctForm(box) {
+    const admin = !!(me && me.isAdmin);
+    const wrap = el("div"); box.appendChild(wrap);
+    wrap.innerHTML = `
+      <button class="btn ghost small" id="ctf-back" type="button">← Back</button>
+      <div class="label" style="margin-top:10px">Create a competition</div>
+      ${admin ? `<label for="ctf-kind">Type</label><select id="ctf-kind"><option value="friends">🎣 Friends competition (invite-only)</option><option value="official">🏆 Official tournament (anyone can join)</option></select>` : ""}
+      <label for="ctf-title">Name</label><input id="ctf-title" maxlength="60" placeholder="Keys weekend showdown">
+      <label for="ctf-desc">Details (optional)</label><input id="ctf-desc" maxlength="300" placeholder="Prize, rules, anything friends should know">
+      <label>When</label>
+      <div class="fchips" id="ctf-presets"><button class="fchip" type="button" data-p="trip">This trip (next 8 hrs)</button><button class="fchip" type="button" data-p="today">Today</button><button class="fchip" type="button" data-p="weekend">This weekend</button><button class="fchip" type="button" data-p="week">Next 7 days</button></div>
+      <div class="two"><div><label for="ctf-start">Starts</label><input id="ctf-start" type="datetime-local"></div><div><label for="ctf-end">Ends</label><input id="ctf-end" type="datetime-local"></div></div>
+      <label>Winners (each one gets its own board)</label>
+      <div class="fchips" id="ctf-boards">${Object.entries(CT_BOARDS).map(([k, v]) => `<button class="fchip${k === "length" ? " on" : ""}" type="button" data-b="${k}">${v}</button>`).join("")}</div>
+      <label for="ctf-species">Only count one species? (optional)</label><input id="ctf-species" maxlength="40" placeholder="e.g. Snook — leave empty for any fish">
+      <label>Proof required</label>
+      <label class="check-row"><input type="checkbox" id="ctf-photo"><span>📷 Photo on every catch</span></label>
+      <label class="check-row"><input type="checkbox" id="ctf-length"><span>📏 Measured length on every catch</span></label>
+      <div class="spot-meta" id="ctf-offnote" hidden>Official tournaments always need a photo, a measured length, and the catch set to 🌎 Public.</div>
+      <label for="ctf-geo">Location lock</label>
+      <select id="ctf-geo"><option value="">None — fish anywhere</option><option value="here">Around my location right now</option></select>
+      <div id="ctf-radius-wrap" hidden><label for="ctf-radius">Radius</label><select id="ctf-radius"><option>1</option><option>3</option><option selected>5</option><option>10</option><option>25</option></select><div class="spot-meta">Catches must be logged live (Quick catch or the catch form) from inside this circle. GPS can be faked by a determined cheater, so this is for friendly honesty, not security.</div></div>
+      <div id="ctf-inv-wrap"><label>Invite friends</label><div id="ctf-inv" class="fchips"></div></div>
+      <div class="msg" id="ctf-msg"></div>
+      <button class="btn" id="ctf-save" type="button" style="margin-top:10px">Create</button>`;
+    const sel = wrap.querySelector("#ctf-geo");
+    (spots || []).filter(hasLoc).forEach(s => { const o = document.createElement("option"); o.value = "spot:" + s.id; o.textContent = "Around spot: " + s.name; sel.appendChild(o); });
+    const kind = () => (admin ? wrap.querySelector("#ctf-kind").value : "friends");
+    const upd = () => {
+      const off = kind() === "official";
+      wrap.querySelector("#ctf-offnote").hidden = !off;
+      ["#ctf-photo", "#ctf-length"].forEach(i => { const c = wrap.querySelector(i); if (off) c.checked = true; c.disabled = off; });
+      wrap.querySelector("#ctf-inv-wrap").hidden = off;
+      wrap.querySelector("#ctf-radius-wrap").hidden = !sel.value;
+    };
+    if (admin) wrap.querySelector("#ctf-kind").addEventListener("change", upd);
+    sel.addEventListener("change", upd); upd();
+    wrap.querySelector("#ctf-back").addEventListener("click", () => { ctView = "list"; ctRender(); });
+    wrap.querySelectorAll("#ctf-boards .fchip").forEach(b => b.addEventListener("click", () => b.classList.toggle("on")));
+    const setRange = (a, b) => { wrap.querySelector("#ctf-start").value = ctLocalInput(a); wrap.querySelector("#ctf-end").value = ctLocalInput(b); };
+    wrap.querySelectorAll("#ctf-presets .fchip").forEach(b => b.addEventListener("click", () => {
+      const now = new Date(), p = b.dataset.p;
+      if (p === "trip") setRange(now, new Date(now.getTime() + 8 * 3600000));
+      else if (p === "today") { const e = new Date(now); e.setHours(23, 59, 0, 0); setRange(now, e); }
+      else if (p === "week") setRange(now, new Date(now.getTime() + 7 * 86400000));
+      else { // this weekend: Friday 5 pm → Sunday night (starts now if the weekend is already here)
+        const dow = now.getDay(), toFri = dow === 6 || dow === 0 ? 0 : (5 - dow);
+        const s = new Date(now); s.setDate(s.getDate() + toFri); s.setHours(17, 0, 0, 0);
+        const e = new Date(s); e.setDate(e.getDate() + (dow === 0 ? 0 : (dow === 6 ? 1 : 2))); e.setHours(23, 59, 0, 0);
+        setRange(s < now ? now : s, e);
+      }
+    }));
+    wrap.querySelector("#ctf-presets .fchip").click();
+    const circle = await getCircle();
+    const ids = circle ? [...circle] : [];
+    await ensureProfiles(ids);
+    const inv = wrap.querySelector("#ctf-inv");
+    if (!ids.length) inv.appendChild(el("span", "spot-meta", "Add friends first (Profile → Friends) to invite them."));
+    ids.forEach(id => { const b = el("button", "fchip", profName(id) || "Friend"); b.type = "button"; b.dataset.uid = id; b.addEventListener("click", () => b.classList.toggle("on")); inv.appendChild(b); });
+    wrap.querySelector("#ctf-save").addEventListener("click", async () => {
+      const msg = wrap.querySelector("#ctf-msg"); msg.className = "msg err";
+      const title = wrap.querySelector("#ctf-title").value.trim();
+      const s = new Date(wrap.querySelector("#ctf-start").value), e = new Date(wrap.querySelector("#ctf-end").value);
+      const boards = [...wrap.querySelectorAll("#ctf-boards .fchip.on")].map(b => b.dataset.b);
+      if (title.length < 3) { msg.textContent = "Give it a name (3+ letters)."; return; }
+      if (isNaN(s) || isNaN(e) || e <= s) { msg.textContent = "Pick a start and an end (end after start)."; return; }
+      if (e - s > 45 * 86400000) { msg.textContent = "Contests can run up to 45 days."; return; }
+      if (!boards.length) { msg.textContent = "Pick at least one winner board."; return; }
+      let lat = null, lng = null, label = null;
+      if (sel.value === "here") {
+        msg.className = "msg"; msg.textContent = "Getting your location…";
+        const p = await new Promise(res => navigator.geolocation ? navigator.geolocation.getCurrentPosition(x => res(x), () => res(null), { enableHighAccuracy: true, timeout: 12000 }) : res(null));
+        if (!p) { msg.className = "msg err"; msg.textContent = "Couldn't get your location — allow location, or pick a spot."; return; }
+        lat = +p.coords.latitude.toFixed(5); lng = +p.coords.longitude.toFixed(5); label = "Where I was";
+      } else if (sel.value.startsWith("spot:")) {
+        const sp = (spots || []).find(x => x.id === sel.value.slice(5)); lat = sp.lat; lng = sp.lng; label = sp.name.slice(0, 60);
+      }
+      const off = kind() === "official";
+      if (ctBusy) return; ctBusy = true;
+      msg.className = "msg"; msg.textContent = "Creating…";
+      const { data, error } = await db.rpc("create_tournament", {
+        p_kind: kind(), p_title: title, p_desc: wrap.querySelector("#ctf-desc").value.trim(), p_starts: s.toISOString(), p_ends: e.toISOString(),
+        p_boards: boards, p_species: wrap.querySelector("#ctf-species").value.trim(), p_photo: off || wrap.querySelector("#ctf-photo").checked,
+        p_length: off || wrap.querySelector("#ctf-length").checked, p_lat: lat, p_lng: lng, p_radius: lat != null ? +wrap.querySelector("#ctf-radius").value : null,
+        p_geo_label: label, p_invites: off ? [] : [...wrap.querySelectorAll("#ctf-inv .fchip.on")].map(b => b.dataset.uid)
+      });
+      ctBusy = false;
+      if (error) { msg.className = "msg err"; msg.textContent = "Couldn't create it: " + error.message; return; }
+      ctId = data; ctView = "detail"; await ctLoad(); ctRender();
+    });
+  }
+
+  async function ctAct(fn, args) {
+    if (ctBusy) return; ctBusy = true;
+    const { error } = await db.rpc(fn, args);
+    ctBusy = false;
+    if (error) { toast("Couldn't do that: " + error.message, 5000); return; }
+    await ctLoad(); ctRender();
+  }
+  async function ctDetail(box) {
+    const t = ctRows.find(x => x.id === ctId);
+    const back = el("button", "btn ghost small", "← Back"); back.type = "button"; back.id = "ctd-back";
+    back.addEventListener("click", () => { ctView = "list"; ctId = null; ctRender(); });
+    box.appendChild(back);
+    if (!t) { box.appendChild(el("div", "empty", "That contest isn't available.")); return; }
+    const st = ctState(t), mineSt = ctMine[t.id];
+    const h = el("div", "feed-top"); h.style.marginTop = "10px";
+    h.appendChild(el("div", "label", (t.kind === "official" ? "🏆 " : "🎣 ") + t.title)); h.appendChild(el("span", "spot-meta", st.label)); box.appendChild(h);
+    box.appendChild(el("div", "spot-meta", `${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · by ${t.created_by === me.id ? "you" : (profName(t.created_by) || "someone")}`));
+    if (t.description) box.appendChild(el("div", null, t.description));
+    const rules = [];
+    if (t.kind === "official") rules.push("Catch must be set to 🌎 Public");
+    if (t.require_photo) rules.push("📷 photo on every catch");
+    if (t.require_length) rules.push("📏 measured length");
+    if (t.species) rules.push("only " + t.species);
+    if (t.geo_lat != null) rules.push(`📍 logged live within ${t.geo_radius_mi} mi of ${t.geo_label || "the center"}`);
+    box.appendChild(el("div", "spot-meta", "Rules: " + (rules.length ? rules.join(" · ") : "any catch in the time window")));
+    // actions
+    const acts = el("div"); acts.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin:10px 0";
+    const btn = (txt, cls, fn, id) => { const b = el("button", cls, txt); b.type = "button"; if (id) b.id = id; b.addEventListener("click", fn); acts.appendChild(b); };
+    const open = ctOpen(t);
+    if (open && mineSt !== "joined" && (t.kind === "official" || mineSt === "invited")) btn(mineSt === "invited" ? "Accept & join" : "Join", "btn small", () => ctAct("join_tournament", { p_id: t.id }), "ctd-join");
+    if (open && mineSt === "invited") btn("Decline", "btn ghost small", () => ctAct("leave_tournament", { p_id: t.id }), "ctd-decline");
+    if (mineSt === "joined" && t.created_by !== me.id && open) btn("Leave", "btn ghost small", () => ctAct("leave_tournament", { p_id: t.id }), "ctd-leave");
+    if (!t.cancelled_at && (t.created_by === me.id || me.isAdmin) && st.k !== "ended") btn("Cancel contest", "btn ghost small", () => { if (confirm("Cancel this contest for everyone?")) ctAct("cancel_tournament", { p_id: t.id }); }, "ctd-cancel");
+    box.appendChild(acts);
+    // standings
+    const who = el("div"); box.appendChild(who);
+    let rows = [], mineRows = [];
+    if (!t.cancelled_at && st.k !== "soon") {
+      const [a, b] = await Promise.all([db.rpc("tournament_standings", { p_id: t.id }), mineSt === "joined" ? db.rpc("tournament_my_catches", { p_id: t.id }) : Promise.resolve({ data: [] })]);
+      rows = a.data || []; mineRows = b.data || [];
+      await ensureProfiles(rows.map(r => r.user_id));
+    }
+    t.boards.forEach(bd => {
+      box.appendChild(el("div", "label", CT_BOARDS[bd])); box.lastChild.style.marginTop = "12px";
+      const list = rows.filter(r => r.board === bd).sort((x, y) => y.value - x.value || new Date(x.caught_at) - new Date(y.caught_at));
+      if (!list.length) { box.appendChild(el("div", "empty", st.k === "soon" ? "Starts " + ctFmt(t.starts_at) : "No qualifying catches yet.")); return; }
+      list.slice(0, 10).forEach((r, i) => {
+        const label = bd === "length" ? `${+Number(r.value).toFixed(2)}″` : bd === "weight" ? lbText(Number(r.value)) : bd === "fish" ? `${r.value} fish` : `${r.value} species`;
+        const det = r.species ? `${cap(r.species)} · ${new Date(r.caught_at).toLocaleDateString([], { month: "short", day: "numeric" })}` : "";
+        box.appendChild(boardRow(i, { uid: r.user_id, c: {}, label, detail: det }));
+      });
+    });
+    if (mineSt === "joined") {
+      box.appendChild(el("div", "label", "My catches in this contest")); box.lastChild.style.marginTop = "14px";
+      if (!mineRows.length) box.appendChild(el("div", "empty", "None in the time window yet."));
+      mineRows.forEach(r => {
+        const d = el("div", "feed-item"); const tp = el("div", "feed-top");
+        tp.appendChild(el("b", null, `${r.ok ? "✅" : "⚠️"} ${cap(r.species || "Fish")}${r.how_many > 1 ? " ×" + r.how_many : ""}${r.length_in ? " · " + +Number(r.length_in).toFixed(2) + "″" : ""}`));
+        tp.appendChild(el("span", "spot-meta", ctFmt(r.caught_at))); d.appendChild(tp);
+        if (!r.ok) d.appendChild(el("div", "spot-meta", "Doesn't count: " + r.reason));
+        box.appendChild(d);
+      });
+    }
+    // people
+    const joined = ctMembers.filter(m => m.tournament_id === t.id && m.status === "joined");
+    const invited = ctMembers.filter(m => m.tournament_id === t.id && m.status === "invited");
+    box.appendChild(el("div", "label", `People (${joined.length} in)`)); box.lastChild.style.marginTop = "14px";
+    box.appendChild(el("div", "spot-meta", joined.map(m => m.user_id === me.id ? "You" : (profName(m.user_id) || "Someone")).join(", ") || "Nobody yet"));
+    if (invited.length) box.appendChild(el("div", "spot-meta", "Invited: " + invited.map(m => m.user_id === me.id ? "You" : (profName(m.user_id) || "Someone")).join(", ")));
+    if (t.kind === "friends" && t.created_by === me.id && open) {
+      const circle = await getCircle(); const have = new Set(ctMembers.filter(m => m.tournament_id === t.id && m.status !== "left").map(m => m.user_id));
+      const cand = circle ? [...circle].filter(id => !have.has(id)) : [];
+      if (cand.length) {
+        await ensureProfiles(cand);
+        box.appendChild(el("div", "spot-meta", "Invite another friend:"));
+        const ch = el("div", "fchips"); cand.forEach(id => { const b = el("button", "fchip", "+ " + (profName(id) || "Friend")); b.type = "button"; b.addEventListener("click", () => ctAct("invite_to_tournament", { p_id: t.id, p_user: id })); ch.appendChild(b); });
+        box.appendChild(ch);
+      }
+    }
+    if (t.geo_lat != null) box.appendChild(el("div", "spot-meta", "📍 Location is checked from the GPS stamp saved when you log a catch live. Catches added later from the photo or by hand can't count here."));
+  }
+
 
   // ---- Refreshing (the home-screen app has no reload button) ----
   function refreshApp() {
