@@ -168,6 +168,7 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   click($("tab-map")); await wait(300);
   click($("boat-open")); await wait(400);
   console.log("boat ci text:", txt("boat-ci-text"), "| btn:", txt("boat-ci-btn"), "| boat wx:", !$("boat-wx").hidden, txt("boat-wx"), "| urgent:", $("boat-wx").classList.contains("urgent"));
+  console.log("boat tide:", txt("boat-tide"), "| sun:", txt("boat-sun"), "| soon:", $("boat-sun").classList.contains("soon"));
   watchCb({ coords: { latitude: 26.26, longitude: -80.09, accuracy: 5, speed: 3, heading: 90 } }); await wait(100);
   const pings = () => RPCS.filter(r => r[0] === "ping_float_plan");
   console.log("pings after 1st fix:", pings().length, JSON.stringify(pings()[0] && pings()[0][1]));

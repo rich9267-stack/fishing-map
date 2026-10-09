@@ -5,7 +5,7 @@ Order = suggested build order. Each item is small enough to ship + test on its o
 ## A. Safety on the water
 1. **Severe-weather alerts** — NWS alerts for your location (thunderstorm/lightning, small-craft advisory, rip current, tornado/waterspout). Banner on the Map and in Boat mode; optional phone push (dedupe per alert).
 2. **"Heading out / I'm back" check-in (float plan)** — pick spot, expected-back time, 1–2 buddies. Boat mode sends a position ping every few minutes when online. If you're not back by time + grace, buddies get a push with your last position. One-tap "I'm back".
-3. **Boat mode extras** — next tide, sunset countdown, mark "man overboard" waypoint, optional drift/anchor alarm.
+3. **Boat mode extras** — ✅ next tide + sunset countdown (Richard declined man-overboard marker and anchor alarm).
 
 ## B. Smarter fishing help
 4. **Follow ⭐ spots** — morning bite alerts for followed spots + nearby (builds on morning-bites).

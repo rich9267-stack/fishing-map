@@ -244,6 +244,10 @@
   .ci-chips { display: flex; gap: 8px; flex-wrap: wrap; }
   .ci-chips button, .ci-bud { border: 2px solid var(--line); background: var(--card); color: var(--text); border-radius: 999px; padding: 8px 14px; font: inherit; cursor: pointer; }
   .ci-chips button.on, .ci-bud.on { border-color: #1f9d55; background: #e6f6ec; color: #14503a; font-weight: 700; }
+  #boat-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  #boat-info > div { background: #0d2a35; border-radius: 14px; padding: 10px; text-align: center; font-size: 1rem; color: #cfe6ee; line-height: 1.3; }
+  #boat-info b { display: block; font-size: 1.35rem; color: #fff; }
+  #boat-info .soon { background: #7a4a00; } #boat-info .soon b { color: #ffd98a; }
   #boat-wx { border-radius: 14px; padding: 10px 12px; font-size: 1.05rem; font-weight: 700; background: #5a4500; color: #ffe8a0; text-align: center; }
   #boat-wx.urgent { background: #7b1d14; color: #fff; }
   #boat-ci { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .95rem; color: #9fc3d0; }
@@ -1014,6 +1018,7 @@
     <div class="boat-box"><b id="boat-speed">--</b><span id="boat-unit">mph</span></div>
     <div class="boat-box"><b id="boat-head">--</b><span id="boat-card">heading</span><div id="boat-arrow" aria-hidden="true">⬆</div></div>
   </div>
+  <div id="boat-info"><div id="boat-tide"></div><div id="boat-sun"></div></div>
   <div id="boat-species" class="boat-chips"></div>
   <div id="boat-other" hidden><input id="boat-other-in" type="text" maxlength="40" placeholder="Type the fish…" autocomplete="off"><button type="button" id="boat-other-ok">Use</button></div>
   <button type="button" id="boat-catch">🎣 CATCH</button>
@@ -5560,7 +5565,29 @@
     const on = $("boat-species").querySelector("button.on"); if (on) on.scrollIntoView && on.scrollIntoView({ inline: "center", block: "nearest" });
   });
 
+  // Next tide (high or low) at the nearest NOAA station, and a sunset countdown that turns amber in the last hour
+  function boatInTime(ms) { const m = Math.max(0, Math.round(ms / 60000)); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; }
+  function boatInfo() {
+    const here = boat.pos || { lat: 26.257, lng: -80.081 }, now = new Date();
+    const st = stationFor({ lat: here.lat, lng: here.lng }), tb = $("boat-tide");
+    if (st && st.id) {
+      const p = stationTides(st.id);
+      if (p.done && p.done !== "error") {
+        const nx = p.done.find(t => t.when > now);
+        if (nx) { tb.innerHTML = ""; tb.appendChild(el("span", null, nx.high ? "🌊 Next high tide" : "🌊 Next low tide")); tb.appendChild(el("b", null, nx.when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))); tb.appendChild(el("span", null, "in " + boatInTime(nx.when - now))); }
+      } else tb.textContent = p.done === "error" ? "🌊 Tide times unavailable" : "🌊 Loading tide…";
+    }
+    const t = SunCalc.getTimes(now, here.lat, here.lng), sb = $("boat-sun");
+    let label = "🌅 Sunset", at = t.sunset;
+    if (now > t.sunset) { const t2 = SunCalc.getTimes(new Date(now.getTime() + 86400000), here.lat, here.lng); label = "🌅 Sunrise"; at = now < t.sunrise ? t.sunrise : t2.sunrise; }
+    else if (now < t.sunrise) { label = "🌅 Sunrise"; at = t.sunrise; }
+    sb.innerHTML = ""; sb.appendChild(el("span", null, label)); sb.appendChild(el("b", null, at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })));
+    const left = at - now; sb.appendChild(el("span", null, label === "🌅 Sunset" && left < 3600000 ? `only ${boatInTime(left)} of light — head in soon` : "in " + boatInTime(left)));
+    sb.classList.toggle("soon", label === "🌅 Sunset" && left < 3600000);
+  }
+
   function boatRender() {
+    boatInfo();
     const fresh = boat.pos && Date.now() - boat.pos.t < 15000;
     $("boat-gps").textContent = !boat.pos ? "📡 Finding GPS…" : fresh ? `📡 GPS good (±${Math.round(boat.pos.acc * 3.28)} ft)` : "📡 GPS signal lost…";
     const conv = boat.units === "kn" ? 1.94384 : 2.23694;
