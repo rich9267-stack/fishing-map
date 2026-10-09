@@ -1,0 +1,7 @@
+-- 22 — Morning bite heads-up (summary; the full bodies live in the Supabase migrations `morning_bites` and `morning_bites_cron`)
+-- notif_prefs: cond_lat, cond_lng (optional "where I fish"), cond_radius_mi (default 25), cond_time (default 06:30), cond_last_date.
+-- morning_due()     -> who is due now (conditions on, has a phone, local time within 2 h after cond_time, not done today)
+-- morning_mark()    -> remember "done today"
+-- morning_inputs(u) -> that person's visible spots (same privacy rules as the app, via spots_visible_fn) + their own catch history
+-- Edge function `morning-bites` (supabase/functions/morning-bites): Open-Meteo wind/pressure/sunrise + NOAA tides -> score.mjs -> one push via enqueue_notification
+-- pg_cron job 'morning-bites' every 10 minutes calls the function with the hook secret.
