@@ -153,6 +153,15 @@
   .best-why { font-size: .85rem; margin-top: 4px; }
   .rating { display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; vertical-align: 1px; }
   .rating.strong { border-color: var(--rising); color: var(--rising); }
+  .outlook { margin-top: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+  .ol-day { margin: 8px 0 2px; font-size: .85rem; font-weight: 700; display: flex; justify-content: space-between; gap: 8px; }
+  .ol-day span { font-weight: 400; color: var(--muted); text-align: right; }
+  .ol-bar { display: flex; gap: 1px; height: 26px; }
+  .ol-c { flex: 1; min-width: 0; background: var(--line); border: 0; padding: 0; border-radius: 2px; cursor: pointer; }
+  .ol-c.good { background: #8ccf8f; } .ol-c.strong { background: #2e9e4f; }
+  .ol-c.off { background: transparent; cursor: default; }
+  .ol-c.sel { outline: 2px solid var(--text); outline-offset: 1px; }
+  .ol-axis { display: flex; justify-content: space-between; font-size: .68rem; color: var(--muted); }
   #qc-fab { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom)); width: 64px; height: 64px; border-radius: 50%; border: 0;
     background: var(--accent); color: #fff; font-size: 28px; box-shadow: 0 4px 14px rgba(0,0,0,.3); z-index: 900; cursor: pointer; }
   #qc { position: fixed; inset: 0; z-index: 1100; background: #000; }
@@ -469,6 +478,15 @@
 
       <label for="f-access-notes">Access notes</label>
       <input id="f-access-notes" maxlength="500" placeholder="e.g., gate locks at sunset">
+
+      <label for="f-faces">Which way does the water lie from here?</label>
+      <select id="f-faces">
+        <option value="">Not set (canal, lake, or not sure)</option>
+        <option value="0">North</option><option value="45">Northeast</option><option value="90">East (ocean side in Pompano)</option>
+        <option value="135">Southeast</option><option value="180">South</option><option value="225">Southwest</option>
+        <option value="270">West</option><option value="315">Northwest</option>
+      </select>
+      <div class="spot-meta">Face the water: the direction you're looking is the answer. Used to call the wind onshore, offshore or cross for this spot.</div>
 
       <div id="f-tide-box">
         <label for="f-tide-offset">Tide timing here (minutes)</label>
@@ -999,7 +1017,7 @@
     if (!tideCache[id]) {
       const start = new Date(); start.setDate(start.getDate() - 1);
       const url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter" +
-        `?product=predictions&application=fishing_map&begin_date=${ymd(start)}&range=96` +
+        `?product=predictions&application=fishing_map&begin_date=${ymd(start)}&range=120` +
         `&datum=MLLW&station=${id}&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
       tideCache[id] = fetch(url).then(r => r.json()).then(d => {
         if (!d.predictions) throw new Error("No tide data");
@@ -1103,6 +1121,7 @@
         let trend = null;
         if (h && h.length >= 4 && h[0] != null) { const ch = inHg - h[0] / 33.8639; trend = ch >= 0.03 ? "rising" : ch <= -0.03 ? "falling" : "steady"; }
         return { wind: `💨 ${compass(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} mph · ${Math.round(c.temperature_2m)}°`,
+                 deg: c.wind_direction_10m,
                  pressure: Math.round(inHg * 100) / 100, trend };
       });
       p.done = false;
@@ -1284,11 +1303,22 @@
       const w = localWx(s);
       if (w.done && w.done !== "error") {
         const arrow = { rising: " ↗", falling: " ↘", steady: " →" }[w.done.trend] || "";
-        return [w.done.wind, `${w.done.pressure.toFixed(2)} inHg${arrow}`].join("  ·  ");
+        return [w.done.wind + windKindText(s, w.done.deg), `${w.done.pressure.toFixed(2)} inHg${arrow}`].join("  ·  ");
       }
     }
-    return [cond.wind, pressureShort()].filter(Boolean).join("  ·  ");
+    return [cond.wind && cond.wind + windKindText(s, degOf(cond.windDir)), pressureShort()].filter(Boolean).join("  ·  ");
   }
+  // Onshore / offshore / cross wind for a spot that has a "water lies to the…" direction.
+  // deg = where the wind blows FROM; faces = the direction of the water from the spot.
+  const COMPASS16 = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+  const degOf = name => { const i = COMPASS16.indexOf(String(name || "").toUpperCase()); return i < 0 ? null : i * 22.5; };
+  function windKind(deg, faces) {
+    if (deg == null || faces == null) return null;
+    const d = Math.abs(((deg - faces) % 360 + 540) % 360 - 180); // 0 = wind comes from the water side
+    return d <= 50 ? "onshore" : d >= 130 ? "offshore" : "cross";
+  }
+  const KIND_ICON = { onshore: "⬅ onshore", offshore: "➡ offshore", cross: "↔ cross" };
+  function windKindText(s, deg) { const k = windKind(deg, s.faces_deg); return k ? ` (${KIND_ICON[k]})` : ""; }
   function pressureShort() {
     if (cond.pressure == null) return null;
     const arrow = { rising: " ↗", falling: " ↘", steady: " →" }[cond.pressureTrend] || "";
@@ -3364,7 +3394,7 @@
     const h = (cond.hours || []).find(x => t >= x.start && t < x.end);
     return h ? h.mph : cond.windMph;
   }
-  function factorsAt(s, t) {
+  function factorsAt(s, t, fh) {
     let tide = null;
     if (s.water_type !== "freshwater") {
       const st = spotTides(s);
@@ -3377,7 +3407,7 @@
       const w = waterTempNow(s.lat, s.lng);
       if (w.done && w.done !== "error") water = waterBand(w.done.f);
     }
-    return { tide, trend: cond.pressureTrend || null, tod: timeOfDay(t), sol, moon, wind: windBand(windAt(t)), water };
+    return { tide, trend: fh ? fh.trend : (cond.pressureTrend || null), tod: timeOfDay(t), sol, moon, wind: windBand(fh ? fh.mph : windAt(t)), water };
   }
 
   // Things about the spot as a whole (same all day): is it the season for what's caught here, and have
@@ -3455,6 +3485,136 @@
     return { score, reasons };
   }
 
+  // ---- 3-day outlook per spot (V4): hourly forecast scored with the same history as Best spot today ----
+  const outlookOpen = new Set();   // spot ids whose outlook is showing
+  const outlookSel = {};           // spot id -> selected hour (ms)
+  const fcCache = {};
+  function spotForecast(s) {
+    const key = s.lat.toFixed(1) + "," + s.lng.toFixed(1);
+    let p = fcCache[key];
+    if (!p || (p.done && Date.now() - p.at > 3600000)) {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${s.lat.toFixed(2)}&longitude=${s.lng.toFixed(2)}` +
+        "&hourly=pressure_msl,wind_speed_10m,wind_direction_10m&past_hours=3&forecast_hours=76" +
+        "&wind_speed_unit=mph&timeformat=unixtime";
+      p = fcCache[key] = fetch(url).then(r => r.json()).then(d => {
+        const h = d.hourly, hours = [];
+        h.time.forEach((t, i) => {
+          if (h.wind_speed_10m[i] == null || h.pressure_msl[i] == null) return;
+          let trend = null;
+          if (i >= 3 && h.pressure_msl[i - 3] != null) {
+            const ch = (h.pressure_msl[i] - h.pressure_msl[i - 3]) / 33.8639;
+            trend = ch >= 0.03 ? "rising" : ch <= -0.03 ? "falling" : "steady";
+          }
+          hours.push({ t: t * 1000, mph: Math.round(h.wind_speed_10m[i]), deg: h.wind_direction_10m[i], trend });
+        });
+        if (!hours.length) throw new Error("empty");
+        return hours;
+      });
+      p.done = false; p.at = Date.now();
+      p.then(v => { p.done = v; p.at = Date.now(); refreshConditions(); }, () => { p.done = "error"; p.at = Date.now(); refreshConditions(); });
+    }
+    return p;
+  }
+  const fcHour = (hours, t) => hours.find(h => t.getTime() >= h.t && t.getTime() < h.t + 3600000) || null;
+  // The catch history / baseline / extras for one spot (same rules as Best spot today); null if too few catches
+  function historyFor(s) {
+    const has = c => c.moon_phase || c.tide_stage || c.pressure_trend;
+    const all = Object.values(catchesBySpot).flat().filter(has);
+    const toHist = list => list.map(c => ({ f: catchFactors(c), n: c.how_many || 1 }));
+    const own = (catchesBySpot[s.id] || []).filter(has);
+    const ownFish = own.reduce((n, c) => n + (c.how_many || 1), 0);
+    let hist;
+    if (ownFish >= 3) hist = toHist(own);
+    else if (all.reduce((n, c) => n + (c.how_many || 1), 0) >= 5) hist = toHist(all);
+    else return null;
+    const allTrips = Object.values(sessionsBySpot).flat().filter(x => x.ended_at);
+    const trips = (sessionsBySpot[s.id] || []).filter(x => x.ended_at);
+    const expo = (trips.length >= 3 ? trips : allTrips).flatMap(x => x.hours || []);
+    const sameWater = all.filter(c => { const cs = spots.find(x => x.id === c.spot_id); return cs && cs.water_type === s.water_type; });
+    return { hist, expo, extra: spotExtras(s, ownFish >= 3 ? own : sameWater) };
+  }
+  const DAYNAME = d => d.toDateString() === new Date().toDateString() ? "Today" : d.toLocaleDateString([], { weekday: "short" });
+  const hourLabel = d => d.toLocaleTimeString([], { hour: "numeric" }).replace(":00", "").replace(/\s/g, "").toLowerCase();
+  function fillOutlook(box, s) {
+    box.innerHTML = "";
+    if (!hasLoc(s)) { box.appendChild(el("div", "spot-meta", "Set this spot's location to see its outlook.")); return; }
+    const fc = spotForecast(s);
+    if (!fc.done) { box.appendChild(el("div", "spot-meta", "Loading forecast…")); return; }
+    if (fc.done === "error") { box.appendChild(el("div", "spot-meta", "Forecast unavailable right now — try again in a bit.")); return; }
+    if (s.water_type !== "freshwater" && !spotTides(s)) { box.appendChild(el("div", "spot-meta", "Loading tides…")); return; }
+    const hours = fc.done, H = historyFor(s);
+    const start = new Date(); start.setMinutes(0, 0, 0);
+    const slots = [];
+    for (let i = 0; i < 72; i++) {
+      const t = new Date(start.getTime() + i * 3600000), fh = fcHour(hours, t);
+      if (!fh) continue;
+      let score = null, reasons = [];
+      if (H) { const r = scoreMoment(factorsAt(s, t, fh), H.hist, H.expo); score = r.score + H.extra.bonus; reasons = r.reasons; }
+      const lvl = score == null ? null : score > 1.2 ? "strong" : score > 0.4 ? "good" : "";
+      slots.push({ t, fh, score, lvl, reasons });
+    }
+    if (!slots.length) { box.appendChild(el("div", "spot-meta", "No forecast hours available.")); return; }
+    if (H) {
+      const runs = []; let cur = null;
+      slots.forEach(x => {
+        if (!x.lvl) return;
+        if (!cur || x.t - cur.end > 3600000) { cur = { start: x.t, end: x.t, peak: x.score }; runs.push(cur); }
+        cur.end = x.t; cur.peak = Math.max(cur.peak, x.score);
+      });
+      runs.sort((a, b) => b.peak - a.peak);
+      const fmt = r => `${DAYNAME(r.start)} ${hourLabel(r.start)}–${hourLabel(new Date(r.end.getTime() + 3600000))}`;
+      box.appendChild(el("div", "best-why", runs.length ? "⭐ Best windows: " + runs.slice(0, 3).map(fmt).join(" · ")
+        : "No standout window in the next 3 days for what's been caught here."));
+    } else {
+      box.appendChild(el("div", "spot-meta", "Log about 3 catches here (or 5 across the group) and the bar will light up with the best windows. Wind is shown below."));
+    }
+    const detail = el("div", "spot-meta");
+    const showDetail = x => {
+      const kind = windKind(x.fh.deg, s.faces_deg);
+      detail.textContent = `${DAYNAME(x.t)} ${hourLabel(x.t)} · 💨 ${compass(x.fh.deg)} ${x.fh.mph} mph${kind ? " (" + KIND_ICON[kind] + ")" : ""}` +
+        (x.fh.trend ? ` · pressure ${x.fh.trend}` : "") +
+        (x.score != null ? ` · ${x.lvl === "strong" ? "Strong match" : x.lvl === "good" ? "Good match" : "Weak match"}` : "") +
+        (x.reasons.length ? " — " + x.reasons.slice(0, 2).map(r => r.text).join(" · ") : "");
+    };
+    const days = [];
+    slots.forEach(x => { const k = x.t.toDateString(); let d = days.find(y => y.k === k); if (!d) days.push(d = { k, date: x.t, slots: [] }); d.slots.push(x); });
+    const selected = slots.find(x => x.t.getTime() === outlookSel[s.id]) || null;
+    days.forEach(d => {
+      const mph = d.slots.map(x => x.fh.mph);
+      let sx = 0, sy = 0; // prevailing direction: average the wind's direction, weighted by speed
+      d.slots.forEach(x => { const a = x.fh.deg * Math.PI / 180; sx += Math.sin(a) * (x.fh.mph + 1); sy += Math.cos(a) * (x.fh.mph + 1); });
+      const dir = (Math.atan2(sx, sy) * 180 / Math.PI + 360) % 360;
+      const kind = windKind(dir, s.faces_deg);
+      const head = el("div", "ol-day", DAYNAME(d.date));
+      head.appendChild(el("span", null, `💨 ${compass(dir)} ${Math.min(...mph)}–${Math.max(...mph)} mph${kind ? " · " + KIND_ICON[kind] : ""}`));
+      box.appendChild(head);
+      const bar = el("div", "ol-bar");
+      for (let h = 0; h < 24; h++) {
+        const x = d.slots.find(y => y.t.getHours() === h);
+        const c = el("button", "ol-c" + (x ? (x.lvl ? " " + x.lvl : "") : " off"));
+        c.type = "button";
+        if (x) {
+          c.setAttribute("aria-label", hourLabel(x.t));
+          if (selected === x) c.classList.add("sel");
+          c.addEventListener("click", () => {
+            outlookSel[s.id] = x.t.getTime();
+            box.querySelectorAll(".ol-c.sel").forEach(n => n.classList.remove("sel"));
+            c.classList.add("sel"); showDetail(x);
+          });
+        } else c.disabled = true;
+        bar.appendChild(c);
+      }
+      box.appendChild(bar);
+      const axis = el("div", "ol-axis");
+      ["12a", "6a", "12p", "6p", "12a"].forEach(t => axis.appendChild(el("span", null, t)));
+      box.appendChild(axis);
+    });
+    if (selected) showDetail(selected); else detail.textContent = "Tap an hour for its wind and why it scores that way.";
+    box.appendChild(detail);
+    if (H) box.appendChild(el("div", "spot-meta", "Green = hours that match this spot's catch history (dark green = strong). Wind from Open-Meteo; tides shifted for this spot." +
+      (s.faces_deg == null ? " Edit the spot to say which way the water lies and wind will show onshore/offshore." : "")));
+  }
+
   function renderBest() {
     const box = $("best-list");
     if (!box || !spots) return;
@@ -3525,6 +3685,10 @@
       const node = document.querySelector(`.spot-cond[data-spot="${s.id}"]`);
       if (node) node.textContent = spotConditions(s);
     });
+    document.querySelectorAll(".outlook[data-spot]").forEach(box => {
+      const s = (spots || []).find(x => String(x.id) === box.dataset.spot);
+      if (s) fillOutlook(box, s);
+    });
   }
 
   function renderSpots() {
@@ -3555,6 +3719,7 @@
       const accessText = { yes: "Public access", no: "Not public", unsure: "Access unsure" }[s.public_access];
       [accessText, s.parking && `Parking: ${s.parking}`, s.getting_there && cap(s.getting_there)]
         .filter(Boolean).forEach(t => chips.appendChild(el("span", "chip", t)));
+      if (s.faces_deg != null) chips.appendChild(el("span", "chip", "🧭 Water to the " + compass(s.faces_deg)));
       if (s.lat != null && s.lng != null) {
         const a = el("a", "chip", "📍 Directions");
         a.href = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
@@ -3570,6 +3735,15 @@
         editSpot.type = "button";
         editSpot.addEventListener("click", () => openForm(true, s));
         item.appendChild(editSpot);
+      }
+      const olBtn = el("button", "linkbtn", outlookOpen.has(s.id) ? "▴ Hide 3-day outlook" : "📅 3-day outlook");
+      olBtn.type = "button";
+      olBtn.addEventListener("click", () => { outlookOpen.has(s.id) ? outlookOpen.delete(s.id) : outlookOpen.add(s.id); renderSpots(); });
+      item.appendChild(olBtn);
+      if (outlookOpen.has(s.id)) {
+        const box = el("div", "outlook"); box.dataset.spot = s.id;
+        fillOutlook(box, s);
+        item.appendChild(box);
       }
       item.appendChild(spotPhotoSection(s));
       item.appendChild(catchSection(s));
@@ -3625,6 +3799,7 @@
       $("f-access-notes").value = existing.access_notes || "";
       $("f-notes").value = existing.notes || "";
       $("f-tide-offset").value = existing.tide_offset_min ? existing.tide_offset_min : "";
+      $("f-faces").value = existing.faces_deg != null ? String(existing.faces_deg) : "";
       $("f-by").value = existing.added_by || "";
       $("f-private").checked = !!existing.is_private;
       $("f-tide-box").hidden = existing.water_type === "freshwater";
@@ -3698,6 +3873,7 @@
       access_notes: val("f-access-notes"),
       notes: val("f-notes"),
       tide_offset_min: Math.max(-300, Math.min(300, Math.round((parseFloat($("f-tide-offset").value) || 0) / 5) * 5)),
+      faces_deg: $("f-faces").value === "" ? null : parseInt($("f-faces").value, 10),
       added_by: val("f-by"),
       is_private: $("f-private").checked,
       lat: pickedLoc ? pickedLoc.lat : null,
