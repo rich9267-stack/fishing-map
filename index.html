@@ -450,6 +450,7 @@
   <span class="spot-meta" id="pl-done" style="margin:0"></span>
   </div>
   <button class="linkbtn" id="plan-line" type="button" hidden style="display:block;text-align:left;margin-top:6px"></button>
+  <div id="ct-banner" hidden style="margin-top:6px"></div>
   <form id="plan-form" hidden>
     <label for="pl-spot">Where</label>
     <select id="pl-spot" required></select>
@@ -3828,6 +3829,7 @@
     } catch (e) { planError = "Couldn't load trip plans right now."; }
     plansLoadedAt = Date.now();
     renderPlans();
+    refreshCtBanner();
   }
   function planWhen(d) {
     const day = new Date(); day.setHours(0, 0, 0, 0);
@@ -5940,6 +5942,31 @@
     } catch (e) { return null; }
   }
 
+  // Banner under "Plan a trip": contests I'm signed up for (not ended, not cancelled), each linking to its details.
+  function ctBannerRender() {
+    const box = $("ct-banner"); if (!box) return;
+    box.innerHTML = "";
+    const mine = ctRows.filter(t => ctMine[t.id] === "joined" && ctOpen(t)).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+    box.hidden = !mine.length;
+    mine.slice(0, 3).forEach(t => {
+      const st = ctState(t);
+      const b = el("button", "linkbtn", `🏁 ${t.title} — ${st.k === "live" ? "LIVE, ends " + ctFmt(t.ends_at) : st.label.toLowerCase().replace(/^starts/, "starts")} › details`);
+      b.type = "button"; b.style.cssText = "display:block;text-align:left;margin-top:4px";
+      b.addEventListener("click", () => { stopPlacing(); ctId = t.id; ctView = "detail"; feedMode = "contests"; showView("feed"); window.scrollTo({ top: 0, behavior: "smooth" }); });
+      box.appendChild(b);
+    });
+    if (mine.length > 3) box.appendChild(el("div", "spot-meta", `+${mine.length - 3} more in 🏁 Contests`));
+  }
+  async function refreshCtBanner() {
+    try {
+      if (!db || !me) return;
+      const [a, b] = await Promise.all([db.from("tournaments").select("*").order("starts_at", { ascending: true }), db.from("tournament_members").select("*")]);
+      if (a.error || b.error) return;
+      ctRows = a.data || []; ctMembers = b.data || [];
+      ctMine = {}; ctMembers.forEach(m => { if (m.user_id === me.id) ctMine[m.tournament_id] = m.status; });
+      ctBannerRender();
+    } catch (e) {}
+  }
   async function ctLoad() {
     ctErr = null;
     try {
@@ -5951,6 +5978,7 @@
       if (b.error) throw b.error;
       ctRows = a.data || []; ctMembers = b.data || [];
       ctMine = {}; ctMembers.forEach(m => { if (m.user_id === me.id) ctMine[m.tournament_id] = m.status; });
+      ctBannerRender();
       await ensureProfiles([...ctRows.map(t => t.created_by), ...ctMembers.map(m => m.user_id)]);
     } catch (e) { ctErr = "Couldn't load contests: " + (e.message || e); }
   }
