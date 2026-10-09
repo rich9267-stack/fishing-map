@@ -170,6 +170,11 @@
   .feed-photo { width: 100%; max-height: 360px; object-fit: cover; border-radius: 10px; margin-top: 8px; cursor: pointer; display: block; }
   .feed-actions { display: flex; gap: 8px; margin-top: 8px; }
   .feed-actions .btn.on { border-color: var(--accent); color: var(--accent); }
+  .chat-msgs { display: flex; flex-direction: column; max-height: 52vh; overflow-y: auto; padding: 8px 2px; margin: 8px 0; }
+  .bub { max-width: 82%; padding: 8px 11px; border-radius: 16px; margin: 3px 0; font-size: .93rem; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--line); color: var(--text); align-self: flex-start; }
+  .bub.me { align-self: flex-end; background: var(--accent); color: #fff; }
+  .bub small { display: block; opacity: .7; font-size: .68rem; margin-top: 2px; }
+  .pill { display: inline-block; min-width: 20px; padding: 1px 7px; border-radius: 10px; background: var(--accent); color: #fff; font-size: .75rem; font-weight: 700; text-align: center; }
   .feed-cm { margin-top: 8px; padding-left: 10px; border-left: 3px solid var(--line); }
   .feed-cm p { margin: 4px 0; font-size: .9rem; }
   .feed-cm p b { font-weight: 700; }
@@ -283,6 +288,7 @@
     <span id="who"></span>
     <span class="userbar-links">
       <button class="linkbtn" id="profile-btn" type="button">🙂 Profile</button>
+      <button class="linkbtn" id="chat-btn" type="button">💬 Messages</button>
       <button class="linkbtn" id="friends-btn" type="button">👥 Friends</button>
       <button class="linkbtn" id="invite-btn" type="button" hidden>✉ Invite to app</button>
       <button class="linkbtn" id="refresh-btn" type="button" aria-label="Refresh">↻ Refresh</button>
@@ -376,6 +382,23 @@
     <div class="label" style="margin-top:14px">Your friends</div>
     <div id="fr-list"></div>
     <div class="msg" id="fr-msg"></div>
+  </div>
+
+  <div class="card" id="chat-card" hidden>
+    <div class="row">
+      <div class="label" id="chat-title">Messages</div>
+      <button class="linkbtn" id="chat-close" type="button">Close</button>
+    </div>
+    <div id="chat-list"></div>
+    <div id="chat-thread" hidden>
+      <button class="btn ghost small" id="chat-back" type="button">← All messages</button>
+      <div class="chat-msgs" id="chat-msgs"></div>
+      <form id="chat-form" style="display:flex;gap:8px">
+        <input id="chat-input" maxlength="1000" autocomplete="off" placeholder="Write a message…" style="flex:1;min-width:0">
+        <button class="btn small" id="chat-send" type="submit">Send</button>
+      </form>
+    </div>
+    <div class="msg" id="chat-msg"></div>
   </div>
 
   <div class="card" id="invite-card" hidden>
@@ -5012,6 +5035,7 @@
     ensureProfile();
     $("invite-btn").hidden = !me.isAdmin;
     checkRequests();
+    startChat();
     setTimeout(() => { updatePendingBar(); flushQueue(); }, 1500);
     if (!appStarted) {
       appStarted = true;
@@ -5137,7 +5161,7 @@
       const done = ok => { if (ok !== false) renderPublic(); };
       let act;
       if (!r) act = frBtn("Add friend", async () => { friendProfiles[id] = p; done(await sendRequest(id)); }, "btn small");
-      else if (r.status === "accepted") act = el("span", "spot-meta", "✓ Friends");
+      else if (r.status === "accepted") { act = el("span"); act.style.cssText = "display:flex;gap:10px;align-items:center"; act.appendChild(el("span", "spot-meta", "✓ Friends")); act.appendChild(frBtn("💬 Message", () => openChatWith(id), "btn small")); }
       else if (r.requested_by === me.id) act = el("span", "spot-meta", "Friend request sent");
       else act = frBtn("Accept friend request", async () => { done(await acceptRequest(r)); }, "btn small");
       act.style.marginTop = "8px"; box.appendChild(act);
@@ -5181,6 +5205,137 @@
   }
   $("map-pub").addEventListener("click", () => { initMap(); setMapPublic(!mapPublic); });
   $("map-pub").classList.toggle("on", mapPublic);
+
+  // ---- Messages (V4.5 step E): one-to-one chat between friends ----
+  let chatMsgsAll = [], chatWith = null, chatTimer = null, chatBadgeTimer = null;
+  const chatOpen = () => !$("chat-card").hidden;
+  const chatTime = iso => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const chatOther = m => (m.sender === me.id ? m.recipient : m.sender);
+  const unreadFor = id => chatMsgsAll.filter(m => m.recipient === me.id && !m.read_at && (id == null || m.sender === id)).length;
+  function updateChatBadge(n) {
+    const c = n != null ? n : unreadFor();
+    $("chat-btn").textContent = c ? `💬 Messages (${c})` : "💬 Messages";
+  }
+  async function checkUnread() {
+    if (!me) return;
+    try {
+      const { count, error } = await db.from("messages").select("id", { count: "exact", head: true }).eq("recipient", me.id).is("read_at", null);
+      if (!error && count != null) { updateChatBadge(count); if (count > unreadFor() && !chatOpen()) loadChat(); }
+    } catch (e) { /* offline — try again later */ }
+  }
+  function startChat() {
+    clearInterval(chatBadgeTimer);
+    checkUnread();
+    chatBadgeTimer = setInterval(() => { if (!document.hidden) checkUnread(); }, 60000);
+  }
+  async function loadChat() {
+    if (!me) return;
+    try {
+      const { data, error } = await db.from("messages").select("*").order("created_at", { ascending: false }).limit(500);
+      if (error) throw error;
+      chatMsgsAll = data.slice().reverse();
+      await ensureProfiles(chatMsgsAll.map(chatOther));
+      $("chat-msg").textContent = "";
+    } catch (e) { $("chat-msg").className = "msg err"; $("chat-msg").textContent = "Couldn't load messages right now."; }
+    updateChatBadge();
+    if (chatOpen()) renderChat();
+  }
+  function chatPartnerIds() {
+    const ids = new Set(me.friendIds || []);
+    chatMsgsAll.forEach(m => ids.add(chatOther(m)));
+    const last = id => { const l = chatMsgsAll.filter(m => chatOther(m) === id).pop(); return l ? new Date(l.created_at).getTime() : 0; };
+    return [...ids].sort((a, b) => last(b) - last(a) || String(profName(a) || "").localeCompare(String(profName(b) || "")));
+  }
+  function renderChat() {
+    const thread = chatWith != null;
+    $("chat-list").hidden = thread; $("chat-thread").hidden = !thread;
+    $("chat-title").textContent = thread ? (profName(chatWith) || "Messages") : "Messages";
+    if (thread) return renderThread();
+    const box = $("chat-list"); box.innerHTML = "";
+    const ids = chatPartnerIds();
+    if (!ids.length) { box.appendChild(el("div", "empty", "No friends to message yet — add friends first (👥 Friends).")); return; }
+    ids.forEach(id => {
+      const msgs = chatMsgsAll.filter(m => chatOther(m) === id), l = msgs[msgs.length - 1], un = unreadFor(id);
+      const row = el("div", "feed-top"); row.style.cssText = "padding:10px 0;border-bottom:1px solid var(--line);align-items:center;cursor:pointer";
+      const left = el("div"); left.style.minWidth = "0";
+      left.appendChild(el("b", null, profName(id) || "Someone"));
+      left.appendChild(el("div", "spot-meta", l ? (l.sender === me.id ? "You: " : "") + (l.body.length > 44 ? l.body.slice(0, 44) + "…" : l.body) : "No messages yet — say hi"));
+      row.appendChild(left);
+      const right = el("span", "spot-meta");
+      if (un) right.appendChild(el("span", "pill", String(un)));
+      else if (l) right.textContent = chatTime(l.created_at);
+      row.appendChild(right);
+      row.addEventListener("click", () => openThread(id));
+      box.appendChild(row);
+    });
+  }
+  function renderThread() {
+    const box = $("chat-msgs"); box.innerHTML = "";
+    const msgs = chatMsgsAll.filter(m => chatOther(m) === chatWith);
+    if (!msgs.length) box.appendChild(el("div", "spot-meta", "No messages yet — say hi."));
+    msgs.forEach(m => {
+      const b = el("div", "bub " + (m.sender === me.id ? "me" : "them"));
+      b.appendChild(document.createTextNode(m.body));
+      const sm = el("small", null, chatTime(m.created_at) + (m.sender === me.id && m.read_at ? " · seen" : ""));
+      if (m.sender === me.id) {
+        const x = el("button", "linkbtn", "Delete"); x.type = "button"; x.style.cssText = "color:inherit;font-size:.68rem;opacity:.9;margin-left:8px;padding:0";
+        x.addEventListener("click", () => deleteMessage(m));
+        sm.appendChild(x);
+      }
+      b.appendChild(sm);
+      box.appendChild(b);
+    });
+    const friend = !!(me.friendIds && me.friendIds.has(chatWith));
+    $("chat-form").hidden = !friend;
+    if (!friend) box.appendChild(el("div", "spot-meta", "You're not friends right now, so you can't send new messages."));
+    box.scrollTop = box.scrollHeight;
+  }
+  async function deleteMessage(m) {
+    if (!confirm("Delete this message for both of you?")) return;
+    const { error } = await db.from("messages").delete().eq("id", m.id);
+    if (error) { $("chat-msg").className = "msg err"; $("chat-msg").textContent = "Couldn't delete that."; return; }
+    chatMsgsAll = chatMsgsAll.filter(x => x.id !== m.id); renderChat(); updateChatBadge();
+  }
+  async function openThread(id) {
+    chatWith = id; $("chat-msg").textContent = "";
+    renderChat();
+    if (unreadFor(id)) {
+      chatMsgsAll.forEach(m => { if (m.sender === id && m.recipient === me.id && !m.read_at) m.read_at = new Date().toISOString(); });
+      updateChatBadge();
+      try { await db.rpc("mark_read", { p_other: id }); } catch (e) { /* will show unread again next time */ }
+    }
+  }
+  async function openChatWith(id) {
+    $("friends-card").hidden = true;
+    $("chat-card").hidden = false; chatWith = id;
+    renderChat(); $("chat-card").scrollIntoView({ behavior: "smooth", block: "start" });
+    await loadChat(); if (chatWith === id) openThread(id);
+    startChatPolling();
+  }
+  function startChatPolling() { clearInterval(chatTimer); chatTimer = setInterval(() => { if (chatOpen() && !document.hidden) loadChat().then(() => { if (chatWith != null && unreadFor(chatWith)) openThread(chatWith); }); }, 10000); }
+  $("chat-btn").addEventListener("click", async () => {
+    $("chat-card").hidden = false; chatWith = null; $("chat-msg").textContent = "";
+    renderChat(); $("chat-card").scrollIntoView({ behavior: "smooth", block: "start" });
+    startChatPolling();
+    await Promise.all([loadChat(), loadFriends()]);
+    renderChat();
+  });
+  $("chat-close").addEventListener("click", () => { $("chat-card").hidden = true; clearInterval(chatTimer); chatWith = null; });
+  $("chat-back").addEventListener("click", () => { chatWith = null; renderChat(); });
+  $("chat-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const body = $("chat-input").value.trim().slice(0, 1000);
+    if (!body || chatWith == null) return;
+    $("chat-send").disabled = true;
+    try {
+      const { data, error } = await db.from("messages").insert({ recipient: chatWith, body }).select("*").single();
+      if (error) throw error;
+      chatMsgsAll.push({ id: "tmp" + Date.now(), created_at: new Date().toISOString(), sender: me.id, recipient: chatWith, body, read_at: null, ...data });
+      $("chat-input").value = ""; $("chat-msg").textContent = "";
+      renderThread();
+    } catch (err) { $("chat-msg").className = "msg err"; $("chat-msg").textContent = "Couldn't send — check your signal (and that you're still friends)."; }
+    finally { $("chat-send").disabled = false; }
+  });
 
   // ---- Friends (V4 social) ----
   let friendRows = [], friendProfiles = {};
@@ -5243,7 +5398,12 @@
     }
     const sent = friendRows.filter(r => r.status === "pending" && r.requested_by === me.id);
     const friends = friendRows.filter(r => r.status === "accepted");
-    friends.forEach(r => list.appendChild(personLine(friendProfiles[otherOf(r)], frBtn("Remove", () => removeRow(r, "Remove this friend? You'll stop seeing each other's Friends-only spots and catches.")))));
+    friends.forEach(r => {
+      const act = el("span"); act.style.cssText = "display:flex;gap:6px";
+      act.appendChild(frBtn("💬 Message", () => openChatWith(otherOf(r)), "btn small"));
+      act.appendChild(frBtn("Remove", () => removeRow(r, "Remove this friend? You'll stop seeing each other's Friends-only spots and catches.")));
+      list.appendChild(personLine(friendProfiles[otherOf(r)], act));
+    });
     sent.forEach(r => list.appendChild(personLine(friendProfiles[otherOf(r)], frBtn("Cancel request", () => removeRow(r)))));
     if (!friends.length && !sent.length) list.appendChild(el("div", "empty", "No friends yet — search for someone above."));
   }
