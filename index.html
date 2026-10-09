@@ -344,6 +344,28 @@
 
   <div id="app" hidden>
 
+  <div id="plan-top" class="card" style="padding:10px 14px">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+  <button class="btn small" id="plan-add" type="button">📅 Plan a trip</button>
+  <span class="spot-meta" id="pl-done" style="margin:0"></span>
+  </div>
+  <form id="plan-form" hidden>
+    <label for="pl-spot">Where</label>
+    <select id="pl-spot" required></select>
+    <label for="pl-date">Day</label>
+    <input id="pl-date" type="date" required>
+    <label for="pl-time">Time</label>
+    <input id="pl-time" type="time" required>
+    <label for="pl-note">Note (optional)</label>
+    <input id="pl-note" maxlength="200" placeholder="e.g., live shrimp, meet at the lot">
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn" id="pl-save" type="submit">Post plan</button>
+      <button class="btn ghost" id="pl-cancel" type="button">Cancel</button>
+    </div>
+    <div class="msg" id="pl-msg"></div>
+  </form>
+  </div>
+
   <div class="tabs" role="tablist">
     <button id="tab-list" class="on" type="button" role="tab">☰ List</button>
     <button id="tab-map" type="button" role="tab">🗺 Map</button>
@@ -357,22 +379,6 @@
       <div class="label">Who's going?</div>
       <div class="spot-meta">Post when and where you're fishing — friends tap "I'm in".</div>
       <div id="plan-list"></div>
-      <button class="btn small" id="plan-add" type="button" style="margin-top:8px">+ Plan a trip</button>
-      <form id="plan-form" hidden>
-        <label for="pl-spot">Where</label>
-        <select id="pl-spot" required></select>
-        <label for="pl-date">Day</label>
-        <input id="pl-date" type="date" required>
-        <label for="pl-time">Time</label>
-        <input id="pl-time" type="time" required>
-        <label for="pl-note">Note (optional)</label>
-        <input id="pl-note" maxlength="200" placeholder="e.g., live shrimp, meet at the lot">
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn" id="pl-save" type="submit">Post plan</button>
-          <button class="btn ghost" id="pl-cancel" type="button">Cancel</button>
-        </div>
-        <div class="msg" id="pl-msg"></div>
-      </form>
     </div>
 
     <div class="card" style="margin-top:14px">
@@ -3548,7 +3554,8 @@
     else $("pl-msg").textContent = "";
     const t = new Date(Date.now() + 3600000); t.setMinutes(0, 0, 0);
     $("pl-date").value = ymdDash(t); $("pl-time").value = `${pad2(t.getHours())}:00`; $("pl-note").value = "";
-    $("plan-form").hidden = false; $("plan-add").hidden = true;
+    $("plan-form").hidden = false; $("plan-add").hidden = true; $("pl-done").textContent = "";
+    $("plan-top").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   const closePlanForm = () => { $("plan-form").hidden = true; $("plan-add").hidden = false; };
   $("pl-cancel").addEventListener("click", closePlanForm);
@@ -3565,6 +3572,8 @@
       if (error) throw error;
       await db.from("trip_plan_rsvps").insert({ plan_id: data.id, name: me && me.name || null }); // the person posting is going
       closePlanForm();
+      $("pl-done").textContent = "✔ Plan posted — friends see it at the top of 🎣 Feed";
+      setTimeout(() => { $("pl-done").textContent = ""; }, 8000);
       await loadPlans();
     } catch (err) { msg.className = "msg err"; msg.textContent = "Couldn't post: " + (err.message || err); }
     finally { $("pl-save").disabled = false; }
