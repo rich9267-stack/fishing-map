@@ -541,6 +541,16 @@
       <div id="plan-list"></div>
     </div>
 
+    <div class="card" id="feed-trips-card" hidden style="margin-top:14px">
+      <div class="label">📖 My past trips</div>
+      <div class="spot-meta">Trips you planned or joined. Tap one to see everyone's catches from it and where they were caught.</div>
+      <div id="feed-trips-list"></div>
+    </div>
+    <div class="card" id="trip-review" hidden style="margin-top:14px">
+      <button class="btn ghost small" id="trip-review-back" type="button">← Back</button>
+      <div id="trip-review-body" style="margin-top:10px"></div>
+    </div>
+
     <div class="card" id="feed-circle-card" style="margin-top:14px">
       <div class="label">Catch feed</div>
       <div class="spot-meta">Latest catches from everyone. Tap 👍 to cheer a fish, 💬 to comment. Catches at private spots only show for their owner.</div>
@@ -870,6 +880,19 @@
           <div class="stepper"><button type="button" id="qc-minus">−</button><input id="qc-count" type="number" min="1" max="500" value="1"><button type="button" id="qc-plus">+</button></div></div>
         <div><label for="qc-bait">Bait / lure</label><input id="qc-bait" maxlength="80" list="bait-list"><datalist id="bait-list"></datalist></div>
       </div>
+      <div class="two">
+        <div><label for="qc-length">Length (inches)</label><input id="qc-length" type="number" min="0.5" max="199" step="0.25" inputmode="decimal"></div>
+        <div><label for="qc-weight">Weight (lb)</label><input id="qc-weight" type="number" min="0.05" max="1999" step="0.05" inputmode="decimal" placeholder="Optional"></div>
+      </div>
+      <button class="btn ghost small" id="qc-measure" type="button" style="margin-top:8px">📏 Measure from the photo</button>
+      <div class="spot-meta" id="qc-size-note" style="margin-top:6px"></div>
+      <label for="qc-vis">Who can see this catch?</label>
+      <select id="qc-vis">
+        <option value="friends">👥 Friends</option>
+        <option value="private">🔒 Private — only you</option>
+        <option value="public">🌎 Public — everyone on the app</option>
+      </select>
+      <div class="spot-meta" id="qc-contest-hint" hidden style="margin-top:8px"></div>
       <div class="spot-meta" style="margin-top:10px">Time, tide, pressure, wind, moon &amp; solunar are filled in automatically.</div>
       <button class="btn" id="qc-save" type="button" style="width:100%;margin-top:14px;padding:14px">Save catch</button>
       <div class="msg" id="qc-msg"></div>
@@ -2545,7 +2568,8 @@
   function stopLocation() { if (qc.watch != null) navigator.geolocation.clearWatch(qc.watch); qc.watch = null; }
 
   function openQuickCatch() {
-    qc.blob = null; qc.when = null; qc.source = "";
+    qc.blob = null; qc.when = null; qc.source = ""; qc.visTouched = false;
+    $("qc-length").value = ""; $("qc-weight").value = ""; $("qc-size-note").textContent = "";
     $("qc-spot").innerHTML = ""; // start fresh — don't carry over the last catch's spot
     $("qc").hidden = false; $("qc-cam").hidden = false; $("qc-review").hidden = true;
     $("qc-where").textContent = "📍 Finding your location…";
@@ -2596,8 +2620,58 @@
     $("qc-spot-note").textContent = v === "__new"
       ? "A private spot will be created here — add its details later with ✎ Edit spot."
       : !qc.pos ? "No location yet — pick the spot you're at." : "";
+    syncQcVis(); qcContestHint();
   }
   $("qc-spot").addEventListener("change", spotNote);
+
+  // Who can see the catch: starts at the spot's level (a brand-new quick spot is private) until you pick one yourself
+  function qcVisDefault() {
+    const v = $("qc-spot").value;
+    if (v === "__new") return "private";
+    const sp = (spots || []).find(x => x.id === v);
+    return (sp && (sp.visibility || (sp.is_private ? "private" : "friends"))) || "friends";
+  }
+  function syncQcVis() { if (!qc.visTouched) $("qc-vis").value = qcVisDefault(); }
+  $("qc-vis").addEventListener("change", () => { qc.visTouched = true; qcContestHint(); });
+  $("qc-measure").addEventListener("click", () => {
+    if (!qc.blob) { $("qc-size-note").textContent = "📷 Take or choose a photo first, then tap 📏. Lay a ruler, dollar bill or card next to the fish and shoot from straight above."; return; }
+    openMeasure(qc.blob, len => { $("qc-length").value = len; updateQcSize(); });
+  });
+  function updateQcSize() {
+    const len = parseFloat($("qc-length").value), w = parseFloat($("qc-weight").value);
+    const chip = $("qc-species").querySelector(".fchip.on"), sp = ($("qc-species-other").value.trim() || (chip && chip.textContent) || "");
+    const est = len > 0 && !(w > 0) ? estWeight(sp, len) : null;
+    $("qc-size-note").textContent = est ? `⚖️ About ${lbText(est)} (estimated from length — type a weight if you weighed it)` : "";
+    qcContestHint();
+  }
+  $("qc-length").addEventListener("input", updateQcSize); $("qc-weight").addEventListener("input", updateQcSize);
+  // Tells you which of your joined, running contests this catch will count in (the app checks the same rules the scoreboard does)
+  function qcContestHint() {
+    const box = $("qc-contest-hint"); if (!box) return;
+    const live = (typeof ctRows !== "undefined" ? ctRows : []).filter(t => ctMine[t.id] === "joined" && ctState(t).k === "live");
+    box.innerHTML = "";
+    const trip = activeTripFor($("qc-spot").value === "__new" ? null : $("qc-spot").value, qc.pos);
+    box.hidden = !live.length && !trip;
+    if (trip) { const ts = (spots || []).find(x => x.id === trip.spot_id); box.appendChild(el("div", null, `🎣 Part of your planned trip${ts ? " at " + ts.name : ""} (${planWhen(new Date(trip.plan_at))}) — your trip mates will see it in the trip review${qc.pos && qc.pos.acc != null ? ", with its exact spot" : ""}.`)); }
+    const chip = $("qc-species").querySelector(".fchip.on");
+    const species = ($("qc-species-other").value.trim() || (chip && chip.textContent) || "").trim().toLowerCase();
+    live.forEach(t => {
+      const bad = [], note = [];
+      if (t.kind === "official" && $("qc-vis").value !== "public") bad.push("set to 🌎 Public");
+      if (t.require_photo && !qc.blob) bad.push("add a photo");
+      if (t.species && species && species !== t.species.toLowerCase()) bad.push("only " + t.species + " counts");
+      if (t.require_length && !(parseFloat($("qc-length").value) > 0)) bad.push("add the length (📏 or type it)");
+      if (t.geo_lat != null) {
+        if (!qc.pos || qc.pos.acc == null) bad.push("needs live GPS");
+        else if (miles(qc.pos.lat, qc.pos.lng, t.geo_lat, t.geo_lng) > t.geo_radius_mi) bad.push("you're outside the contest area");
+        else note.push("📍 inside the area ✓");
+      }
+      const line = el("div", null, `🏁 ${t.title}: ` + (bad.length ? "won't count yet — " + bad.join(", ") : "counts ✓") + (note.length ? " (" + note.join("; ") + ")" : ""));
+      box.appendChild(line);
+    });
+  }
+  $("qc-species").addEventListener("click", () => setTimeout(qcContestHint, 0));
+  $("qc-species-other").addEventListener("input", qcContestHint);
 
   function showReview() {
     stopCamera();
@@ -2688,6 +2762,8 @@
     }
     const c = await conditionsFor(spot, when);
     const base = { spot_id: spot.id, caught_at: when.toISOString(), species: item.species, how_many: item.count, bait: item.bait, caught_by: item.name, ...c };
+    if (item.vis) base.visibility = item.vis;
+    Object.assign(base, sizeFields(item.species, item.length, item.weight));
     if (item.session) await syncSessions();
     let { data: saved, error } = await db.from("catches").insert(item.session ? { ...base, session_id: item.session } : base).select("id").single();
     if (error && item.session && /foreign key|session/i.test(error.message || "")) // the trip didn't reach the database — keep the catch anyway
@@ -2712,7 +2788,7 @@
     const item = {
       id: newId(), when: (qc.when || new Date()).toISOString(), pos: qc.pos || null, choice, species,
       count: Math.max(1, Math.min(500, parseInt($("qc-count").value, 10) || 1)),
-      bait: $("qc-bait").value.trim() || null, name: me.name, blob: qc.blob || null, user: me.id
+      bait: $("qc-bait").value.trim() || null, name: me.name, blob: qc.blob || null, user: me.id, vis: $("qc-vis").value, length: $("qc-length").value, weight: $("qc-weight").value
     };
     const trip = activeSession();
     if (trip && trip.spot_id === choice) item.session = trip.id;
@@ -3937,6 +4013,9 @@
         b.type = "button"; b.setAttribute("aria-pressed", inn);
         b.addEventListener("click", () => toggleRsvp(pl));
         acts.appendChild(b);
+      }
+      if (onTrip(pl) && Date.now() >= tripWindow(pl)[0]) {
+        const rv = el("button", "btn ghost small", "📖 Review trip"); rv.type = "button"; rv.addEventListener("click", () => openTripReview(pl)); acts.appendChild(rv);
       }
       item.appendChild(acts);
       box.appendChild(item);
@@ -5309,6 +5388,7 @@
     if (ct) $("feed-mode-circle").className = "btn small ghost";
     $("contests").hidden = !ct;
     $("feed-plans-card").hidden = pub || ct; $("feed-circle-card").hidden = pub || ct;
+    if (m !== "circle") { closeTripReview(); $("feed-trips-card").hidden = true; } else loadPastTrips();
     if (ct) { $("pub-feed").hidden = true; $("pub-profile").hidden = true; openContests(); return; }
     if (pub) { loadPublic(); renderPublic(); } else { $("pub-feed").hidden = true; $("pub-profile").hidden = true; renderFeed(); }
   }
@@ -5988,7 +6068,8 @@
       ]);
       const joined = new Set((ms || []).filter(m => m.user_id === me.id && m.status === "joined").map(m => m.tournament_id));
       const need = (ts || []).some(t => t.geo_lat != null && !t.cancelled_at && new Date(t.ends_at) > new Date() && joined.has(t.id));
-      if (!need) return null;
+      const tripNeed = plans.some(pl => onTrip(pl) && Date.now() >= tripWindow(pl)[0] && Date.now() <= tripWindow(pl)[1]);
+      if (!need && !tripNeed) return null;
       return await new Promise(res => navigator.geolocation.getCurrentPosition(
         p => res({ lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: p.coords.accuracy, at: new Date().toISOString() }),
         () => res(null), { enableHighAccuracy: true, timeout: 8000, maximumAge: 20000 }));
@@ -6437,6 +6518,103 @@
   $("wl-next").addEventListener("click", wlNext);
   $("wl-skip").addEventListener("click", async () => { await wlSet({ welcomed_at: new Date().toISOString() }); $("welcome").hidden = true; });
   fillA2hs($("a2hs-body"));
+
+  // ---- 📖 Trip review: catches by everyone on a planned trip, with exact catch pins (only people on the trip see them, only here) ----
+  const TRIP_BEFORE_H = 1, TRIP_AFTER_H = 12;
+  let pastTrips = [], tripMap = null, tripOpen = null;
+  const onTrip = (pl, rs) => !!(me && (pl.created_by === me.id || (rs || planRsvps[pl.id] || []).some(x => x.user_id === me.id)));
+  const tripWindow = pl => { const t = new Date(pl.plan_at).getTime(); return [t - TRIP_BEFORE_H * 3600000, t + TRIP_AFTER_H * 3600000]; };
+  // the planned trip a catch made now would belong to (mine, in its window, at its spot or within a mile)
+  function activeTripFor(spotId, pos) {
+    const now = Date.now();
+    return plans.find(pl => {
+      if (!onTrip(pl)) return false;
+      const [a, b] = tripWindow(pl); if (now < a || now > b) return false;
+      if (spotId && spotId === pl.spot_id) return true;
+      const ps = (spots || []).find(x => x.id === pl.spot_id); if (!hasLoc(ps)) return false;
+      const cs = (spots || []).find(x => x.id === spotId);
+      return (pos && miles(pos.lat, pos.lng, ps.lat, ps.lng) <= 1) || (hasLoc(cs) && miles(cs.lat, cs.lng, ps.lat, ps.lng) <= 1);
+    }) || null;
+  }
+  async function loadPastTrips() {
+    try {
+      if (!db || !me) return;
+      const since = new Date(Date.now() - 60 * 86400000).toISOString(), until = new Date(Date.now() - 3 * 3600000).toISOString();
+      const p = await db.from("trip_plans").select("*").is("cancelled_at", null).gte("plan_at", since).lt("plan_at", until).order("plan_at", { ascending: false }).limit(60);
+      if (p.error) throw p.error;
+      const ids = (p.data || []).map(x => x.id);
+      const r = ids.length ? await db.from("trip_plan_rsvps").select("*").in("plan_id", ids) : { data: [] };
+      const by = {}; (r.data || []).forEach(x => (by[x.plan_id] = by[x.plan_id] || []).push(x));
+      pastTrips = (p.data || []).filter(pl => onTrip(pl, by[pl.id]));
+    } catch (e) { pastTrips = []; }
+    renderPastTrips();
+  }
+  function renderPastTrips() {
+    const card = $("feed-trips-card"), box = $("feed-trips-list"); if (!card) return;
+    box.innerHTML = ""; card.hidden = !pastTrips.length || feedMode !== "circle" || !$("trip-review").hidden;
+    pastTrips.forEach(pl => {
+      const spot = (spots || []).find(x => x.id === pl.spot_id);
+      const it = el("div", "feed-item"); it.style.cursor = "pointer";
+      const top = el("div", "feed-top");
+      top.appendChild(el("span", "feed-what", planWhen(new Date(pl.plan_at))));
+      top.appendChild(el("span", "feed-when", spot ? "📍 " + spot.name : ""));
+      it.appendChild(top); it.appendChild(el("div", "spot-meta", "Tap to review the catches from this trip"));
+      it.addEventListener("click", () => openTripReview(pl));
+      box.appendChild(it);
+    });
+  }
+  async function openTripReview(pl) {
+    tripOpen = pl; $("trip-review").hidden = false; $("feed-trips-card").hidden = true;
+    const body = $("trip-review-body"); body.innerHTML = "";
+    const spot = (spots || []).find(x => x.id === pl.spot_id);
+    body.appendChild(el("div", "label", "📖 Trip review"));
+    body.appendChild(el("b", null, `${planWhen(new Date(pl.plan_at))}${spot ? " · " + spot.name : ""}`));
+    body.appendChild(el("div", "spot-meta", "📍 Exact catch locations are only visible to the people on this trip, and only here. Private catches stay private. Counts catches from 1 hour before to 12 hours after the start, at this spot or within a mile."));
+    const st = el("div", "spot-meta", "Loading…"); body.appendChild(st);
+    $("trip-review").scrollIntoView({ behavior: "smooth", block: "start" });
+    const { data, error } = await db.rpc("trip_review", { p_plan: pl.id });
+    if (tripOpen !== pl) return;
+    if (error) { st.className = "msg err"; st.textContent = "Couldn't load the trip: " + error.message; return; }
+    const rows = data || [];
+    await ensureProfiles(rows.map(r => r.user_id));
+    if (!rows.length) { st.textContent = "No catches logged for this trip yet."; return; }
+    const fish = rows.reduce((n, r) => n + (r.how_many || 1), 0), people = [...new Set(rows.map(r => r.user_id))];
+    st.textContent = `${fish} fish · ${rows.length} catch${rows.length === 1 ? "" : "es"} · ${people.length} angler${people.length === 1 ? "" : "s"}`;
+    const nm = id => (me && id === me.id ? "You" : (profName(id) || ((planRsvps[pl.id] || []).find(x => x.user_id === id) || {}).name || "Someone"));
+    const geo = rows.filter(r => r.lat != null && r.lng != null);
+    if (geo.length) {
+      const mapDiv = el("div"); mapDiv.id = "trip-map"; mapDiv.style.cssText = "height:260px;border-radius:10px;margin:10px 0;border:1px solid var(--line)"; body.appendChild(mapDiv);
+      try {
+        if (tripMap) { tripMap.remove(); tripMap = null; }
+        tripMap = L.map(mapDiv, { zoomControl: true });
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(tripMap);
+        const pts = [];
+        if (hasLoc(spot)) { L.marker([spot.lat, spot.lng]).addTo(tripMap).bindPopup("📍 " + spot.name); pts.push([spot.lat, spot.lng]); }
+        geo.forEach(r => {
+          L.circleMarker([r.lat, r.lng], { radius: 8, color: "#fff", weight: 2, fillColor: me && r.user_id === me.id ? "#0e7c86" : "#e08a2c", fillOpacity: 1 })
+            .addTo(tripMap).bindPopup(`🎣 ${cap(r.species || "Fish")}${r.how_many > 1 ? " ×" + r.how_many : ""} — ${nm(r.user_id)}<br>${new Date(r.caught_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`);
+          pts.push([r.lat, r.lng]);
+        });
+        tripMap.fitBounds(pts, { padding: [30, 30], maxZoom: 17 });
+      } catch (e) { mapDiv.textContent = "Map couldn't load."; }
+    }
+    const byUser = new Map(); rows.forEach(r => (byUser.get(r.user_id) || byUser.set(r.user_id, []).get(r.user_id)).push(r));
+    byUser.forEach((list, uid) => {
+      body.appendChild(el("div", "label", nm(uid))); body.lastChild.style.marginTop = "12px";
+      list.forEach(r => {
+        const it = el("div", "feed-item"); const tp = el("div", "feed-top");
+        tp.appendChild(el("b", null, `${cap(r.species || "Fish")}${r.how_many > 1 ? " ×" + r.how_many : ""}${sizeText(r)}`));
+        tp.appendChild(el("span", "spot-meta", new Date(r.caught_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + (r.lat != null ? " · 📍" : "")));
+        it.appendChild(tp); body.appendChild(it);
+      });
+    });
+  }
+  function closeTripReview() {
+    tripOpen = null; $("trip-review").hidden = true;
+    if (tripMap) { try { tripMap.remove(); } catch (e) {} tripMap = null; }
+    renderPastTrips();
+  }
+  $("trip-review-back").addEventListener("click", closeTripReview);
 
   // ---- Refreshing (the home-screen app has no reload button) ----
   function refreshApp() {

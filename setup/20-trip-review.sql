@@ -1,0 +1,6 @@
+-- 20: Trip review (migration `trip_review`).
+-- hav_mi(lat1,lng1,lat2,lng2): distance in miles.
+-- trip_review(p_plan uuid): the only way to see other people's exact catch pins. Caller must be on the planned trip (planner or "I'm in").
+--   Returns catches by trip participants from 1 h before to 12 h after plan_at, at the plan's spot or within 1 mile of it (by spot or catch GPS),
+--   skipping other people's private catches and blocked users; lat/lng/accuracy come from catch_geo (which stays readable only by its owner otherwise).
+-- Full body: Supabase migrations list / pg_get_functiondef.
