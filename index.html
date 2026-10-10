@@ -722,6 +722,10 @@
       <button class="btn small" id="feed-mode-circle" type="button">👥 My circle</button>
       <button class="btn ghost small" id="feed-mode-public" type="button">🌎 Public</button>
       <button class="btn ghost small" id="feed-mode-contests" type="button">🏁 Compete</button>
+      <button class="btn ghost small" id="feed-mode-groups" type="button">👥 Groups</button>
+    </div>
+    <div class="card" id="groups" hidden>
+      <div id="gr-body"></div>
     </div>
     <div class="card" id="contests" hidden>
       <div id="ct-body"></div>
@@ -7490,10 +7494,11 @@
   const PP_MAX = 8;
   let ppMine = null, ppShow = [], ppColor = null, ppAvatarPath = null, ppAvatarBlob = null, ppAvatarClear = false;
   const avatarUrls = {};
-  async function avatarUrl(path) {
+  async function avatarUrl(path, bucket) {
     if (!path) return null;
-    if (avatarUrls[path]) return avatarUrls[path];
-    try { const { data } = await db.storage.from("avatars").createSignedUrl(path, 3600); if (data && data.signedUrl) return (avatarUrls[path] = data.signedUrl); } catch (e) { /* initials instead */ }
+    bucket = bucket || "avatars";
+    if (avatarUrls[bucket + path]) return avatarUrls[bucket + path];
+    try { const { data } = await db.storage.from(bucket).createSignedUrl(path, 3600); if (data && data.signedUrl) return (avatarUrls[bucket + path] = data.signedUrl); } catch (e) { /* initials instead */ }
     return null;
   }
   // a round picture, or the first letter of the name when there is none
@@ -7619,7 +7624,7 @@
       const { error } = await db.from("profile_extras").upsert(row, { onConflict: "user_id" });
       if (error) { if (ppAvatarBlob) db.storage.from("avatars").remove([path]); throw error; }
       if (old && old !== path) db.storage.from("avatars").remove([old]);   // tidy up the old picture
-      ppMine = row; ppAvatarPath = path; ppAvatarBlob = null; ppAvatarClear = false; delete avatarUrls[old];
+      ppMine = row; ppAvatarPath = path; ppAvatarBlob = null; ppAvatarClear = false; delete avatarUrls["avatars" + old];
       msg.textContent = "Saved ✓"; ppDrawAvatar();
     } catch (e) { msg.className = "msg err"; msg.textContent = "Couldn't save: " + (e.message || e); }
     $("pp-save").disabled = false;
@@ -7639,11 +7644,14 @@
     $("feed-mode-public").className = "btn small" + (pub ? "" : " ghost");
     const ct = m === "contests";
     $("feed-mode-contests").className = "btn small" + (ct ? "" : " ghost");
-    if (ct) $("feed-mode-circle").className = "btn small ghost";
-    $("contests").hidden = !ct;
-    $("feed-plans-card").hidden = pub || ct; $("feed-circle-card").hidden = pub || ct;
+    const gr = m === "groups";
+    $("feed-mode-groups").className = "btn small" + (gr ? "" : " ghost");
+    if (ct || gr) $("feed-mode-circle").className = "btn small ghost";
+    $("contests").hidden = !ct; $("groups").hidden = !gr;
+    $("feed-plans-card").hidden = pub || ct || gr; $("feed-circle-card").hidden = pub || ct || gr;
     if (m !== "circle") { closeTripReview(); $("feed-trips-card").hidden = true; } else loadPastTrips();
     if (ct) { $("pub-feed").hidden = true; $("pub-profile").hidden = true; openContests(); return; }
+    if (gr) { $("pub-feed").hidden = true; $("pub-profile").hidden = true; openGroups(); return; }
     if (pub) { loadPublic(); renderPublic(); } else { $("pub-feed").hidden = true; $("pub-profile").hidden = true; renderFeed(); }
   }
   const profOf = id => pubProfiles[id] || friendProfiles[id] || (me && id === me.id && me.profile) || null;
@@ -7825,6 +7833,7 @@
   $("feed-mode-circle").addEventListener("click", () => setFeedMode("circle"));
   $("feed-mode-public").addEventListener("click", () => setFeedMode("public"));
   $("feed-mode-contests").addEventListener("click", () => setFeedMode("contests"));
+  $("feed-mode-groups").addEventListener("click", () => { grOpen = null; setFeedMode("groups"); });
   // Strangers' public spots on the regular map (a toggle; your circle's spots are always shown)
   function strangerSpots() { return spotsAll.filter(x => x.visibility === "public" && x.lat != null && x.lng != null && !(spots || []).some(sp => sp.id === x.id)); }
   async function setMapPublic(on) {
@@ -8893,6 +8902,7 @@
     stopPlacing();
     if (go === "chat" && q.get("with")) openChatWith(q.get("with"));
     else if (go === "friends") $("friends-btn").click();
+    else if (go === "group" && q.get("scope") === "team" && q.get("id")) { grOpen = q.get("id"); feedMode = "groups"; showView("feed"); window.scrollTo({ top: 0 }); }
     else if (go === "group" && q.get("scope") === "contest" && q.get("id")) { ctId = q.get("id"); ctView = "detail"; feedMode = "contests"; showView("feed"); window.scrollTo({ top: 0 }); }
     else if (go === "group" && q.get("scope") === "trip" && q.get("id")) {
       feedMode = "circle"; showView("feed");
@@ -9009,10 +9019,177 @@
   $("wl-skip").addEventListener("click", async () => { await wlSet({ welcomed_at: new Date().toISOString() }); $("welcome").hidden = true; });
   fillA2hs($("a2hs-body"));
 
+  // ---- 👥 Groups (setup/36): teams of friends — page, members, team leaderboard and chat ----
+  let grList = [], grMembers = [], grOpen = null, grPeriod = "month", grColor = null, grBlob = null, grClear = false;
+  const GR_PERIODS = [["week", "7 days"], ["month", "30 days"], ["year", "Year"], ["all", "All time"]];
+  const grSince = k => k === "week" ? new Date(Date.now() - 7 * 86400000).toISOString() : k === "month" ? new Date(Date.now() - 30 * 86400000).toISOString() : k === "year" ? new Date(Date.now() - 365 * 86400000).toISOString() : null;
+  const grMyStatus = gid => { const m = grMembers.find(x => x.group_id === gid && x.user_id === me.id); return m ? m.status : null; };
+  async function loadGroups() {
+    const g = await db.from("groups").select("*").order("created_at", { ascending: false });
+    if (g.error) throw g.error;
+    grList = g.data || [];
+    const ids = grList.map(x => x.id);
+    const m = ids.length ? await db.from("group_members").select("*").in("group_id", ids) : { data: [] };
+    grMembers = m.data || [];
+    await ensureProfiles(grMembers.map(x => x.user_id));
+  }
+  async function openGroups() {
+    const body = $("gr-body"); body.innerHTML = ""; body.appendChild(el("div", "spot-meta", "Loading…"));
+    try { await loadGroups(); } catch (e) { body.innerHTML = ""; body.appendChild(el("div", "msg err", "Couldn't load groups right now.")); return; }
+    if (grOpen && grList.some(x => x.id === grOpen)) drawGroup(grOpen); else { grOpen = null; drawGroupList(); }
+  }
+  async function grAvatar(g, size) {
+    const url = await avatarUrl(g.avatar_path, "group-avatars");
+    return avatarNode(url, g.name, size, g.accent);
+  }
+  function drawGroupList() {
+    const body = $("gr-body"); body.innerHTML = "";
+    body.appendChild(el("div", "label", "👥 Groups"));
+    body.appendChild(el("div", "spot-meta", "A group is a team of friends — its own page, member list, leaderboard and chat. You can only invite friends."));
+    const invites = grList.filter(g => grMyStatus(g.id) === "invited");
+    invites.forEach(g => {
+      const row = el("div"); row.style.cssText = "border:1px solid var(--line);border-radius:12px;padding:10px;margin:10px 0";
+      row.appendChild(el("div", null, "📨 You're invited to "));
+      row.firstChild.appendChild(el("b", null, g.name));
+      const by = grMembers.find(x => x.group_id === g.id && x.user_id === me.id);
+      if (by && by.invited_by) row.appendChild(el("div", "spot-meta", "from " + (profName(by.invited_by) || "a friend")));
+      const acts = el("div"); acts.style.cssText = "display:flex;gap:8px;margin-top:8px";
+      const yes = el("button", "btn small", "Join"), no = el("button", "btn ghost small", "No thanks"); yes.type = no.type = "button";
+      const go = async ok => { yes.disabled = no.disabled = true; const { error } = await db.rpc("respond_group", { p_gid: g.id, p_accept: ok }); if (error) { row.appendChild(el("div", "msg err", error.message)); return; } openGroups(); };
+      yes.addEventListener("click", () => go(true)); no.addEventListener("click", () => go(false));
+      acts.appendChild(yes); acts.appendChild(no); row.appendChild(acts); body.appendChild(row);
+    });
+    const mine = grList.filter(g => grMyStatus(g.id) === "joined");
+    if (!mine.length) body.appendChild(el("div", "empty", "You're not in a group yet — make one below."));
+    mine.forEach(async g => {
+      const row = el("div"); row.style.cssText = "display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer";
+      const n = grMembers.filter(x => x.group_id === g.id && x.status === "joined").length;
+      const t = el("div"); t.style.flex = "1"; t.appendChild(el("b", null, g.name)); t.appendChild(el("div", "spot-meta", n + (n === 1 ? " member" : " members") + (g.created_by === me.id ? " · you run it" : "")));
+      row.appendChild(t); body.appendChild(row);
+      row.insertBefore(await grAvatar(g, 44), t);
+      row.addEventListener("click", () => { grOpen = g.id; drawGroup(g.id); });
+    });
+    const f = el("div"); f.style.cssText = "margin-top:16px;border-top:1px solid var(--line);padding-top:12px";
+    f.appendChild(el("div", "label", "Start a group"));
+    const nm = document.createElement("input"); nm.id = "gr-new-name"; nm.maxLength = 40; nm.placeholder = "Group name (3–40 letters)"; nm.setAttribute("aria-label", "Group name");
+    const ds = document.createElement("input"); ds.id = "gr-new-desc"; ds.maxLength = 200; ds.placeholder = "What's it about? (optional)"; ds.setAttribute("aria-label", "Group description"); ds.style.marginTop = "8px";
+    const mk = el("button", "btn small", "Create group"); mk.type = "button"; mk.style.marginTop = "8px"; mk.id = "gr-create";
+    const msg = el("div", "msg");
+    mk.addEventListener("click", async () => {
+      if (nm.value.trim().length < 3) { msg.className = "msg err"; msg.textContent = "Give it a name of at least 3 letters."; return; }
+      mk.disabled = true;
+      const { data, error } = await db.rpc("create_group", { p_name: nm.value.trim(), p_desc: ds.value.trim() || null });
+      mk.disabled = false;
+      if (error) { msg.className = "msg err"; msg.textContent = error.message; return; }
+      grOpen = data; await openGroups();
+    });
+    f.appendChild(nm); f.appendChild(ds); f.appendChild(mk); f.appendChild(msg); body.appendChild(f);
+  }
+  async function drawGroup(gid) {
+    const g = grList.find(x => x.id === gid), body = $("gr-body");
+    if (!g) { grOpen = null; drawGroupList(); return; }
+    const owner = g.created_by === me.id;
+    body.innerHTML = "";
+    const back = el("button", "linkbtn", "← All groups"); back.type = "button"; back.addEventListener("click", () => { grOpen = null; drawGroupList(); });
+    body.appendChild(back);
+    const head = el("div"); head.style.cssText = "display:flex;gap:12px;align-items:center;margin:10px 0";
+    const tt = el("div"); tt.appendChild(el("div", "label", g.name)); if (g.description) tt.appendChild(el("div", "spot-meta", g.description));
+    head.appendChild(tt); body.appendChild(head);
+    grAvatar(g, 64).then(a => head.insertBefore(a, tt));
+    // members
+    const joined = grMembers.filter(x => x.group_id === gid && x.status === "joined"), invited = grMembers.filter(x => x.group_id === gid && x.status === "invited");
+    body.appendChild(el("div", "label", "Members (" + joined.length + ")"));
+    joined.forEach(m => {
+      const row = el("div"); row.style.cssText = "display:flex;gap:8px;align-items:center;padding:5px 0";
+      const nameBtn = el("button", "linkbtn", (m.user_id === me.id ? "You" : (profName(m.user_id) || "Someone")) + (m.role === "owner" ? " 👑" : "")); nameBtn.type = "button"; nameBtn.style.flex = "1"; nameBtn.style.textAlign = "left";
+      if (m.user_id !== me.id) nameBtn.addEventListener("click", () => showProfile(m.user_id));
+      row.appendChild(nameBtn);
+      if (owner && m.user_id !== me.id) {
+        const x = el("button", "linkbtn", "Remove"); x.type = "button";
+        x.addEventListener("click", async () => { if (!confirm("Remove " + (profName(m.user_id) || "this person") + " from the group?")) return; const { error } = await db.rpc("remove_from_group", { p_gid: gid, p_user: m.user_id }); if (error) alert(error.message); openGroups(); });
+        row.appendChild(x);
+      }
+      body.appendChild(row);
+    });
+    if (invited.length) body.appendChild(el("div", "spot-meta", "Waiting to answer: " + invited.map(m => profName(m.user_id) || "someone").join(", ")));
+    // invite
+    if (!me.friendIds && !drawGroup.tried) { drawGroup.tried = true; await loadFriends(); }
+    const taken = new Set(grMembers.filter(x => x.group_id === gid && (x.status === "joined" || x.status === "invited")).map(x => x.user_id));
+    const can = [...(me.friendIds || [])].filter(id => !taken.has(id));
+    const inv = el("div"); inv.style.cssText = "display:flex;gap:8px;margin:10px 0";
+    if (can.length) {
+      const sel = document.createElement("select"); sel.id = "gr-invite-pick"; sel.setAttribute("aria-label", "Friend to invite"); sel.style.flex = "1";
+      can.forEach(id => { const o = document.createElement("option"); o.value = id; o.textContent = profName(id) || (friendProfiles[id] && friendProfiles[id].display_name) || "Friend"; sel.appendChild(o); });
+      const go = el("button", "btn small", "Invite"); go.type = "button"; go.id = "gr-invite";
+      const msg = el("div", "msg");
+      go.addEventListener("click", async () => { go.disabled = true; const { error } = await db.rpc("invite_to_group", { p_gid: gid, p_user: sel.value }); go.disabled = false; if (error) { msg.className = "msg err"; msg.textContent = error.message; return; } openGroups(); });
+      inv.appendChild(sel); inv.appendChild(go); body.appendChild(inv); body.appendChild(msg);
+    } else body.appendChild(el("div", "spot-meta", "All your friends are already in (or invited). Add more friends from 👥 Friends."));
+    // leaderboard
+    body.appendChild(el("div", "label", "🏆 Team leaderboard"));
+    const tabs = el("div"); tabs.style.cssText = "display:flex;gap:6px;margin:6px 0;flex-wrap:wrap";
+    const lb = el("div"); lb.id = "gr-board";
+    GR_PERIODS.forEach(([k, t]) => { const b = el("button", "btn small" + (k === grPeriod ? "" : " ghost"), t); b.type = "button"; b.addEventListener("click", () => { grPeriod = k; drawGroup(gid); }); tabs.appendChild(b); });
+    body.appendChild(tabs); body.appendChild(lb);
+    (async () => {
+      const { data, error } = await db.rpc("group_board", { p_gid: gid, p_since: grSince(grPeriod) });
+      if (error) { lb.appendChild(el("div", "msg err", "Couldn't load the leaderboard.")); return; }
+      const rows = data || [];
+      const tot = rows.reduce((a, r) => a + Number(r.fish), 0);
+      lb.appendChild(el("div", "spot-meta", "Team total: " + tot + " fish · counts catches shared with friends or public (private catches never count)"));
+      rows.forEach((r, i) => {
+        const row = el("div"); row.style.cssText = "display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)";
+        row.appendChild(el("span", null, (["🥇", "🥈", "🥉"][i] || (i + 1) + ".")));
+        const n = el("span", null, r.user_id === me.id ? "You" : (profName(r.user_id) || "Someone")); n.style.flex = "1"; row.appendChild(n);
+        row.appendChild(el("span", "spot-meta", `${r.fish} fish · ${r.species} species` + (r.longest ? ` · best ${Number(r.longest)}"` : "")));
+        lb.appendChild(row);
+      });
+    })();
+    // chat
+    body.appendChild(groupChatPanel("team", gid));
+    // edit / leave / delete
+    const foot = el("div"); foot.style.cssText = "margin-top:16px;border-top:1px solid var(--line);padding-top:12px";
+    if (owner) {
+      foot.appendChild(el("div", "label", "Edit group"));
+      grColor = g.accent || null; grBlob = null; grClear = false;
+      const nm = document.createElement("input"); nm.id = "gr-edit-name"; nm.maxLength = 40; nm.value = g.name; nm.setAttribute("aria-label", "Group name");
+      const ds = document.createElement("input"); ds.id = "gr-edit-desc"; ds.maxLength = 200; ds.value = g.description || ""; ds.placeholder = "Description"; ds.style.marginTop = "8px"; ds.setAttribute("aria-label", "Group description");
+      const cols = el("div"); cols.style.cssText = "display:flex;gap:8px;margin:8px 0;flex-wrap:wrap";
+      const drawCols = () => { cols.innerHTML = ""; PP_ACCENTS.forEach(c => { const b = el("button"); b.type = "button"; b.setAttribute("aria-label", "Colour " + c); b.style.cssText = `width:28px;height:28px;border-radius:50%;background:${c};border:3px solid ${grColor === c ? "var(--text, #000)" : "transparent"}`; b.addEventListener("click", () => { grColor = c; drawCols(); }); cols.appendChild(b); }); };
+      drawCols();
+      const pic = document.createElement("input"); pic.type = "file"; pic.accept = "image/*"; pic.id = "gr-pic"; pic.setAttribute("aria-label", "Group picture");
+      pic.addEventListener("change", async () => { const f = pic.files && pic.files[0]; if (f) { try { grBlob = await avatarBlob(f); grClear = false; } catch (e) { grBlob = null; } } });
+      const save = el("button", "btn small", "Save changes"); save.type = "button"; save.id = "gr-save"; save.style.marginTop = "8px";
+      const msg = el("div", "msg");
+      save.addEventListener("click", async () => {
+        if (nm.value.trim().length < 3) { msg.className = "msg err"; msg.textContent = "The name needs at least 3 letters."; return; }
+        save.disabled = true; msg.className = "msg"; msg.textContent = "Saving…";
+        try {
+          let path = g.avatar_path; const old = g.avatar_path;
+          if (grBlob) { path = `${gid}/${newId()}.jpg`; const { error: ue } = await db.storage.from("group-avatars").upload(path, grBlob, { contentType: "image/jpeg" }); if (ue) throw ue; }
+          const { error } = await db.rpc("update_group", { p_gid: gid, p_name: nm.value.trim(), p_desc: ds.value.trim() || null, p_accent: grColor, p_avatar: path });
+          if (error) { if (grBlob) db.storage.from("group-avatars").remove([path]); throw error; }
+          if (old && old !== path) db.storage.from("group-avatars").remove([old]);
+          await openGroups();
+        } catch (e) { msg.className = "msg err"; msg.textContent = "Couldn't save: " + (e.message || e); save.disabled = false; }
+      });
+      foot.appendChild(nm); foot.appendChild(ds); foot.appendChild(cols); foot.appendChild(el("div", "spot-meta", "Group picture:")); foot.appendChild(pic); foot.appendChild(save); foot.appendChild(msg);
+      const del = el("button", "btn ghost small", "Delete this group"); del.type = "button"; del.id = "gr-delete"; del.style.cssText = "display:block;margin-top:14px;color:#c0392b";
+      del.addEventListener("click", async () => { if (!confirm("Delete \"" + g.name + "\" for everyone?")) return; const { error } = await db.rpc("delete_group", { p_gid: gid }); if (error) { alert(error.message); return; } grOpen = null; openGroups(); });
+      foot.appendChild(del);
+    } else {
+      const lv = el("button", "btn ghost small", "Leave this group"); lv.type = "button"; lv.id = "gr-leave";
+      lv.addEventListener("click", async () => { if (!confirm("Leave \"" + g.name + "\"?")) return; const { error } = await db.rpc("leave_group", { p_gid: gid }); if (error) { alert(error.message); return; } grOpen = null; openGroups(); });
+      foot.appendChild(lv);
+    }
+    body.appendChild(foot);
+  }
+
   // ---- 💬 Group chat: one chat per planned trip (people on the trip) and per contest (people in it) ----
   function groupChatPanel(scope, id) {
     const box = el("div"); box.className = "gchat"; box.style.cssText = "border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px";
-    box.appendChild(el("div", "label", scope === "trip" ? "💬 Trip chat" : "💬 Contest chat"));
+    box.appendChild(el("div", "label", scope === "trip" ? "💬 Trip chat" : scope === "team" ? "💬 Group chat" : "💬 Contest chat"));
+    const team = scope === "team";
     const list = el("div"); list.style.cssText = "max-height:260px;overflow:auto;margin:8px 0";
     const form = el("form"); form.style.cssText = "display:flex;gap:8px";
     const inp = document.createElement("input"); inp.maxLength = 1000; inp.placeholder = "Message the group…"; inp.style.flex = "1"; inp.setAttribute("aria-label", "Message");
@@ -9022,7 +9199,7 @@
     box.appendChild(list); box.appendChild(form); box.appendChild(msg);
     let last = null;
     async function load() {
-      const { data, error } = await db.from("group_messages").select("*").eq("scope", scope).eq("scope_id", id).order("created_at", { ascending: true }).limit(200);
+      const { data, error } = await (team ? db.from("team_messages").select("*").eq("group_id", id) : db.from("group_messages").select("*").eq("scope", scope).eq("scope_id", id)).order("created_at", { ascending: true }).limit(200);
       if (error) { msg.className = "msg err"; msg.textContent = "Couldn't load the chat."; return; }
       msg.textContent = "";
       await ensureProfiles(data.map(m => m.sender));
@@ -9038,7 +9215,7 @@
         top.appendChild(document.createTextNode(" · " + new Date(m.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })));
         if (mine) {
           const x = el("button", "linkbtn", " ✕"); x.type = "button"; x.title = "Delete my message"; x.style.cssText = "float:right";
-          x.addEventListener("click", async () => { await db.from("group_messages").delete().eq("id", m.id); last = null; load(); });
+          x.addEventListener("click", async () => { await db.from(team ? "team_messages" : "group_messages").delete().eq("id", m.id); last = null; load(); });
           top.appendChild(x);
         }
         row.appendChild(top); row.appendChild(el("div", null, m.body)); list.appendChild(row);
@@ -9049,7 +9226,7 @@
       e.preventDefault();
       const body = inp.value.trim(); if (!body) return;
       send.disabled = true;
-      const { error } = await db.from("group_messages").insert({ scope, scope_id: id, body });
+      const { error } = await db.from(team ? "team_messages" : "group_messages").insert(team ? { group_id: id, body } : { scope, scope_id: id, body });
       send.disabled = false;
       if (error) { msg.className = "msg err"; msg.textContent = "Couldn't send: " + error.message; return; }
       inp.value = ""; last = null; load();
@@ -9274,6 +9451,7 @@
       "📅 A single run can now last up to a year. Find it all under Feed → 🏁 Compete.",
       "✋ A contest made from a trip enters everyone going automatically — and anyone who taps “I'm in” later.",
       "📍 A contest made from a trip only counts catches at the trip spot (within a mile).",
+      "👥 Groups (Feed → 👥 Groups): make a team of friends with its own picture, colour, member list, team leaderboard and chat. Invites go to friends only.",
       "🎣 A catch can now have several photos — tap “➕ Add more photos of this catch” (up to 30 in total).",
       "🪪 Profile pages: add a picture, a tagline, a page color, 📌 pin a catch at the top and build a ⭐ showcase of trophies, badges and achievements (Profile → Your profile page). Choose who can see it: everyone, friends only, or just you — others see a blurred page with a friend-request button.",
       "💡 Planning a trip now shows “Suggested spots” for the day and time you pick — the top 3, with why (tides, past catches, season, wind) and a button to use one.",
