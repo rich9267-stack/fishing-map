@@ -185,6 +185,12 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   // Log opens quick catch
   let qc = 0; $("qc-fab").addEventListener("click", () => qc++); click(navb("log")); console.log("Log taps quick catch:", qc === 1);
   // Me menu
+  // profile picture as the menu button
+  await w.eval("meAvatarRefresh()"); await sleep(100);
+  console.log("menu button shows my first letter:", $("me-avatar").textContent === "R", "| no text label:", !/Me/.test($("me-btn").textContent.replace(/\d/g, "")));
+  w.eval(`db.storage.from = b => ({ createSignedUrl: async p => ({ data: { signedUrl: "https://img/" + p } }) }); ppMine = { avatar_path: "u-rich/a.jpg", accent: "#6a3fb5" };`);
+  await w.eval("meAvatarRefresh()"); await sleep(100);
+  console.log("menu button shows my picture:", !!$("me-avatar").querySelector("img[src='https://img/u-rich/a.jpg']"));
   console.log("menu closed at start:", $("me-menu").hidden);
   click($("me-btn")); console.log("menu opens:", !$("me-menu").hidden, "| items:", [...$("me-menu").querySelectorAll("button:not([hidden])")].map(b => b.id).join(","));
   click(d.body); console.log("outside tap closes:", $("me-menu").hidden);

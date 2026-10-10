@@ -31,6 +31,9 @@
   .bnav-in .bn-log .bn-i { width: 52px; height: 52px; margin-top: -22px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
   .nav-badge { background: #c0392b; color: #fff; border-radius: 999px; font-size: .68rem; font-weight: 700; min-width: 16px; padding: 0 4px; line-height: 16px; text-align: center; display: inline-block; margin-left: 4px; }
   .bnav-in .nav-badge { position: absolute; top: 4px; left: calc(50% + 8px); margin: 0; }
+  #me-avatar { display: block; width: 36px; height: 36px; }
+  #me-btn { position: relative; padding: 0; line-height: 0; border-radius: 50%; }
+  #me-btn .nav-badge { position: absolute; top: -5px; right: -6px; margin: 0; line-height: 16px; }
   #me-menu { position: absolute; right: 0; top: 100%; margin-top: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.2); padding: 6px; display: flex; flex-direction: column; min-width: 170px; z-index: 860; }
   #me-menu[hidden] { display: none; }
   #me-menu button { text-align: left; padding: 10px 12px; font-size: .95rem; }
@@ -405,7 +408,7 @@
   <div class="userbar" id="userbar" hidden>
     <span id="who"></span>
     <span class="userbar-links" style="position:relative">
-      <button class="linkbtn" id="me-btn" type="button" aria-haspopup="true" aria-expanded="false">☰ Me<span class="nav-badge" id="me-badge" hidden></span></button>
+      <button class="linkbtn" id="me-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Menu — profile, alerts, sign out"><span id="me-avatar"></span><span class="nav-badge" id="me-badge" hidden></span></button>
       <div id="me-menu" hidden role="menu">
         <button class="linkbtn" id="profile-btn" type="button" role="menuitem">🙂 Profile</button>
         <button class="linkbtn" id="inbox-btn" type="button" role="menuitem">🔔 Alerts</button>
@@ -7537,7 +7540,7 @@
     me = { id: session.user.id, email, name: member.display_name, isAdmin: !!member.is_admin };
     if (/access_token=|code=/.test(location.hash + location.search)) history.replaceState(null, "", SITE);
     $("auth-card").hidden = true; $("not-member").hidden = true;
-    $("userbar").hidden = false; $("app").hidden = false; $("qc-fab").hidden = false;
+    $("userbar").hidden = false; $("app").hidden = false; $("qc-fab").hidden = false; meAvatarRefresh();
     $("who").textContent = `Signed in as ${me.name}`;
     ensureProfile().then(maybeWelcome).then(wnCheck);
     $("invite-btn").hidden = !me.isAdmin;
@@ -7730,7 +7733,7 @@
       if (error) { if (ppAvatarBlob) db.storage.from("avatars").remove([path]); throw error; }
       if (old && old !== path) db.storage.from("avatars").remove([old]);   // tidy up the old picture
       ppMine = row; ppAvatarPath = path; ppAvatarBlob = null; ppAvatarClear = false; delete avatarUrls["avatars" + old];
-      msg.textContent = "Saved ✓"; ppDrawAvatar();
+      msg.textContent = "Saved ✓"; ppDrawAvatar(); meAvatarRefresh();
     } catch (e) { msg.className = "msg err"; msg.textContent = "Couldn't save: " + (e.message || e); }
     $("pp-save").disabled = false;
   });
@@ -8298,8 +8301,21 @@
       if (error || !data) return;
       me.profile = data; me.handle = data.handle;
       $("who").textContent = `Signed in as ${me.name} (@${data.handle})`;
-      loadFriends();
+      loadFriends(); meAvatarRefresh();
     } catch (e) { /* offline — try again next time */ }
+  }
+  // the top-right menu button is your own profile picture (or your first letter until you add one)
+  async function meAvatarRefresh() {
+    const box = $("me-avatar"); if (!box || !me) return;
+    const name = (me.profile && me.profile.display_name) || me.name || "";
+    box.innerHTML = ""; box.appendChild(avatarNode(null, name, 36, null));
+    try {
+      let x = ppMine;
+      if (!x) { const r = await db.from("profile_extras").select("avatar_path,accent").eq("user_id", me.id).maybeSingle(); x = r && r.data; }
+      if (!x || !x.avatar_path) return;
+      const url = await avatarUrl(x.avatar_path);
+      if (url) { box.innerHTML = ""; box.appendChild(avatarNode(url, name, 36, x.accent || null)); }
+    } catch (e) { /* the letter stays */ }
   }
   $("profile-btn").addEventListener("click", async () => {
     $("profile-card").hidden = false; $("pf-msg").textContent = "";
@@ -9611,7 +9627,7 @@
       "✋ A contest made from a trip enters everyone going automatically — and anyone who taps “I'm in” later.",
       "📍 A contest made from a trip only counts catches at the trip spot (within a mile).",
       "👥 Groups (Feed → 👥 Groups): make a team of friends with its own picture, colour, member list, team leaderboard, chat and a trophy case you fill in yourself. Invites go to friends only.",
-      "🧭 New bottom bar: Home, Map, Log (the big camera button), Community and Stats. Your Profile, Alerts, Invite, Refresh and Sign out are now under ☰ Me at the top. Friends and Messages live in Community.",
+      "🧭 New bottom bar: Home, Map, Log (the big camera button), Community and Stats. Your Profile, Alerts, Invite, Refresh and Sign out are now under your profile picture at the top right. Friends and Messages live in Community.",
       "✂️ Crop your profile or group picture before saving — drag and zoom, with a round preview.",
       "🏁 Teams can enter contests together: the group owner taps “Enter as a team” on a contest, each member taps Join, and the team board combines everyone who joined.",
       "🎣 A catch can now have several photos — tap “➕ Add more photos of this catch” (up to 30 in total).",
