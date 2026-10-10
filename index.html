@@ -962,6 +962,7 @@
         <button class="btn" id="save-btn" type="submit">Save spot</button>
       </div>
       <div class="msg" id="form-msg"></div>
+      <div style="margin-top:14px"><button class="btn ghost small danger" id="spot-del" type="button" hidden>🗑 Delete this spot</button></div>
     </form>
 
     <div id="spot-list"><div class="empty">Loading spots…</div></div>
@@ -5631,8 +5632,10 @@
     $("spot-form").hidden = !show;
     $("add-btn").hidden = show;
     $("form-msg").textContent = "";
+    $("spot-del").hidden = true;
     if (!show) return;
     if (existing) {
+      $("spot-del").hidden = !(isMine(existing) || (me && me.isAdmin));
       editingSpot = existing;
       $("f-title").textContent = "Edit spot";
       $("save-btn").textContent = "Save changes";
@@ -5668,6 +5671,24 @@
   }
 
   $("add-btn").addEventListener("click", () => { closeSpotForm(); openForm(true); });
+
+  // 🗑 Delete a spot (e.g. one made by accident while testing). It's a soft delete, so Undo brings it back with its catches and trips.
+  $("spot-del").addEventListener("click", async () => {
+    const sp = editingSpot; if (!sp) return;
+    const mine = (catchesBySpot[sp.id] || []).length;
+    if (!confirm(`Delete “${sp.name}”?` + (mine ? `\n\nIts ${mine} catch${mine === 1 ? "" : "es"} will be removed too.` : "") + "\n\nYou'll have a few seconds to Undo.")) return;
+    const msg = $("form-msg"); $("spot-del").disabled = true;
+    const { error } = await db.rpc("delete_spot", { p_id: sp.id });
+    $("spot-del").disabled = false;
+    if (error) { msg.className = "msg err"; msg.textContent = "Couldn't delete: " + (error.message || error); return; }
+    closeSpotForm();
+    undoToast(`🗑 “${sp.name}” deleted.`, async () => {
+      const { error: e2 } = await db.rpc("restore_spot", { p_id: sp.id });
+      if (e2) alert("Couldn't undo: " + (e2.message || e2));
+      await loadSpots(); loadCatches(); loadPlans();
+    }, "Undo", 12000);
+    await loadSpots(); loadCatches(); loadPlans();
+  });
   $("cancel-btn").addEventListener("click", closeSpotForm);
 
   $("loc-btn").addEventListener("click", () => {
@@ -8974,6 +8995,7 @@
       "✋ A contest made from a trip enters everyone going automatically — and anyone who taps “I'm in” later.",
       "📍 A contest made from a trip only counts catches at the trip spot (within a mile).",
       "🎣 A catch can now have several photos — tap “➕ Add more photos of this catch” (up to 30 in total).",
+      "🗑 You can now delete a spot you added (Edit → Delete this spot). There's a few seconds to Undo, and it won't delete if friends have catches there.",
       "📷 Add up to 30 photos of a spot in one go — pick them all at once and watch the counter.",
       "🔍 Measure tool: tap “Find the bill / card / can / ruler for me” and it finds a dollar bill, card, soda/beer can or a ruler / measuring sticker and puts the blue dots on it (first use downloads a ~10 MB helper once). It runs by itself on later photos.",
       "💾 Photos you take with the app's camera are now kept: Android saves a copy to your phone automatically, iPhone shows a one-tap “Save to Photos”, and Profile → 📷 Photos taken in the app keeps the last 14 days.",

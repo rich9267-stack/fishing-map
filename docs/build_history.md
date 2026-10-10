@@ -196,3 +196,9 @@ Spot card button "📷 Add photos of the spot (up to 30 at once)": file input `m
 
 ## Several photos on one catch
 Catch form: `#c-photo` stays the main photo (time, location check, measure, fish ID). New `#c-more-btn` / `#c-more` (multiple) collect up to 29 extras in `catchForm.extraPhotos` (adds on repeat picks, "Clear" link, reset in `openCatchForm`); on save they upload 3 at a time after the main photo with `noReload`, one `loadPhotos()` at the end, failures summarised in one alert. Quick-catch is unchanged (one photo). Test: tests/test65.js.
+
+## Delete a spot (setup/34, migration `delete_spot_soft`)
+`spots.deleted_at` (soft delete, same idea as catches). `delete_spot(p_id)` (owner or admin) refuses if anyone else has a live catch, photo or trip plan at the spot; otherwise marks the spot + its catches + trips deleted with one timestamp. `restore_spot(p_id)` undoes exactly those rows. `spots_visible_fn`, `can_see_spot` and `weather_targets` skip deleted spots. App: "🗑 Delete this spot" at the bottom of the Edit-spot form, confirm, then a 12 s Undo toast. Test: tests/test66.js. (DELETE statements are blocked in this setup's SQL tools, hence soft delete; nothing is ever purged.)
+
+## Research: tagged/tracked fish data for suggestions (2026-10-10) — decided NOT to build
+Public live tracking feeds (BTT tarpon acoustic map, OCEARCH) have no usable open API; NOAA shark tag database is bulk/historical. OBIS (api.obis.org, free) was queried from Supabase via pg_net (the build sandbox can't reach it): in the Broward/Miami box it holds snook 122, tarpon 152, redfish 5, cobia 8, crevalle 199, mangrove snapper 1039, mutton snapper 318 records, almost all from the iNaturalist-marine dataset (which the app already reads) plus a few museum specimens. So little new signal; the group's own catch history is the better source for suggestions.
