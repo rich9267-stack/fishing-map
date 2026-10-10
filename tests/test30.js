@@ -3,7 +3,7 @@ const { JSDOM } = require("jsdom");
 const fs = require("fs");
 const sun = fs.readFileSync(require.resolve("suncalc"), "utf8");
 const leaf = fs.readFileSync(require.resolve("leaflet/dist/leaflet.js"), "utf8");
-const html = fs.readFileSync(require("path").join(__dirname, "..", "index.html"), "utf8").replace(/<script src=[^>]+><\/script>\n?/g, "").replace(/<link [^>]+>/, "");
+const html = require("./load")();
 const ME = "u-rich";
 const SPOTS = [
   { id: "s1", name: "Hillsboro Inlet", spot_type: "inlet", water_type: "saltwater", lat: 26.257, lng: -80.081, created_by: ME, public_access: "yes", tide_offset_min: 0, faces_deg: 90 },

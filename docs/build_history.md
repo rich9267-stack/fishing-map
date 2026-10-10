@@ -234,3 +234,9 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 - ☰ Me menu (`#me-btn`/`#me-menu`) holds the original Profile, Alerts, Invite, Refresh, Sign out buttons (same ids). Friends + Messages buttons moved into the Community mode row. Unread badges are read from the old buttons' "(n)" text.
 - Stats = Insights + Seasons, with a switch at the top of both pages. Code: "Navigation shell" block just above the `tab-list` listener. Test: tests/test72.js. sw cache v34.
 - Top-right menu button is now the user's own picture (`meAvatarRefresh`, `#me-avatar`): first letter until a picture exists; refreshed at sign-in, after profile save. Unread badge sits on its corner. sw cache v36.
+
+## UX step 2 — split the big file (invisible to users)
+- `index.html` (630 KB) → HTML only (~54 KB) + `css/app.css` + 13 topic files `js/01…13-*.js` + `js/99-boot.js`. Plain scripts sharing one scope, no build step; the concatenated js is byte-identical to the old script (checked), each file passes `node --check`.
+- Gotcha found in a real browser: functions are not hoisted across files, so the start-up calls (`load`, `loadWeather`, `loadPressure`, `loadMoon`, `gate`) moved to `js/99-boot.js`.
+- `sw.js`: precaches the new files, network-first for same-origin css/js (offline fallback ignores `?v=`). `bump.sh` bumps the cache name and every `?v=` together (now v37).
+- Tests: `tests/load.js` rebuilds the page for jsdom; all 46 test files use it. Printed output of every test matched the pre-split output except clock-time / random-id lines.

@@ -3,7 +3,7 @@ const { JSDOM } = require("jsdom");
 const fs = require("fs");
 const sun = fs.readFileSync(require.resolve("suncalc"), "utf8");
 const leaf = fs.readFileSync(require.resolve("leaflet/dist/leaflet.js"), "utf8");
-const html = fs.readFileSync(require("path").join(__dirname, "..", "index.html"), "utf8").replace(/<script src=[^>]+><\/script>\n?/g, "").replace(/<link [^>]+>/, "");
+const html = require("./load")();
 const ME = "u-rich";
 const SPOTS = [
   { id: "s10", name: "Stan Flats", spot_type: "flat", water_type: "saltwater", lat: 27.2, lng: -80.2, created_by: "str1", visibility: "public", is_exact: false, notes: null },

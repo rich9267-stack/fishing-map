@@ -2,8 +2,8 @@
 // - The page itself: try the network first (so updates show up), fall back to the saved copy.
 // - Code libraries from CDNs: use the saved copy right away, refresh it in the background.
 // - Live data (database, tides, weather) is never cached here. Map tiles are served from the phone only if saved for offline.
-const CACHE = "fishing-map-v36";
-const APP_FILES = ["./", "./index.html", "./privacy.html"];
+const CACHE = "fishing-map-v37";
+const APP_FILES = ["./", "./index.html", "./privacy.html", "./css/app.css", "./js/01-core.js", "./js/02-spots.js", "./js/03-photos.js", "./js/04-insights.js", "./js/05-seasons-records.js", "./js/06-catching.js", "./js/07-measure-fishid.js", "./js/08-feed-plans.js", "./js/09-map-forecast.js", "./js/10-tools-safety.js", "./js/11-accounts-social.js", "./js/12-contests-alerts.js", "./js/13-groups-misc.js", "./js/99-boot.js"];
 const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com"];
 const TILE_CACHE = "fishing-map-tiles";   // map tiles the person chose to save for offline (kept across updates)
 const CV_CACHE = "fishing-map-cv";        // the ~10 MB OpenCV helper for auto-finding the bill/card (downloaded once, kept across updates)
@@ -26,13 +26,13 @@ self.addEventListener("fetch", event => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
 
-  // The app page: network first, saved copy when offline
-  if (url.origin === self.location.origin && (req.mode === "navigate" || url.pathname.endsWith(".html") || url.pathname.endsWith("/"))) {
+  // The app page and its own css/js files: network first, saved copy when offline
+  if (url.origin === self.location.origin && (req.mode === "navigate" || /\.(html|css|js)$/.test(url.pathname) || url.pathname.endsWith("/"))) {
     event.respondWith(
       fetch(req, { cache: "no-cache" }).then(res => { // always check GitHub for a newer version (it's tiny if nothing changed)
         if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
         return res;
-      }).catch(() => caches.match(req).then(r => r || caches.match("./index.html")))
+      }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match("./index.html")))
     );
     return;
   }
