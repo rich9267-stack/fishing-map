@@ -174,3 +174,12 @@ Feed → 🏁 Compete has two tabs. 🎣 **Contests** (kind `friends`): anyone s
 ## Trip contests auto-enter (setup/32)
 Contest started from a trip is linked (`tournaments.plan_id`, rpc `link_contest_to_plan`): planner + everyone going are entered as joined; trigger on `trip_plan_rsvps` enters later "I'm in" taps (push "You're in") and removes people who back out of the trip. sw v22.
 Trip <-> contest links: `ctForPlan(planId)`, `openContestPage(t)`, `openTripFor(planId)`; trip review shows the linked contest's top 3 per board (`tripContests`) + "Open the contest ›"; contest detail has "📖 See the trip" (`#ctd-trip`); the planned-trip card shows "🏁 View contest" once one exists. Scoring is by time window + contest rules (not by spot), so a trip contest (window = trip window) counts each member's catches automatically.
+
+## Trip cancel -> contest cancel; two photo places per spot (setup/33)
+Trigger `trip_cancel_contest`: cancelling a trip cancels its still-open contest and pushes the joined members; the cancel-plan confirm warns about it. Spot card photos split in two galleries (`photoGallery`/`spotPhotoSection`): 📷 photos of the spot (`photos.catch_id` null, Add button) and 🎣 photos from catches here (catch_id set), each with "Show all"; photo viewer caption names the catch. No schema change for photos. Test: test60. sw v23.
+
+## Deleting a catch deletes its photos
+DB: `can_see_catch_id` hides soft-deleted catches (and so their photos) from everyone but the owner. App: `purgePhotosOfCatches` removes the owner's photo rows + storage files 9 s after delete (skipped if Undo is tapped); `sweepDeletedCatchPhotos` cleans leftovers at start-up (catches deleted > 2 min ago). Spot photos (no catch) are never touched. Test: test61. sw v24.
+
+## Keep a copy of photos taken in the app
+Web pages can't write to the camera roll silently. `keepAppPhoto(blob)` (called from Quick catch `snap()` and the measure shutter `#m-shot`) stashes the shot in IndexedDB (`fm-stash`, newest 40 / 14 days) and, if Profile → "📷 Photos taken in the app" is on (default, localStorage `fm-save-photos`): Android/desktop download a copy automatically; iPhone shows a "💾 Save to Photos" toast button (share sheet → Save Image). Profile → "📥 My recent app photos" lists the stash with Save buttons. Photos picked from the gallery / file inputs aren't copied (already on the phone). Test: test62. sw v25.

@@ -510,6 +510,11 @@
       </div>
       <div class="msg" id="push-msg"></div>
     </div>
+    <div class="label" style="margin-top:18px">📷 Photos taken in the app</div>
+    <label class="check-row"><input type="checkbox" id="save-pics" checked><span>💾 Keep a copy of every photo I take inside the app on my phone, so I don't lose it if I don't post it</span></label>
+    <p class="spot-meta" style="margin:4px 0 8px">Android saves a copy by itself. iPhone doesn't let websites save to Photos silently, so you get a one-tap “Save to Photos” button after each shot. The app also keeps the last 14 days of shots here, just in case.</p>
+    <button class="btn ghost small" id="pic-stash-btn" type="button">📥 My recent app photos</button>
+    <div id="pic-stash" hidden style="margin-top:8px"></div>
     <div class="label" style="margin-top:18px">Your data</div>
     <p class="spot-meta" style="margin:4px 0 8px">Download your own catches and spots as spreadsheet files (CSV) — they open in Excel, Numbers or Google Sheets.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1933,6 +1938,91 @@
     await loadPhotos();
   }
 
+  // ---- 📥 Keep a copy of photos taken inside the app (a web page can't write to the camera roll silently, so: Android downloads a copy,
+  //      iPhone gets a one-tap "Save to Photos", and the last 14 days are also kept inside the app) ----
+  const SAVEPIC_KEY = "fm-save-photos", STASH_KEEP = 40, STASH_DAYS = 14;
+  const savePicOn = () => { try { return localStorage.getItem(SAVEPIC_KEY) !== "0"; } catch (e) { return true; } };
+  const isApple = () => /iPhone|iPad|iPod/.test(navigator.userAgent || "") || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  function stashOpen() {
+    return new Promise((res, rej) => {
+      if (!window.indexedDB) return rej(new Error("no indexedDB"));
+      const rq = indexedDB.open("fm-stash", 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore("pics", { keyPath: "id" });
+      rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error);
+    });
+  }
+  const idbDone = tx => new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error); });
+  async function stashList() {
+    try {
+      const d = await stashOpen();
+      const all = await new Promise((res, rej) => { const r = d.transaction("pics").objectStore("pics").getAll(); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+      return all.sort((a, b) => b.at - a.at);
+    } catch (e) { return []; }
+  }
+  async function stashAdd(blob) {
+    try {
+      const d = await stashOpen(), id = newId(), now = Date.now();
+      const tx = d.transaction("pics", "readwrite"); tx.objectStore("pics").put({ id, at: now, blob, saved: false });
+      await idbDone(tx);
+      // keep it tidy: 14 days, newest 40
+      const all = await stashList(); const drop = all.filter((r, i) => i >= STASH_KEEP || now - r.at > STASH_DAYS * 86400000);
+      if (drop.length) { const t2 = d.transaction("pics", "readwrite"); drop.forEach(r => t2.objectStore("pics").delete(r.id)); await idbDone(t2); }
+      return id;
+    } catch (e) { return null; }
+  }
+  async function stashMarkSaved(id) {
+    try {
+      if (!id) return; const d = await stashOpen(), st = d.transaction("pics", "readwrite"), os = st.objectStore("pics");
+      os.get(id).onsuccess = ev => { const r = ev.target.result; if (r) { r.saved = true; os.put(r); } };
+      await idbDone(st);
+    } catch (e) { /* fine */ }
+  }
+  const picName = at => { const d = new Date(at), p = n => String(n).padStart(2, "0"); return `fishing-map-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.jpg`; };
+  // Save one photo to the phone. iPhone: the share sheet ("Save Image"); everything else: a normal download.
+  async function savePicToPhone(blob, at, id) {
+    const file = new File([blob], picName(at), { type: "image/jpeg" });
+    try {
+      if (isApple() && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); }
+      else {
+        const url = URL.createObjectURL(blob), a = document.createElement("a");
+        a.href = url; a.download = file.name; a.hidden = true; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      }
+    } catch (e) { return false; } // closed the share sheet
+    stashMarkSaved(id);
+    return true;
+  }
+  // Called right after a photo is taken with the app's own camera
+  async function keepAppPhoto(blob) {
+    try {
+      if (!blob) return;
+      const at = Date.now(), id = await stashAdd(blob);
+      if (!savePicOn()) return;
+      if (isApple()) undoToast("📷 Photo taken.", () => savePicToPhone(blob, at, id), "💾 Save to Photos", 15000);
+      else { await savePicToPhone(blob, at, id); toast("💾 Saved a copy to your phone", 2500); }
+    } catch (e) { /* never get in the way of the camera */ }
+  }
+  async function renderPicStash() {
+    const box = $("pic-stash"); box.innerHTML = "";
+    const list = await stashList();
+    if (!list.length) { box.appendChild(el("div", "spot-meta", "Nothing kept yet — photos you take with the app's camera show up here for 14 days.")); return; }
+    list.forEach(r => {
+      const row = el("div", "feed-item"); row.style.cssText = "display:flex;gap:10px;align-items:center";
+      const im = document.createElement("img"); im.src = URL.createObjectURL(r.blob); im.alt = "Photo"; im.style.cssText = "width:64px;height:64px;object-fit:cover;border-radius:8px";
+      row.appendChild(im);
+      const mid = el("div"); mid.style.flex = "1";
+      mid.appendChild(el("div", null, new Date(r.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })));
+      mid.appendChild(el("div", "spot-meta", r.saved ? "💾 saved to your phone" : "not saved to your phone yet"));
+      row.appendChild(mid);
+      const b = el("button", "btn ghost small", isApple() ? "💾 Save to Photos" : "💾 Save"); b.type = "button";
+      b.addEventListener("click", async () => { if (await savePicToPhone(r.blob, r.at, r.id)) renderPicStash(); });
+      row.appendChild(b); box.appendChild(row);
+    });
+  }
+  $("pic-stash-btn").addEventListener("click", () => { const box = $("pic-stash"); box.hidden = !box.hidden; if (!box.hidden) renderPicStash(); });
+  $("save-pics").checked = savePicOn();
+  $("save-pics").addEventListener("change", () => { try { localStorage.setItem(SAVEPIC_KEY, $("save-pics").checked ? "1" : "0"); } catch (e) { /* fine */ } });
+
   function thumbStrip(list) {
     const strip = el("div", "thumbs");
     list.forEach(ph => {
@@ -1945,13 +2035,27 @@
     return strip;
   }
 
+  // The spot card has two photo places: 📷 photos OF the spot (catch_id empty, anyone can add) and 🎣 photos from catches logged here
+  function photoGallery(title, list, empty, id) {
+    const box = el("div"); box.style.marginTop = "6px"; if (id) box.dataset.gallery = id;
+    const shown = list.filter(ph => photoUrls[ph.path]);
+    box.appendChild(el("div", "spot-meta", `${title}${list.length ? " (" + list.length + ")" : ""}`));
+    if (!shown.length) { box.appendChild(el("div", "spot-meta", empty)); return box; }
+    const strip = thumbStrip(shown.slice(0, 12)); box.appendChild(strip);
+    if (shown.length > 12) {
+      const more = el("button", "linkbtn", `Show all ${shown.length}`); more.type = "button";
+      more.addEventListener("click", () => { strip.replaceWith(thumbStrip(shown)); const st = box.querySelector(".thumbs"); st.style.flexWrap = "wrap"; more.remove(); });
+      box.appendChild(more);
+    }
+    return box;
+  }
   function spotPhotoSection(s) {
-    const wrap = el("div", "photo-row");
-    const list = photosBySpot[s.id] || [];
-    if (list.length) wrap.appendChild(thumbStrip(list.slice(0, 12)));
+    const wrap = el("div", "photo-row"); wrap.style.display = "block";
+    const all = photosBySpot[s.id] || [];
+    wrap.appendChild(photoGallery("📷 Photos of the spot", all.filter(p => !p.catch_id), "No photos of the spot yet — add one so friends know what it looks like.", "spot"));
     const input = document.createElement("input");
     input.type = "file"; input.accept = "image/*"; input.hidden = true;
-    const btn = el("button", "btn ghost small", "📷 Add photo"); btn.type = "button";
+    const btn = el("button", "btn ghost small", "📷 Add a photo of the spot"); btn.type = "button"; btn.style.marginTop = "6px";
     btn.addEventListener("click", () => input.click());
     input.addEventListener("change", async () => {
       const f = input.files && input.files[0];
@@ -1966,9 +2070,10 @@
           if (error) alert("Couldn't set the location: " + error.message); else loadSpots();
         }
       }
-      catch (e) { alert("Couldn't upload the photo: " + (e.message || e)); btn.disabled = false; btn.textContent = "📷 Add photo"; }
+      catch (e) { alert("Couldn't upload the photo: " + (e.message || e)); btn.disabled = false; btn.textContent = "📷 Add a photo of the spot"; }
     });
     wrap.appendChild(btn); wrap.appendChild(input);
+    wrap.appendChild(photoGallery("🎣 Photos from catches here", all.filter(p => p.catch_id), "No catch photos yet — they appear here when someone logs a catch with a photo.", "catches"));
     return wrap;
   }
 
@@ -1977,7 +2082,9 @@
     viewing = ph;
     $("viewer-img").src = photoUrls[ph.path];
     const spot = (spots || []).find(x => x.id === ph.spot_id);
-    $("viewer-cap").textContent = `${spot ? spot.name + " · " : ""}${new Date(ph.created_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}`;
+    const ct = ph.catch_id ? Object.values(catchesBySpot).flat().find(c => c.id === ph.catch_id) : null;
+    const who = ct ? (isMine(ct) ? "you" : (typeof profName === "function" ? profName(ct.created_by) : null) || "a friend") : null;
+    $("viewer-cap").textContent = `${ct ? "🎣 " + cap(ct.species || "Fish") + (ct.how_many > 1 ? " ×" + ct.how_many : "") + (ct.length_in ? " " + +Number(ct.length_in).toFixed(1) + "″" : "") + " by " + who + " · " : "📷 "}${spot ? spot.name + " · " : ""}${new Date(ph.created_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}`;
     $("viewer-del").hidden = !isMine(ph);
     $("viewer").hidden = false;
   }
@@ -3024,6 +3131,7 @@
     c.width = Math.round(v.videoWidth * scale); c.height = Math.round(v.videoHeight * scale);
     c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
     qc.blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.8));
+    keepAppPhoto(qc.blob);
     qc.when = new Date();
     qc.source = "";
     showReview();
@@ -4162,6 +4270,7 @@
     cv.toBlob(blob => {
       if (!blob) { $("m-help").textContent = "Couldn't capture the picture — try again."; return; }
       mStopCamera();
+      keepAppPhoto(blob);
       mShowPhoto(blob, true);
       if (ms.onPhoto) { try { ms.onPhoto(blob); } catch (e) { /* optional */ } }
     }, "image/jpeg", 0.9);
@@ -4339,6 +4448,28 @@
   function closeCatchForm() { openCatchSpot = null; editingCatch = null; renderSpots(); }
   catchForm.querySelector("#c-cancel").addEventListener("click", closeCatchForm);
 
+  // A deleted catch takes its photos with it: the rows and the stored files go (the database already hides them from everyone else the moment the catch is deleted)
+  async function purgePhotosOfCatches(ids) {
+    try {
+      if (!db || !me || !ids.length) return;
+      const { data } = await db.from("photos").select("id,path,catch_id").in("catch_id", ids).eq("created_by", me.id);
+      const rows = data || [];
+      if (!rows.length) return;
+      await db.storage.from("photos").remove(rows.map(r => r.path));
+      for (const r of rows) { await db.from("photos").delete().eq("id", r.id); delete photoUrls[r.path]; }
+      await loadPhotos();
+    } catch (e) { /* the sweep at next start-up tries again */ }
+  }
+  // At start-up: clear photos still left from catches deleted earlier (e.g. the app was closed during the Undo window)
+  let photoSweepDone = false;
+  async function sweepDeletedCatchPhotos() {
+    if (photoSweepDone || !db || !me) return; photoSweepDone = true;
+    try {
+      const cutoff = new Date(Date.now() - 2 * 60000).toISOString();
+      const { data } = await db.from("catches").select("id").eq("created_by", me.id).lt("deleted_at", cutoff).limit(200);
+      await purgePhotosOfCatches((data || []).map(r => r.id));
+    } catch (e) { /* try again next time */ }
+  }
   async function deleteCatch(c) {
     const label = `${c.how_many > 1 ? c.how_many + " " : ""}${c.species}`;
     try {
@@ -4346,10 +4477,15 @@
       const { error } = await db.from("catches").update({ deleted_at: new Date().toISOString() }).eq("id", c.id);
       if (error) throw error;
       await loadCatches();
+      // its photos disappear from view now; they're removed for good when the Undo window passes
+      photosBySpot[c.spot_id] = (photosBySpot[c.spot_id] || []).filter(p => p.catch_id !== c.id); renderSpots();
+      let undone = false;
+      setTimeout(() => { if (!undone) purgePhotosOfCatches([c.id]); }, 9000);
       undoToast(`Deleted ${label}.`, async () => {
+        undone = true;
         const { error: e2 } = await db.from("catches").update({ deleted_at: null }).eq("id", c.id);
-        if (e2) { toast("Couldn't undo — " + (e2.message || e2), 5000); return; }
-        await loadCatches(); toast("✓ Catch restored");
+        if (e2) { undone = false; toast("Couldn't undo — " + (e2.message || e2), 5000); return; }
+        await loadCatches(); loadPhotos(); toast("✓ Catch restored");
       });
     } catch (err) {
       alert("Couldn't delete: " + (err.message || err));
@@ -4651,11 +4787,13 @@
     } catch (e) { await loadPlans(); alert("Couldn't save that — check your signal and try again."); }
   }
   async function cancelPlan(pl) {
-    if (!confirm("Cancel this plan for everyone?")) return;
+    const hasContest = ctForPlan(pl.id).some(t => ctOpen(t));
+    if (!confirm(hasContest ? "Cancel this plan for everyone? The contest made for this trip will be cancelled too." : "Cancel this plan for everyone?")) return;
     const { error } = await db.from("trip_plans").update({ cancelled_at: new Date().toISOString() }).eq("id", pl.id);
     if (error) return alert("Couldn't cancel: " + (error.message || error));
     plans = plans.filter(x => x !== pl);
     renderPlans();
+    refreshCtBanner(); // the trip's contest is cancelled along with it
   }
   function renderPlans() {
     renderPlanLine();
@@ -5283,7 +5421,7 @@
       saveCopy("spots", spots);
       setOffline(false);
       loadCatches();
-      loadPhotos();
+      loadPhotos().then(sweepDeletedCatchPhotos);
       syncSessions().then(loadSessions).then(maybeAskSession);
       renderPins();
       if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); } // centred on your spots
@@ -6570,13 +6708,13 @@
   $("inbox-close").addEventListener("click", () => { $("inbox-card").hidden = true; });
 
   // ---- 🧰 Polish (D): spot search & sort, undo delete, export CSV, offline map area, admin dashboard ----
-  function undoToast(text, onUndo) {
+  function undoToast(text, onUndo, label, ms) {
     const t = $("qc-toast"); t.textContent = ""; t.hidden = false;
     t.appendChild(document.createTextNode(text + " "));
-    const b = el("button", "linkbtn", "Undo"); b.type = "button"; b.id = "undo-btn"; b.style.cssText = "color:#8fe3ff;font-weight:700";
+    const b = el("button", "linkbtn", label || "Undo"); b.type = "button"; b.id = label ? "toast-action" : "undo-btn"; b.style.cssText = "color:#8fe3ff;font-weight:700";
     b.addEventListener("click", () => { clearTimeout(toast.t); t.hidden = true; onUndo(); });
     t.appendChild(b);
-    clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 8000);
+    clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, ms || 8000);
   }
   // Anything that got 3 reports is blurred for everyone with a warning; tap once to view it anyway (remembered until you reload)
   const reviewPeeked = new Set();
@@ -8648,6 +8786,9 @@
       "🏆 Tournaments are official events — only admins can create them for now (clubs and brands later). Anyone can join an open one.",
       "📅 A single run can now last up to a year. Find it all under Feed → 🏁 Compete.",
       "✋ A contest made from a trip enters everyone going automatically — and anyone who taps “I'm in” later.",
+      "💾 Photos you take with the app's camera are now kept: Android saves a copy to your phone automatically, iPhone shows a one-tap “Save to Photos”, and Profile → 📷 Photos taken in the app keeps the last 14 days.",
+      "🗑 Deleting a catch now deletes its photos too (after the 8-second Undo).",
+      "📷 Each spot now has two photo places: photos of the spot itself, and photos from catches logged there. Cancelling a trip also cancels its contest.",
       "🔗 Trip and contest are linked both ways: the 📖 trip review shows the contest standings, and the contest page has “📖 See the trip” so you can look back at everyone's catches.",
     ] },
     { id: "2026-10-09", title: "October 9 update", items: [
