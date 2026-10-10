@@ -118,12 +118,13 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   d.getElementById("feed-mode-contests").click(); await wait(400);
   console.log("contests visible, feed hidden:", !d.getElementById("contests").hidden, d.getElementById("feed-circle-card").hidden);
   console.log("LIST:", txt("ct-body"));
+  d.getElementById("ct-tab-tournaments").click(); await wait(100);
   [...d.querySelectorAll("#ct-body .feed-item")].find(x => x.textContent.includes("Snook Slam")).click(); await wait(400);
   console.log("OFFICIAL detail:", txt("ct-body"));
   console.log("buttons:", [...d.querySelectorAll("#ct-body button")].map(b => b.textContent).join(" | "));
   d.getElementById("ctd-join").click(); await wait(400);
   console.log("after join rpc:", JSON.stringify(RPCS.filter(r => r[0] === "join_tournament")), "| now has Leave:", !!d.getElementById("ctd-leave") || "(creator: no leave)");
-  d.getElementById("ctd-back").click(); await wait(100);
+  d.getElementById("ctd-back").click(); await wait(100); d.getElementById("ct-tab-contests").click(); await wait(100);
   [...d.querySelectorAll("#ct-body .feed-item")].find(x => x.textContent.includes("Keys weekend")).click(); await wait(400);
   console.log("INVITED detail buttons:", [...d.querySelectorAll("#ct-body button")].map(b => b.textContent).join(" | "), "| rules:", txt("ct-body").slice(0, 400));
   d.getElementById("ctd-join").click(); await wait(400);
@@ -150,7 +151,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   console.log("landed on detail:", txt("ct-body").slice(0, 120));
   // official selection forces rules
   d.getElementById("ctd-back").click(); await wait(100); d.getElementById("ct-new").click(); await wait(400);
-  d.getElementById("ctf-kind").value = "official"; d.getElementById("ctf-kind").dispatchEvent(new w.Event("change"));
+  d.getElementById("ctf-back").click(); await wait(100); d.getElementById("ct-tab-tournaments").click(); await wait(100); d.getElementById("ct-new").click(); await wait(400);
   console.log("official: photo/length checked+locked:", d.getElementById("ctf-photo").checked, d.getElementById("ctf-photo").disabled, d.getElementById("ctf-length").checked, "| invites hidden:", d.getElementById("ctf-inv-wrap").hidden);
   // geo stamp
   d.getElementById("ctf-back").click();

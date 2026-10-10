@@ -167,3 +167,6 @@ Spot list: 🔍 search box + sort (A–Z, Nearest [asks for your location, shows
 
 ## Invite friends fix (setup/30)
 Bug: `members.crew` defaulted to true, so every new member auto-friended everyone. Now default false; new `members.invited_by` (set by the Invite form) auto-friends a new member with only their inviter (`ensure_profile`). Andrew + superadao set crew=false. sw v20.
+
+## Contests vs Tournaments (setup/31)
+Feed → 🏁 Compete has two tabs. 🎣 **Contests** (kind `friends`): anyone starts one with friends; "🏁 Start a contest" on a trip plan pre-fills spot/time/people; can repeat weekly/monthly/yearly (max 3 active repeating per person; invitees asked each round). 🏆 **Tournaments** (kind `official`): admins only for now (hook for future host/organization accounts: `create_tournament`/`create_tournament_series` admin check); everyone can join, photo+length+Public required. One run up to 366 days. `tournament_series` now has kind/cadence/invitees; `series_roll` handles weekly (Monday), monthly (chosen months), yearly. stop/set months: creator or admin. Tests: test39/test49 updated, test59 new. sw v21.
