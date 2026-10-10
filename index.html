@@ -8748,6 +8748,35 @@
         box.appendChild(boardRow(i, { uid: r.user_id, c: {}, label, detail: det }));
       });
     });
+    // teams (setup/37)
+    try {
+      const tb = await db.rpc("tournament_team_board", { p_id: t.id });
+      const trows = (tb && tb.data) || [];
+      const ownG = open && !t.cancelled_at ? (((await db.from("groups").select("id,name,created_by").eq("created_by", me.id)).data) || []) : [];
+      const entered = new Set(trows.map(r => r.group_id));
+      if (trows.length || ownG.length) {
+        const th = el("div", "label", "👥 Teams"); th.style.marginTop = "14px"; box.appendChild(th);
+        const teams = {}; trows.forEach(r => { teams[r.group_id] = { name: r.name, j: Number(r.joined_n), n: Number(r.total_n) }; });
+        Object.values(teams).length && t.boards.forEach(bd => {
+          box.appendChild(el("div", "spot-meta", CT_BOARDS[bd]));
+          trows.filter(r => r.board === bd).sort((x, y) => y.value - x.value).forEach((r, i) => {
+            const label = bd === "length" ? `${+Number(r.value).toFixed(2)}″` : bd === "weight" ? lbText(Number(r.value)) : bd === "fish" ? `${r.value} fish` : `${r.value} species`;
+            const row = el("div", "team-row"); row.style.cssText = "display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--line)";
+            row.appendChild(el("span", null, ["🥇", "🥈", "🥉"][i] || (i + 1) + "."));
+            const nm = el("span", null, r.name); nm.style.flex = "1"; row.appendChild(nm);
+            row.appendChild(el("span", "spot-meta", `${label} · ${r.joined_n} of ${r.total_n} joined`));
+            box.appendChild(row);
+          });
+        });
+        if (Object.values(teams).length) box.appendChild(el("div", "spot-meta", "A team counts the members who have joined this contest: best catch for length and weight, totals for fish and species."));
+        ownG.forEach(g => {
+          const b = el("button", "btn " + (entered.has(g.id) ? "ghost " : "") + "small", entered.has(g.id) ? "Withdraw " + g.name : "👥 Enter " + g.name + " as a team"); b.type = "button"; b.style.cssText = "margin:8px 8px 0 0";
+          b.dataset.gid = g.id; b.className += " ctd-team-btn";
+          b.addEventListener("click", () => ctAct(entered.has(g.id) ? "withdraw_team" : "enter_team", { p_tid: t.id, p_gid: g.id }));
+          box.appendChild(b);
+        });
+      }
+    } catch (e) { /* teams are optional */ }
     if (mineSt === "joined") {
       box.appendChild(el("div", "label", "My catches in this contest")); box.lastChild.style.marginTop = "14px";
       if (!mineRows.length) box.appendChild(el("div", "empty", "None in the time window yet."));
@@ -9145,6 +9174,30 @@
         lb.appendChild(row);
       });
     })();
+    // trophy case (hand-made by the owner)
+    const trophies = Array.isArray(g.showcase) ? g.showcase : [];
+    if (trophies.length || owner) {
+      body.appendChild(el("div", "label", "🏆 Trophy case")); body.lastChild.style.marginTop = "14px";
+      if (!trophies.length) body.appendChild(el("div", "empty", "Nothing here yet — add the group's wins and memories."));
+      const saveTr = async items => { const { error } = await db.rpc("set_group_showcase", { p_gid: gid, p_items: items }); if (error) { alert(error.message); return; } openGroups(); };
+      trophies.forEach((it, i) => {
+        const c = el("div", "gr-trophy"); c.style.cssText = "display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)";
+        c.appendChild(el("span", null, it.icon || "🏆")); c.firstChild.style.fontSize = "24px";
+        const tx = el("div"); tx.style.flex = "1"; tx.appendChild(el("b", null, it.title)); if (it.detail) tx.appendChild(el("div", "spot-meta", it.detail)); c.appendChild(tx);
+        if (owner) { const x = el("button", "linkbtn", "✕"); x.type = "button"; x.setAttribute("aria-label", "Remove trophy"); x.addEventListener("click", () => saveTr(trophies.filter((_, k) => k !== i))); c.appendChild(x); }
+        body.appendChild(c);
+      });
+      if (owner && trophies.length < 8) {
+        const ad = el("div"); ad.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;margin-top:8px";
+        const ic = document.createElement("select"); ic.id = "gr-tr-icon"; ic.setAttribute("aria-label", "Trophy icon");
+        ["🏆", "🥇", "🐟", "🎣", "🦈", "⭐", "📸", "🔥"].forEach(e => { const o = document.createElement("option"); o.value = o.textContent = e; ic.appendChild(o); });
+        const ti = document.createElement("input"); ti.id = "gr-tr-title"; ti.maxLength = 60; ti.placeholder = "Title (e.g. Sept contest winners)"; ti.style.flex = "1"; ti.setAttribute("aria-label", "Trophy title");
+        const de = document.createElement("input"); de.id = "gr-tr-detail"; de.maxLength = 120; de.placeholder = "Details (optional)"; de.style.flex = "1"; de.setAttribute("aria-label", "Trophy details");
+        const go = el("button", "btn small", "Add"); go.type = "button"; go.id = "gr-tr-add";
+        go.addEventListener("click", () => { if (!ti.value.trim()) { alert("Give the trophy a title."); return; } saveTr([...trophies, { k: "custom", icon: ic.value, title: ti.value.trim(), detail: de.value.trim() }]); });
+        ad.appendChild(ic); ad.appendChild(ti); ad.appendChild(de); ad.appendChild(go); body.appendChild(ad);
+      }
+    }
     // chat
     body.appendChild(groupChatPanel("team", gid));
     // edit / leave / delete
@@ -9451,7 +9504,8 @@
       "📅 A single run can now last up to a year. Find it all under Feed → 🏁 Compete.",
       "✋ A contest made from a trip enters everyone going automatically — and anyone who taps “I'm in” later.",
       "📍 A contest made from a trip only counts catches at the trip spot (within a mile).",
-      "👥 Groups (Feed → 👥 Groups): make a team of friends with its own picture, colour, member list, team leaderboard and chat. Invites go to friends only.",
+      "👥 Groups (Feed → 👥 Groups): make a team of friends with its own picture, colour, member list, team leaderboard, chat and a trophy case you fill in yourself. Invites go to friends only.",
+      "🏁 Teams can enter contests together: the group owner taps “Enter as a team” on a contest, each member taps Join, and the team board combines everyone who joined.",
       "🎣 A catch can now have several photos — tap “➕ Add more photos of this catch” (up to 30 in total).",
       "🪪 Profile pages: add a picture, a tagline, a page color, 📌 pin a catch at the top and build a ⭐ showcase of trophies, badges and achievements (Profile → Your profile page). Choose who can see it: everyone, friends only, or just you — others see a blurred page with a friend-request button.",
       "💡 Planning a trip now shows “Suggested spots” for the day and time you pick — the top 3, with why (tides, past catches, season, wind) and a button to use one.",

@@ -214,3 +214,9 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 - `group_board(gid, since)` = team leaderboard (non-private catches only). Chat alerts via trigger `push_team`.
 - App: Feed → 👥 Groups (list, invites, create, group page: members, invite picker, leaderboard with period tabs, chat, owner edit/delete, leave). `groupChatPanel("team", id)` uses `team_messages`. Alert link `?go=group&scope=team&id=…`. Test: tests/test69.js. sw cache v31.
 - Next (step 3): teams enter contests together + group trophy case.
+
+## Team contests + group trophy case — step 3 (setup/37)
+- `tournament_teams` (owner enters/withdraws via `enter_team`/`withdraw_team`; members get an alert and still tap Join themselves). `tournament_team_board(id)` combines members who joined: best length/weight, total fish, distinct species. Individual boards are untouched.
+- Contest detail shows "👥 Teams" with the boards and "x of y joined"; owners see Enter/Withdraw buttons for their groups.
+- `groups.showcase` (jsonb, up to 8 items) edited by the owner via `set_group_showcase`; shown on the group page as 🏆 Trophy case. Fully manual, like profile showcases.
+- Test: tests/test70.js. sw cache v32.
