@@ -161,6 +161,8 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   click($("ctf-save")); await wait(500);
   const c1 = RPCS.find(r => r[0] === "create_tournament");
   console.log("trip contest rpc:", JSON.stringify(c1 && { k: c1[1].p_kind, t: c1[1].p_title, inv: c1[1].p_invites }));
+  const lk = RPCS.find(r => r[0] === "link_contest_to_plan");
+  console.log("linked to the trip:", JSON.stringify(lk && lk[1]));
   // weekly repeating contest
   click($("feed-mode-contests")); await wait(300);
   w.eval("ctView = 'list'; ctRender()"); await wait(100);
@@ -179,6 +181,18 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   $("ctf-title").value = "Too long"; $("ctf-end").value = "2028-01-01T10:00";
   RPCS.length = 0; click($("ctf-save")); await wait(300);
   console.log("over a year blocked:", !RPCS.find(r => r[0] === "create_tournament"), "|", txt("ctf-msg"));
+  // contest <-> trip links both ways
+  TOURS.find(x => x.id === "t2").plan_id = "pnow"; await w.eval("ctLoad()"); await w.eval("renderPlans()");
+  click($("tab-feed")); await wait(300); click($("feed-mode-circle")); await wait(300);
+  const vb = [...d.querySelectorAll(".plan-contest")].map(b => b.textContent);
+  console.log("plan card buttons:", vb.join(" | "));
+  click([...d.querySelectorAll(".plan-contest")].find(b => /View contest/.test(b.textContent))); await wait(500);
+  console.log("opened the contest:", txt("ct-body").slice(0, 60), "| trip button:", !!$("ctd-trip"), "| note:", /planned trip/.test(txt("ct-body")));
+  click($("ctd-trip")); await wait(900);
+  console.log("trip review open:", !$("trip-review").hidden, "| contest box:", txt("trip-contests").slice(0, 150));
+  console.log("trip review still lists catches:", /Snook|Tarpon/.test(txt("trip-review-body")));
+  click(d.querySelector(".trip-open-contest")); await wait(500);
+  console.log("back to contest from review:", txt("ct-body").slice(0, 50), "| trip review closed:", $("trip-review").hidden);
   // non-admin: no create-tournament button
   w.eval("me.isAdmin = false; ctView = 'list'; ctTab = 'tournaments'; ctRender()"); await wait(100);
   console.log("non-admin tournaments tab: create button:", !!$("ct-new"), "| note:", txt("ct-body").slice(0, 120));

@@ -132,7 +132,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   console.log("BANNER:", d.getElementById("ct-banner").hidden, txt("ct-banner"));
   d.querySelector("#ct-banner button").click(); await wait(500);
   console.log("banner click opens detail:", txt("ct-body").slice(0, 60), "| contests panel shown:", !d.getElementById("contests").hidden);
-  d.getElementById("ctd-back").click(); await wait(50); [...d.querySelectorAll("#ct-body .feed-item")].find(x => x.textContent.includes("Keys weekend")).click(); await wait(300);
+  d.getElementById("ctd-back").click(); await wait(50); d.getElementById("ct-tab-contests").click(); await wait(50); [...d.querySelectorAll("#ct-body .feed-item")].find(x => x.textContent.includes("Keys weekend")).click(); await wait(300);
   console.log("joined t2:", JSON.stringify(TMEM.filter(m => m.tournament_id === "t2" && m.user_id === "u-rich")), "| my catches shown:", txt("ct-body").includes("Doesn't count: Needs a photo"));
   console.log("plan line visible while in Contests:", !d.getElementById("plan-line").hidden, txt("plan-line").slice(0, 60));
   d.getElementById("plan-line").click(); await wait(400);

@@ -170,3 +170,7 @@ Bug: `members.crew` defaulted to true, so every new member auto-friended everyon
 
 ## Contests vs Tournaments (setup/31)
 Feed → 🏁 Compete has two tabs. 🎣 **Contests** (kind `friends`): anyone starts one with friends; "🏁 Start a contest" on a trip plan pre-fills spot/time/people; can repeat weekly/monthly/yearly (max 3 active repeating per person; invitees asked each round). 🏆 **Tournaments** (kind `official`): admins only for now (hook for future host/organization accounts: `create_tournament`/`create_tournament_series` admin check); everyone can join, photo+length+Public required. One run up to 366 days. `tournament_series` now has kind/cadence/invitees; `series_roll` handles weekly (Monday), monthly (chosen months), yearly. stop/set months: creator or admin. Tests: test39/test49 updated, test59 new. sw v21.
+
+## Trip contests auto-enter (setup/32)
+Contest started from a trip is linked (`tournaments.plan_id`, rpc `link_contest_to_plan`): planner + everyone going are entered as joined; trigger on `trip_plan_rsvps` enters later "I'm in" taps (push "You're in") and removes people who back out of the trip. sw v22.
+Trip <-> contest links: `ctForPlan(planId)`, `openContestPage(t)`, `openTripFor(planId)`; trip review shows the linked contest's top 3 per board (`tripContests`) + "Open the contest ›"; contest detail has "📖 See the trip" (`#ctd-trip`); the planned-trip card shows "🏁 View contest" once one exists. Scoring is by time window + contest rules (not by spot), so a trip contest (window = trip window) counts each member's catches automatically.

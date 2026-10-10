@@ -4694,8 +4694,9 @@
         acts.appendChild(cb);
       }
       if (onTrip(pl) && Date.now() <= tripWindow(pl)[1]) {
-        const cb2 = el("button", "btn ghost small", "🏁 Start a contest"); cb2.type = "button"; cb2.className += " plan-contest";
-        cb2.addEventListener("click", () => startTripContest(pl));
+        const linked = ctForPlan(pl.id)[0];
+        const cb2 = el("button", "btn ghost small", linked ? "🏁 View contest" : "🏁 Start a contest"); cb2.type = "button"; cb2.className += " plan-contest";
+        cb2.addEventListener("click", () => linked ? openContestPage(linked) : startTripContest(pl));
         acts.appendChild(cb2);
       }
       if (onTrip(pl) && Date.now() >= tripWindow(pl)[0]) {
@@ -4729,7 +4730,7 @@
     const spot = (spots || []).find(x => x.id === pl.spot_id);
     const [a, b] = tripWindow(pl);
     ctPrefill = { title: spot ? `${spot.name} trip contest`.slice(0, 60) : "Trip contest", start: Math.max(a, Date.now()), end: b,
-      invites: planGoing(pl).map(x => x.user_id).filter(u => u && me && u !== me.id) };
+      invites: planGoing(pl).map(x => x.user_id).filter(u => u && me && u !== me.id), planId: pl.id };
     ctTab = "contests"; ctView = "form"; ctId = null; feedMode = "contests";
     showView("feed"); window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -7732,6 +7733,26 @@
     return { k: "live", label: "🔴 LIVE" };
   }
   const ctOpen = t => { const k = ctState(t).k; return k === "live" || k === "soon"; };
+  const ctForPlan = planId => ctRows.filter(t => t.plan_id === planId && !t.cancelled_at);
+  const ctBoardLabel = (bd, v) => bd === "length" ? `${+Number(v).toFixed(2)}″` : bd === "weight" ? lbText(Number(v)) : bd === "fish" ? `${v} fish` : `${v} species`;
+  // open a contest's page from anywhere (banner, trip review, trip card)
+  function openContestPage(t) {
+    stopPlacing(); ctId = t.id; ctView = "detail"; ctTab = t.kind === "official" ? "tournaments" : "contests"; feedMode = "contests";
+    showView("feed"); window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  // open the 📖 review of the trip a contest was made for (only people on that trip can see it)
+  async function openTripFor(planId) {
+    try {
+      const [a, b] = await Promise.all([db.from("trip_plans").select("*").eq("id", planId).maybeSingle(), db.from("trip_plan_rsvps").select("*").eq("plan_id", planId)]);
+      const pl = a.data;
+      if (!pl || pl.cancelled_at) { toast("That trip was cancelled or isn't available.", 4000); return; }
+      planRsvps[pl.id] = b.data || [];
+      if (!onTrip(pl)) { toast("Only people who were on that trip can see its details.", 4500); return; }
+      stopPlacing(); ctId = null; feedMode = "circle";
+      showView("feed");
+      openTripReview(pl);
+    } catch (e) { toast("Couldn't open the trip.", 4000); }
+  }
 
   // A GPS stamp saved at the moment a catch is logged live — this is what geo-locked contests check.
   async function saveCatchGeo(catchId, pos) {
@@ -7767,7 +7788,7 @@
       const st = ctState(t);
       const b = el("button", "linkbtn", `🏁 ${t.title} — ${st.k === "live" ? "LIVE, ends " + ctFmt(t.ends_at) : st.label.toLowerCase().replace(/^starts/, "starts")} › details`);
       b.type = "button"; b.style.cssText = "display:block;text-align:left;margin-top:4px";
-      b.addEventListener("click", () => { stopPlacing(); ctId = t.id; ctView = "detail"; feedMode = "contests"; showView("feed"); window.scrollTo({ top: 0, behavior: "smooth" }); });
+      b.addEventListener("click", () => openContestPage(t));
       box.appendChild(b);
     });
     if (mine.length > 3) box.appendChild(el("div", "spot-meta", `+${mine.length - 3} more in 🏁 Contests`));
@@ -7898,7 +7919,7 @@
     wrap.innerHTML = `
       <button class="btn ghost small" id="ctf-back" type="button">← Back</button>
       <div class="label" style="margin-top:10px">${off ? "Create a tournament" : "Start a contest"}</div>
-      ${pre ? `<div class="spot-meta">Pre-filled from your trip — change anything you like.</div>` : ""}
+      ${pre ? `<div class="spot-meta">Pre-filled from your trip — everyone going is entered automatically, and so is anyone who taps “I'm in” later. Change anything you like.</div>` : ""}
       <label for="ctf-title">Name</label><input id="ctf-title" maxlength="60" placeholder="${off ? "October Snook Slam" : "Keys weekend showdown"}">
       <label for="ctf-desc">Details (optional)</label><input id="ctf-desc" maxlength="300" placeholder="Prize, rules, anything people should know">
       <label for="ctf-repeat">Repeats</label>
@@ -8007,6 +8028,10 @@
         p_boards: boards, p_species: common.p_species, p_photo: common.p_photo, p_length: common.p_length, p_lat: lat, p_lng: lng, p_radius: common.p_radius,
         p_geo_label: label, p_invites: common.p_invites
       });
+      if (!error && !cadence && pre && pre.planId && data) { // started from a trip: link it so everyone going is entered (and later "I'm in" taps too)
+        const lk = await db.rpc("link_contest_to_plan", { p_contest: data, p_plan: pre.planId });
+        if (lk.error) toast("Contest made, but couldn't link it to the trip: " + lk.error.message, 6000);
+      }
       ctBusy = false;
       if (error) { msg.className = "msg err"; msg.textContent = "Couldn't create it: " + error.message; return; }
       if (cadence && !data) { // saved, but this month isn't one of the chosen months
@@ -8036,6 +8061,7 @@
     h.appendChild(el("div", "label", (t.kind === "official" ? "🏆 " : "🎣 ") + t.title)); h.appendChild(el("span", "spot-meta", st.label)); box.appendChild(h);
     box.appendChild(el("div", "spot-meta", `${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · by ${t.created_by === me.id ? "you" : (profName(t.created_by) || "someone")}${t.series_id ? " · 🔁 repeating" : ""}`));
     if (t.description) box.appendChild(el("div", null, t.description));
+    if (t.plan_id) box.appendChild(el("div", "spot-meta", "🗓 Made for a planned trip — everyone going on it is entered automatically."));
     const rules = [];
     if (t.kind === "official") rules.push("Catch must be set to 🌎 Public");
     if (t.require_photo) rules.push("📷 photo on every catch");
@@ -8048,6 +8074,7 @@
     const acts = el("div"); acts.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin:10px 0";
     const btn = (txt, cls, fn, id) => { const b = el("button", cls, txt); b.type = "button"; if (id) b.id = id; b.addEventListener("click", fn); acts.appendChild(b); };
     const open = ctOpen(t);
+    if (t.plan_id) btn("📖 See the trip", "btn ghost small", () => openTripFor(t.plan_id), "ctd-trip");
     if (open && mineSt !== "joined" && (t.kind === "official" || mineSt === "invited")) btn(mineSt === "invited" ? "Accept & join" : "Join", "btn small", () => ctAct("join_tournament", { p_id: t.id }), "ctd-join");
     if (open && mineSt === "invited") btn("Decline", "btn ghost small", () => ctAct("leave_tournament", { p_id: t.id }), "ctd-decline");
     if (mineSt === "joined" && t.created_by !== me.id && open) btn("Leave", "btn ghost small", () => ctAct("leave_tournament", { p_id: t.id }), "ctd-leave");
@@ -8459,9 +8486,11 @@
     body.appendChild(el("div", "label", "📖 Trip review"));
     body.appendChild(el("b", null, `${planWhen(new Date(pl.plan_at))}${spot ? " · " + spot.name : ""}`));
     body.appendChild(el("div", "spot-meta", "📍 Exact catch locations are only visible to the people on this trip, and only here. Private catches stay private. Counts catches from 1 hour before to 12 hours after the start, at this spot or within a mile."));
+    const cbox = el("div"); cbox.id = "trip-contests"; body.appendChild(cbox);
     const st = el("div", "spot-meta", "Loading…"); body.appendChild(st);
     const content = el("div"); body.appendChild(content);
     body.appendChild(groupChatPanel("trip", pl.id));
+    tripContests(cbox, pl);
     $("trip-review").scrollIntoView({ behavior: "smooth", block: "start" });
     const { data, error } = await db.rpc("trip_review", { p_plan: pl.id });
     if (tripOpen !== pl) return;
@@ -8512,6 +8541,31 @@
         content.appendChild(it);
       });
     });
+  }
+  // 🏁 the contest(s) made for this trip: top 3 on every board, with a link to the full contest
+  async function tripContests(box, pl) {
+    try {
+      if (!ctRows.length) await ctLoad();
+      for (const t of ctForPlan(pl.id)) {
+        const { data } = await db.rpc("tournament_standings", { p_id: t.id });
+        if (tripOpen !== pl) return;
+        const rows = data || [];
+        await ensureProfiles(rows.map(r => r.user_id));
+        const d = el("div", "feed-item"); d.style.marginTop = "10px";
+        const top = el("div", "feed-top"); top.appendChild(el("b", null, "🏁 " + t.title)); top.appendChild(el("span", "spot-meta", ctState(t).label)); d.appendChild(top);
+        const nm = id => (me && id === me.id ? "You" : (profName(id) || "Someone"));
+        t.boards.forEach(bd => {
+          const list = rows.filter(r => r.board === bd).sort((x, y) => y.value - x.value || new Date(x.caught_at) - new Date(y.caught_at)).slice(0, 3);
+          d.appendChild(el("div", "spot-meta", CT_BOARDS[bd]));
+          if (!list.length) d.appendChild(el("div", "spot-meta", ctState(t).k === "soon" ? "Not started yet" : "No qualifying catches yet"));
+          list.forEach((r, i) => d.appendChild(el("div", null, `${MEDAL[i + 1]} ${nm(r.user_id)} — ${ctBoardLabel(bd, r.value)}${r.species ? " " + cap(r.species) : ""}`)));
+        });
+        const ob = el("button", "btn ghost small", "Open the contest ›"); ob.type = "button"; ob.className += " trip-open-contest"; ob.style.marginTop = "6px";
+        ob.addEventListener("click", () => openContestPage(t));
+        d.appendChild(ob);
+        box.appendChild(d);
+      }
+    } catch (e) { /* the review still works without the contest box */ }
   }
   function closeTripReview() {
     tripOpen = null; $("trip-review").hidden = true;
@@ -8593,6 +8647,8 @@
       "🎣 Contests are for friends — anyone can start one: for a trip (new “🏁 Start a contest” button on a planned trip), or repeating every week, month or year.",
       "🏆 Tournaments are official events — only admins can create them for now (clubs and brands later). Anyone can join an open one.",
       "📅 A single run can now last up to a year. Find it all under Feed → 🏁 Compete.",
+      "✋ A contest made from a trip enters everyone going automatically — and anyone who taps “I'm in” later.",
+      "🔗 Trip and contest are linked both ways: the 📖 trip review shows the contest standings, and the contest page has “📖 See the trip” so you can look back at everyone's catches.",
     ] },
     { id: "2026-10-09", title: "October 9 update", items: [
       "🗺 Plan a trip: tap “Find a spot on the map”, tap a pin, then “Use this spot” — you come right back to your plan with it chosen.",
