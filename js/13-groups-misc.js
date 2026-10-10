@@ -449,6 +449,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-10", title: "A cleaner Home screen", items: [
+      "🌤 New “right now” strip at the top of Home: tide, wind, water temperature and moon in four tiles. Tap one for the full details.",
+      "🎣 Best spots today and Your spots now come first; the long weather, moon and tide-time cards are tucked under “More conditions & tide times”.",
+      "ℹ️ The long “how is this ranked?” explanation is folded away — tap it if you're curious."
+    ] },
     { id: "2026-10-09b", title: "Contests vs Tournaments", items: [
       "🎣 Contests are for friends — anyone can start one: for a trip (new “🏁 Start a contest” button on a planned trip), or repeating every week, month or year.",
       "🏆 Tournaments are official events — only admins can create them for now (clubs and brands later). Anyone can join an open one.",

@@ -665,6 +665,39 @@
     ["inbox-btn", "chat-btn", "friends-btn"].forEach(id => new MutationObserver(badges).observe($(id), { childList: true, characterData: true, subtree: true }));
     badges(); sync();
   })();
+
+  // ---- Today strip (Home): four tiles that copy the numbers from the long condition cards ----
+  (function todayStrip() {
+    const $t = id => document.getElementById(id);
+    const txt = id => { const e = $t(id); return e ? (e.textContent || '').trim() : ''; };
+    const set = (id, v) => { const e = $t(id); if (e) e.textContent = v; };
+    function fill() {
+      // tide: "Next high tide at 3:12 PM — in 2 hr" + stage
+      const nx = txt('next'), m = nx.match(/Next (high|low) tide at (.+?)\s+[—-]\s+(in .+)$/i);
+      const stage = txt('stage').replace(/^[^A-Za-z]+/, '').replace(/\s*\(.*\)\s*$/, '');
+      if (m) { set('ts-tide', m[1][0].toUpperCase() + m[1].slice(1).toLowerCase() + ' ' + m[2]); set('ts-tide2', (stage ? stage + ' · ' : '') + m[3]); }
+      else if (/incoming|outgoing|slack/i.test(stage)) { set('ts-tide', stage); set('ts-tide2', ''); }
+      // wind
+      const w = txt('wx-now').replace(/^[^A-Za-z0-9]+/, '');
+      if (/mph/i.test(w)) { set('ts-wind', w); set('ts-wind2', txt('wx-detail').split(',').slice(0, 1).join('')); }
+      // water
+      const wt = txt('wx-water').replace(/^[^A-Za-z0-9]+/, '').replace(/^Water\s*/i, '');
+      if (/\d/.test(wt)) { const mm = wt.match(/^(\d+\s*°\s*F)\s*(.*)$/); set('ts-water', mm ? mm[1] : wt); set('ts-water2', mm ? mm[2].replace(/^[\s(·]+|[)\s]+$/g, '') : ''); }
+      // moon
+      const mo = txt('moon-now').replace(/^[^A-Za-z0-9]+/, '');
+      if (mo) { const parts = mo.split('·'); set('ts-moon', parts[0].trim()); set('ts-moon2', (parts[1] || '').trim()); }
+    }
+    ['stage', 'next', 'wx-now', 'wx-detail', 'wx-water', 'moon-now'].forEach(id => {
+      const e = $t(id); if (e) new MutationObserver(fill).observe(e, { childList: true, characterData: true, subtree: true });
+    });
+    document.querySelectorAll('#today-strip .tile').forEach(b => b.addEventListener('click', () => {
+      const d = $t('cond-more'), target = $t(b.dataset.more);
+      if (d) d.open = true;
+      if (target && target.scrollIntoView) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
+    fill();
+  })();
+
   $("tab-list").addEventListener("click", () => { stopPlacing(); showView("list"); });
   $("tab-map").addEventListener("click", () => showView("map"));
   $("tab-insights").addEventListener("click", () => { stopPlacing(); showView("insights"); });

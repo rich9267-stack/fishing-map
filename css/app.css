@@ -376,3 +376,14 @@
   .sugg-btns { display: flex; gap: 6px; flex-shrink: 0; }
   .spot.flash { animation: flash 1.6s ease-out; }
   @keyframes flash { from { background: rgba(14,124,134,.18); } to { background: transparent; } }
+  .strip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tile { appearance: none; text-align: left; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-height: 76px; cursor: pointer; }
+  .strip-t { font-size: .78rem; color: var(--muted); font-weight: 600; }
+  .strip-v { font-size: 1.05rem; font-weight: 700; margin-top: 2px; }
+  .strip-s { font-size: .8rem; color: var(--muted); margin-top: 1px; }
+  details#cond-more { background: var(--card); border-radius: 14px; margin-bottom: 14px; padding: 0 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  details#cond-more > summary { cursor: pointer; font-weight: 700; padding: 16px 0; min-height: 24px; }
+  details#cond-more[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  details#cond-more .card { box-shadow: none; padding-left: 0; padding-right: 0; }
+  details.how { margin-top: 8px; color: var(--muted); font-size: .85rem; }
+  details.how > summary { cursor: pointer; color: var(--accent); font-weight: 600; padding: 6px 0; }

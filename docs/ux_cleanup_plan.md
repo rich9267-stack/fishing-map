@@ -20,7 +20,7 @@ Richard's choices: cover menus/navigation, Today screen, Settings page and small
 ## Order of work (each step = tested, shown to Richard, committed on his "Commit")
 1. ✅ DONE — **Navigation shell** — bottom bar + Me menu + Community hub. Old tab buttons stay in the page (hidden) and the new buttons call the same `showView`, so all existing tests keep passing. Phone check: every old feature still reachable in ≤2 taps.
 2. ✅ DONE — **Split the file** (invisible to users). Plain `<script src>` files that share one scope (no build step, still $0): `css/app.css`, then `js/01-core.js … js/NN-*.js` following the `// ---- ` sections. Move 3–4 sections per step, run all checks each time. Needs: `sw.js` precache list, tests' html loader (inline the files), CLAUDE.md "where things are" map.
-3. **Home / Today screen** — regroup the List tab; collapse Best spot + conditions into a strip; spot list with sticky search.
+3. ✅ DONE — **Home / Today screen** — regroup the List tab; collapse Best spot + conditions into a strip; spot list with sticky search.
 4. **Settings page** — move alerts/privacy/offline/install out of the Profile card; Profile becomes just the profile.
 5. **Polish pass** — remember last tab/filters; friendlier empty screens with a next step; in-app pop-ups instead of browser `confirm()`/`alert()`; clear offline + loading messages; bigger tap targets; unread badges; quick accessibility check (labels, contrast, dark mode).
 

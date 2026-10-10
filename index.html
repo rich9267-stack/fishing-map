@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=37">
+<link rel="stylesheet" href="css/app.css?v=38">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -526,6 +526,22 @@
 
   <div id="view-list">
 
+  <div class="card" id="today-strip" aria-label="Conditions right now">
+    <div class="strip-grid">
+      <button type="button" class="tile" data-more="status"><div class="strip-t">🌊 Tide</div><div class="strip-v" id="ts-tide">…</div><div class="strip-s" id="ts-tide2"></div></button>
+      <button type="button" class="tile" data-more="weather"><div class="strip-t">💨 Wind</div><div class="strip-v" id="ts-wind">…</div><div class="strip-s" id="ts-wind2"></div></button>
+      <button type="button" class="tile" data-more="weather"><div class="strip-t">🌡 Water</div><div class="strip-v" id="ts-water">…</div><div class="strip-s" id="ts-water2"></div></button>
+      <button type="button" class="tile" data-more="moon-card"><div class="strip-t">🌙 Moon</div><div class="strip-v" id="ts-moon">…</div><div class="strip-s" id="ts-moon2"></div></button>
+    </div>
+  </div>
+
+  <div class="card" id="best-card">
+    <div class="label">🏆 Best spots today</div>
+    <div class="spot-meta" style="margin-top:4px">Your spots ranked for the next 12 hours by how well conditions match your past catches.</div>
+    <details class="how"><summary>How is this ranked?</summary><div class="spot-meta">Ranks your spots by how well the next 12 hours match the conditions when fish were caught there (tide, pressure, time, solunar, wind, water temperature) — nudged up when it’s the season for what’s caught there and when people have photographed those fish nearby lately.</div></details>
+    <div id="best-list"><div class="empty">Working it out…</div></div>
+  </div>
+
   <div class="card" id="spots-card">
     <div class="row">
       <div class="label">Your spots</div>
@@ -656,12 +672,6 @@
     <div id="spot-list"><div class="empty">Loading spots…</div></div>
   </div>
 
-  <div class="card" id="best-card">
-    <div class="label">🏆 Best spots today</div>
-    <div class="spot-meta" style="margin-top:4px">Ranks your spots by how well the next 12 hours match the conditions when fish were caught there (tide, pressure, time, solunar, wind, water temperature) — nudged up when it’s the season for what’s caught there and when people have photographed those fish nearby lately.</div>
-    <div id="best-list"><div class="empty">Working it out…</div></div>
-  </div>
-
   <div class="card" id="sugg-card">
     <div class="row">
       <div class="label">Suggested spots nearby</div>
@@ -672,6 +682,8 @@
     <button class="btn ghost small" id="sugg-more" type="button" hidden>Show more</button>
   </div>
 
+  <details id="cond-more">
+    <summary>🌊 More conditions &amp; tide times</summary>
   <div class="card" id="status">
     <div class="label">Right now</div>
     <div class="now" id="stage">Loading tides…</div>
@@ -696,6 +708,7 @@
 
   <h2>Tide times</h2>
   <div id="days"></div>
+  </details>
   </div>
   </div>
 
@@ -893,19 +906,19 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=37"></script>
-<script src="js/02-spots.js?v=37"></script>
-<script src="js/03-photos.js?v=37"></script>
-<script src="js/04-insights.js?v=37"></script>
-<script src="js/05-seasons-records.js?v=37"></script>
-<script src="js/06-catching.js?v=37"></script>
-<script src="js/07-measure-fishid.js?v=37"></script>
-<script src="js/08-feed-plans.js?v=37"></script>
-<script src="js/09-map-forecast.js?v=37"></script>
-<script src="js/10-tools-safety.js?v=37"></script>
-<script src="js/11-accounts-social.js?v=37"></script>
-<script src="js/12-contests-alerts.js?v=37"></script>
-<script src="js/13-groups-misc.js?v=37"></script>
-<script src="js/99-boot.js?v=37"></script>
+<script src="js/01-core.js?v=38"></script>
+<script src="js/02-spots.js?v=38"></script>
+<script src="js/03-photos.js?v=38"></script>
+<script src="js/04-insights.js?v=38"></script>
+<script src="js/05-seasons-records.js?v=38"></script>
+<script src="js/06-catching.js?v=38"></script>
+<script src="js/07-measure-fishid.js?v=38"></script>
+<script src="js/08-feed-plans.js?v=38"></script>
+<script src="js/09-map-forecast.js?v=38"></script>
+<script src="js/10-tools-safety.js?v=38"></script>
+<script src="js/11-accounts-social.js?v=38"></script>
+<script src="js/12-contests-alerts.js?v=38"></script>
+<script src="js/13-groups-misc.js?v=38"></script>
+<script src="js/99-boot.js?v=38"></script>
 </body>
 </html>

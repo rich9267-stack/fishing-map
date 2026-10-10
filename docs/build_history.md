@@ -240,3 +240,7 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 - Gotcha found in a real browser: functions are not hoisted across files, so the start-up calls (`load`, `loadWeather`, `loadPressure`, `loadMoon`, `gate`) moved to `js/99-boot.js`.
 - `sw.js`: precaches the new files, network-first for same-origin css/js (offline fallback ignores `?v=`). `bump.sh` bumps the cache name and every `?v=` together (now v37).
 - Tests: `tests/load.js` rebuilds the page for jsdom; all 46 test files use it. Printed output of every test matched the pre-split output except clock-time / random-id lines.
+
+## UX step 3 — Home / Today screen
+- List tab order: `#today-strip` (4 tiles: tide, wind, water, moon) > `#best-card` (ranking help folded in `details.how`) > `#spots-card` > `#sugg-card` > `<details id="cond-more">` holding the old status / weather / moon / tide-times cards (unchanged ids). Deviation from plan: Your spots come before Suggested nearby.
+- Strip tiles are filled by a MutationObserver block ("Today strip") in js/09-map-forecast.js that copies text from `#stage #next #wx-now #wx-detail #wx-water #moon-now`, so the loaders are untouched. Tile tap opens `cond-more` and scrolls to the matching card. Test: tests/test73.js.
