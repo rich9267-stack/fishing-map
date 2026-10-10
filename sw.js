@@ -2,10 +2,11 @@
 // - The page itself: try the network first (so updates show up), fall back to the saved copy.
 // - Code libraries from CDNs: use the saved copy right away, refresh it in the background.
 // - Live data (database, tides, weather) is never cached here. Map tiles are served from the phone only if saved for offline.
-const CACHE = "fishing-map-v25";
+const CACHE = "fishing-map-v26";
 const APP_FILES = ["./", "./index.html", "./privacy.html"];
 const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com"];
 const TILE_CACHE = "fishing-map-tiles";   // map tiles the person chose to save for offline (kept across updates)
+const CV_CACHE = "fishing-map-cv";        // the ~10 MB OpenCV helper for auto-finding the bill/card (downloaded once, kept across updates)
 const TILE_HOSTS = ["tile.openstreetmap.org", "server.arcgisonline.com"];
 
 self.addEventListener("install", event => {
@@ -15,7 +16,7 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE && k !== CV_CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -39,6 +40,12 @@ self.addEventListener("fetch", event => {
   // Map tiles: only ones saved on purpose ("Save map for offline"); otherwise the normal network request
   if (TILE_HOSTS.includes(url.hostname)) {
     event.respondWith(caches.open(TILE_CACHE).then(c => c.match(req.url)).then(hit => hit || fetch(req)));
+    return;
+  }
+
+  // OpenCV helper: big, so keep it once and never re-download it in the background
+  if (CDN_HOSTS.includes(url.hostname) && url.pathname.includes("opencv-js")) {
+    event.respondWith(caches.open(CV_CACHE).then(c => c.match(req).then(hit => hit || fetch(req).then(res => { if (res.ok) c.put(req, res.clone()); return res; }))));
     return;
   }
 

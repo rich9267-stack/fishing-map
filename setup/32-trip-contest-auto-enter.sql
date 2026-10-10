@@ -58,3 +58,6 @@ exception when others then return old;
 end $$;
 create or replace trigger trip_contest_leave after delete on public.trip_plan_rsvps for each row execute function public.trg_trip_contest_leave();
 -- Tested (rollback): plan with Richard + Brit going -> contest linked -> Brit 'joined'; Rico taps I'm in -> 'joined'. App calls link_contest_to_plan after create_tournament when started from a trip (not for repeating series).
+
+-- (migration `trip_contest_spot_only`) tournament_catch_flags: a contest linked to a trip (plan_id) only counts catches at the trip spot or within 1 mile of it
+-- (by catch spot or catch GPS) — reason 'Not at the trip spot (within 1 mile)'. Same rule as the 📖 trip review. Tested: 30" at the spot counts, 40" at a far spot doesn't; unlinked contests unchanged.

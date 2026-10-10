@@ -1171,6 +1171,7 @@
     </div>
     <div id="m-edit" hidden>
       <div class="spot-meta" style="color:#9db2ba">🟡 Drag the yellow dots to the fish's nose and tail. 🔵 Drag the blue dots to the two ends of what you laid beside it.</div>
+      <button type="button" class="btn ghost small" id="m-detect" style="margin:6px 0">🔍 Find the bill / card / can / ruler for me</button>
       <div class="m-nudge"><span id="m-sel">Fine-tune:</span><button type="button" id="m-nl" aria-label="Nudge left">◀</button><button type="button" id="m-nu" aria-label="Nudge up">▲</button><button type="button" id="m-nd" aria-label="Nudge down">▼</button><button type="button" id="m-nr" aria-label="Nudge right">▶</button></div>
       <div class="m-refs" id="m-refs"></div>
       <input id="m-ref-in" type="number" min="0.5" max="120" step="0.25" placeholder="Inches between the blue dots" hidden>
@@ -3205,6 +3206,14 @@
       if (t.kind === "official" && $("qc-vis").value !== "public") bad.push("set to 🌎 Public");
       if (t.require_photo && !qc.blob) bad.push("add a photo");
       if (t.species && species && species !== t.species.toLowerCase()) bad.push("only " + t.species + " counts");
+      if (t.plan_id) { // a trip contest only counts catches at the trip spot (within a mile)
+        const tp = plans.find(x => x.id === t.plan_id), tps = tp && (spots || []).find(x => x.id === tp.spot_id);
+        const pickedId = $("qc-spot").value, picked = (spots || []).find(x => x.id === pickedId);
+        if (tp && tps) {
+          const near = pickedId === tp.spot_id || (hasLoc(tps) && ((hasLoc(picked) && miles(picked.lat, picked.lng, tps.lat, tps.lng) <= 1) || (qc.pos && miles(qc.pos.lat, qc.pos.lng, tps.lat, tps.lng) <= 1)));
+          if (!near) bad.push("only catches at " + tps.name + " count");
+        }
+      }
       if (t.require_length && !(parseFloat($("qc-length").value) > 0)) bad.push("add the length (📏 or type it)");
       if (t.geo_lat != null) {
         if (!qc.pos || qc.pos.acc == null) bad.push("needs live GPS");
@@ -4025,8 +4034,124 @@
   // ---- Tap-to-measure: live camera → freeze → drag 4 dots (fish nose/tail + something of known size) with a magnifier and a live readout ----
   // A web page can't use the iPhone's depth sensor (LiDAR/ARKit), so scale comes from a reference lying beside the fish; the level indicator helps keep the shot flat.
   const M_REFS = [["6.14", "💵 Dollar bill"], ["3.37", "💳 Card"], ["4.83", "🥤 Can"], ["ruler", "📏 Ruler / tape"], ["custom", "✏️ Other"]];
-  const ms = { pts: [], drag: -1, sel: 0, z: 1, tx: 0, ty: 0, pan: null, ptrs: new Map(), pinch: null, onUse: null, onPhoto: null, onMarked: null, url: null, stream: null, ref: "3.37", refIn: "", tilt: null, shotTilt: null, camera: false, W: 0, H: 0 };
+  const ms = { pts: [], drag: -1, sel: 0, z: 1, tx: 0, ty: 0, pan: null, ptrs: new Map(), pinch: null, onUse: null, onPhoto: null, onMarked: null, url: null, stream: null, ref: "3.37", refIn: "", autoMsg: "", quad: null, tilt: null, shotTilt: null, camera: false, W: 0, H: 0 };
   const mNeedsIn = () => ms.ref === "ruler" || ms.ref === "custom";
+  // ---- 🔍 Auto-find the reference (dollar bill 6.14″ × 2.61″ or card 3.37″ × 2.13″) in the photo with OpenCV.js, loaded on demand (≈10 MB, kept after the first time) ----
+  const CV_URL = "https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js";
+  let cvReady = null;
+  function loadCv() {
+    if (cvReady) return cvReady;
+    cvReady = new Promise((res, rej) => {
+      if (window.cv && window.cv.Mat) return res({ cv: window.cv });
+      const sc = document.createElement("script"); sc.src = CV_URL;
+      sc.onload = () => {
+        // Don't "await" window.cv: this build is thenable and resolving it loops forever. Just wait until it has Mat.
+        const t0 = Date.now(), tick = () => {
+          if (window.cv && window.cv.Mat) return res({ cv: window.cv });   // wrapped: the helper itself is thenable
+          if (Date.now() - t0 > 90000) return rej(new Error("helper didn't start"));
+          setTimeout(tick, 100);
+        };
+        tick();
+      };
+      sc.onerror = () => rej(new Error("couldn't download the helper"));
+      document.head.appendChild(sc);
+    });
+    cvReady.catch(() => { cvReady = null; });
+    return cvReady;
+  }
+  // Looks for a bill / card / can (side-on) / ruler-shaped rectangle. Returns { ref:"6.14"|"3.37"|"4.83"|"ruler", a, b, quad, ratio, alt } — a and b are the middles of its two short ends (a→b is its long side) — or null.
+  // Shapes: bill 6.14×2.61 (2.35), card 3.37×2.13 (1.586), 12 oz can 4.83×2.6 (1.86), ruler/measuring sticker = long thin bar (≥ 5) that has tick marks.
+  const CV_SHAPES = [["6.14", 2.35, "dollar bill"], ["3.37", 1.586, "card"], ["4.83", 1.86, "can"]];
+  function hasTicks(cv, gray, rect) {   // straighten the bar and count light/dark flips along it: a ruler has many, a plain bar has none
+    const P = cv.RotatedRect.points(rect), L = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+    const longFirst = L(P[0], P[1]) >= L(P[1], P[2]);
+    const o = longFirst ? [P[0], P[1], P[2], P[3]] : [P[1], P[2], P[3], P[0]];     // o[0]→o[1] is the long side
+    const W = 600, H = Math.max(8, Math.round(W * L(o[1], o[2]) / L(o[0], o[1])));
+    const sm = cv.matFromArray(4, 1, cv.CV_32FC2, [o[0].x, o[0].y, o[1].x, o[1].y, o[2].x, o[2].y, o[3].x, o[3].y]);
+    const dm = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, W, 0, W, H, 0, H]);
+    const M = cv.getPerspectiveTransform(sm, dm), out = new cv.Mat();
+    try {
+      cv.warpPerspective(gray, out, M, new cv.Size(W, H));
+      const col = new Float32Array(W);
+      for (let x = 0; x < W; x++) { let t = 0; for (let y = 0; y < H; y++) t += out.ucharAt(y, x); col[x] = t / H; }
+      let flips = 0, prev = 0;
+      for (let x = 10; x < W - 10; x++) {
+        let m = 0; for (let k = -10; k <= 10; k++) m += col[x + k]; m /= 21;
+        const d = col[x] - m, sg = d > 6 ? 1 : d < -6 ? -1 : 0;
+        if (sg && prev && sg !== prev) flips++;
+        if (sg) prev = sg;
+      }
+      return flips;
+    } finally { sm.delete(); dm.delete(); M.delete(); out.delete(); }
+  }
+  function detectReference(cv, canvas) {
+    const k = Math.min(1, 640 / Math.max(canvas.width, canvas.height));
+    const small = document.createElement("canvas"); small.width = Math.max(1, Math.round(canvas.width * k)); small.height = Math.max(1, Math.round(canvas.height * k));
+    small.getContext("2d").drawImage(canvas, 0, 0, small.width, small.height);
+    const src = cv.imread(small), gray = new cv.Mat(), blur = new cv.Mat(), edges = new cv.Mat(), kern = cv.Mat.ones(3, 3, cv.CV_8U), contours = new cv.MatVector(), hier = new cv.Mat();
+    const frame = small.width * small.height;
+    let best = null;
+    try {
+      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+      cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
+      cv.Canny(blur, edges, 40, 120);
+      cv.dilate(edges, edges, kern);
+      cv.findContours(edges, contours, hier, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+      for (let i = 0; i < contours.size(); i++) {
+        const c = contours.get(i), area = cv.contourArea(c), approx = new cv.Mat();
+        try {
+          if (area / frame < 0.004 || area / frame > 0.5) continue;
+          cv.approxPolyDP(c, approx, 0.03 * cv.arcLength(c, true), true);
+          if (approx.rows !== 4 || !cv.isContourConvex(approx)) continue;
+          const rect = cv.minAreaRect(c), w = rect.size.width, h = rect.size.height;
+          if (!w || !h) continue;
+          const ratio = Math.max(w, h) / Math.min(w, h), fill = area / (w * h);
+          if (fill < 0.78) continue;
+          let ref, d, alt = null;
+          if (ratio >= 5) {                                   // long thin bar: only if it has tick marks
+            if (hasTicks(cv, gray, rect) < 12) continue;
+            ref = "ruler"; d = 0;
+          } else {
+            const ds = CV_SHAPES.map(([v, r, nm]) => ({ v, nm, d: Math.abs(ratio - r) / r })).sort((p, q) => p.d - q.d);
+            if (ds[0].d > 0.14) continue;
+            ref = ds[0].v; d = ds[0].d; if (ds[1].d <= 0.14) alt = ds[1].nm;
+          }
+          const score = d + (1 - Math.min(1, fill)) * 1.5 - (ref === "ruler" ? 0.2 : 0);
+          if (best && best.score <= score) continue;
+          best = { score, ref, pts: cv.RotatedRect.points(rect), fill, ratio, alt };
+        } finally { approx.delete(); c.delete(); }
+      }
+      if (best && best.ref === "ruler") { /* keep */ }
+    } finally { src.delete(); gray.delete(); blur.delete(); edges.delete(); kern.delete(); contours.delete(); hier.delete(); }
+    if (!best) return null;
+    const P = best.pts.map(p => ({ x: p.x / k, y: p.y / k })), mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    const longFirst = Math.hypot(P[0].x - P[1].x, P[0].y - P[1].y) >= Math.hypot(P[1].x - P[2].x, P[1].y - P[2].y);
+    const a = longFirst ? mid(P[1], P[2]) : mid(P[0], P[1]), b = longFirst ? mid(P[3], P[0]) : mid(P[2], P[3]);
+    return { ref: best.ref, a, b, quad: P, ratio: best.ratio, alt: best.alt };
+  }
+  async function mAutoRef(automatic) {
+    const img = $("m-img"); if (!img.naturalWidth || ms.camera) return;
+    const btn = $("m-detect"); btn.disabled = true;
+    ms.autoMsg = "🔍 Looking for a bill, card, can or ruler…" + (window.cv && window.cv.Mat ? "" : " (the first time this downloads a ~10 MB helper)"); ms.quad = null; mDraw();
+    try {
+      const cv = (await loadCv()).cv;
+      const cvs = document.createElement("canvas"); cvs.width = img.naturalWidth; cvs.height = img.naturalHeight;
+      cvs.getContext("2d").drawImage(img, 0, 0);
+      const r = detectReference(cv, cvs);
+      if (!r) { ms.autoMsg = "Couldn't spot a bill, card, can or ruler — drag the blue dots onto its two ends yourself. (Lay it flat or upright, on a plain background, fully in the picture.)"; ms.quad = null; }
+      else {
+        ms.ref = r.ref; mBuildRefs(); ms.pts[2] = r.a; ms.pts[3] = r.b; ms.sel = 2; ms.quad = r.quad;
+        const nm = { "6.14": "dollar bill", "3.37": "card", "4.83": "can", ruler: "ruler / measuring sticker" }[r.ref];
+        ms.autoMsg = r.ref === "ruler"
+          ? "✅ Found a ruler or measuring sticker. Slide the blue dots to the 0 mark and to a number you can read (like 12), type that number below, then put the yellow dots on the fish's nose and tail."
+          : `✅ Found a ${nm} — the blue dots are on its two ends.` + (r.alt ? ` (Could also be a ${r.alt} — tap the right one above if not.)` : "") + (r.ref === "4.83" ? " Stand it upright next to the fish, 12 oz size." : "") + " Check they sit right (drag to fix), then put the yellow dots on the fish's nose and tail.";
+        if (r.ref === "ruler" && !$("m-ref-in").value) $("m-ref-in").value = "12";
+        try { localStorage.setItem("fm-auto-ref", "1"); } catch (e) { /* fine */ }
+      }
+    } catch (e) { ms.autoMsg = "Couldn't run the finder (it needs internet the first time) — drag the blue dots onto the bill/card yourself."; ms.quad = null; }
+    btn.disabled = false; btn.textContent = "🔍 Look again"; mDraw();
+  }
+  $("m-detect").addEventListener("click", () => mAutoRef(false));
   const mDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   function mOri(e) {
     if (e.beta == null || e.gamma == null) return;
@@ -4135,7 +4260,10 @@
     const img = $("m-img"), W = img.naturalWidth || 1000, H = img.naturalHeight || 750;
     ms.W = W; ms.H = H;
     ms.pts = [{ x: W * .2, y: H * .4 }, { x: W * .8, y: H * .4 }, { x: W * .3, y: H * .75 }, { x: W * .55, y: H * .75 }];
+    ms.autoMsg = ""; ms.quad = null; $("m-detect").textContent = "🔍 Find the bill / card / can / ruler for me";
     mDraw();
+    let auto = false; try { auto = localStorage.getItem("fm-auto-ref") === "1"; } catch (e) { /* no */ }
+    if (auto) mAutoRef(true);
   }
   function closeMeasure() { mStopCamera(); $("m-loupe").hidden = true; $("m-zoom").hidden = true; $("measure").hidden = true; }
   function refInches() { return mNeedsIn() ? parseFloat($("m-ref-in").value) : parseFloat(ms.ref); }
@@ -4160,6 +4288,7 @@
         const x = (a.x + b.x) / 2, y = (a.y + b.y) / 2 - r * 2.4, fs = r * 2.3, w = text.length * fs * .62 + fs;
         return `<rect x="${x - w / 2}" y="${y - fs * .85}" width="${w}" height="${fs * 1.4}" rx="${fs * .4}" fill="#000" fill-opacity=".72"/><text x="${x}" y="${y + fs * .22}" font-size="${fs}" font-weight="700" fill="${col}" text-anchor="middle" font-family="-apple-system,Arial,sans-serif">${text}</text>`;
       };
+      if (ms.quad) out += `<polygon points="${ms.quad.map(q => q.x + "," + q.y).join(" ")}" fill="none" stroke="#3ddc84" stroke-width="${r / 2.5}" stroke-dasharray="${r} ${r / 1.5}"/>`;
       out += line(P[0], P[1], "#ffd400") + line(P[2], P[3], "#2c9bff");
       out += label(P[0], P[1], q ? `${q}″` : "?", "#ffd400");
       const ri = refInches(); out += label(P[2], P[3], ri > 0 ? `${+ri.toFixed(2)}″ ref` : "ref?", "#6cc0ff");
@@ -4168,7 +4297,8 @@
     svg.innerHTML = out;
     $("m-sel").textContent = P.length === 4 ? `Fine-tune the ${ms.sel < 2 ? "🟡 " + (ms.sel === 0 ? "nose" : "tail") : "🔵 reference " + (ms.sel === 2 ? "start" : "end")} dot:` : "Fine-tune:";
     const note = $("m-note");
-    if (ms.shotTilt != null && ms.shotTilt > 10) { note.className = "warn"; note.textContent = `⚠️ The phone was tilted ${Math.round(ms.shotTilt)}° — the length can be off. Retake it flat above the fish for best accuracy.`; }
+    if (ms.autoMsg) { note.className = ms.autoMsg.startsWith("✅") ? "" : "warn"; note.textContent = ms.autoMsg; }
+    else if (ms.shotTilt != null && ms.shotTilt > 10) { note.className = "warn"; note.textContent = `⚠️ The phone was tilted ${Math.round(ms.shotTilt)}° — the length can be off. Retake it flat above the fish for best accuracy.`; }
     else { note.className = ""; note.textContent = mNeedsIn() && !(refInches() > 0) ? "Type the inches between the two blue dots above." : "Most accurate when the reference lies flat right beside the fish and the picture is taken from straight above (within about an inch)."; }
   }
   function mPoint(e) {
@@ -8201,6 +8331,7 @@
     if (t.description) box.appendChild(el("div", null, t.description));
     if (t.plan_id) box.appendChild(el("div", "spot-meta", "🗓 Made for a planned trip — everyone going on it is entered automatically."));
     const rules = [];
+    if (t.plan_id) rules.push("📍 only catches at the trip spot (within 1 mile)");
     if (t.kind === "official") rules.push("Catch must be set to 🌎 Public");
     if (t.require_photo) rules.push("📷 photo on every catch");
     if (t.require_length) rules.push("📏 measured length");
@@ -8786,6 +8917,8 @@
       "🏆 Tournaments are official events — only admins can create them for now (clubs and brands later). Anyone can join an open one.",
       "📅 A single run can now last up to a year. Find it all under Feed → 🏁 Compete.",
       "✋ A contest made from a trip enters everyone going automatically — and anyone who taps “I'm in” later.",
+      "📍 A contest made from a trip only counts catches at the trip spot (within a mile).",
+      "🔍 Measure tool: tap “Find the bill / card / can / ruler for me” and it finds a dollar bill, card, soda/beer can or a ruler / measuring sticker and puts the blue dots on it (first use downloads a ~10 MB helper once). It runs by itself on later photos.",
       "💾 Photos you take with the app's camera are now kept: Android saves a copy to your phone automatically, iPhone shows a one-tap “Save to Photos”, and Profile → 📷 Photos taken in the app keeps the last 14 days.",
       "🗑 Deleting a catch now deletes its photos too (after the 8-second Undo).",
       "📷 Each spot now has two photo places: photos of the spot itself, and photos from catches logged there. Cancelling a trip also cancels its contest.",
