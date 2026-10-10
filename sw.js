@@ -2,7 +2,7 @@
 // - The page itself: try the network first (so updates show up), fall back to the saved copy.
 // - Code libraries from CDNs: use the saved copy right away, refresh it in the background.
 // - Live data (database, tides, weather) is never cached here. Map tiles are served from the phone only if saved for offline.
-const CACHE = "fishing-map-v26";
+const CACHE = "fishing-map-v27";
 const APP_FILES = ["./", "./index.html", "./privacy.html"];
 const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com"];
 const TILE_CACHE = "fishing-map-tiles";   // map tiles the person chose to save for offline (kept across updates)

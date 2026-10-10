@@ -1924,7 +1924,7 @@
     } catch (e) { return {}; }
   }
 
-  async function uploadPhoto(file, spotId, catchId, info) {
+  async function uploadPhoto(file, spotId, catchId, info, noReload) {
     info = info || await photoInfo(file);
     if (!me) throw new Error("Please sign in again");
     const blob = await compressImage(file);
@@ -1936,7 +1936,7 @@
       taken_at: info.when ? info.when.toISOString() : null, lat: info.lat, lng: info.lng
     });
     if (error) { await db.storage.from("photos").remove([path]); throw error; }
-    await loadPhotos();
+    if (!noReload) await loadPhotos();
   }
 
   // ---- 📥 Keep a copy of photos taken inside the app (a web page can't write to the camera roll silently, so: Android downloads a copy,
@@ -2050,28 +2050,48 @@
     }
     return box;
   }
+  const PHOTO_BATCH_MAX = 30;
   function spotPhotoSection(s) {
     const wrap = el("div", "photo-row"); wrap.style.display = "block";
     const all = photosBySpot[s.id] || [];
     wrap.appendChild(photoGallery("📷 Photos of the spot", all.filter(p => !p.catch_id), "No photos of the spot yet — add one so friends know what it looks like.", "spot"));
     const input = document.createElement("input");
-    input.type = "file"; input.accept = "image/*"; input.hidden = true;
-    const btn = el("button", "btn ghost small", "📷 Add a photo of the spot"); btn.type = "button"; btn.style.marginTop = "6px";
+    input.type = "file"; input.accept = "image/*"; input.multiple = true; input.hidden = true;
+    const BTN = "📷 Add photos of the spot (up to 30 at once)";
+    const btn = el("button", "btn ghost small", BTN); btn.type = "button"; btn.style.marginTop = "6px";
     btn.addEventListener("click", () => input.click());
     input.addEventListener("change", async () => {
-      const f = input.files && input.files[0];
-      if (!f) return;
-      btn.disabled = true; btn.textContent = "Uploading…";
-      try {
-        const info = await photoInfo(f);
-        await uploadPhoto(f, s.id, null, info);
-        if (!hasLoc(s) && isMine(s) && info.lat != null &&
-            confirm(`This photo has a location. Use it to place “${s.name}” on the map?`)) {
-          const { error } = await db.from("spots").update({ lat: info.lat, lng: info.lng }).eq("id", s.id);
-          if (error) alert("Couldn't set the location: " + error.message); else loadSpots();
+      let files = Array.from(input.files || []);
+      input.value = "";
+      if (!files.length) return;
+      if (files.length > PHOTO_BATCH_MAX) { toast(`Only the first ${PHOTO_BATCH_MAX} photos were added — pick the rest again afterwards.`, 4500); files = files.slice(0, PHOTO_BATCH_MAX); }
+      btn.disabled = true;
+      let done = 0, firstLoc = null; const failed = [];
+      const show = () => { btn.textContent = `Uploading ${Math.min(done + 1, files.length)} of ${files.length}…`; };
+      show();
+      let next = 0;
+      const worker = async () => {
+        while (next < files.length) {
+          const f = files[next++];
+          try {
+            const info = await photoInfo(f);
+            await uploadPhoto(f, s.id, null, info, true);
+            if (!firstLoc && info.lat != null) firstLoc = info;
+          } catch (e) { failed.push(f.name || "a photo"); }
+          done++; show();
         }
+      };
+      await Promise.all([worker(), worker(), worker()]);
+      await loadPhotos();   // one refresh at the end (this redraws the spot card)
+      btn.disabled = false; btn.textContent = BTN;
+      const ok = files.length - failed.length;
+      if (failed.length) alert(`${ok} of ${files.length} photos were added. ${failed.length} didn't upload (${failed.slice(0, 3).join(", ")}${failed.length > 3 ? "…" : ""}). Pick them again to retry.`);
+      else toast(`📷 ${ok} photo${ok === 1 ? "" : "s"} added`, 2500);
+      if (firstLoc && !hasLoc(s) && isMine(s) &&
+          confirm(`A photo has a location. Use it to place “${s.name}” on the map?`)) {
+        const { error } = await db.from("spots").update({ lat: firstLoc.lat, lng: firstLoc.lng }).eq("id", s.id);
+        if (error) alert("Couldn't set the location: " + error.message); else loadSpots();
       }
-      catch (e) { alert("Couldn't upload the photo: " + (e.message || e)); btn.disabled = false; btn.textContent = "📷 Add a photo of the spot"; }
     });
     wrap.appendChild(btn); wrap.appendChild(input);
     wrap.appendChild(photoGallery("🎣 Photos from catches here", all.filter(p => p.catch_id), "No catch photos yet — they appear here when someone logs a catch with a photo.", "catches"));
@@ -3762,6 +3782,9 @@
     <label for="c-photo">📷 Photo (optional)</label>
     <input id="c-photo" type="file" accept="image/*">
     <div class="spot-meta" id="c-photo-info" style="margin-top:6px"></div>
+    <button type="button" class="btn ghost small" id="c-more-btn" style="margin-top:6px">➕ Add more photos of this catch</button>
+    <input id="c-more" type="file" accept="image/*" multiple hidden>
+    <div class="spot-meta" id="c-more-info" style="margin-top:6px"></div>
     <div class="two">
       <div><label for="c-length">Length (inches)</label><input id="c-length" type="number" min="0.5" max="199" step="0.25" inputmode="decimal"></div>
       <div><label for="c-weight">Weight (lb)</label><input id="c-weight" type="number" min="0.05" max="1999" step="0.05" inputmode="decimal" placeholder="Optional"></div>
@@ -3978,6 +4001,22 @@
     catchForm.photoInfo = info;
   });
   catchForm.querySelector("#c-tide").addEventListener("change", () => { tideTouched = true; });
+  // Extra photos for the same catch (the first photo above stays the one used for time, measuring and fish ID)
+  const EXTRA_MAX = 29;
+  catchForm.extraPhotos = [];
+  function showExtraPhotos() {
+    const n = catchForm.extraPhotos.length, out = catchForm.querySelector("#c-more-info");
+    out.textContent = n ? `+${n} more photo${n === 1 ? "" : "s"} will be added with this catch` : "";
+    if (n) { const x = el("button", "linkbtn", " Clear"); x.type = "button"; x.addEventListener("click", () => { catchForm.extraPhotos = []; showExtraPhotos(); }); out.appendChild(x); }
+  }
+  catchForm.querySelector("#c-more-btn").addEventListener("click", () => catchForm.querySelector("#c-more").click());
+  catchForm.querySelector("#c-more").addEventListener("change", () => {
+    const inp = catchForm.querySelector("#c-more"), picked = Array.from(inp.files || []); inp.value = "";
+    const room = EXTRA_MAX - catchForm.extraPhotos.length;
+    if (picked.length > room) toast(`A catch can have up to ${EXTRA_MAX + 1} photos in total.`, 3500);
+    catchForm.extraPhotos = catchForm.extraPhotos.concat(picked.slice(0, Math.max(0, room)));
+    showExtraPhotos();
+  });
 
   // ---- Length and weight ----
   // Weight from length: weight grows with the cube of length, so each fish has one reference point
@@ -4534,6 +4573,7 @@
     catchForm.reset();
     catchForm.photoInfo = null;
     catchForm.querySelector("#c-photo-info").textContent = "";
+    catchForm.extraPhotos = []; showExtraPhotos();
     catchForm.querySelector("#c-size-note").textContent = "";
     catchForm.querySelector("#c-id-msg").textContent = ""; catchForm.querySelector("#c-id-sugg").innerHTML = "";
     tideTouched = false;
@@ -4674,6 +4714,21 @@
         msg.textContent = "Uploading photo…";
         try { await uploadPhoto(photoFile, row.spot_id, savedRow.id, catchForm.photoInfo); }
         catch (pe) { alert("The catch was saved, but the photo didn't upload: " + (pe.message || pe)); }
+      }
+      const extras = (catchForm.extraPhotos || []).slice();
+      if (extras.length) {
+        let done = 0, bad = 0, next = 0;
+        const worker = async () => {
+          while (next < extras.length) {
+            const f = extras[next++];
+            msg.textContent = `Uploading photo ${Math.min(done + 2, extras.length + 1)} of ${extras.length + 1}…`;
+            try { await uploadPhoto(f, row.spot_id, savedRow.id, null, true); } catch (pe) { bad++; }
+            done++;
+          }
+        };
+        await Promise.all([worker(), worker(), worker()]);
+        await loadPhotos();
+        if (bad) alert(`The catch was saved, but ${bad} of the extra photos didn't upload.`);
       }
       try { if (row.caught_by) localStorage.setItem("fm-name", row.caught_by); } catch (e2) {}
       expanded.add(openCatchSpot);
@@ -8918,6 +8973,8 @@
       "📅 A single run can now last up to a year. Find it all under Feed → 🏁 Compete.",
       "✋ A contest made from a trip enters everyone going automatically — and anyone who taps “I'm in” later.",
       "📍 A contest made from a trip only counts catches at the trip spot (within a mile).",
+      "🎣 A catch can now have several photos — tap “➕ Add more photos of this catch” (up to 30 in total).",
+      "📷 Add up to 30 photos of a spot in one go — pick them all at once and watch the counter.",
       "🔍 Measure tool: tap “Find the bill / card / can / ruler for me” and it finds a dollar bill, card, soda/beer can or a ruler / measuring sticker and puts the blue dots on it (first use downloads a ~10 MB helper once). It runs by itself on later photos.",
       "💾 Photos you take with the app's camera are now kept: Android saves a copy to your phone automatically, iPhone shows a one-tap “Save to Photos”, and Profile → 📷 Photos taken in the app keeps the last 14 days.",
       "🗑 Deleting a catch now deletes its photos too (after the 8-second Undo).",
