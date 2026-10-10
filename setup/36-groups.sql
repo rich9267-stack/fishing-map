@@ -161,8 +161,8 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
   values ('group-avatars', 'group-avatars', false, 1048576, array['image/jpeg', 'image/png', 'image/webp'])
   on conflict (id) do nothing;
 create policy "owner uploads group picture" on storage.objects for insert with check (
-  bucket_id = 'group-avatars' and exists (select 1 from public.groups g where g.id::text = (storage.foldername(name))[1] and g.created_by = auth.uid()));
+  bucket_id = 'group-avatars' and exists (select 1 from public.groups g where g.id::text = (storage.foldername(objects.name))[1] and g.created_by = auth.uid()));
 create policy "members view group picture" on storage.objects for select using (
   bucket_id = 'group-avatars' and public.is_group_member(((storage.foldername(name))[1])::uuid));
 create policy "owner deletes group picture" on storage.objects for delete using (
-  bucket_id = 'group-avatars' and exists (select 1 from public.groups g where g.id::text = (storage.foldername(name))[1] and g.created_by = auth.uid()));
+  bucket_id = 'group-avatars' and exists (select 1 from public.groups g where g.id::text = (storage.foldername(objects.name))[1] and g.created_by = auth.uid()));
