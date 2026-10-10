@@ -7508,14 +7508,45 @@
     else d.textContent = ((name || "?").trim()[0] || "?").toUpperCase();
     return d;
   }
-  // centre-crop to a 320 px square JPEG
-  async function avatarBlob(file) {
+  // pick, drag and zoom a square crop (shown through a round window) — resolves a 320 px JPEG, or null if cancelled
+  async function cropPicture(file) {
     let src;
     try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); }
     catch (e) { src = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(file); }); }
-    const side = Math.min(src.width, src.height), c = document.createElement("canvas"); c.width = c.height = 320;
-    c.getContext("2d").drawImage(src, (src.width - side) / 2, (src.height - side) / 2, side, side, 0, 0, 320, 320);
-    return await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("Couldn't read that picture")), "image/jpeg", 0.85));
+    const W = src.width, H = src.height, V = 260, base = V / Math.min(W, H);
+    let zoom = 1, cx = W / 2, cy = H / 2;
+    return await new Promise(resolve => {
+      const ov = el("div"); ov.id = "crop-ov"; ov.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px";
+      const box = el("div"); box.style.cssText = "background:var(--card);color:var(--text);border-radius:16px;padding:16px;max-width:340px;width:100%;text-align:center";
+      box.appendChild(el("div", "label", "Crop your picture"));
+      box.appendChild(el("div", "spot-meta", "Drag to move it, slide to zoom. The circle is what people will see."));
+      const wrap = el("div"); wrap.style.cssText = `position:relative;width:${V}px;height:${V}px;margin:12px auto;touch-action:none;overflow:hidden;border-radius:8px`;
+      const cv = document.createElement("canvas"); cv.width = cv.height = V; cv.style.cssText = "display:block;width:100%;height:100%";
+      const mask = el("div"); mask.style.cssText = `position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 400px rgba(0,0,0,.55);border:2px solid #fff;pointer-events:none`;
+      wrap.appendChild(cv); wrap.appendChild(mask); box.appendChild(wrap);
+      const zr = document.createElement("input"); zr.type = "range"; zr.id = "crop-zoom"; zr.min = "1"; zr.max = "4"; zr.step = "0.01"; zr.value = "1"; zr.style.width = "100%"; zr.setAttribute("aria-label", "Zoom");
+      box.appendChild(zr);
+      const pv = document.createElement("canvas"); pv.width = pv.height = 64; pv.style.cssText = "width:64px;height:64px;border-radius:50%;margin:10px auto 0;display:block;border:1px solid var(--line)";
+      box.appendChild(pv);
+      const row = el("div"); row.style.cssText = "display:flex;gap:8px;justify-content:center;margin-top:12px";
+      const ok = el("button", "btn small", "Use this picture"), no = el("button", "btn ghost small", "Cancel"); ok.type = no.type = "button"; ok.id = "crop-ok"; no.id = "crop-cancel";
+      row.appendChild(ok); row.appendChild(no); box.appendChild(row); ov.appendChild(box); document.body.appendChild(ov);
+      const rect = () => { const size = V / (base * zoom); cx = Math.min(Math.max(cx, size / 2), W - size / 2); cy = Math.min(Math.max(cy, size / 2), H - size / 2); return [cx - size / 2, cy - size / 2, size]; };
+      const paint = (c, n) => { const [sx, sy, size] = rect(); const g = c.getContext("2d"); g.clearRect(0, 0, n, n); g.drawImage(src, sx, sy, size, size, 0, 0, n, n); };
+      const draw = () => { paint(cv, V); paint(pv, 64); };
+      let last = null;
+      wrap.addEventListener("pointerdown", e => { last = [e.clientX, e.clientY]; try { wrap.setPointerCapture(e.pointerId); } catch (x) {} });
+      wrap.addEventListener("pointermove", e => { if (!last) return; cx -= (e.clientX - last[0]) / (base * zoom); cy -= (e.clientY - last[1]) / (base * zoom); last = [e.clientX, e.clientY]; draw(); });
+      const up = () => { last = null; }; wrap.addEventListener("pointerup", up); wrap.addEventListener("pointercancel", up);
+      zr.addEventListener("input", () => { zoom = +zr.value; draw(); });
+      const done = v => { ov.remove(); resolve(v); };
+      no.addEventListener("click", () => done(null));
+      ok.addEventListener("click", () => {
+        const c = document.createElement("canvas"); c.width = c.height = 320; paint(c, 320);
+        c.toBlob(b => done(b), "image/jpeg", 0.85);
+      });
+      draw();
+    });
   }
   async function ppLoadMine() {
     try { const { data } = await db.from("profile_extras").select("*").eq("user_id", me.id).maybeSingle(); ppMine = data || null; } catch (e) { ppMine = null; }
@@ -7607,7 +7638,7 @@
   $("pp-avatar-btn").addEventListener("click", () => $("pp-avatar-file").click());
   $("pp-avatar-file").addEventListener("change", async () => {
     const f = $("pp-avatar-file").files && $("pp-avatar-file").files[0]; $("pp-avatar-file").value = ""; if (!f) return;
-    try { ppAvatarBlob = await avatarBlob(f); ppAvatarClear = false; ppDrawAvatar(); } catch (e) { $("pp-msg").className = "msg err"; $("pp-msg").textContent = "Couldn't read that picture."; }
+    try { const b = await cropPicture(f); if (b) { ppAvatarBlob = b; ppAvatarClear = false; ppDrawAvatar(); } } catch (e) { $("pp-msg").className = "msg err"; $("pp-msg").textContent = "Couldn't read that picture."; }
   });
   $("pp-avatar-rm").addEventListener("click", () => { ppAvatarBlob = null; ppAvatarClear = true; ppDrawAvatar(); });
   $("pp-save").addEventListener("click", async () => {
@@ -9210,8 +9241,9 @@
       const cols = el("div"); cols.style.cssText = "display:flex;gap:8px;margin:8px 0;flex-wrap:wrap";
       const drawCols = () => { cols.innerHTML = ""; PP_ACCENTS.forEach(c => { const b = el("button"); b.type = "button"; b.setAttribute("aria-label", "Colour " + c); b.style.cssText = `width:28px;height:28px;border-radius:50%;background:${c};border:3px solid ${grColor === c ? "var(--text, #000)" : "transparent"}`; b.addEventListener("click", () => { grColor = c; drawCols(); }); cols.appendChild(b); }); };
       drawCols();
+      const grPrev = el("div"); grPrev.style.cssText = "display:flex;gap:8px;align-items:center;margin:6px 0";
       const pic = document.createElement("input"); pic.type = "file"; pic.accept = "image/*"; pic.id = "gr-pic"; pic.setAttribute("aria-label", "Group picture");
-      pic.addEventListener("change", async () => { const f = pic.files && pic.files[0]; if (f) { try { grBlob = await avatarBlob(f); grClear = false; } catch (e) { grBlob = null; } } });
+      pic.addEventListener("change", async () => { const f = pic.files && pic.files[0]; if (f) { try { const b = await cropPicture(f); pic.value = ""; if (b) { grBlob = b; grClear = false; grPrev.innerHTML = ""; grPrev.appendChild(avatarNode(URL.createObjectURL(b), nm.value, 56, grColor)); grPrev.appendChild(el("span", "spot-meta", " New picture — tap Save changes.")); } } catch (e) { grBlob = null; } } });
       const save = el("button", "btn small", "Save changes"); save.type = "button"; save.id = "gr-save"; save.style.marginTop = "8px";
       const msg = el("div", "msg");
       save.addEventListener("click", async () => {
@@ -9226,7 +9258,7 @@
           await openGroups();
         } catch (e) { msg.className = "msg err"; msg.textContent = "Couldn't save: " + (e.message || e); save.disabled = false; }
       });
-      foot.appendChild(nm); foot.appendChild(ds); foot.appendChild(cols); foot.appendChild(el("div", "spot-meta", "Group picture:")); foot.appendChild(pic); foot.appendChild(save); foot.appendChild(msg);
+      foot.appendChild(nm); foot.appendChild(ds); foot.appendChild(cols); foot.appendChild(el("div", "spot-meta", "Group picture:")); foot.appendChild(pic); foot.appendChild(grPrev); foot.appendChild(save); foot.appendChild(msg);
       const del = el("button", "btn ghost small", "Delete this group"); del.type = "button"; del.id = "gr-delete"; del.style.cssText = "display:block;margin-top:14px;color:#c0392b";
       del.addEventListener("click", async () => { if (!confirm("Delete \"" + g.name + "\" for everyone?")) return; const { error } = await db.rpc("delete_group", { p_gid: gid }); if (error) { alert(error.message); return; } grOpen = null; openGroups(); });
       foot.appendChild(del);
@@ -9505,6 +9537,7 @@
       "✋ A contest made from a trip enters everyone going automatically — and anyone who taps “I'm in” later.",
       "📍 A contest made from a trip only counts catches at the trip spot (within a mile).",
       "👥 Groups (Feed → 👥 Groups): make a team of friends with its own picture, colour, member list, team leaderboard, chat and a trophy case you fill in yourself. Invites go to friends only.",
+      "✂️ Crop your profile or group picture before saving — drag and zoom, with a round preview.",
       "🏁 Teams can enter contests together: the group owner taps “Enter as a team” on a contest, each member taps Join, and the team board combines everyone who joined.",
       "🎣 A catch can now have several photos — tap “➕ Add more photos of this catch” (up to 30 in total).",
       "🪪 Profile pages: add a picture, a tagline, a page color, 📌 pin a catch at the top and build a ⭐ showcase of trophies, badges and achievements (Profile → Your profile page). Choose who can see it: everyone, friends only, or just you — others see a blurred page with a friend-request button.",

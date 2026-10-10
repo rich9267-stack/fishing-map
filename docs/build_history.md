@@ -220,3 +220,6 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 - Contest detail shows "👥 Teams" with the boards and "x of y joined"; owners see Enter/Withdraw buttons for their groups.
 - `groups.showcase` (jsonb, up to 8 items) edited by the owner via `set_group_showcase`; shown on the group page as 🏆 Trophy case. Fully manual, like profile showcases.
 - Test: tests/test70.js. sw cache v32.
+
+## Picture crop tool
+- `cropPicture(file)` (next to the profile-page code): full-screen crop window — drag, zoom slider, round mask plus a small live preview; resolves a 320 px JPEG or null if cancelled. Used for profile pictures and group pictures (group editor shows a preview until you Save changes). Replaces the old automatic centre-crop `avatarBlob`. Test: tests/test71.js. sw cache v33.
