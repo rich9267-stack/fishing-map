@@ -223,3 +223,8 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 
 ## Picture crop tool
 - `cropPicture(file)` (next to the profile-page code): full-screen crop window — drag, zoom slider, round mask plus a small live preview; resolves a 320 px JPEG or null if cancelled. Used for profile pictures and group pictures (group editor shows a preview until you Save changes). Replaces the old automatic centre-crop `avatarBlob`. Test: tests/test71.js. sw cache v33.
+
+## Fix: removed friends came back + names from email (setup/38)
+- `ensure_profile()` runs on every sign-in and re-created the crew / inviter friendships each time, so "Remove" looked broken after a refresh. Starter friendships now happen only when the profile is first created.
+- New profiles with no name get "New angler" / @angler instead of a name and handle built from the email address. Emails were already admin-only (members table policy); profiles never stored them.
+- Note: removing a friend does not hide a *public* profile — only Friends-only/Private profiles lock.
