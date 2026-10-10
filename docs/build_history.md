@@ -228,3 +228,8 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 - `ensure_profile()` runs on every sign-in and re-created the crew / inviter friendships each time, so "Remove" looked broken after a refresh. Starter friendships now happen only when the profile is first created.
 - New profiles with no name get "New angler" / @angler instead of a name and handle built from the email address. Emails were already admin-only (members table policy); profiles never stored them.
 - Note: removing a friend does not hide a *public* profile — only Friends-only/Private profiles lock.
+
+## UX step 1 — navigation shell (docs/ux_cleanup_plan.md)
+- Bottom bar `#bnav` (Home · Map · 📸 Log · Community · Stats). It only clicks the old hidden `.tabs` buttons, and mirrors their `.on` state with a MutationObserver, so `showView` and every test id are unchanged. The floating quick-catch button is hidden (`#qc-fab` still exists; Log clicks it).
+- ☰ Me menu (`#me-btn`/`#me-menu`) holds the original Profile, Alerts, Invite, Refresh, Sign out buttons (same ids). Friends + Messages buttons moved into the Community mode row. Unread badges are read from the old buttons' "(n)" text.
+- Stats = Insights + Seasons, with a switch at the top of both pages. Code: "Navigation shell" block just above the `tab-list` listener. Test: tests/test72.js. sw cache v34.

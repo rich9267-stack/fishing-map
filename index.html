@@ -20,6 +20,22 @@
     margin: 0; background: var(--bg); color: var(--text);
     font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
+  body.has-bnav { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
+  #qc-fab { display: none !important; }
+  #bnav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 850; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+  #bnav[hidden] { display: none; }
+  .bnav-in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; }
+  .bnav-in button { appearance: none; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: .72rem; font-weight: 600; padding: 7px 2px 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; position: relative; min-height: 56px; }
+  .bnav-in button.on { color: var(--accent); }
+  .bn-i { font-size: 1.35rem; line-height: 1.2; }
+  .bnav-in .bn-log .bn-i { width: 52px; height: 52px; margin-top: -22px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
+  .nav-badge { background: #c0392b; color: #fff; border-radius: 999px; font-size: .68rem; font-weight: 700; min-width: 16px; padding: 0 4px; line-height: 16px; text-align: center; display: inline-block; margin-left: 4px; }
+  .bnav-in .nav-badge { position: absolute; top: 4px; left: calc(50% + 8px); margin: 0; }
+  #me-menu { position: absolute; right: 0; top: 100%; margin-top: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.2); padding: 6px; display: flex; flex-direction: column; min-width: 170px; z-index: 860; }
+  #me-menu[hidden] { display: none; }
+  #me-menu button { text-align: left; padding: 10px 12px; font-size: .95rem; }
+  #me-menu button[hidden] { display: none; }
+  .stats-sw { display: flex; gap: 8px; margin-bottom: 14px; }
   main { max-width: 520px; margin: 0 auto; padding: 20px 16px 40px; }
   h1 { font-size: 1.4rem; margin: 0 0 2px; }
   .sub { color: var(--muted); margin: 0 0 18px; font-size: .95rem; }
@@ -342,7 +358,8 @@
   .linkbtn { appearance: none; background: none; border: 0; padding: 4px 0; font: inherit; font-size: .85rem; color: var(--accent); cursor: pointer; }
   .linkbtn.danger { color: var(--falling); }
   /* List / Map tabs */
-  .tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--line); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
+  .tabs { display: none; }
+  .tabs-old { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--line); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
   .tabs button { appearance: none; border: 0; border-radius: 9px; padding: 9px 1px; font: inherit; font-size: .78rem; font-weight: 600; white-space: nowrap; background: transparent; color: var(--muted); cursor: pointer; }
   .tabs button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
   /* Map */
@@ -387,14 +404,15 @@
 
   <div class="userbar" id="userbar" hidden>
     <span id="who"></span>
-    <span class="userbar-links">
-      <button class="linkbtn" id="profile-btn" type="button">🙂 Profile</button>
-      <button class="linkbtn" id="inbox-btn" type="button">🔔 Alerts</button>
-      <button class="linkbtn" id="chat-btn" type="button">💬 Messages</button>
-      <button class="linkbtn" id="friends-btn" type="button">👥 Friends</button>
-      <button class="linkbtn" id="invite-btn" type="button" hidden>✉ Invite to app</button>
-      <button class="linkbtn" id="refresh-btn" type="button" aria-label="Refresh">↻ Refresh</button>
-      <button class="linkbtn" id="signout-btn" type="button">Sign out</button>
+    <span class="userbar-links" style="position:relative">
+      <button class="linkbtn" id="me-btn" type="button" aria-haspopup="true" aria-expanded="false">☰ Me<span class="nav-badge" id="me-badge" hidden></span></button>
+      <div id="me-menu" hidden role="menu">
+        <button class="linkbtn" id="profile-btn" type="button" role="menuitem">🙂 Profile</button>
+        <button class="linkbtn" id="inbox-btn" type="button" role="menuitem">🔔 Alerts</button>
+        <button class="linkbtn" id="invite-btn" type="button" role="menuitem" hidden>✉ Invite to app</button>
+        <button class="linkbtn" id="refresh-btn" type="button" role="menuitem" aria-label="Refresh">↻ Refresh</button>
+        <button class="linkbtn" id="signout-btn" type="button" role="menuitem">Sign out</button>
+      </div>
     </span>
   </div>
 
@@ -718,11 +736,13 @@
   </div>
 
   <div id="view-feed" hidden>
-    <div id="feed-mode" style="display:flex;gap:8px;margin-bottom:14px">
+    <div id="feed-mode" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
       <button class="btn small" id="feed-mode-circle" type="button">👥 My circle</button>
       <button class="btn ghost small" id="feed-mode-public" type="button">🌎 Public</button>
       <button class="btn ghost small" id="feed-mode-contests" type="button">🏁 Compete</button>
       <button class="btn ghost small" id="feed-mode-groups" type="button">👥 Groups</button>
+      <button class="btn ghost small" id="friends-btn" type="button">👥 Friends</button>
+      <button class="btn ghost small" id="chat-btn" type="button">💬 Messages</button>
     </div>
     <div class="card" id="groups" hidden>
       <div id="gr-body"></div>
@@ -1236,6 +1256,15 @@
   </div>
 </div>
 
+<nav id="bnav" hidden aria-label="Main">
+  <div class="bnav-in">
+    <button type="button" data-nav="home" class="on"><span class="bn-i">🏠</span><span>Home</span></button>
+    <button type="button" data-nav="map"><span class="bn-i">🗺</span><span>Map</span></button>
+    <button type="button" data-nav="log" class="bn-log" aria-label="Log a catch"><span class="bn-i">📸</span><span>Log</span></button>
+    <button type="button" data-nav="community"><span class="bn-i">👥</span><span>Community</span><span class="nav-badge" id="com-badge" hidden></span></button>
+    <button type="button" data-nav="stats"><span class="bn-i">📊</span><span>Stats</span></button>
+  </div>
+</nav>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
@@ -5930,6 +5959,51 @@
       if (mapPublic && !focusing) setMapPublic(true);
     }
   }
+  // ---- 🧭 Navigation shell (UX step 1): bottom bar, Me menu, Stats switch. The old tab buttons stay (hidden) and do the real work. ----
+  (function navShell() {
+    const bn = $("bnav"), TABS = ["tab-list", "tab-map", "tab-insights", "tab-seasons", "tab-feed"];
+    const on = id => $(id).classList.contains("on");
+    const btn = k => bn.querySelector(`[data-nav="${k}"]`);
+    function sync() {
+      btn("home").classList.toggle("on", on("tab-list")); btn("map").classList.toggle("on", on("tab-map"));
+      btn("community").classList.toggle("on", on("tab-feed")); btn("stats").classList.toggle("on", on("tab-insights") || on("tab-seasons"));
+      document.querySelectorAll(".stats-sw button").forEach(b => b.classList.toggle("ghost", !on(b.dataset.tab)));
+    }
+    TABS.forEach(id => new MutationObserver(sync).observe($(id), { attributes: true, attributeFilter: ["class"] }));
+    const go = id => { if (on(id)) window.scrollTo({ top: 0, behavior: "smooth" }); else $(id).click(); };
+    bn.addEventListener("click", e => {
+      const b = e.target.closest("[data-nav]"); if (!b) return;
+      const k = b.dataset.nav;
+      if (k === "log") $("qc-fab").click();
+      else if (k === "home") go("tab-list"); else if (k === "map") go("tab-map"); else if (k === "community") go("tab-feed");
+      else if (k === "stats") { if (on("tab-insights") || on("tab-seasons")) window.scrollTo({ top: 0, behavior: "smooth" }); else $("tab-insights").click(); }
+    });
+    // Insights / Seasons switch at the top of both Stats pages
+    ["view-insights", "view-seasons"].forEach(v => {
+      const row = el("div", "stats-sw");
+      [["tab-insights", "📊 Insights"], ["tab-seasons", "📅 Seasons"]].forEach(([t, label]) => { const b = el("button", "btn small", label); b.type = "button"; b.dataset.tab = t; b.addEventListener("click", () => $(t).click()); row.appendChild(b); });
+      $(v).insertBefore(row, $(v).firstChild);
+    });
+    // show only when signed in
+    const showBar = () => { bn.hidden = $("app").hidden; document.body.classList.toggle("has-bnav", !$("app").hidden); };
+    new MutationObserver(showBar).observe($("app"), { attributes: true, attributeFilter: ["hidden"] }); showBar();
+    // Me menu
+    const mb = $("me-btn"), mm = $("me-menu");
+    const closeMe = () => { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); };
+    mb.addEventListener("click", e => { e.stopPropagation(); mm.hidden = !mm.hidden; mb.setAttribute("aria-expanded", String(!mm.hidden)); });
+    mm.addEventListener("click", () => setTimeout(closeMe, 0));
+    document.addEventListener("click", e => { if (!mm.hidden && !mm.contains(e.target) && e.target !== mb) closeMe(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") closeMe(); });
+    // unread badges: read the counts the old buttons already show, e.g. "💬 Messages (2)"
+    const num = id => +((/\((\d+)\)/.exec($(id).textContent) || [])[1] || 0);
+    function badges() {
+      const a = num("inbox-btn"), c = num("chat-btn") + num("friends-btn");
+      $("me-badge").hidden = !a; $("me-badge").textContent = a;
+      $("com-badge").hidden = !c; $("com-badge").textContent = c;
+    }
+    ["inbox-btn", "chat-btn", "friends-btn"].forEach(id => new MutationObserver(badges).observe($(id), { childList: true, characterData: true, subtree: true }));
+    badges(); sync();
+  })();
   $("tab-list").addEventListener("click", () => { stopPlacing(); showView("list"); });
   $("tab-map").addEventListener("click", () => showView("map"));
   $("tab-insights").addEventListener("click", () => { stopPlacing(); showView("insights"); });
@@ -9537,6 +9611,7 @@
       "✋ A contest made from a trip enters everyone going automatically — and anyone who taps “I'm in” later.",
       "📍 A contest made from a trip only counts catches at the trip spot (within a mile).",
       "👥 Groups (Feed → 👥 Groups): make a team of friends with its own picture, colour, member list, team leaderboard, chat and a trophy case you fill in yourself. Invites go to friends only.",
+      "🧭 New bottom bar: Home, Map, Log (the big camera button), Community and Stats. Your Profile, Alerts, Invite, Refresh and Sign out are now under ☰ Me at the top. Friends and Messages live in Community.",
       "✂️ Crop your profile or group picture before saving — drag and zoom, with a round preview.",
       "🏁 Teams can enter contests together: the group owner taps “Enter as a team” on a contest, each member taps Join, and the team board combines everyone who joined.",
       "🎣 A catch can now have several photos — tap “➕ Add more photos of this catch” (up to 30 in total).",
