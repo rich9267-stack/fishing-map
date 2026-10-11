@@ -429,9 +429,11 @@
       const pr = await db.from("profiles").select("user_id,handle,display_name,home_area,bio").eq("user_id", id).maybeSingle();
       if (pr.data && pr.data.user_id) pubProfiles[id] = pr.data;
       if (!access.can_view) { profView = { catches: [], locked: true, access }; if (pubProfileId === id) renderPublic(); return; }
-      const [ex, ct] = await Promise.all([
+      const [ex, ct, tk] = await Promise.all([
         db.from("profile_extras").select("*").eq("user_id", id).maybeSingle(),
-        db.from("catches").select("*").eq("created_by", id).eq("visibility", "public").is("deleted_at", null).order("caught_at", { ascending: false }).limit(30)
+        db.from("catches").select("*").eq("created_by", id).eq("visibility", "public").is("deleted_at", null).order("caught_at", { ascending: false }).limit(30),
+        // for the 🐠 tank: everything I'm allowed to see of theirs except private (the database decides friends-only vs public)
+        db.from("catches").select("id,species,weight_lb,length_in,how_many,caught_at,spot_id,created_by").eq("created_by", id).in("visibility", ["friends", "public"]).is("deleted_at", null).limit(2000)
       ]);
       if (ct.error) throw ct.error;
       const extras = (ex && ex.data) || null;
@@ -440,7 +442,7 @@
         try { const pc = await db.from("catches").select("*").eq("id", extras.pinned_catch_id).is("deleted_at", null).maybeSingle(); pinned = pc && pc.data && pc.data.id ? pc.data : null; } catch (e) { pinned = null; }
       }
       const avatar = extras && extras.avatar_path ? await avatarUrl(extras.avatar_path) : null;
-      profView = { catches: ct.data || [], extras, pinned, avatar, access };
+      profView = { catches: ct.data || [], extras, pinned, avatar, access, tankCatches: tk && !tk.error ? (tk.data || []) : null };
       await loadPubPhotos(pinned ? profView.catches.concat([pinned]) : profView.catches);
     } catch (e) { profView = { catches: [], error: true }; }
     if (pubProfileId === id) renderPublic();
@@ -501,6 +503,7 @@
       ex.showcase.forEach(it => { const c = showcaseCard(it); c.className = "badge on"; c.style.opacity = 1; grid.appendChild(c); });
       box.appendChild(grid);
     }
+    if (profView && profView.tankCatches && typeof tankProfile === "function") tankProfile(profView.tankCatches, spotsAll, box, mine);
     const won = hof.filter(r => r.user_id === id);
     if (won.length) {
       box.appendChild(el("div", "label", `🏆 Trophies (${won.length})`)); box.lastChild.id = "prof-trophies";

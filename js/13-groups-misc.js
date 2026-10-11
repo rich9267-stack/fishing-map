@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-11b", title: "🐠 Tanks on profile pages", items: [
+      "🐠 Your tank now shows on your profile page, and you can see your friends' tanks on theirs.",
+      "🔒 Only catches the viewer is already allowed to see count — private catches never show, and spots aren't named."
+    ] },
     { id: "2026-10-11", title: "🐠 Your fish tank", items: [
       "🐠 New Tank page (Stats → 🐠 Tank): your heaviest catch of each species swims in a saltwater or freshwater tank — length breaks a tie.",
       "🏞 Every smaller catch of the same species goes to its own page — freshwater fish to your pond, saltwater fish to your 🌴 lagoon. Switch with 🐠 Tanks / 🌴 Lagoon / 🏞 Pond. Tap a fish to see its size, date and spot.",

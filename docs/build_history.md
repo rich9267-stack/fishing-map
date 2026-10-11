@@ -281,3 +281,6 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 
 ## 🐠 Tank follow-up 2 — lagoon + pond
 - Overflow is split by water: freshwater → 🏞 Pond (green, lily pads), saltwater → 🌴 Lagoon (turquoise, sandy bottom, seaweed). Switch has three buttons (`data-mode` tanks / lagoon / pond). `overflowDraw(t, kind, box)` draws either; containers `#lagoon-body`, `#pond-body`. Test: tests/test78.js.
+
+## 🐠 Tank step 2 — tank on profile pages
+- `openProfile` also fetches the person's catches (`visibility in friends/public`, not deleted, limit 2000) → `profView.tankCatches`; `tankProfile(catches, spotsAll, box, own)` (js/14-tank.js) draws the tanks (only the ones that have fish) + one line of lagoon/pond counts, placed after the showcase and before trophies. No database change: the existing "members read catches" RLS already limits what a viewer gets (friends see friends+public of friends; everyone else only public; never private). Other people's spot names are not shown. Tests: tests/test79.js (incl. private fish left out).

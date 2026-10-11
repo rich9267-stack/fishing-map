@@ -93,7 +93,8 @@
     if (c.length_in != null) bits.push(`${(+c.length_in).toFixed(1)} in`);
     return bits.join(" · ");
   }
-  function tankDraw(kind, data, box) {
+  function tankDraw(kind, data, box, opts) {
+    opts = opts || {};
     const salt = kind === "salt", fish = data.fish;
     const card = el("div", "tank-card");
     card.appendChild(el("div", "label", salt ? "🌊 Saltwater tank" : "🌿 Freshwater tank"));
@@ -113,7 +114,7 @@
       b.style.animationDuration = (5 + (i * 3) % 5) + "s"; b.style.animationDelay = (-(i * 1.7) % 5) + "s";
       b.setAttribute("aria-label", `${f.species}, ${tankFishText(f) || "no size logged"}. Tap for details.`);
       const sv = fishSvg(f.species, px); if (slot) sv.style.transform = "scaleX(-1)"; b.appendChild(sv);
-      b.addEventListener("click", () => tankInfo(f, kind, info));
+      b.addEventListener("click", () => tankInfo(f, kind, info, opts));
       tank.appendChild(b);
     });
     tank.appendChild(el("div", "tank-sand"));
@@ -121,12 +122,12 @@
     const info = el("div", "tank-info"); info.hidden = true; card.appendChild(info);
     box.appendChild(card);
   }
-  function tankInfo(f, kind, i) {
+  function tankInfo(f, kind, i, opts) {
     const c = f.catchRow; i.innerHTML = ""; i.hidden = false;
     i.appendChild(el("div", "tank-info-t", `${kind === "salt" ? "🌊" : "🌿"} ${f.species}`));
     i.appendChild(el("div", null, tankFishText(f) || "No size logged for this one"));
     const when = c.caught_at ? new Date(c.caught_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
-    i.appendChild(el("div", "spot-meta", "Your best — " + [when, f.spotName ? "at " + f.spotName : ""].filter(Boolean).join(" ")));
+    i.appendChild(el("div", "spot-meta", ((opts && opts.other) ? "Their best — " : "Your best — ") + [when, f.spotName && !(opts && opts.noSpot) ? "at " + f.spotName : ""].filter(Boolean).join(" ")));
     if (f.pondCount) i.appendChild(el("div", "spot-meta", `${f.pondCount} smaller ${f.species} in the ${kind === "salt" ? "lagoon" : "pond"}`));
   }
   // Overflow fish live in their own scene: freshwater -> the pond, saltwater -> the lagoon (a count per species below it).
@@ -164,3 +165,16 @@
     tankDraw("salt", t.salt, box); tankDraw("fresh", t.fresh, box); overflowDraw(t, "fresh", pbox); overflowDraw(t, "salt", lbox);
   }
   document.querySelectorAll("#tank-sw button").forEach(b => b.addEventListener("click", () => { tankMode = b.dataset.mode; renderTank(); }));
+
+  // A person's tank on their profile page. `catches` are only the ones the viewer is allowed to see (database rules) and never private ones.
+  // Other people's spots are not named; only size and date show.
+  function tankProfile(catches, spotList, box, own) {
+    const t = tankBuild(catches, spotList), n = t.salt.fish.length + t.fresh.fish.length;
+    const head = el("div", "label", "🐠 Tank"); head.style.marginTop = "12px"; head.id = "prof-tank"; box.appendChild(head);
+    if (!n) { box.appendChild(el("div", "spot-meta", own ? "No fish yet — public and friends-only catches show here." : "No fish in the tank yet.")); return; }
+    const opts = { noSpot: true, other: !own };
+    ["salt", "fresh"].forEach(k => { if (t[k].fish.length) tankDraw(k, t[k], box, opts); });
+    const sum = x => x.pond.reduce((s, p) => s + p.n, 0), bits = [];
+    if (sum(t.salt)) bits.push(`🌴 ${sum(t.salt)} in the lagoon`); if (sum(t.fresh)) bits.push(`🏞 ${sum(t.fresh)} in the pond`);
+    if (bits.length) box.appendChild(el("div", "spot-meta", bits.join(" · ")));
+  }
