@@ -329,7 +329,7 @@
   function renderSpots() {
     const list = $("spot-list");
     list.innerHTML = "";
-    if (spotsError) { list.appendChild(el("div", "empty", spotsError)); return; }
+    if (spotsError) { list.appendChild(errBox(spotsError, () => { loadSpots(); })); return; }
     if (spots === null) { list.appendChild(el("div", "empty", "Loading spots…")); return; }
     if (!spots.length) {
       list.appendChild(emptyBox("No spots yet — save the first place you fish.", "+ Add a spot", () => { $("add-btn").click(); }));
@@ -696,6 +696,16 @@
       const mo = txt('moon-now').replace(/^[^A-Za-z0-9]+/, '');
       if (mo) { const parts = mo.split('·'); set('ts-moon', parts[0].trim()); set('ts-moon2', (parts[1] || '').trim()); }
     }
+    // when tide or weather fails to load, say so plainly and offer a retry
+    function failCheck() {
+      const bad = [];
+      if (/couldn't load/i.test(txt('stage'))) { bad.push('tides'); set('ts-tide', 'Unavailable'); set('ts-tide2', ''); }
+      if (/couldn't load/i.test(txt('wx-now'))) { bad.push('wind'); set('ts-wind', 'Unavailable'); set('ts-wind2', ''); }
+      $t('ts-retry').hidden = !bad.length;
+      if (bad.length) set('ts-retry-msg', "Couldn't load " + bad.join(' and ') + (navigator.onLine ? '.' : ' — no signal.'));
+    }
+    $t('ts-retry-btn').addEventListener('click', () => { set('ts-retry-msg', 'Trying…'); load(); loadWeather(); });
+    ['stage', 'wx-now'].forEach(id => { const e = $t(id); if (e) new MutationObserver(failCheck).observe(e, { childList: true, characterData: true, subtree: true }); });
     ['stage', 'next', 'wx-now', 'wx-detail', 'wx-water', 'moon-now'].forEach(id => {
       const e = $t(id); if (e) new MutationObserver(fill).observe(e, { childList: true, characterData: true, subtree: true });
     });

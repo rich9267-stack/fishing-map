@@ -135,7 +135,7 @@
     if (!box) return;
     renderPlans();
     box.innerHTML = "";
-    if (feedError) box.appendChild(el("div", "msg err", feedError));
+    if (feedError) box.appendChild(errBox(feedError, () => { loadFeed(); }));
     const all = Object.values(catchesBySpot).flat().sort((a, b) => new Date(b.caught_at) - new Date(a.caught_at));
     if (!all.length) { box.appendChild(emptyBox("No catches yet — log one and it shows up here.", "📸 Log a catch", () => { $("qc-fab").click(); })); return; }
     all.slice(0, feedShown).forEach(c => box.appendChild(feedCard(c, {})));
@@ -219,7 +219,7 @@
     const box = $("plan-list");
     if (!box) return;
     box.innerHTML = "";
-    if (planError) box.appendChild(el("div", "msg err", planError));
+    if (planError) box.appendChild(errBox(planError, () => { loadPlans(); }));
     else if (!plans.length) box.appendChild(emptyBox("No trips planned yet.", "📅 Plan a trip", () => { $("plan-add").click(); }));
     plans.forEach(pl => {
       const spot = (spots || []).find(x => x.id === pl.spot_id);

@@ -312,7 +312,7 @@
   }
   function setOffline(on) {
     $("offline-bar").hidden = !on;
-    if (on) $("offline-bar").textContent = "📶 No signal — showing the copy saved on this phone. Quick catches will upload when you're back online.";
+    if (on) $("offline-bar").textContent = "📶 No signal — showing the copy saved on this phone (it may be a bit old). Quick catches and photos you add will upload when you're back online.";
   }
   function saveCopy(kind, data) {
     try { if (me) localStorage.setItem(`fm-copy-${kind}-${me.id}`, JSON.stringify(data)); } catch (e) {}
@@ -381,7 +381,7 @@
     if (!navigator.onLine) return toast("Still no signal — it'll send automatically when you're back online.");
     flushQueue();
   });
-  window.addEventListener("online", () => { loadSpots(); flushQueue(); });
+  window.addEventListener("online", () => { toast("✓ Back online", 2500); loadSpots(); flushQueue(); });
   window.addEventListener("offline", () => setOffline(true));
   document.addEventListener("visibilitychange", () => { if (!document.hidden) flushQueue(); });
   setInterval(() => flushQueue(), 60000);

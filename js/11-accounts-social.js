@@ -390,7 +390,7 @@
   }
   function renderPubFeed() {
     const box = $("pub-feed-list"); box.innerHTML = "";
-    if (pubError) box.appendChild(el("div", "msg err", pubError));
+    if (pubError) box.appendChild(errBox(pubError, () => { loadPublic(); }));
     if (!pubCatches.length && !pubError) { box.appendChild(el("div", "empty", "No public catches yet. Set one of your catches to 🌎 Public and it shows up here.")); return; }
     pubCatches.forEach(c => box.appendChild(pubCard(c)));
     if (pubMore) {

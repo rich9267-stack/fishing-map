@@ -72,7 +72,7 @@
         (groups[key] = groups[key] || []).push(t);
       });
 
-      const days = document.getElementById("days");
+      const days = document.getElementById("days"); days.innerHTML = ""; // clean slate so "Try again" never doubles the list
       Object.keys(groups).slice(0, 3).forEach(key => {
         const list = groups[key];
         const card = document.createElement("div");
@@ -138,7 +138,7 @@
         (rain != null ? ` · ${rain}% chance of rain` : "");
 
       // Next several hours, every 2 hours
-      const ul = document.getElementById("wx-hours");
+      const ul = document.getElementById("wx-hours"); ul.innerHTML = "";
       periods.slice(1, 13).filter((_, i) => i % 2 === 0).forEach(p => {
         const li = document.createElement("li");
         const r = p.probabilityOfPrecipitation && p.probabilityOfPrecipitation.value;

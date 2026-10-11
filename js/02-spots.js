@@ -76,6 +76,12 @@
       document.body.appendChild(bg); bNo.focus();
     });
   }
+  // A "couldn't load" message with a Try again button
+  function errBox(text, retryFn) {
+    const b = el("div", "msg err err-retry"); b.appendChild(el("span", null, text));
+    if (retryFn) { const btn = el("button", "btn ghost small", "↻ Try again"); btn.type = "button"; btn.addEventListener("click", () => { btn.disabled = true; btn.textContent = "Trying…"; retryFn(); }); b.appendChild(btn); }
+    return b;
+  }
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
   // ---- Per-spot conditions: nearest tide station or freshwater gauge ----
