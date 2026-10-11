@@ -118,9 +118,32 @@
       tank.appendChild(b);
     });
     tank.appendChild(el("div", "tank-sand"));
+    // Decorations are earned: one more for every couple of species in this tank (so friends see the same ones on your profile)
+    const deco = TANK_DECOR[salt ? "salt" : "fresh"], got = deco.filter(d => fish.length >= d.at);
+    got.forEach((d, i) => { const e = el("span", "decor", d.e); e.style.left = (5 + i * (76 / Math.max(deco.length - 1, 1))) + "%"; e.style.fontSize = d.sz + "px"; e.title = d.n; e.setAttribute("aria-hidden", "true"); tank.appendChild(e); });
     card.appendChild(tank);
+    const nxt = deco.find(d => fish.length < d.at);
+    card.appendChild(el("div", "spot-meta", got.length ? `${got.length} of ${deco.length} decorations unlocked` + (nxt ? ` · next one at ${nxt.at} species` : " — tank fully decorated! 🎉") : `First decoration unlocks at ${deco[0].at} species.`));
+    if (!opts.other) {
+      const fb = el("button", "btn ghost feed-btn", "🍤 Feed the fish"); fb.type = "button";
+      fb.addEventListener("click", () => tankFeed(tank, fb));
+      card.appendChild(fb);
+    }
     const info = el("div", "tank-info"); info.hidden = true; card.appendChild(info);
     box.appendChild(card);
+  }
+  // Decorations that unlock as a tank fills up (at = number of species in that tank)
+  const TANK_DECOR = {
+    salt: [{ at: 2, e: "🌿", n: "Seaweed", sz: 26 }, { at: 4, e: "🐚", n: "Shell", sz: 20 }, { at: 6, e: "⚓", n: "Anchor", sz: 24 }, { at: 8, e: "🪸", n: "Coral", sz: 28 }, { at: 10, e: "🏰", n: "Castle", sz: 32 }],
+    fresh: [{ at: 2, e: "🌿", n: "Water plant", sz: 26 }, { at: 4, e: "🪨", n: "Rock", sz: 22 }, { at: 6, e: "🪷", n: "Lily", sz: 26 }, { at: 8, e: "🏺", n: "Old jar", sz: 26 }, { at: 10, e: "🏰", n: "Castle", sz: 32 }]
+  };
+  // Feed the fish: flakes sink and every fish does a happy wiggle. Just for fun — nothing is saved.
+  function tankFeed(tank, btn) {
+    if (btn.disabled) return; btn.disabled = true;
+    for (let i = 0; i < 16; i++) { const f = el("span", "flake"); f.style.left = (4 + i * 6) + "%"; f.style.animationDelay = (i % 6) * 0.12 + "s"; tank.appendChild(f); setTimeout(() => f.remove(), 3000); }
+    tank.classList.add("feeding");
+    const old = btn.textContent; btn.textContent = "😋 Yum!";
+    setTimeout(() => { tank.classList.remove("feeding"); btn.textContent = old; btn.disabled = false; }, 2600);
   }
   function tankInfo(f, kind, i, opts) {
     const c = f.catchRow; i.innerHTML = ""; i.hidden = false;

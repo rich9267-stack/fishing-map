@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-11e", title: "🎁 Tank extras", items: [
+      "🌿 Your tanks earn decorations as they fill up — seaweed, shells, an anchor, coral and finally a castle. Friends see them on your profile page too.",
+      "🍤 Tap \"Feed the fish\" on the Tank tab for a little show."
+    ] },
     { id: "2026-10-11d", title: "🏆 Collections", items: [
       "🏆 The Tank tab now shows how many fish you've caught from each group: inshore, beach & pier, offshore and freshwater. Tap a group to see which ones you still need.",
       "🏅 Catch them all in a group to complete it. Your friends can see your collections on your profile page."
