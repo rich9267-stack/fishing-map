@@ -281,9 +281,41 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   console.log("schooling:", JSON.stringify(beh.school), "| same kind closer together:", beh.school.avgDistSameKind < beh.school.avgDistOtherKind);
   console.log("chase:", JSON.stringify(beh.chase));
   console.log("equal sizes never chase:", beh.noChaseWhenEqual);
-  const fb = d.querySelector("#tank-body .feed-btn"); click(fb); await sleep(50);
-  console.log("feed: flakes", d.querySelectorAll("#tank-body .flake").length, "| tank feeding:", !!d.querySelector("#tank-body .feeding"), "| button:", fb.textContent, fb.disabled);
-  await sleep(2800); console.log("feed done:", !d.querySelector("#tank-body .feeding"), fb.textContent, fb.disabled);
+  // ---- hand feeding (step 4) ----
+  w.eval("window.matchMedia = () => ({ matches: false }); tankMode = 'tanks'; renderTank()");
+  const tankEl = d.querySelector("#tank-body .tank-salt"), fb = d.querySelector("#tank-body .feed-btn"), sim0 = tankEl.__sim;
+  console.log("feed button starts off:", fb.textContent, "| pressed:", fb.getAttribute("aria-pressed"), "| tank in feeding mode:", tankEl.classList.contains("feeding-mode"));
+  click(fb); await sleep(20);
+  console.log("feeding mode on:", fb.textContent, "|", tankEl.classList.contains("feeding-mode"), "| hint shown:", !!d.querySelector("#tank-body .feed-hint"), "| fish ignore taps while feeding (css class):", tankEl.classList.contains("feeding-mode"));
+  const ptr = (type, x, y) => { const e = new w.MouseEvent(type, { bubbles: true, clientX: x, clientY: y }); tankEl.dispatchEvent(e); };
+  sim0.W = 366; sim0.H = 300; sim0.scale = 1; tankEl.getBoundingClientRect = () => ({ left: 0, top: 0, width: 366, height: 300 });
+  ptr("pointerdown", 180, 120); console.log("touch holds food:", !!sim0.feed, "| pinch drawn:", !!tankEl.querySelector(".food"), "| flakes drawn:", tankEl.querySelectorAll(".food-flakes i").length, "| position:", sim0.feed && [sim0.feed.x, sim0.feed.y].join(","));
+  ptr("pointermove", 220, 150); console.log("dragging moves it:", sim0.feed && [sim0.feed.x, sim0.feed.y].join(","));
+  ptr("pointermove", 9999, 9999); console.log("kept inside the water:", sim0.feed && sim0.feed.x <= 362 && sim0.feed.y <= 300 - sim0.floor);
+  const feedRun = JSON.parse(w.eval(`(() => {
+    const sim = [...document.querySelectorAll('.tank-salt')][0].__sim; sim.fish.forEach((f, i) => { f.x = 20 + i * 90; f.y = 180; f.vx = f.vy = 0; f.mode = "swim"; f.fullT = 0; f.bites = 0; });
+    tankFeedMove(sim, 180, 120); const start = sim.fish.map(f => Math.hypot(f.x - 180, f.y - 120)); let nearest = 1e9, eatenAtHold = 0, minSupply = 6;
+    for (let s = 0; s < 900; s++) { tankStep(sim, 1/30); minSupply = Math.min(minSupply, sim.feed.supply); sim.fish.forEach(f => nearest = Math.min(nearest, Math.hypot(f.x + f.w * 0.9 - 180, f.y + f.h / 2 - 120))); }
+    eatenAtHold = sim.eaten; const supplyHeld = sim.feed.supply; const crumbsWhileHolding = sim.crumbs.length;
+    return JSON.stringify({ came: nearest < 40, nearestMouthPx: Math.round(nearest), ate: eatenAtHold, bitesUsedSupply: minSupply < 6, someFull: sim.fish.filter(f => f.fullT > 0).length, crumbsWhileHolding, hungryDistStart: Math.round(start.reduce((a, b) => a + b) / start.length) }); })()`));
+  console.log("fish come and eat from the pinch:", JSON.stringify(feedRun));
+  ptr("pointerup", 0, 0); console.log("letting go sprinkles flakes:", sim0.crumbs.length, "| pinch gone:", !tankEl.querySelector(".food"), "| holding:", !!sim0.feed);
+  const after = JSON.parse(w.eval(`(() => { const sim = [...document.querySelectorAll('.tank-salt')][0].__sim; sim.fish.forEach(f => { f.fullT = 0; f.bites = 0; }); const eatenBefore = sim.eaten, c0 = sim.crumbs.length; for (let s = 0; s < 1500; s++) tankStep(sim, 1/30); return JSON.stringify({ crumbsStart: c0, eatenFromCrumbs: sim.eaten - eatenBefore, crumbsLeft: sim.crumbs.length, crumbEls: sim.scene.querySelectorAll('.crumb').length }); })()`));
+  console.log("flakes get eaten or fade away:", JSON.stringify(after));
+  const fullRun = JSON.parse(w.eval(`(() => { const sim = [...document.querySelectorAll('.tank-salt')][0].__sim; tankFeedBegin(sim, 100, 100); sim.fish.forEach(f => { f.fullT = 0; f.bites = 0; f.biteCd = 0; f.x = 90; f.y = 95; f.mode = "swim"; });
+    for (let s = 0; s < 3000; s++) { tankStep(sim, 1/30); sim.feed.x = 100; sim.feed.y = 100; } const full = sim.fish.every(f => f.fullT > 0 || f.bites > 0); const r = JSON.stringify({ allFedAndFull: sim.fish.filter(f => f.fullT > 0).length, of: sim.fish.length, anyStillHungry: sim.fish.some(f => f.fullT <= 0) }); tankFeedEnd(sim); return r; })()`));
+  console.log("fish get full and stop crowding the food:", JSON.stringify(fullRun));
+  click(fb); await sleep(20);
+  console.log("Done feeding:", fb.textContent, "| class off:", !tankEl.classList.contains("feeding-mode"), "| hint gone:", !d.querySelector("#tank-body .feed-hint"), "| touching now does nothing:", (() => { ptr("pointerdown", 50, 50); return !sim0.feed; })());
+  // feeding in full screen shares the same mode and buttons
+  click(d.querySelector("#tank-body .full-btn")); await sleep(30);
+  const fsBtn = d.querySelector(".tank-full .feed-btn"); click(fsBtn); await sleep(10);
+  console.log("full screen feed button turns it on:", tankEl.classList.contains("feeding-mode"), "|", fsBtn.textContent, "| card button follows:", fb.textContent, "| no hint squeezed into full screen:", !d.querySelector(".tank-full .feed-hint"));
+  click(d.querySelector(".tank-full .tf-bar button")); await sleep(30);
+  console.log("after closing full screen, mode still on, button synced:", tankEl.classList.contains("feeding-mode"), fb.textContent); click(fb); await sleep(10);
+  w.eval("window.matchMedia = () => ({ matches: true }); renderTank()");
+  const rb = d.querySelector("#tank-body .feed-btn"); console.log("reduced motion: feeding button disabled with a reason:", rb.disabled, "|", rb.textContent);
+  w.eval("window.matchMedia = () => ({ matches: false })");
   w.eval("catchesBySpot = {}"); console.log("empty tanks, first catch:", chk("Snook", 3, 20));
   console.log("DONE");
 } catch (e) { console.log("TEST ERROR", e && e.stack); } process.exit(0); })();

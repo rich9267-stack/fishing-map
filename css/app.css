@@ -468,11 +468,6 @@
   /* 🎁 Tank extras: decorations + feeding */
   .decor { position: absolute; bottom: 10px; line-height: 1; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
   .feed-btn { margin-top: 10px; }
-  .flake { position: absolute; top: -8px; width: 6px; height: 6px; border-radius: 50%; background: #e9a24a; opacity: .95; animation: flakefall 2.4s ease-in forwards; pointer-events: none; }
-  @keyframes flakefall { to { transform: translateY(640px); opacity: 0; } }
-  .tank.feeding .tf-turn svg { animation: tfeed .5s ease-in-out 4; }
-  @keyframes tfeed { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-8px) rotate(-6deg); } }
-  @media (prefers-reduced-motion: reduce) { .flake { display: none; } .tank.feeding .tf-turn svg { animation: none; } }
 
   /* 🐟 Fish with moving parts (step 1 of the simulator) */
   .fish-live .fs-rig, .fish-live .fs-tail, .fish-live .fs-fin, .fish-live .fs-fin2, .fish-live .fs-eye { transform-box: fill-box; }
@@ -503,3 +498,19 @@
   .tf-foot .btn.ghost { color: #fff; border-color: rgba(255,255,255,.55); background: transparent; }
   .tf-foot .tank-info { color: var(--text); }
   .tf-turn.dart svg.fish-live .fs-tail { animation-duration: calc(var(--fd, 1s) * .4); }
+
+  /* 🍤 Hand feeding */
+  .tank.feeding-mode { touch-action: none; cursor: grab; outline: 3px solid #f2b134; outline-offset: -3px; }
+  .tank.feeding-mode .tfish { pointer-events: none; }
+  .food { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; z-index: 30; }
+  .food-flakes { position: absolute; left: -14px; top: -6px; width: 28px; height: 18px; }
+  .food-flakes i { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #e9a24a; box-shadow: 0 0 2px rgba(0,0,0,.4); }
+  .food-flakes i:nth-child(1) { left: 2px; top: 6px; } .food-flakes i:nth-child(2) { left: 9px; top: 2px; } .food-flakes i:nth-child(3) { left: 16px; top: 7px; }
+  .food-flakes i:nth-child(4) { left: 6px; top: 11px; } .food-flakes i:nth-child(5) { left: 14px; top: 12px; } .food-flakes i:nth-child(6) { left: 21px; top: 3px; }
+  .food-finger, .food-thumb { position: absolute; width: 16px; height: 42px; border-radius: 9px; background: linear-gradient(#f4cfb0, #e3a984); box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+  .food-finger { left: 0; top: -40px; transform: rotate(-12deg); transform-origin: 50% 100%; }
+  .food-thumb { left: -22px; top: -30px; transform: rotate(32deg); transform-origin: 50% 100%; }
+  .crumb { position: absolute; left: 0; top: 0; width: 5px; height: 5px; border-radius: 50%; background: #e9a24a; pointer-events: none; z-index: 5; }
+  .bite-pop { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 2px solid rgba(255,255,255,.85); pointer-events: none; z-index: 31; animation: bitepop .5s ease-out forwards; }
+  @keyframes bitepop { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .bite-pop { animation: none; opacity: 0; } }

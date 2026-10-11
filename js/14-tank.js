@@ -111,7 +111,7 @@
   function tankRng(seed) { let a = seed | 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function tankSwim(scene, items, opts) {
     opts = opts || {};
-    const sim = { scene, W: 0, H: 0, scale: 1, floor: opts.floor == null ? 18 : opts.floor, visible: true, time: 0, fish: [], still: tankReduced(), chase: !!opts.chase, moodSpeed: 1 };
+    const sim = { scene, W: 0, H: 0, scale: 1, floor: opts.floor == null ? 18 : opts.floor, visible: true, time: 0, fish: [], still: tankReduced(), chase: !!opts.chase, moodSpeed: 1, feed: null, crumbs: [], eaten: 0, feedMode: false, feedBtns: [], foodEl: null };
     sim.resize = () => {
       sim.W = scene.clientWidth || sim.W || 340; sim.H = scene.clientHeight || sim.H || 260;
       sim.scale = Math.max(1, Math.min(2.2, Math.min(sim.W / 360, sim.H / 300)));
@@ -119,7 +119,7 @@
     sim.resize();
     const lead = {};
     items.forEach((it, i) => {
-      const r = tankRng(1000 + i * 7919 + (opts.seed || 0)), f = Object.assign({ x: 0, y: 0, vx: 0, vy: 0, turn: 1, tx: 0, ty: 0, tt: 0, rnd: r, sp: 0, phase: r() * 6.28, depth: 0.5, mode: "swim", mt: 0, cool: 4 + r() * 10, prey: null, follow: null, off: null, kind: "" }, it);
+      const r = tankRng(1000 + i * 7919 + (opts.seed || 0)), f = Object.assign({ x: 0, y: 0, vx: 0, vy: 0, turn: 1, tx: 0, ty: 0, tt: 0, rnd: r, sp: 0, phase: r() * 6.28, depth: 0.5, mode: "swim", mt: 0, cool: 4 + r() * 10, prey: null, follow: null, off: null, kind: "", bites: 0, fullT: 0, biteCd: 0, eatT: 0 }, it);
       f.sp = (opts.speed || 26) * (0.8 + r() * 0.5) * (1 + 18 / Math.max(f.w, 20) * 0.6);
       f.x = r() * Math.max(1, sim.W - f.w); f.y = r() * Math.max(1, sim.H - sim.floor - f.h);
       f.turn = r() < 0.5 ? 1 : -1; f.tt = 0;
@@ -148,6 +148,7 @@
     sim.time += dt;
     const S = sim.scale, top = 6, F = sim.fish, n = F.length;
     const geo = F.map(f => { const sc = S * (0.8 + 0.2 * f.depth), w = f.w * sc, h = f.h * sc; return { w, h, cx: f.x + w / 2, cy: f.y + h / 2, r: Math.max(w * 0.42, h * 0.9) }; });
+    if (dt > 0) tankFoodStep(sim, dt);
     if (dt > 0) {
       const ax = new Array(n).fill(0), ay = new Array(n).fill(0);
       for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
@@ -163,8 +164,21 @@
         const g = geo[i], W = sim.W, maxX = Math.max(0, W - g.w - 4), maxY = Math.max(top, sim.H - sim.floor - g.h - 2);
         f.cool -= dt; f.tt -= dt;
         if (f.mode !== "swim") { f.mt -= dt; if (f.mt <= 0 || (f.mode === "chase" && (!f.prey || f.prey.mode !== "flee"))) { if (f.mode === "chase") f.cool = 10 + f.rnd() * 14; f.mode = "swim"; f.prey = null; f.tt = 0; } }
+        f.biteCd -= dt; f.eatT -= dt; if (f.fullT > 0) f.fullT -= dt;
+        let food = null; if (!f.face) f.face = f.turn >= 0 ? 1 : -1; let mo = f.face > 0 ? 0.93 : 0.07; // the mouth is at the front of the fish
+        if (f.mode === "swim" && f.fullT <= 0 && (sim.feed || sim.crumbs.length)) {
+          let bd = 1e9;
+          if (sim.feed) { const d = Math.hypot(sim.feed.x - g.cx, sim.feed.y - g.cy); if (d < 300 * S) { food = { x: sim.feed.x, y: sim.feed.y, pinch: true }; bd = d * 0.8; } }
+          sim.crumbs.forEach(c => { const d = Math.hypot(c.x - g.cx, c.y - g.cy); if (!c.dead && d < 210 * S && d < bd) { food = { x: c.x, y: c.y, crumb: c }; bd = d; } });
+          if (food && f.biteCd <= 0 && Math.hypot(food.x - (f.x + g.w * mo), food.y - (f.y + g.h * 0.5)) < 18 * S && (!food.pinch || sim.feed.supply >= 1)) {
+            if (food.pinch) sim.feed.supply -= 1; else food.crumb.dead = true;
+            f.bites++; f.biteCd = 0.9; f.eatT = 0.35; sim.eaten++; tankPop2(sim, food.x, food.y);
+            if (f.bites >= 5) { f.bites = 0; f.fullT = 25 + f.rnd() * 15; } // full for a while
+          }
+        }
         let boost = 1;
-        if (f.mode === "chase" && f.prey) { const pg = geo[F.indexOf(f.prey)]; f.tx = Math.max(4, Math.min(maxX, pg.cx - g.w / 2)); f.ty = Math.max(top, Math.min(maxY, pg.cy - g.h / 2)); boost = 1.8; }
+        if (food && f.mode === "swim") { f.tx = Math.max(4, Math.min(maxX, food.x - g.w * mo)); f.ty = Math.max(top, Math.min(maxY, food.y - g.h / 2)); boost = 1.7; }
+        else if (f.mode === "chase" && f.prey) { const pg = geo[F.indexOf(f.prey)]; f.tx = Math.max(4, Math.min(maxX, pg.cx - g.w / 2)); f.ty = Math.max(top, Math.min(maxY, pg.cy - g.h / 2)); boost = 1.8; }
         else if (f.mode === "flee" && f.chaser) {
           const cg = geo[F.indexOf(f.chaser)], awx = g.cx - cg.cx, awy = g.cy - cg.cy, dd = Math.hypot(awx, awy) || 1;
           f.tx = Math.max(4, Math.min(maxX, f.x + awx / dd * 160)); f.ty = Math.max(top, Math.min(maxY, f.y + awy / dd * 80)); boost = 2.4;
@@ -183,17 +197,79 @@
         f.x += f.vx * dt; f.y += f.vy * dt;
         if (f.x < 0) { f.x = 0; f.vx = Math.abs(f.vx) * 0.3; f.tt = 0; } else if (f.x > maxX) { f.x = maxX; f.vx = -Math.abs(f.vx) * 0.3; f.tt = 0; }
         if (f.y < top) { f.y = top; f.vy = Math.abs(f.vy) * 0.3; } else if (f.y > maxY) { f.y = maxY; f.vy = -Math.abs(f.vy) * 0.3; }
-        if (Math.abs(f.vx) > 5) { const want = f.vx > 0 ? 1 : -1, rate = (boost > 1.5 ? 9 : 5.5) * dt; f.turn += Math.max(-rate, Math.min(rate, want - f.turn)); }
+        let want = 0; // which way it faces: toward the food when feeding, otherwise the way it swims (with a dead zone so it doesn't flip-flop)
+        if (food && f.mode === "swim") want = food.x >= g.cx ? 1 : -1; else if (Math.abs(f.vx) > 8) want = f.vx > 0 ? 1 : -1;
+        if (want) { f.face = want; const rate = (boost > 1.5 ? 9 : 5.5) * dt; f.turn += Math.max(-rate, Math.min(rate, want - f.turn)); }
         const dart = f.mode !== "swim"; if (dart !== f.dart) { f.dart = dart; f.turnEl.classList.toggle("dart", dart); }
       });
     }
     F.forEach(f => {
-      const bob = Math.sin(sim.time * 1.7 + f.phase) * 1.6, tilt = Math.max(-22, Math.min(22, Math.atan2(f.vy, Math.max(Math.abs(f.vx), 14)) * 57.3));
+      const bob = Math.sin(sim.time * 1.7 + f.phase) * 1.6, tilt = Math.max(-22, Math.min(22, Math.atan2(f.vy, Math.max(Math.abs(f.vx), 14)) * 57.3)) - (f.eatT > 0 ? 16 : 0);
       const sc = S * (0.8 + 0.2 * f.depth);
       f.el.style.transform = `translate(${f.x.toFixed(1)}px, ${(f.y + bob).toFixed(1)}px)`;
       f.turnEl.style.transform = `scaleX(${(f.turn * sc).toFixed(3)}) scaleY(${sc.toFixed(3)}) rotate(${tilt.toFixed(1)}deg)`;
     });
   }
+  // ---- 🍤 Hand feeding: touch and drag inside the tank to hold a pinch of food; hungry fish come and nibble it from your fingertip ----
+  // The pinch holds 6 flakes (one comes back every ~1.1 s while you hold). Each bite uses a flake, a fish that has eaten 5 times is full for
+  // 25–40 s. Let go and the flakes sprinkle down; fish eat those off the way down. Nothing is saved — just play.
+  function tankPop2(sim, x, y) { // a tiny puff where a bite happened
+    const e = el("span", "bite-pop"); e.style.left = x + "px"; e.style.top = y + "px"; sim.scene.appendChild(e); setTimeout(() => e.remove(), 500);
+  }
+  function tankCrumb(sim, x, y) {
+    if (sim.crumbs.length >= 40) { const o = sim.crumbs.shift(); if (o.el) o.el.remove(); }
+    const c = { x, y, el: el("span", "crumb"), rest: 0, dead: false }; c.el.style.transform = `translate(${x}px, ${y}px)`; sim.scene.appendChild(c.el); sim.crumbs.push(c);
+  }
+  function tankFoodStep(sim, dt) {
+    const S = sim.scale, floorY = sim.H - sim.floor - 5;
+    if (sim.feed) {
+      const fd = sim.feed;
+      if (fd.supply < 6) { fd.refill += dt; if (fd.refill >= 1.1) { fd.refill = 0; fd.supply += 1; } } else fd.refill = 0;
+      fd.drip -= dt; if (fd.drip <= 0) { fd.drip = 0.5; tankCrumb(sim, fd.x + (sim.time * 37 % 11) - 5, fd.y + 10); }
+    }
+    sim.crumbs.forEach(c => {
+      if (c.y < floorY) c.y = Math.min(floorY, c.y + 22 * S * dt); else c.rest += dt;
+      if (c.rest > 7) c.dead = true;
+      c.el.style.transform = `translate(${c.x.toFixed(1)}px, ${c.y.toFixed(1)}px)`; c.el.style.opacity = c.rest > 5 ? String(Math.max(0, (7 - c.rest) / 2)) : "";
+    });
+    if (sim.crumbs.some(c => c.dead)) { sim.crumbs = sim.crumbs.filter(c => { if (c.dead) c.el.remove(); return !c.dead; }); }
+    if (sim.feed) {
+      if (!sim.foodEl) { const f = el("div", "food"); f.appendChild(el("span", "food-thumb")); f.appendChild(el("span", "food-finger")); const fl = el("span", "food-flakes"); for (let i = 0; i < 6; i++) fl.appendChild(el("i")); f.appendChild(fl); sim.scene.appendChild(f); sim.foodEl = f; }
+      sim.foodEl.style.transform = `translate(${sim.feed.x.toFixed(1)}px, ${sim.feed.y.toFixed(1)}px)`;
+      [...sim.foodEl.querySelectorAll("i")].forEach((d, i) => { d.style.opacity = i < sim.feed.supply ? "1" : "0.12"; });
+    } else if (sim.foodEl) { sim.foodEl.remove(); sim.foodEl = null; }
+  }
+  const tankFeedBegin = (sim, x, y) => { sim.feed = { x, y, supply: 6, refill: 0, drip: 0.6 }; tankFoodStep(sim, 0); };
+  const tankFeedMove = (sim, x, y) => { if (sim.feed) { sim.feed.x = Math.max(4, Math.min(sim.W - 4, x)); sim.feed.y = Math.max(4, Math.min(sim.H - sim.floor - 4, y)); } };
+  function tankFeedEnd(sim) { // let go: sprinkle what is left
+    if (!sim.feed) return;
+    const fd = sim.feed; sim.feed = null;
+    for (let i = 0; i < Math.max(3, Math.round(fd.supply)); i++) tankCrumb(sim, fd.x + (i - 3) * 6, fd.y + (i % 3) * 5);
+    tankFoodStep(sim, 0);
+  }
+  // Turn feeding mode on/off for a tank and keep every "Feed the fish" button for it in step.
+  function tankFeedMode(scene, on) {
+    const sim = scene.__sim; if (!sim) return;
+    sim.feedMode = on; scene.classList.toggle("feeding-mode", on);
+    if (!on) tankFeedEnd(sim);
+    sim.feedBtns.forEach(b => { b.textContent = on ? "✋ Done feeding" : "🍤 Feed the fish"; b.setAttribute("aria-pressed", String(on)); });
+    if (on && !sim.hintEl && scene.parentNode && !scene.closest(".tank-full")) { sim.hintEl = el("div", "spot-meta feed-hint", "Touch and drag inside the tank to hold the food. Hungry fish will come and nibble."); scene.parentNode.insertBefore(sim.hintEl, scene.nextSibling); }
+    if (!on && sim.hintEl) { sim.hintEl.remove(); sim.hintEl = null; }
+  }
+  function tankFeedBind(scene) {
+    const sim = scene.__sim; if (!sim) return;
+    const pos = e => { const r = scene.getBoundingClientRect(); return [e.clientX - r.left - scene.clientLeft, e.clientY - r.top - scene.clientTop]; };
+    scene.addEventListener("pointerdown", e => { if (!sim.feedMode) return; e.preventDefault(); try { scene.setPointerCapture(e.pointerId); } catch (x) { /* fine */ } const [x, y] = pos(e); tankFeedBegin(sim, x, y); tankFeedMove(sim, x, y); });
+    scene.addEventListener("pointermove", e => { if (!sim.feedMode || !sim.feed) return; e.preventDefault(); const [x, y] = pos(e); tankFeedMove(sim, x, y); });
+    ["pointerup", "pointercancel"].forEach(t => scene.addEventListener(t, () => { if (sim.feedMode) tankFeedEnd(sim); }));
+  }
+  const feedBtn = (scene, canFeed) => {
+    const b = el("button", "btn ghost feed-btn", "🍤 Feed the fish"); b.type = "button"; b.setAttribute("aria-pressed", "false");
+    const sim = scene.__sim; if (sim) sim.feedBtns.push(b);
+    if (sim && sim.still) { b.disabled = true; b.title = "Your phone is set to reduce motion, so the fish stay still."; b.textContent = "🍤 Feeding needs motion"; return b; }
+    b.addEventListener("click", () => tankFeedMode(scene, !(scene.__sim && scene.__sim.feedMode)));
+    return b;
+  };
   function tankTick(now) {
     tankRaf = 0;
     const dt = Math.min(0.05, ((now - tankLast) / 1000) || 0); tankLast = now;
@@ -209,7 +285,7 @@
     const stage = el("div", "tf-stage"), info = el("div", "tank-info tf-info"); info.hidden = true;
     scene.style.height = "100%"; stage.appendChild(scene);
     const foot = el("div", "tf-foot"); foot.appendChild(info);
-    if (canFeed) { const fb = el("button", "btn ghost feed-btn", "🍤 Feed the fish"); fb.type = "button"; fb.addEventListener("click", () => tankFeed(scene, fb)); foot.appendChild(fb); }
+    let fb = null; if (canFeed) { fb = feedBtn(scene, true); if (scene.__sim && scene.__sim.feedMode) { fb.textContent = "✋ Done feeding"; fb.setAttribute("aria-pressed", "true"); } foot.appendChild(fb); }
     bg.appendChild(bar); bg.appendChild(stage); bg.appendChild(foot);
     document.body.style.overflow = "hidden"; document.body.appendChild(bg);
     let gotFs = false, closed = false;
@@ -218,6 +294,7 @@
       if (closed) return; closed = true;
       document.removeEventListener("keydown", key, true); document.removeEventListener("fullscreenchange", fsc); window.removeEventListener("resize", refit); window.removeEventListener("orientationchange", refit);
       try { if (document.fullscreenElement === bg && document.exitFullscreen) document.exitFullscreen().catch(() => {}); } catch (e) { /* fine */ }
+      if (fb && scene.__sim) scene.__sim.feedBtns = scene.__sim.feedBtns.filter(x => x !== fb);
       scene.style.height = oldH; home.insertBefore(scene, next && next.parentNode === home ? next : null); bg.remove(); document.body.style.overflow = oldOv; refit();
       if (prev && prev.focus) { try { prev.focus(); } catch (e) { /* fine */ } }
     };
@@ -263,11 +340,7 @@
     const nxt = deco.find(d => fish.length < d.at);
     card.appendChild(el("div", "spot-meta", got.length ? `${got.length} of ${deco.length} decorations unlocked` + (nxt ? ` · next one at ${nxt.at} species` : " — tank fully decorated! 🎉") : `First decoration unlocks at ${deco[0].at} species.`));
     const acts = el("div", "tank-actions");
-    if (!opts.other) {
-      const fb = el("button", "btn ghost feed-btn", "🍤 Feed the fish"); fb.type = "button";
-      fb.addEventListener("click", () => tankFeed(tank, fb));
-      acts.appendChild(fb);
-    }
+    if (!opts.other) { tankFeedBind(tank); acts.appendChild(feedBtn(tank, true)); }
     acts.appendChild(fullBtn(tank, salt ? "🌊 Saltwater tank" : "🌿 Freshwater tank", !opts.other));
     card.appendChild(acts);
     const info = el("div", "tank-info"); info.hidden = true; card.appendChild(info);
@@ -278,14 +351,6 @@
     salt: [{ at: 2, e: "🌿", n: "Seaweed", sz: 26 }, { at: 4, e: "🐚", n: "Shell", sz: 20 }, { at: 6, e: "⚓", n: "Anchor", sz: 24 }, { at: 8, e: "🪸", n: "Coral", sz: 28 }, { at: 10, e: "🏰", n: "Castle", sz: 32 }],
     fresh: [{ at: 2, e: "🌿", n: "Water plant", sz: 26 }, { at: 4, e: "🪨", n: "Rock", sz: 22 }, { at: 6, e: "🪷", n: "Lily", sz: 26 }, { at: 8, e: "🏺", n: "Old jar", sz: 26 }, { at: 10, e: "🏰", n: "Castle", sz: 32 }]
   };
-  // Feed the fish: flakes sink and every fish does a happy wiggle. Just for fun — nothing is saved.
-  function tankFeed(tank, btn) {
-    if (btn.disabled) return; btn.disabled = true;
-    for (let i = 0; i < 16; i++) { const f = el("span", "flake"); f.style.left = (4 + i * 6) + "%"; f.style.animationDelay = (i % 6) * 0.12 + "s"; tank.appendChild(f); setTimeout(() => f.remove(), 3000); }
-    tank.classList.add("feeding");
-    const old = btn.textContent; btn.textContent = "😋 Yum!";
-    setTimeout(() => { tank.classList.remove("feeding"); btn.textContent = old; btn.disabled = false; }, 2600);
-  }
   function tankInfo(f, kind, i, opts) {
     const c = f.catchRow; i.innerHTML = ""; i.hidden = false;
     i.appendChild(el("div", "tank-info-t", `${kind === "salt" ? "🌊" : "🌿"} ${f.species}`));

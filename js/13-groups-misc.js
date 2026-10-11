@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-11i", title: "🍤 Feed them by hand", items: [
+      "🍤 Tap \"Feed the fish\" on a tank, then touch and drag inside it: you hold a pinch of food and hungry fish swim over to nibble it from your fingertip.",
+      "😋 A fish that has eaten its fill backs off for a while so everyone gets a turn. Let go and the flakes sprinkle down for the fish to catch. Works in full screen too."
+    ] },
     { id: "2026-10-11h", title: "🐟 Fish notice each other", items: [
       "🐟 Fish of the same kind now swim together in schools (look in the pond and lagoon), and every fish keeps a little room from the others.",
       "🦈 Now and then a big fish chases a much smaller one, which bolts away — nobody gets hurt. Fish in the back can swim behind the ones in front."
