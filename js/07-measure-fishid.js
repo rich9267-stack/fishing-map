@@ -740,7 +740,7 @@
       openCatchSpot = null;
       editingCatch = null;
       await loadCatches();
-      tankPop(newBest);
+      tankPop(newBest); setTimeout(() => tankClaim(true), 1200);
     } catch (err) {
       msg.className = "msg err";
       msg.textContent = "Couldn't save: " + (err.message || err);

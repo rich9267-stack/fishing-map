@@ -435,10 +435,61 @@
     const t = tankBuild(mine, spots), n = t.salt.fish.length + t.fresh.fish.length;
     const sum = x => x.pond.reduce((s, p) => s + p.n, 0);
     $("tank-sum").textContent = n ? `${n} species in your tanks · ${t.salt.fish.length} saltwater · ${t.fresh.fish.length} freshwater · ${sum(t.salt)} in the lagoon · ${sum(t.fresh)} in the pond` : "Log a catch and your first fish appears.";
+    walletDraw(); tankClaim();
     tankDraw("salt", t.salt, box); tankDraw("fresh", t.fresh, box); collectionDraw(mine, box); overflowDraw(t, "fresh", pbox); overflowDraw(t, "salt", lbox);
   }
   document.querySelectorAll("#tank-sw button").forEach(b => b.addEventListener("click", () => { tankMode = b.dataset.mode; renderTank(); }));
 
+  // ---- 🪙 Coins & 💎 gems: earned from photographed catches, new species/bests, finished collections and official tournaments ----
+  // All the rules and the daily limit live in the database (setup/41); the app only asks "claim_coins" and shows the result.
+  // Gems are earned only. The shop that spends them comes next (simulator step 7).
+  let wallet = null, walletBusy = false, walletAt = 0;
+  const COIN_WHY = { catch: "photographed catch", measured: "measured it", species: "new species", best: "new personal best", collection: "finished a collection", tournament: "tournament placing" };
+  const COIN_GROUPS = { inshore: "Inshore", beach: "Beach & pier", offshore: "Offshore", fresh: "Freshwater" };
+  function walletToast(added) {
+    if (!added || !added.length) return;
+    const coins = added.reduce((a, x) => a + (x.coins || 0), 0), gems = added.reduce((a, x) => a + (x.gems || 0), 0);
+    const why = [...new Set(added.map(x => COIN_WHY[x.reason] || x.reason))].join(", ");
+    if (typeof toast === "function") toast(`🪙 +${coins}${gems ? " · 💎 +" + gems : ""} — ${why}`, 5000);
+  }
+  async function tankClaim(force) {
+    if (walletBusy || !me || !db || !db.rpc) return;
+    if (!force && Date.now() - walletAt < 45000) return;
+    walletBusy = true;
+    try {
+      const r = await db.rpc("claim_coins"); if (r.error || !r.data || typeof r.data.coins !== "number") throw (r.error || new Error("no wallet"));
+      wallet = r.data; walletAt = Date.now(); walletToast(wallet.added); walletDraw();
+      // finished collection groups: ask once per group (the server checks every species has a photographed catch)
+      const mine = Object.values(catchesBySpot || {}).flat().filter(c => c.created_by === me.id && !c.deleted_at);
+      for (const g of tankCollection(mine)) {
+        if (g.total < 5 || g.got.length !== g.total || (wallet.collections || []).includes(g.key)) continue;
+        const alts = g.got.map(n => [...new Set(mine.filter(c => { const f = seasonFor(c.species); return f && f.name === n; }).map(c => c.species))]);
+        const c2 = await db.rpc("claim_collection", { p_group: g.key, p_species: alts });
+        if (!c2.error && c2.data && typeof c2.data.coins === "number") { wallet = c2.data; walletToast(wallet.added); walletDraw(); }
+      }
+    } catch (e) { /* offline, or not signed in yet: no coins right now, nothing is lost — they are claimed next time */ }
+    walletBusy = false;
+  }
+  function walletDraw() {
+    const box = $("wallet-box"); if (!box) return; box.innerHTML = "";
+    if (!wallet) return;
+    const row = el("div", "wallet-row");
+    const chip = (e, n, t) => { const c = el("span", "coin-chip"); c.title = t; c.appendChild(el("span", "", e)); c.appendChild(el("b", "", String(n))); return c; };
+    row.appendChild(chip("🪙", wallet.coins, "Coins")); row.appendChild(chip("💎", wallet.gems, "Gems — earned only, never sold"));
+    box.appendChild(row);
+    box.appendChild(el("div", "spot-meta", `Today: ${wallet.today} of ${wallet.cap} catch coins`));
+    const det = el("details", "wallet-more"); det.appendChild(el("summary", "", "How do I earn coins and gems?"));
+    ["🪙 2 for every catch you log with a photo (+1 if you measure it) — up to 50 a day.",
+      "🪙 40 the first time you catch a species · 🪙 25 for a new personal best (3 a day at most).",
+      "🪙 150 + 💎 2 when you finish a collection.",
+      "🏆 Official tournaments, top 3: 🪙 200 / 120 / 80 and 💎 3 / 2 / 1.",
+      "💎 Gems can only be earned — they are never for sale. The shop where you spend them is coming soon."].forEach(t => det.appendChild(el("div", "spot-meta", t)));
+    if ((wallet.recent || []).length) {
+      det.appendChild(el("div", "label wallet-h", "Recent"));
+      wallet.recent.forEach(r => det.appendChild(el("div", "spot-meta", `${r.currency === "gems" ? "💎" : "🪙"} +${r.amount} — ${r.reason === "collection" || r.reason === "tournament" ? (COIN_WHY[r.reason] + (r.note ? ": " + (COIN_GROUPS[r.note] || r.note) : "")) : (COIN_WHY[r.reason] || r.reason) + (r.note ? " · " + r.note : "")}`)));
+    }
+    box.appendChild(det);
+  }
   // ---- 🏆 Collections: how many of each Seasons group (inshore, beach & pier, offshore, freshwater) you have caught ----
   // Uses the same species list as the Seasons tab, so a new fish there becomes a new goal here. The mullet run is bait, not a catch.
   function tankCollection(catches) {

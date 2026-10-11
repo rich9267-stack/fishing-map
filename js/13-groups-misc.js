@@ -449,6 +449,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-12c", title: "🪙 Coins and 💎 gems", items: [
+      "🪙 Log a catch with a photo and earn 2 coins (3 if you measure it), up to 50 a day. A brand-new species pays 40, a new personal best 25, and finishing a collection 150.",
+      "💎 Gems are earned only: 2 for finishing a collection, and 3 / 2 / 1 for 1st / 2nd / 3rd in an official tournament (plus 200 / 120 / 80 coins). They're never for sale.",
+      "👀 Your balance and a “how do I earn” list are at the top of the 🐠 Tank tab. The shop to spend them in is coming next."
+    ] },
     { id: "2026-10-12b", title: "👥 Teams in contests", items: [
       "👥 When you make a contest or tournament there's a new Teams choice: individuals only, teams allowed (a team board plus a separate individual board), or teams only.",
       "🏁 Teams are your groups — the group owner enters the team, and each member taps Join so their catches count. Repeating contests keep the choice every round."

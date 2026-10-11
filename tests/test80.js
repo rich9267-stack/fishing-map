@@ -350,6 +350,22 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   const live = d.querySelector("#tank-body .tank-salt"); if (live && live.__sim) { live.__sim.still = false; const r0 = live.querySelectorAll(".ripple").length; live.dispatchEvent(new w.MouseEvent("click", { bubbles: true, clientX: 50, clientY: 50 })); console.log("tap on water adds a ripple:", live.querySelectorAll(".ripple").length - r0);
     const fb2 = live.querySelector(".tfish"); const r1 = live.querySelectorAll(".ripple").length; fb2.dispatchEvent(new w.MouseEvent("click", { bubbles: true })); console.log("tap on a fish adds no ripple:", live.querySelectorAll(".ripple").length - r1, "| info opened:", !d.querySelector("#tank-body .tank-info").hidden);
     live.__sim.feedMode = true; const r2 = live.querySelectorAll(".ripple").length; live.dispatchEvent(new w.MouseEvent("click", { bubbles: true, clientX: 60, clientY: 60 })); console.log("no ripple while feeding:", live.querySelectorAll(".ripple").length - r2); live.__sim.feedMode = false; }
+  // ---- coins & gems (step 6): the app only asks the server and shows the answer ----
+  await sleep(150); const calls6 = [];
+  w.eval(`window.__wal = { coins: 43, gems: 0, today: 3, cap: 50, collections: [], recent: [{ reason: 'species', currency: 'coins', amount: 40, note: 'Snook', at: new Date().toISOString() }, { reason: 'catch', currency: 'coins', amount: 2, note: 'Snook', at: new Date().toISOString() }], added: [{ reason: 'catch', coins: 2, note: 'Snook' }, { reason: 'species', coins: 40, note: 'Snook' }] };
+    window.__calls6 = []; const __orig = db.rpc; db.rpc = async (fn, a) => { if (fn === 'claim_coins') { window.__calls6.push(fn); return window.__walFail ? { data: null, error: { message: 'down' } } : { data: window.__wal, error: null }; } if (fn === 'claim_collection') { window.__calls6.push(fn + ':' + a.p_group + ':' + a.p_species.length); return { data: Object.assign({}, window.__wal, { coins: 193, gems: 2, collections: ['inshore'], added: [{ reason: 'collection', coins: 150, gems: 2, note: 'inshore' }] }), error: null }; } return __orig.call(db, fn, a); };`);
+  w.eval("tankClaim(true)"); await sleep(60);
+  const wb = () => d.getElementById("wallet-box").textContent.replace(/\s+/g, " ");
+  console.log("wallet shows coins + gems:", wb().slice(0, 60), "| toast:", d.getElementById("qc-toast").textContent);
+  console.log("wallet 'today' line:", /Today: 3 of 50 catch coins/.test(wb()), "| how-to rules there:", /How do I earn/.test(wb()), /never for sale/.test(wb()), "| recent list:", /new species · Snook/.test(wb()));
+  const n0 = w.__calls6.length; w.eval("tankClaim()"); await sleep(30); console.log("throttled (no second ask within 45 s):", w.__calls6.length === n0);
+  w.eval("tankClaim(true)"); await sleep(30); console.log("forced ask goes through:", w.__calls6.length === n0 + 1);
+  w.eval("window.__walFail = true"); const before6 = wb(); w.eval("tankClaim(true)"); await sleep(30); console.log("server down: no crash, wallet unchanged:", wb() === before6); w.eval("window.__walFail = false");
+  w.eval(`tankCollection = () => [{ key: 'inshore', label: 'Inshore', total: 5, got: ['Snook','Tarpon','Redfish','Sheepshead','Mangrove snapper'], missing: [] }, { key: 'fresh', label: 'Freshwater', total: 5, got: ['Bass'], missing: ['a','b','c','d'] }]`);
+  w.eval("tankClaim(true)"); await sleep(80);
+  console.log("finished collection asked once, unfinished one not:", JSON.stringify(w.__calls6.filter(x => x.startsWith("claim_collection"))), "| wallet now:", wb().slice(0, 30));
+  w.eval("window.__wal.collections = ['inshore']; tankClaim(true)"); await sleep(60);
+  console.log("already-claimed collection is not asked again:", w.__calls6.filter(x => x.startsWith("claim_collection")).length === 1);
   w.eval("window.matchMedia = () => ({ matches: true }); renderTank()");
   const rb = d.querySelector("#tank-body .feed-btn"); console.log("reduced motion: feeding button disabled with a reason:", rb.disabled, "|", rb.textContent);
   w.eval("window.matchMedia = () => ({ matches: false })");

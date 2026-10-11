@@ -302,7 +302,7 @@
       await loadSpots();
       toast(`✓ ${item.count > 1 ? item.count + " " : ""}${item.species} logged at ${r.spot.name}${r.c.tide_stage ? " · " + r.c.tide_stage + " tide" : ""}` +
             (r.photoOk ? "" : " (photo didn't upload)"));
-      tankPop(r.best);
+      tankPop(r.best); setTimeout(() => tankClaim(true), 1200);
       if (!activeSession() && Date.now() - new Date(item.when) < 30 * 60000) showAsk(r.spot, `🎣 Fishing at ${r.spot.name} for a while? Start a trip so the hours count.`);
     } catch (err) {
       if (isNetErr(err)) await queueCatch(item); // signal dropped mid-save — keep it for later
