@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-10g", title: "Easier to tap and read", items: [
+      "👆 Buttons, menus and drop-downs are now at least thumb-sized, so they're harder to miss.",
+      "🌙 In dark mode, the main buttons now have dark text on the light teal, so they're easier to read."
+    ] },
     { id: "2026-10-10f", title: "Clearer when the signal drops", items: [
       "↻ If tides, weather, spots, the feed or trips can't load, you now see what failed and a “Try again” button.",
       "📶 The no-signal bar explains that you're seeing a saved copy, and you get a “✓ Back online” note when it returns."

@@ -261,3 +261,8 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 
 ## UX step 5d — offline + loading messages
 - `errBox(text, retryFn)` helper (js/02-spots.js): red message + "↻ Try again" — used for spots, catch feed, trip plans, public feed. Today strip has `#ts-retry` (tides/weather failed → reloads both; tiles show "Unavailable"). Tide/weather loaders now clear their lists before filling so a retry can't double them. Offline bar text clearer; `online` event shows "✓ Back online". Test: tests/test77.js.
+
+## UX step 5e — tap targets + accessibility check (step 5 complete)
+- Audit (Playwright at phone size, light + dark): buttons, selects, inputs and summaries were 19–36 px tall → CSS now gives all of them ≥44 px (`.btn`, `select`, text inputs, `summary`, `.linkbtn` 40, footer links, `#me-btn` 44); focus ring for keyboard (`:focus-visible`). Two selects (`#yir-year`, `#tk-kind`) got `aria-label`s. Every button already had a text or aria-label.
+- Contrast: all light/dark text colours pass 4.5:1, except white text on the dark-mode accent (2.1:1) → new `--on-accent` variable (white in light, near-black in dark) used by every accent-coloured button/chip/pill.
+- UX plan steps 1–5 are all done. Ideas not done: "host" switch for club tournaments, dark-mode check of every card, screen-reader pass of the map.

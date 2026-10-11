@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=43">
+<link rel="stylesheet" href="css/app.css?v=44">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -496,7 +496,7 @@
 
   <div id="view-insights" hidden>
     <div class="card" id="yir-card" style="margin-bottom:14px">
-      <div class="row"><div class="label">🎉 Year in review &amp; badges</div><select id="yir-year" style="width:auto"></select></div>
+      <div class="row"><div class="label">🎉 Year in review &amp; badges</div><select id="yir-year" aria-label="Year" style="width:auto"></select></div>
       <div id="yir-body"></div>
     </div>
     <div class="card" id="rec-card" style="margin-bottom:14px">
@@ -521,7 +521,7 @@
       <p class="spot-meta" style="margin:4px 0 0">Private — only you see this. Add what you fish with; the stats come from the “Bait / lure” you write on catches, and the names pop up as suggestions when you log.</p>
       <form id="tk-form" class="row" style="gap:6px;margin-top:8px">
         <input id="tk-name" maxlength="60" placeholder="e.g., Live shrimp, ¼ oz white jig…" style="flex:1" required>
-        <select id="tk-kind" style="width:auto"><option value="bait">Bait</option><option value="lure">Lure</option><option value="rod">Rod</option><option value="line">Line</option><option value="other">Other</option></select>
+        <select id="tk-kind" aria-label="Kind of tackle" style="width:auto"><option value="bait">Bait</option><option value="lure">Lure</option><option value="rod">Rod</option><option value="line">Line</option><option value="other">Other</option></select>
         <button class="btn small" type="submit">Add</button>
       </form>
       <div id="tk-list"></div>
@@ -923,19 +923,19 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=43"></script>
-<script src="js/02-spots.js?v=43"></script>
-<script src="js/03-photos.js?v=43"></script>
-<script src="js/04-insights.js?v=43"></script>
-<script src="js/05-seasons-records.js?v=43"></script>
-<script src="js/06-catching.js?v=43"></script>
-<script src="js/07-measure-fishid.js?v=43"></script>
-<script src="js/08-feed-plans.js?v=43"></script>
-<script src="js/09-map-forecast.js?v=43"></script>
-<script src="js/10-tools-safety.js?v=43"></script>
-<script src="js/11-accounts-social.js?v=43"></script>
-<script src="js/12-contests-alerts.js?v=43"></script>
-<script src="js/13-groups-misc.js?v=43"></script>
-<script src="js/99-boot.js?v=43"></script>
+<script src="js/01-core.js?v=44"></script>
+<script src="js/02-spots.js?v=44"></script>
+<script src="js/03-photos.js?v=44"></script>
+<script src="js/04-insights.js?v=44"></script>
+<script src="js/05-seasons-records.js?v=44"></script>
+<script src="js/06-catching.js?v=44"></script>
+<script src="js/07-measure-fishid.js?v=44"></script>
+<script src="js/08-feed-plans.js?v=44"></script>
+<script src="js/09-map-forecast.js?v=44"></script>
+<script src="js/10-tools-safety.js?v=44"></script>
+<script src="js/11-accounts-social.js?v=44"></script>
+<script src="js/12-contests-alerts.js?v=44"></script>
+<script src="js/13-groups-misc.js?v=44"></script>
+<script src="js/99-boot.js?v=44"></script>
 </body>
 </html>
