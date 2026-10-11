@@ -162,9 +162,41 @@
     const t = tankBuild(mine, spots), n = t.salt.fish.length + t.fresh.fish.length;
     const sum = x => x.pond.reduce((s, p) => s + p.n, 0);
     $("tank-sum").textContent = n ? `${n} species in your tanks · ${t.salt.fish.length} saltwater · ${t.fresh.fish.length} freshwater · ${sum(t.salt)} in the lagoon · ${sum(t.fresh)} in the pond` : "Log a catch and your first fish appears.";
-    tankDraw("salt", t.salt, box); tankDraw("fresh", t.fresh, box); overflowDraw(t, "fresh", pbox); overflowDraw(t, "salt", lbox);
+    tankDraw("salt", t.salt, box); tankDraw("fresh", t.fresh, box); collectionDraw(mine, box); overflowDraw(t, "fresh", pbox); overflowDraw(t, "salt", lbox);
   }
   document.querySelectorAll("#tank-sw button").forEach(b => b.addEventListener("click", () => { tankMode = b.dataset.mode; renderTank(); }));
+
+  // ---- 🏆 Collections: how many of each Seasons group (inshore, beach & pier, offshore, freshwater) you have caught ----
+  // Uses the same species list as the Seasons tab, so a new fish there becomes a new goal here. The mullet run is bait, not a catch.
+  function tankCollection(catches) {
+    const seen = new Set();
+    (catches || []).forEach(c => { if (c.deleted_at) return; const f = seasonFor(c.species); if (f) seen.add(f.name); });
+    return SEASON_GROUPS.map(([key, label]) => {
+      const all = SEASONS.filter(f => f.group === key && !/mullet run/i.test(f.name)).map(f => f.name);
+      const got = all.filter(n => seen.has(n));
+      return { key, label, total: all.length, got, missing: all.filter(n => !seen.has(n)) };
+    }).filter(g => g.total);
+  }
+  function collectionDraw(catches, box, opts) {
+    const cols = tankCollection(catches), card = el("div", "tank-card");
+    card.appendChild(el("div", "label", "🏆 Collections"));
+    const done = cols.filter(g => g.got.length === g.total).length;
+    card.appendChild(el("div", "spot-meta", done ? `${done} of ${cols.length} collections complete — nice!` : "Catch every fish in a group to complete it. Tap a group to see the list."));
+    const list = el("div", "col-list");
+    cols.forEach(g => {
+      const full = g.got.length === g.total, pct = Math.round(100 * g.got.length / g.total);
+      const btn = el("button", "col-row"); btn.type = "button"; btn.setAttribute("aria-expanded", "false");
+      btn.appendChild(el("span", "col-name", (full ? "🏅 " : "") + g.label));
+      btn.appendChild(el("b", null, `${g.got.length} of ${g.total}`));
+      const bar = el("span", "col-bar"), fill = el("i"); fill.style.width = pct + "%"; bar.appendChild(fill); btn.appendChild(bar);
+      const det = el("div", "col-det"); det.hidden = true;
+      g.got.forEach(n => { const c = el("span", "col-chip got"); c.appendChild(fishSvg(n, 30)); c.appendChild(el("span", null, "✓ " + n)); det.appendChild(c); });
+      g.missing.forEach(n => det.appendChild(el("span", "col-chip", "· " + n)));
+      btn.addEventListener("click", () => { det.hidden = !det.hidden; btn.setAttribute("aria-expanded", String(!det.hidden)); });
+      list.appendChild(btn); list.appendChild(det);
+    });
+    card.appendChild(list); box.appendChild(card);
+  }
 
   // ---- ✨ New best! When a fresh catch beats the best of its species (or is the first of its kind), a small celebration shows. ----
   // Called right after a catch is saved, before the lists reload, so "your tank before" is still the old one. Never throws.
@@ -181,7 +213,12 @@
         const w = x => x.weight_lb == null ? -1 : +x.weight_lb, l = x => x.length_in == null ? -1 : +x.length_in;
         if (!(((w(nr) - w(before.f.catchRow)) || (l(nr) - l(before.f.catchRow))) > 0)) return null; // a tie is not a new best
       }
-      return { species: after.f.species, kind: after.kind, first: !before, now: tankFishText(after.f), old: before ? tankFishText(before.f) : "" };
+      let goal = "";
+      if (!before) {
+        const sf = seasonFor(row.species), g = sf && tankCollection(mine.concat(nr)).find(x => x.key === sf.group);
+        if (g) goal = g.got.length === g.total ? `🏅 That completes your ${g.label.toLowerCase()} collection!` : `That's ${g.got.length} of ${g.total} in your ${g.label.toLowerCase()} collection.`;
+      }
+      return { species: after.f.species, kind: after.kind, first: !before, now: tankFishText(after.f), old: before ? tankFishText(before.f) : "", goal };
     } catch (e) { return null; }
   }
   function tankPop(r) {
@@ -194,7 +231,8 @@
     box.appendChild(el("div", "best-t", r.first ? `🐠 New fish for your ${salt ? "saltwater" : "freshwater"} tank!` : `✨ New best ${r.species}!`));
     const lines = [];
     if (r.first) lines.push(`Your first ${r.species}${r.now ? " — " + r.now : ""}. It's swimming in the ${salt ? "saltwater" : "freshwater"} tank now.`);
-    else { lines.push(`${r.now || "This one"} beats your old ${r.old || "best"}.`); lines.push(`The old fish moved to the ${salt ? "lagoon" : "pond"}.`); }
+    if (r.first && r.goal) lines.push(r.goal);
+    else if (!r.first) { lines.push(`${r.now || "This one"} beats your old ${r.old || "best"}.`); lines.push(`The old fish moved to the ${salt ? "lagoon" : "pond"}.`); }
     lines.forEach(t => box.appendChild(el("div", "ask-text", t)));
     const row = el("div", "ask-btns"), bOk = el("button", "btn", "Nice!"), bSee = el("button", "btn ghost", "See my tank");
     bOk.type = bSee.type = "button"; row.appendChild(bSee); row.appendChild(bOk); box.appendChild(row); bg.appendChild(box);
@@ -217,4 +255,5 @@
     const sum = x => x.pond.reduce((s, p) => s + p.n, 0), bits = [];
     if (sum(t.salt)) bits.push(`🌴 ${sum(t.salt)} in the lagoon`); if (sum(t.fresh)) bits.push(`🏞 ${sum(t.fresh)} in the pond`);
     if (bits.length) box.appendChild(el("div", "spot-meta", bits.join(" · ")));
+    collectionDraw(catches, box);
   }

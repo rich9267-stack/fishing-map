@@ -287,3 +287,6 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 
 ## Tank step 2 — ✨ New best! celebration
 `tankCheck(row)` (js/14-tank.js) runs right after a catch is saved (quick catch in `saveQuickCatch`, and the full catch form — not boat mode, not edits, not offline-queue flush). It builds the tank with and without the new catch; if the new one is now the species' best (strictly heavier, or same weight and longer) or the first of its kind, `tankPop()` shows a small celebration (fish drawing, confetti, "Nice!" / "See my tank"). Ties don't celebrate. No database change. Test: tests/test80.js.
+
+## Tank step 3 — 🏆 Collections
+`tankCollection(catches)` (js/14-tank.js) counts distinct Seasons fish (via `seasonFor`) per group — inshore, beach & pier, offshore, freshwater (the mullet run is skipped) — and `collectionDraw` shows a progress row per group on the Tank tab and on profile pages (tap to see caught / still needed). First fish of a new kind also tells the collection count in the ✨ pop-up. New fish added to the Seasons list become goals automatically. No database change. Test: tests/test80.js.

@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-11d", title: "🏆 Collections", items: [
+      "🏆 The Tank tab now shows how many fish you've caught from each group: inshore, beach & pier, offshore and freshwater. Tap a group to see which ones you still need.",
+      "🏅 Catch them all in a group to complete it. Your friends can see your collections on your profile page."
+    ] },
     { id: "2026-10-11c", title: "✨ New best!", items: [
       "✨ When a catch beats your best fish of that kind, a little celebration pops up — and the old fish moves to your pond or lagoon.",
       "🐠 The first fish of a new kind gets a welcome to your tank too."

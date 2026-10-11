@@ -455,3 +455,12 @@
   @keyframes confall { to { transform: translateY(340px) rotate(540deg); opacity: 0; } }
   @keyframes bestpop { 0% { transform: scale(.3) rotate(-8deg); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
   @media (prefers-reduced-motion: reduce) { .confetti { display: none; } .best-fish { animation: none; } }
+
+  /* 🏆 Collections */
+  .col-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .col-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; width: 100%; text-align: left; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); color: var(--text); font: inherit; cursor: pointer; }
+  .col-bar { grid-column: 1 / -1; height: 8px; border-radius: 6px; background: var(--line); overflow: hidden; }
+  .col-bar i { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
+  .col-det { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 2px 8px; }
+  .col-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--line); color: var(--muted); font-size: .9rem; }
+  .col-chip.got { border-style: solid; color: var(--text); background: var(--bg); }

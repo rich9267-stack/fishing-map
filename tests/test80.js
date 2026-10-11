@@ -201,6 +201,15 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   console.log("See my tank: popup gone", !d.querySelector(".best-pop"), "| tank view shown:", !d.getElementById("view-tank").hidden);
   w.eval("tankPop(null)"); console.log("null does nothing:", !d.querySelector(".best-pop"));
   // saving a real catch from the full form path: quick-catch save returns the check
+  w.eval("catchesBySpot = { s1: window.__c1, s2: window.__c2 }");
+  console.log("collection:", w.eval("JSON.stringify(tankCollection(Object.values(catchesBySpot).flat()).map(g => g.key + ' ' + g.got.length + '/' + g.total + ' [' + g.got.join(',') + ']'))"));
+  console.log("first Permit goal:", JSON.parse(chk("Permit", 9, 24)).goal, "| first cobia goal:", JSON.parse(chk("Cobia", 9, 24)).goal);
+  console.log("beach list has no mullet run:", !w.eval("tankCollection([]).find(g => g.key==='beach').missing.join()").match(/mullet run/i));
+  w.eval("tankMode='tanks'"); click($("tab-tank")); await sleep(200);
+  const rows = [...d.querySelectorAll("#tank-body .col-row")];
+  console.log("collection rows:", rows.map(r => r.textContent.replace(/\s+/g," ").trim()).join(" ; "));
+  click(rows[0]); console.log("tap opens list:", !rows[0].nextSibling.hidden, "| chips:", rows[0].nextSibling.textContent.replace(/\s+/g," ").trim().slice(0,120), "| aria:", rows[0].getAttribute("aria-expanded"));
+  click(rows[0]); console.log("tap again closes:", rows[0].nextSibling.hidden);
   w.eval("catchesBySpot = {}"); console.log("empty tanks, first catch:", chk("Snook", 3, 20));
   console.log("DONE");
 } catch (e) { console.log("TEST ERROR", e && e.stack); } process.exit(0); })();
