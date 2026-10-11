@@ -244,3 +244,7 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 ## UX step 3 — Home / Today screen
 - List tab order: `#today-strip` (4 tiles: tide, wind, water, moon) > `#best-card` (ranking help folded in `details.how`) > `#spots-card` > `#sugg-card` > `<details id="cond-more">` holding the old status / weather / moon / tide-times cards (unchanged ids). Deviation from plan: Your spots come before Suggested nearby.
 - Strip tiles are filled by a MutationObserver block ("Today strip") in js/09-map-forecast.js that copies text from `#stage #next #wx-now #wx-detail #wx-water #moon-now`, so the loaders are untouched. Tile tap opens `cond-more` and scrolls to the matching card. Test: tests/test73.js.
+
+## UX step 4 — Settings page
+- New `#settings-card` (Me menu → ⚙️ Settings). The blocks `#push-box` (phone alerts, quiet hours, install-to-Home-Screen help), photo saving, and "Your data" export moved out of the Profile card unchanged (same ids, so their code still works). Added a Privacy shortcut (opens Profile → "Who can see your profile page", which stays with the profile-page save), and About (What's new, privacy policy).
+- Code: "Settings page" block in js/11-accounts-social.js after `profile-close`; `pushRefresh()` now runs when Settings opens. Test: tests/test73.js (second half).

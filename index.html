@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=38">
+<link rel="stylesheet" href="css/app.css?v=39">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -32,6 +32,7 @@
       <button class="linkbtn" id="me-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Menu — profile, alerts, sign out"><span id="me-avatar"></span><span class="nav-badge" id="me-badge" hidden></span></button>
       <div id="me-menu" hidden role="menu">
         <button class="linkbtn" id="profile-btn" type="button" role="menuitem">🙂 Profile</button>
+        <button class="linkbtn" id="settings-btn" type="button" role="menuitem">⚙️ Settings</button>
         <button class="linkbtn" id="inbox-btn" type="button" role="menuitem">🔔 Alerts</button>
         <button class="linkbtn" id="invite-btn" type="button" role="menuitem" hidden>✉ Invite to app</button>
         <button class="linkbtn" id="refresh-btn" type="button" role="menuitem" aria-label="Refresh">↻ Refresh</button>
@@ -145,6 +146,16 @@
       </div>
       <div class="msg" id="pp-msg"></div>
     </div>
+  </div>
+
+  <div class="card" id="settings-card" hidden>
+    <div class="row">
+      <div class="label">⚙️ Settings</div>
+      <button class="linkbtn" id="settings-close" type="button">Close</button>
+    </div>
+    <div class="label" style="margin-top:6px">🔒 Privacy</div>
+    <p class="spot-meta" style="margin:4px 0 8px">Who can see your profile page is set on your profile page screen. Private catches and spots are never shown to anyone.</p>
+    <button class="btn ghost small" id="settings-privacy" type="button">🪪 Open my profile page settings</button>
     <div id="push-box" style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
       <div class="label">🔔 Phone alerts</div>
       <div class="spot-meta" id="push-status"></div>
@@ -200,6 +211,11 @@
       <button class="btn ghost small" id="export-spots" type="button">⬇ My spots</button>
     </div>
     <div class="msg" id="export-msg"></div>
+    <div class="label" style="margin-top:18px">About</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <button class="btn ghost small" id="settings-wn" type="button">✨ What's new</button>
+      <a class="btn ghost small" href="privacy.html" style="text-decoration:none">Privacy policy</a>
+    </div>
   </div>
 
   <div class="card" id="inbox-card" hidden>
@@ -296,7 +312,7 @@
           <li>Scroll down the menu and tap <b>Add to Home Screen</b>.</li>
           <li>Leave <b>Open as Web App</b> switched on if you see it, then tap <b>Add</b>.</li>
           <li>Close Safari. Find the new <b>Fishing Map</b> icon on your Home Screen and open the app from <b>that icon</b> from now on.</li>
-          <li>Sign in again — the Home Screen app keeps its own sign-in, separate from Safari. Then come back to <b>Profile → Phone alerts</b> and tap <b>Turn on alerts</b>.</li>
+          <li>Sign in again — the Home Screen app keeps its own sign-in, separate from Safari. Then come back to <b>Me menu → Settings → Phone alerts</b> and tap <b>Turn on alerts</b>.</li>
         </ol>
         <div class="spot-meta"><b>Android</b>: in Chrome tap the <b>⋮</b> menu → <b>Add to Home screen</b> (or <b>Install app</b>) → Add. Then open it from the icon.</div>
   </template>
@@ -906,19 +922,19 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=38"></script>
-<script src="js/02-spots.js?v=38"></script>
-<script src="js/03-photos.js?v=38"></script>
-<script src="js/04-insights.js?v=38"></script>
-<script src="js/05-seasons-records.js?v=38"></script>
-<script src="js/06-catching.js?v=38"></script>
-<script src="js/07-measure-fishid.js?v=38"></script>
-<script src="js/08-feed-plans.js?v=38"></script>
-<script src="js/09-map-forecast.js?v=38"></script>
-<script src="js/10-tools-safety.js?v=38"></script>
-<script src="js/11-accounts-social.js?v=38"></script>
-<script src="js/12-contests-alerts.js?v=38"></script>
-<script src="js/13-groups-misc.js?v=38"></script>
-<script src="js/99-boot.js?v=38"></script>
+<script src="js/01-core.js?v=39"></script>
+<script src="js/02-spots.js?v=39"></script>
+<script src="js/03-photos.js?v=39"></script>
+<script src="js/04-insights.js?v=39"></script>
+<script src="js/05-seasons-records.js?v=39"></script>
+<script src="js/06-catching.js?v=39"></script>
+<script src="js/07-measure-fishid.js?v=39"></script>
+<script src="js/08-feed-plans.js?v=39"></script>
+<script src="js/09-map-forecast.js?v=39"></script>
+<script src="js/10-tools-safety.js?v=39"></script>
+<script src="js/11-accounts-social.js?v=39"></script>
+<script src="js/12-contests-alerts.js?v=39"></script>
+<script src="js/13-groups-misc.js?v=39"></script>
+<script src="js/99-boot.js?v=39"></script>
 </body>
 </html>

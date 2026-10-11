@@ -459,7 +459,7 @@
   }
 
 
-  // ---- 🔔 Phone alerts (V4.7): web push — turn on in Profile, pick what you want, tap an alert to jump to it ----
+  // ---- 🔔 Phone alerts (V4.7): web push — turn on in Settings, pick what you want, tap an alert to jump to it ----
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const isStandalone = () => (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
   const pushCapable = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
@@ -642,7 +642,7 @@
       fillA2hs($("wl-a2hs"));
     } else if (st === "alerts") {
       body.innerHTML = `<h2 style="margin:6px 0">Phone alerts 🔔</h2>
-        <div class="spot-meta">Get a buzz for messages, friend requests, contest invites and starts, and a reminder an hour before a planned trip. You can pick which kinds later in Profile.</div>
+        <div class="spot-meta">Get a buzz for messages, friend requests, contest invites and starts, and a reminder an hour before a planned trip. You can pick which kinds later in Settings.</div>
         <div style="margin-top:10px"><button class="btn" id="wl-alerts-btn" type="button">Turn on alerts</button></div>
         <div class="spot-meta" id="wl-alerts-st" style="margin-top:6px"></div>`;
       const stt = $("wl-alerts-st");

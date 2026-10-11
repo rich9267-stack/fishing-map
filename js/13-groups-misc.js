@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-10b", title: "New Settings page", items: [
+      "⚙️ Tap your picture (top right) → Settings. Phone alerts and quiet hours, photo saving, exporting your data and “What's new” now live there.",
+      "🙂 Your Profile screen is now just your profile and profile page."
+    ] },
     { id: "2026-10-10", title: "A cleaner Home screen", items: [
       "🌤 New “right now” strip at the top of Home: tide, wind, water temperature and moon in four tiles. Tap one for the full details.",
       "🎣 Best spots today and Your spots now come first; the long weather, moon and tide-time cards are tucked under “More conditions & tide times”.",

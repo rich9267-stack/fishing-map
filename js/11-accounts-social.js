@@ -909,9 +909,16 @@
     $("pf-area").value = p.home_area || ""; $("pf-bio").value = p.bio || "";
     $("profile-card").scrollIntoView({ behavior: "smooth", block: "start" });
     ppLoadMine();
-    pushRefresh();
   });
   $("profile-close").addEventListener("click", () => { $("profile-card").hidden = true; });
+  // ---- Settings page (UX step 4): alerts, photos, data export, what's new ----
+  $("settings-btn").addEventListener("click", () => {
+    $("profile-card").hidden = true; $("settings-card").hidden = false;
+    pushRefresh(); $("settings-card").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  $("settings-close").addEventListener("click", () => { $("settings-card").hidden = true; });
+  $("settings-privacy").addEventListener("click", () => { $("settings-card").hidden = true; $("profile-btn").click(); });
+  $("settings-wn").addEventListener("click", () => $("wn-open").click());
   $("profile-form").addEventListener("submit", async e => {
     e.preventDefault();
     const msg = $("pf-msg");
