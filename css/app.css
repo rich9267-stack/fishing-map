@@ -502,3 +502,4 @@
   @media (prefers-reduced-motion: reduce) { .tfish.sim, .pfish.sim { will-change: auto; } }
   .tf-foot .btn.ghost { color: #fff; border-color: rgba(255,255,255,.55); background: transparent; }
   .tf-foot .tank-info { color: var(--text); }
+  .tf-turn.dart svg.fish-live .fs-tail { animation-duration: calc(var(--fd, 1s) * .4); }

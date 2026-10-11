@@ -251,6 +251,36 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   console.log("old scenes dropped after redraw (no leftover sims in the list after a tick):", w.eval("(() => { tankTick(performance.now()); return TANK_SIMS.size; })()"), "of", d.querySelectorAll(".tank, .pond-scene").length, "scenes on screen");
   w.eval("window.matchMedia = () => ({ matches: true })"); w.eval("renderTank()");
   console.log("reduced motion: fish placed, none registered to move:", d.querySelectorAll("#tank-body .tfish.sim").length > 0 && w.eval("[...TANK_SIMS].every(s => !s.still)") , "| still tanks flagged:", w.eval("[...document.querySelectorAll('.tank')].every(s => s.__sim.still)"), "| fish have positions:", /translate/.test(d.querySelector("#tank-body .tfish.sim").style.transform));
+  // ---- fish-to-fish behaviour (step 3) ----
+  const beh = JSON.parse(w.eval(`(() => {
+    const mkScene = (n, kinds, sizes, depths, chase, seed) => { const sc = document.createElement("div"); document.body.appendChild(sc);
+      const items = []; for (let i = 0; i < n; i++) { const el = document.createElement("button"), te = document.createElement("span"); el.appendChild(te); sc.appendChild(el); items.push({ el, turnEl: te, w: sizes[i % sizes.length], h: Math.round(sizes[i % sizes.length] * 68 / 128), depth: depths[i % depths.length], kind: kinds[i % kinds.length] }); }
+      const sim = tankSwim(sc, items, { chase, seed }); sim.W = 366; sim.H = 300; sim.scale = 1; sim.still = true; TANK_SIMS.delete(sim); return sim; };
+    const res = {};
+    // 1) personal space: same layer, mixed kinds -> fish should rarely overlap
+    let sim = mkScene(8, ["a","b","c","d","e","f","g","h"], [60, 44, 52], [0.6], false, 11), tight = 0, frames = 0, minGap = 999;
+    for (let s = 0; s < 1800; s++) { tankStep(sim, 1/30); if (s > 150) { frames++; for (let i = 0; i < 8; i++) for (let j = i + 1; j < 8; j++) { const a = sim.fish[i], b = sim.fish[j]; const d = Math.hypot((a.x + a.w/2) - (b.x + b.w/2), (a.y + a.h/2) - (b.y + b.h/2)); minGap = Math.min(minGap, d); if (d < 14) tight++; } } }
+    res.space = { framesPairsTooClose: tight, of: frames * 28, closest: +minGap.toFixed(1) };
+    // 2) layers: front and back fish may cross (no pushing), so they are allowed closer than same-layer fish
+    sim = mkScene(2, ["a","b"], [60], [0.25, 1], false, 5); let cross = 0; for (let s = 0; s < 3000; s++) { tankStep(sim, 1/30); const a = sim.fish[0], b = sim.fish[1]; if (Math.hypot(a.x - b.x, a.y - b.y) < 35) cross++; }
+    res.layerPass = cross > 0;
+    // 3) schooling: 6 snook + 6 redfish -> each kind clusters
+    sim = mkScene(12, ["snook","redfish"], [30], [0.3, 0.65, 1], false, 3); const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y); let within = 0, across = 0, cw = 0, ca = 0;
+    for (let s = 0; s < 1800; s++) { tankStep(sim, 1/30); if (s > 300) for (let i = 0; i < 12; i++) for (let j = i + 1; j < 12; j++) { const d = dist(sim.fish[i], sim.fish[j]); if (sim.fish[i].kind === sim.fish[j].kind) { within += d; cw++; } else { across += d; ca++; } } }
+    res.school = { avgDistSameKind: Math.round(within / cw), avgDistOtherKind: Math.round(across / ca), followersOfLeader: sim.fish.filter(f => f.follow).length };
+    // 4) chasing: one big fish among small ones; run 10 minutes
+    sim = mkScene(5, ["big","s1","s2","s3","s4"], [90, 40, 44, 38, 42], [0.6], true, 7); let chases = 0, flees = 0, maxSpeedBig = 0, maxFlee = 0, normal = 0, nn = 0, chasing = false, bad = 0, darts = 0;
+    for (let s = 0; s < 18000; s++) { tankStep(sim, 1/30); const bigF = sim.fish[0]; if (bigF.mode === "chase" && !chasing) chases++; chasing = bigF.mode === "chase";
+      sim.fish.forEach((f, i) => { if (i && f.mode === "flee") { flees++; maxFlee = Math.max(maxFlee, Math.hypot(f.vx, f.vy)); } else if (i) { normal += Math.hypot(f.vx, f.vy); nn++; } if (f.x < -1 || f.x > sim.W - f.w + 1) bad++; if (f.turnEl.classList.contains("dart")) darts++; }); }
+    res.chase = { chaseStarts: chases, fleeFrames: flees, fleeTopSpeed: Math.round(maxFlee), normalAvgSpeed: Math.round(normal / nn), stayedInWater: bad === 0, dartLookSet: darts > 0 };
+    // 5) equal-size fish never chase
+    sim = mkScene(5, ["a","b","c","d","e"], [50], [0.6], true, 9); let any = 0; for (let s = 0; s < 9000; s++) { tankStep(sim, 1/30); if (sim.fish.some(f => f.mode !== "swim")) any++; }
+    res.noChaseWhenEqual = any === 0;
+    return JSON.stringify(res); })()`));
+  console.log("personal space:", JSON.stringify(beh.space), "| layers pass through each other:", beh.layerPass);
+  console.log("schooling:", JSON.stringify(beh.school), "| same kind closer together:", beh.school.avgDistSameKind < beh.school.avgDistOtherKind);
+  console.log("chase:", JSON.stringify(beh.chase));
+  console.log("equal sizes never chase:", beh.noChaseWhenEqual);
   const fb = d.querySelector("#tank-body .feed-btn"); click(fb); await sleep(50);
   console.log("feed: flakes", d.querySelectorAll("#tank-body .flake").length, "| tank feeding:", !!d.querySelector("#tank-body .feeding"), "| button:", fb.textContent, fb.disabled);
   await sleep(2800); console.log("feed done:", !d.querySelector("#tank-body .feeding"), fb.textContent, fb.disabled);

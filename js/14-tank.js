@@ -111,20 +111,26 @@
   function tankRng(seed) { let a = seed | 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   function tankSwim(scene, items, opts) {
     opts = opts || {};
-    const sim = { scene, W: 0, H: 0, scale: 1, floor: opts.floor == null ? 18 : opts.floor, visible: true, time: 0, fish: [], still: tankReduced() };
+    const sim = { scene, W: 0, H: 0, scale: 1, floor: opts.floor == null ? 18 : opts.floor, visible: true, time: 0, fish: [], still: tankReduced(), chase: !!opts.chase, moodSpeed: 1 };
     sim.resize = () => {
       sim.W = scene.clientWidth || sim.W || 340; sim.H = scene.clientHeight || sim.H || 260;
       sim.scale = Math.max(1, Math.min(2.2, Math.min(sim.W / 360, sim.H / 300)));
     };
     sim.resize();
+    const lead = {};
     items.forEach((it, i) => {
-      const r = tankRng(1000 + i * 7919 + (opts.seed || 0)), f = Object.assign({ x: 0, y: 0, vx: 0, vy: 0, turn: 1, tx: 0, ty: 0, tt: 0, rnd: r, sp: 0, phase: r() * 6.28, depth: 0.5 }, it);
+      const r = tankRng(1000 + i * 7919 + (opts.seed || 0)), f = Object.assign({ x: 0, y: 0, vx: 0, vy: 0, turn: 1, tx: 0, ty: 0, tt: 0, rnd: r, sp: 0, phase: r() * 6.28, depth: 0.5, mode: "swim", mt: 0, cool: 4 + r() * 10, prey: null, follow: null, off: null, kind: "" }, it);
       f.sp = (opts.speed || 26) * (0.8 + r() * 0.5) * (1 + 18 / Math.max(f.w, 20) * 0.6);
       f.x = r() * Math.max(1, sim.W - f.w); f.y = r() * Math.max(1, sim.H - sim.floor - f.h);
       f.turn = r() < 0.5 ? 1 : -1; f.tt = 0;
+      if (f.kind) { // fish of the same kind form a school behind the first one
+        if (!lead[f.kind]) lead[f.kind] = f; else { f.follow = lead[f.kind]; f.off = [(r() - 0.5) * 100, (r() - 0.5) * 56]; f.depth = f.follow.depth; f.x = Math.max(0, f.follow.x + f.off[0]); f.y = Math.max(6, f.follow.y + f.off[1]); }
+      }
+      sim.fish.push(f);
+    });
+    sim.fish.forEach(f => {
       f.el.style.zIndex = String(2 + Math.round(f.depth * 6));
       f.el.style.filter = `drop-shadow(0 2px 2px rgba(0,0,0,.3)) brightness(${(0.78 + 0.22 * f.depth).toFixed(2)})`;
-      sim.fish.push(f);
     });
     tankStep(sim, 0);
     if (!sim.still && typeof requestAnimationFrame === "function") {
@@ -136,28 +142,52 @@
     scene.__sim = sim;
     return sim;
   }
+  // How fish treat each other: they keep their distance (a back fish can pass behind a front one), same-kind fish school behind a leader,
+  // and now and then a much bigger fish chases a smaller one, which bolts away (nobody gets hurt).
   function tankStep(sim, dt) {
     sim.time += dt;
-    const S = sim.scale, top = 6;
-    sim.fish.forEach(f => {
-      const w = f.w * S * (0.8 + 0.2 * f.depth), h = f.h * S * (0.8 + 0.2 * f.depth), maxX = Math.max(0, sim.W - w - 4), maxY = Math.max(top, sim.H - sim.floor - h - 2);
-      if (dt > 0) {
-        f.tt -= dt;
-        const dx0 = f.tx - f.x, dy0 = f.ty - f.y;
-        if (f.tt <= 0 || Math.hypot(dx0, dy0) < 14) { // pick somewhere new to go (sometimes just a short drift)
+    const S = sim.scale, top = 6, F = sim.fish, n = F.length;
+    const geo = F.map(f => { const sc = S * (0.8 + 0.2 * f.depth), w = f.w * sc, h = f.h * sc; return { w, h, cx: f.x + w / 2, cy: f.y + h / 2, r: Math.max(w * 0.42, h * 0.9) }; });
+    if (dt > 0) {
+      const ax = new Array(n).fill(0), ay = new Array(n).fill(0);
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+        const A = F[i], B = F[j]; if (Math.abs(A.depth - B.depth) > 0.4) continue; // different layers pass through each other
+        const gi = geo[i], gj = geo[j], dx = gj.cx - gi.cx, dy = gj.cy - gi.cy, d = Math.hypot(dx, dy) || 0.01, R = (gi.r + gj.r) * 1.05;
+        if (d < R) { const push = (1 - d / R) * 140, wi = gj.r / (gi.r + gj.r), ux = dx / d, uy = dy / d; ax[i] -= ux * push * wi * 2; ay[i] -= uy * push * wi * 2; ax[j] += ux * push * (1 - wi) * 2; ay[j] += uy * push * (1 - wi) * 2; }
+        if (sim.chase) { // a chase starts only between very different sizes, close by, when the big fish is ready for some fun
+          const big = gi.w >= gj.w ? i : j, small = big === i ? j : i, ratio = geo[big].w / Math.max(1, geo[small].w), P = F[big], Q = F[small];
+          if (ratio >= 1.5 && P.mode === "swim" && P.cool <= 0 && Q.mode === "swim" && d < 170 && P.kind !== Q.kind && P.rnd() < dt * 0.35) { P.mode = "chase"; P.prey = Q; P.mt = 3.2; Q.mode = "flee"; Q.mt = 2.2; Q.chaser = P; }
+        }
+      }
+      F.forEach((f, i) => {
+        const g = geo[i], W = sim.W, maxX = Math.max(0, W - g.w - 4), maxY = Math.max(top, sim.H - sim.floor - g.h - 2);
+        f.cool -= dt; f.tt -= dt;
+        if (f.mode !== "swim") { f.mt -= dt; if (f.mt <= 0 || (f.mode === "chase" && (!f.prey || f.prey.mode !== "flee"))) { if (f.mode === "chase") f.cool = 10 + f.rnd() * 14; f.mode = "swim"; f.prey = null; f.tt = 0; } }
+        let boost = 1;
+        if (f.mode === "chase" && f.prey) { const pg = geo[F.indexOf(f.prey)]; f.tx = Math.max(4, Math.min(maxX, pg.cx - g.w / 2)); f.ty = Math.max(top, Math.min(maxY, pg.cy - g.h / 2)); boost = 1.8; }
+        else if (f.mode === "flee" && f.chaser) {
+          const cg = geo[F.indexOf(f.chaser)], awx = g.cx - cg.cx, awy = g.cy - cg.cy, dd = Math.hypot(awx, awy) || 1;
+          f.tx = Math.max(4, Math.min(maxX, f.x + awx / dd * 160)); f.ty = Math.max(top, Math.min(maxY, f.y + awy / dd * 80)); boost = 2.4;
+        } else if (f.follow && f.follow.mode !== "flee") { // school: stay beside the leader
+          const L = f.follow, lg = geo[F.indexOf(L)];
+          f.tx = Math.max(4, Math.min(maxX, L.tx + f.off[0])); f.ty = Math.max(top, Math.min(maxY, L.ty + f.off[1])); boost = Math.min(1.5, 0.9 + Math.hypot(lg.cx - g.cx, lg.cy - g.cy) / 160);
+        } else if (f.tt <= 0 || Math.hypot(f.tx - f.x, f.ty - f.y) < 14) { // pick somewhere new to go (sometimes just a short drift)
           const far = f.rnd() < 0.7;
           f.tx = far ? 4 + f.rnd() * maxX : Math.max(4, Math.min(maxX, f.x + (f.rnd() - 0.5) * 120));
           f.ty = far ? top + f.rnd() * (maxY - top) : Math.max(top, Math.min(maxY, f.y + (f.rnd() - 0.5) * 60));
           f.tt = 2.5 + f.rnd() * 4;
         }
-        const dx = f.tx - f.x, dy = f.ty - f.y, d = Math.hypot(dx, dy) || 1, sp = f.sp * S * Math.min(1, d / 50 + 0.3);
-        const k = Math.min(1, dt * 1.5);
-        f.vx += (dx / d * sp - f.vx) * k; f.vy += (dy / d * sp * 0.55 - f.vy) * k;
+        const dx = f.tx - f.x, dy = f.ty - f.y, d = Math.hypot(dx, dy) || 1, sp = f.sp * S * sim.moodSpeed * boost * Math.min(1, d / 50 + 0.3);
+        const k = Math.min(1, dt * (boost > 1.5 ? 3 : 1.5));
+        f.vx += (dx / d * sp - f.vx) * k + ax[i] * dt; f.vy += (dy / d * sp * 0.55 - f.vy) * k + ay[i] * dt;
         f.x += f.vx * dt; f.y += f.vy * dt;
         if (f.x < 0) { f.x = 0; f.vx = Math.abs(f.vx) * 0.3; f.tt = 0; } else if (f.x > maxX) { f.x = maxX; f.vx = -Math.abs(f.vx) * 0.3; f.tt = 0; }
         if (f.y < top) { f.y = top; f.vy = Math.abs(f.vy) * 0.3; } else if (f.y > maxY) { f.y = maxY; f.vy = -Math.abs(f.vy) * 0.3; }
-        if (Math.abs(f.vx) > 5) { const want = f.vx > 0 ? 1 : -1, rate = 5.5 * dt; f.turn += Math.max(-rate, Math.min(rate, want - f.turn)); }
-      }
+        if (Math.abs(f.vx) > 5) { const want = f.vx > 0 ? 1 : -1, rate = (boost > 1.5 ? 9 : 5.5) * dt; f.turn += Math.max(-rate, Math.min(rate, want - f.turn)); }
+        const dart = f.mode !== "swim"; if (dart !== f.dart) { f.dart = dart; f.turnEl.classList.toggle("dart", dart); }
+      });
+    }
+    F.forEach(f => {
       const bob = Math.sin(sim.time * 1.7 + f.phase) * 1.6, tilt = Math.max(-22, Math.min(22, Math.atan2(f.vy, Math.max(Math.abs(f.vx), 14)) * 57.3));
       const sc = S * (0.8 + 0.2 * f.depth);
       f.el.style.transform = `translate(${f.x.toFixed(1)}px, ${(f.y + bob).toFixed(1)}px)`;
@@ -222,14 +252,14 @@
       const turnEl = el("span", "tf-turn"); turnEl.appendChild(fishSvg(f.species, px, i < 20)); b.appendChild(turnEl); // only the first 20 get moving parts (phone speed)
       b.addEventListener("click", () => { const fs = tank.closest(".tank-full"); tankInfo(f, kind, fs ? fs.querySelector(".tf-info") : info, opts); });
       tank.appendChild(b);
-      items.push({ el: b, turnEl, w: px, h: Math.round(px * 68 / 128), depth: [0.25, 0.6, 1][i % 3] });
+      items.push({ el: b, turnEl, w: px, h: Math.round(px * 68 / 128), depth: [0.25, 0.6, 1][i % 3], kind: f.key });
     });
     tank.appendChild(el("div", "tank-sand"));
     // Decorations are earned: one more for every couple of species in this tank (so friends see the same ones on your profile)
     const deco = TANK_DECOR[salt ? "salt" : "fresh"], got = deco.filter(d => fish.length >= d.at);
     got.forEach((d, i) => { const e = el("span", "decor", d.e); e.style.left = (5 + i * (76 / Math.max(deco.length - 1, 1))) + "%"; e.style.fontSize = d.sz + "px"; e.title = d.n; e.setAttribute("aria-hidden", "true"); tank.appendChild(e); });
     card.appendChild(tank);
-    tankSwim(tank, items, { seed: salt ? 1 : 2 });
+    tankSwim(tank, items, { seed: salt ? 1 : 2, chase: true });
     const nxt = deco.find(d => fish.length < d.at);
     card.appendChild(el("div", "spot-meta", got.length ? `${got.length} of ${deco.length} decorations unlocked` + (nxt ? ` · next one at ${nxt.at} species` : " — tank fully decorated! 🎉") : `First decoration unlocks at ${deco[0].at} species.`));
     const acts = el("div", "tank-actions");
@@ -276,7 +306,7 @@
     let shown = 0; const items = [];
     fishList.slice(0, 40).forEach((sp, i) => {
       const b = el("span", "pfish sim"), turnEl = el("span", "tf-turn"); turnEl.appendChild(fishSvg(sp, 30)); b.appendChild(turnEl); scene.appendChild(b); shown++;
-      items.push({ el: b, turnEl, w: 30, h: 16, depth: [0.3, 0.65, 1][i % 3] });
+      items.push({ el: b, turnEl, w: 30, h: 16, depth: [0.3, 0.65, 1][i % 3], kind: sp.toLowerCase() });
     });
     card.appendChild(scene);
     tankSwim(scene, items, { floor: salt ? 30 : 6, speed: 22, seed: salt ? 3 : 4 });
