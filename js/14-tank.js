@@ -224,7 +224,7 @@
   }
   function tankMoodApply(sim) { sim.mood = tankMood(); sim.moodSpeed = sim.mood.speed; sim.moodT = 30; }
   function tankRipple(sim, x, y) {
-    const e = el("span", "ripple"); e.style.left = x + "px"; e.style.top = y + "px"; sim.scene.appendChild(e); setTimeout(() => e.remove(), 800);
+    const e = el("span", "ripple"); e.style.left = x + "px"; e.style.top = y + "px"; sim.scene.appendChild(e); setTimeout(() => e.remove(), 800); snd("splash");
   }
   // Scare every fish within `R` of (x, y); closer fish bolt harder and for longer. Returns how many were startled.
   function tankStartle(sim, x, y, R) {
@@ -254,7 +254,7 @@
   // The pinch holds 6 flakes (one comes back every ~1.1 s while you hold). Each bite uses a flake, a fish that has eaten 5 times is full for
   // 25–40 s. Let go and the flakes sprinkle down; fish eat those off the way down. Nothing is saved — just play.
   function tankPop2(sim, x, y) { // a tiny puff where a bite happened
-    const e = el("span", "bite-pop"); e.style.left = x + "px"; e.style.top = y + "px"; sim.scene.appendChild(e); setTimeout(() => e.remove(), 500);
+    snd("nibble"); const e = el("span", "bite-pop"); e.style.left = x + "px"; e.style.top = y + "px"; sim.scene.appendChild(e); setTimeout(() => e.remove(), 500);
   }
   function tankCrumb(sim, x, y) {
     if (sim.crumbs.length >= 40) { const o = sim.crumbs.shift(); if (o.el) o.el.remove(); }
@@ -279,11 +279,11 @@
       [...sim.foodEl.querySelectorAll("i")].forEach((d, i) => { d.style.opacity = i < sim.feed.supply ? "1" : "0.12"; });
     } else if (sim.foodEl) { sim.foodEl.remove(); sim.foodEl = null; }
   }
-  const tankFeedBegin = (sim, x, y) => { sim.feed = { x, y, supply: 6, refill: 0, drip: 0.6 }; tankFoodStep(sim, 0); };
+  const tankFeedBegin = (sim, x, y) => { snd("plop"); sim.feed = { x, y, supply: 6, refill: 0, drip: 0.6 }; tankFoodStep(sim, 0); };
   const tankFeedMove = (sim, x, y) => { if (sim.feed) { sim.feed.x = Math.max(4, Math.min(sim.W - 4, x)); sim.feed.y = Math.max(4, Math.min(sim.H - sim.floor - 4, y)); } };
   function tankFeedEnd(sim) { // let go: sprinkle what is left
     if (!sim.feed) return;
-    const fd = sim.feed; sim.feed = null;
+    const fd = sim.feed; sim.feed = null; snd("plop");
     for (let i = 0; i < Math.max(3, Math.round(fd.supply)); i++) tankCrumb(sim, fd.x + (i - 3) * 6, fd.y + (i % 3) * 5);
     tankFoodStep(sim, 0);
   }
@@ -321,7 +321,7 @@
     const home = scene.parentNode, next = scene.nextSibling, oldH = scene.style.height, prev = document.activeElement, oldOv = document.body.style.overflow;
     const bg = el("div", "tank-full"); bg.setAttribute("role", "dialog"); bg.setAttribute("aria-modal", "true"); bg.setAttribute("aria-label", title);
     const bar = el("div", "tf-bar"), close = el("button", "btn", "✕ Close"); close.type = "button";
-    bar.appendChild(el("b", null, title)); bar.appendChild(close);
+    bar.appendChild(el("b", null, title)); const sb = sndButton(); bar.appendChild(sb); bar.appendChild(close);
     const stage = el("div", "tf-stage"), info = el("div", "tank-info tf-info"); info.hidden = true;
     scene.style.height = "100%"; stage.appendChild(scene);
     const foot = el("div", "tf-foot"); foot.appendChild(info);
@@ -430,6 +430,7 @@
   let tankMode = "tanks";
   function renderTank() {
     const box = $("tank-body"), pbox = $("pond-body"), lbox = $("lagoon-body"), sbox = $("shop-body"); if (!box) return; box.innerHTML = ""; pbox.innerHTML = ""; lbox.innerHTML = ""; if (sbox) sbox.innerHTML = "";
+    { const sr = $("tank-snd-row"); if (sr && !sr.firstChild) sr.appendChild(sndButton()); }
     document.querySelectorAll("#tank-sw button").forEach(b => { b.classList.toggle("ghost", b.dataset.mode !== tankMode); b.setAttribute("aria-pressed", String(b.dataset.mode === tankMode)); });
     box.hidden = tankMode !== "tanks"; pbox.hidden = tankMode !== "pond"; lbox.hidden = tankMode !== "lagoon"; if (sbox) sbox.hidden = tankMode !== "shop";
     if (me && !shop.ready && !shop.loading) shopLoad().then(() => renderTank());
@@ -444,6 +445,64 @@
   }
   document.querySelectorAll("#tank-sw button").forEach(b => b.addEventListener("click", () => { tankMode = b.dataset.mode; renderTank(); }));
 
+  // ---- 🔊 Tank sound: tiny sounds made in the browser (no files). OFF until the person taps 🔊, remembered on this phone, mute button always visible ----
+  const tankSnd = { on: false, ctx: null, amb: null, last: {}, timer: 0 };
+  try { tankSnd.on = localStorage.getItem("fm-tank-sound") === "1"; } catch (e) { /* fine */ }
+  function sndCtx() { // phones only allow sound after a tap, so this is first called from the button
+    if (tankSnd.ctx) return tankSnd.ctx;
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+    try { tankSnd.ctx = new AC(); } catch (e) { return null; }
+    return tankSnd.ctx;
+  }
+  function sndBlip(c, t, f0, f1, dur, vol, type) { // one short tone that glides from f0 to f1 Hz
+    const o = c.createOscillator(), g = c.createGain(); o.type = type || "sine";
+    o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.02);
+  }
+  function sndNoise(c, secs) { const n = Math.floor(c.sampleRate * secs), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; return b; }
+  const SND = {
+    bubble(c, t) { const f = 300 + Math.random() * 500; sndBlip(c, t, f, f * 1.8, 0.09, 0.07); },
+    plop(c, t) { sndBlip(c, t, 420, 110, 0.14, 0.16); },
+    nibble(c, t) { sndBlip(c, t, 900 + Math.random() * 300, 500, 0.035, 0.05, "triangle"); },
+    splash(c, t) { const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(); s.buffer = sndNoise(c, 0.3); f.type = "bandpass"; f.frequency.value = 900; f.Q.value = 0.7;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28); s.connect(f); f.connect(g); g.connect(c.destination); s.start(t); s.stop(t + 0.3); },
+    chest(c, t) { sndBlip(c, t, 130, 90, 0.35, 0.09, "sawtooth"); [0, 1, 2, 3].forEach(i => sndBlip(c, t + 0.28 + i * 0.07, 520 + i * 160, 700 + i * 160, 0.12, 0.05)); },
+    coin(c, t) { sndBlip(c, t, 988, 988, 0.1, 0.09, "square"); sndBlip(c, t + 0.09, 1319, 1319, 0.22, 0.09, "square"); }
+  };
+  const SND_GAP = { bubble: 60, plop: 120, nibble: 140, splash: 150, chest: 800, coin: 400 }; // so a crowd of events cannot turn into noise
+  function snd(name) {
+    if (!tankSnd.on) return;
+    const now = Date.now(); if (now - (tankSnd.last[name] || 0) < (SND_GAP[name] || 100)) return; tankSnd.last[name] = now;
+    const c = sndCtx(); if (!c || !SND[name]) return;
+    try { if (c.state === "suspended") c.resume(); SND[name](c, c.currentTime + 0.01); } catch (e) { /* sound is never worth a crash */ }
+  }
+  function sndAmbience(play) { // a very quiet water hum while the Tank tab is open
+    const c = tankSnd.ctx; if (!c) return;
+    if (!tankSnd.amb) {
+      const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
+      s.buffer = sndNoise(c, 3); s.loop = true; f.type = "lowpass"; f.frequency.value = 380; g.gain.value = 0;
+      lfo.frequency.value = 0.15; lg.gain.value = 120; lfo.connect(lg); lg.connect(f.frequency);
+      s.connect(f); f.connect(g); g.connect(c.destination); s.start(); lfo.start(); tankSnd.amb = g;
+    }
+    try { tankSnd.amb.gain.setTargetAtTime(play ? 0.06 : 0, c.currentTime, 0.4); } catch (e) { /* fine */ }
+  }
+  function sndWatch() { // keeps the hum on only while sound is on, the page is showing, and the Tank tab is open
+    const v = document.getElementById("view-tank");
+    sndAmbience(tankSnd.on && !document.hidden && !!v && !v.hidden);
+  }
+  function sndSet(on) {
+    tankSnd.on = on; try { localStorage.setItem("fm-tank-sound", on ? "1" : "0"); } catch (e) { /* fine */ }
+    if (on) { const c = sndCtx(); if (c && c.state === "suspended") c.resume(); if (!tankSnd.timer) tankSnd.timer = setInterval(sndWatch, 1500); sndWatch(); snd("bubble"); }
+    else { sndAmbience(false); if (tankSnd.timer) { clearInterval(tankSnd.timer); tankSnd.timer = 0; } }
+    sndButtons();
+  }
+  function sndButtons() { document.querySelectorAll(".snd-btn").forEach(b => { b.textContent = tankSnd.on ? "🔊 Sound on" : "🔇 Sound off"; b.setAttribute("aria-pressed", String(tankSnd.on)); }); }
+  function sndButton() { // a mute button (also used inside full screen)
+    const b = el("button", "btn small ghost snd-btn"); b.type = "button"; b.addEventListener("click", () => sndSet(!tankSnd.on)); b.textContent = tankSnd.on ? "🔊 Sound on" : "🔇 Sound off"; b.setAttribute("aria-pressed", String(tankSnd.on)); return b;
+  }
+  if (tankSnd.on) tankSnd.timer = setInterval(sndWatch, 1500); // returning visitors who turned it on: it only makes noise after their first tap (phones insist)
+
   // ---- 🪙 Coins & 💎 gems: earned from photographed catches, new species/bests, finished collections and official tournaments ----
   // All the rules and the daily limit live in the database (setup/41); the app only asks "claim_coins" and shows the result.
   // Gems are earned only. The shop that spends them comes next (simulator step 7).
@@ -454,6 +513,7 @@
     if (!added || !added.length) return;
     const coins = added.reduce((a, x) => a + (x.coins || 0), 0), gems = added.reduce((a, x) => a + (x.gems || 0), 0);
     const why = [...new Set(added.map(x => COIN_WHY[x.reason] || x.reason))].join(", ");
+    snd("coin");
     if (typeof toast === "function") toast(`🪙 +${coins}${gems ? " · 💎 +" + gems : ""} — ${why}`, 5000);
   }
   async function tankClaim(force) {
@@ -537,7 +597,7 @@
     if (tankReduced()) return;
     const tick = () => {
       if (!box.isConnected) return;
-      box.classList.add("open");
+      box.classList.add("open"); snd("chest"); setTimeout(() => snd("bubble"), 500); setTimeout(() => snd("bubble"), 900);
       for (let i = 0; i < 6; i++) setTimeout(() => { if (!box.isConnected) return; const b = el("span", "cbubble"); b.style.left = (30 + Math.random() * 40) + "%"; b.style.setProperty("--dx", ((Math.random() - 0.5) * 24).toFixed(0) + "px"); b.style.animationDelay = (i * 0.18) + "s"; box.appendChild(b); setTimeout(() => b.remove(), 2600); }, 0);
       setTimeout(() => { box.classList.remove("open"); }, 2600);
       setTimeout(tick, 11000 + Math.random() * 7000);

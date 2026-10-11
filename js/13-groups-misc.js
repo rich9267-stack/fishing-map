@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-12e", title: "🔊 Tank sounds", items: [
+      "🔊 The 🐠 Tank tab has a new Sound button. Sound starts OFF — tap it to turn on a soft water hum, bubbles, food plops, nibbles, the treasure chest creaking open, and a little “ding” when you earn coins.",
+      "🔇 Tap the same button any time to mute. It remembers your choice on this phone, and it's in full screen too. Silent mode on your phone still wins."
+    ] },
     { id: "2026-10-12d", title: "🛍 Tank shop and 🎨 Customize", items: [
       "🛍 There's a new Shop tab in 🐠 Tank. Spend coins on gravel colors, driftwood, plants, rocks, coral and shells — and gems on the diver and the treasure chest (it opens and blows bubbles!).",
       "🎨 Tap Customize on a tank to pick your gravel and place your pieces, in front of or behind the fish. Your free decorations stay too.",
