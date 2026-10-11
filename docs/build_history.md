@@ -293,3 +293,6 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 
 ## Tank step 4 — 🎁 Extras (decorations + feeding)
 `TANK_DECOR` (js/14-tank.js): each tank earns decorations as its species count grows (2/4/6/8/10: plant, shell/rock, anchor/lily, coral/jar, castle). They come from the catch data only, so friends see them on profile pages too. "🍤 Feed the fish" (own tank only) drops flakes and makes the fish wiggle (`tankFeed`) — fun only, nothing saved; motion off under reduced-motion. No database change. Test: tests/test80.js.
+
+## Simulator step 1 — fish with moving parts
+`fishSvg(species, px, live)` (js/14-tank.js) now builds each fish from named pieces — `fs-rig` (whole fish sway), `fs-tail`, `fs-fin`, `fs-fin2`, `fs-body`, `fs-gill`, `fs-eye` — and with `live` set gives the SVG class `fish-live` plus its own speed/offset/blink variables; the CSS (end of app.css) swishes the tail, flutters fins, sways and blinks. Only tank fish and the new-best pop-up are live; pond/lagoon crowds, collection chips and lists stay still (phone speed). Motion off under reduced-motion. The part classes are where an artist's layered pieces plug in later. Plan: docs → project doc `claude/tank-vision.md`. Test: tests/test80.js.

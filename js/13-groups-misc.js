@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-11f", title: "🐟 Fish that move", items: [
+      "🐟 The fish in your tank now swish their tails, flutter their fins, sway and blink — each one a little differently.",
+      "This is the first step toward a full aquarium: swimming, feeding by hand and more are coming."
+    ] },
     { id: "2026-10-11e", title: "🎁 Tank extras", items: [
       "🌿 Your tanks earn decorations as they fill up — seaweed, shells, an anchor, coral and finally a castle. Friends see them on your profile page too.",
       "🍤 Tap \"Feed the fish\" on the Tank tab for a little show."

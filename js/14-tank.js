@@ -39,25 +39,35 @@
   }
   let tankUid = 0;
   // Draw one fish as inline SVG (faces right). Returns an <svg> element.
-  function fishSvg(species, px) {
+  // `live` = the fish has moving parts (tail swish, fin flutter, body sway, blinking). Every part has its own class (fs-tail, fs-fin,
+  // fs-fin2, fs-body, fs-eye) so an artist's pieces can be swapped in later. Motion is switched off for reduced-motion in the CSS.
+  function fishSvg(species, px, live) {
     const NS = "http://www.w3.org/2000/svg", L = tankLook(species), S = TANK_SHAPES[L.shape], id = "tf" + (++tankUid);
     const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "-4 -4 128 68"); svg.setAttribute("width", px); svg.setAttribute("height", Math.round(px * 68 / 128)); svg.setAttribute("aria-hidden", "true");
     const mk = (tag, a) => { const e = document.createElementNS(NS, tag); Object.keys(a).forEach(k => e.setAttribute(k, a[k])); return e; };
     const defs = mk("defs", {}); const g = mk("linearGradient", { id: id + "g", x1: 0, y1: 0, x2: 0, y2: 1 });
     [[0, L.body], [0.55, L.body], [1, L.belly]].forEach(([o, c]) => g.appendChild(mk("stop", { offset: o, "stop-color": c })));
     const cp = mk("clipPath", { id: id + "c" }); cp.appendChild(mk("path", { d: S.body })); defs.appendChild(g); defs.appendChild(cp); svg.appendChild(defs);
-    const dark = "rgba(20,30,35,.55)";
-    svg.appendChild(mk("path", { d: S.tail, fill: L.body })); svg.appendChild(mk("path", { d: S.fin, fill: L.body, opacity: .85 })); svg.appendChild(mk("path", { d: S.fin2, fill: L.body, opacity: .8 }));
-    svg.appendChild(mk("path", { d: S.body, fill: `url(#${id}g)`, stroke: "rgba(0,0,0,.25)", "stroke-width": 1 }));
+    const dark = "rgba(20,30,35,.55)", rig = mk("g", { class: "fs-rig" });
+    rig.appendChild(mk("path", { class: "fs-tail", d: S.tail, fill: L.body })); rig.appendChild(mk("path", { class: "fs-fin", d: S.fin, fill: L.body, opacity: .85 })); rig.appendChild(mk("path", { class: "fs-fin2", d: S.fin2, fill: L.body, opacity: .8 }));
+    const body = mk("g", { class: "fs-body" });
+    body.appendChild(mk("path", { d: S.body, fill: `url(#${id}g)`, stroke: "rgba(0,0,0,.25)", "stroke-width": 1 }));
     const marks = mk("g", { "clip-path": `url(#${id}c)` });
     if (L.mark === "stripe") marks.appendChild(mk("path", { d: "M26 30 L112 29", stroke: dark, "stroke-width": 3.2, fill: "none" }));
     if (L.mark === "bars") [44, 58, 72, 86].forEach(x => marks.appendChild(mk("rect", { x, y: 0, width: 5, height: 60, fill: dark, opacity: .6 })));
     if (L.mark === "spot") marks.appendChild(mk("circle", { cx: 34, cy: 28, r: 4.5, fill: "#1b1b1b" }));
     if (L.mark === "dots") [[50, 22], [64, 28], [78, 21], [58, 38], [90, 30], [44, 30], [72, 36]].forEach(([x, y]) => marks.appendChild(mk("circle", { cx: x, cy: y, r: 2.4, fill: dark })));
     if (L.mark === "scales") [[46, 22], [60, 22], [74, 22], [88, 24], [53, 32], [67, 32], [81, 33], [60, 42], [74, 42]].forEach(([x, y]) => marks.appendChild(mk("circle", { cx: x, cy: y, r: 6, fill: "none", stroke: "rgba(255,255,255,.55)", "stroke-width": 1 })));
-    svg.appendChild(marks);
-    svg.appendChild(mk("path", { d: "M92 18 C98 26 98 36 92 44", stroke: "rgba(0,0,0,.25)", "stroke-width": 1.4, fill: "none" })); // gill
-    svg.appendChild(mk("circle", { cx: 102, cy: 27, r: 3.4, fill: "#fff" })); svg.appendChild(mk("circle", { cx: 103, cy: 27, r: 1.9, fill: "#101010" }));
+    body.appendChild(marks);
+    body.appendChild(mk("path", { class: "fs-gill", d: "M92 18 C98 26 98 36 92 44", stroke: "rgba(0,0,0,.25)", "stroke-width": 1.4, fill: "none" })); // gill
+    const eye = mk("g", { class: "fs-eye" });
+    eye.appendChild(mk("circle", { cx: 102, cy: 27, r: 3.4, fill: "#fff" })); eye.appendChild(mk("circle", { cx: 103, cy: 27, r: 1.9, fill: "#101010" }));
+    body.appendChild(eye); rig.appendChild(body); svg.appendChild(rig);
+    if (live) { // each fish moves a little differently: its own speed and starting point
+      let h = tankUid * 37; for (let i = 0; i < species.length; i++) h = (h * 31 + species.charCodeAt(i)) % 997;
+      const fast = L.shape === "long" ? 0.7 : L.shape === "flat" ? 1.5 : 1;
+      svg.setAttribute("class", "fish-live"); svg.style.setProperty("--fd", (fast * (0.85 + (h % 40) / 100)).toFixed(2) + "s"); svg.style.setProperty("--fo", "-" + ((h % 17) / 10).toFixed(1) + "s"); svg.style.setProperty("--bl", (4 + h % 5) + "s");
+    }
     return svg;
   }
   // Pure maths: turns your catches into { salt: {fish, pond}, fresh: {fish, pond} }.
@@ -113,7 +123,7 @@
       b.style.setProperty("--dx", (slot ? -1 : 1) * (10 + (i * 7) % 16) + "px");
       b.style.animationDuration = (5 + (i * 3) % 5) + "s"; b.style.animationDelay = (-(i * 1.7) % 5) + "s";
       b.setAttribute("aria-label", `${f.species}, ${tankFishText(f) || "no size logged"}. Tap for details.`);
-      const sv = fishSvg(f.species, px); if (slot) sv.style.transform = "scaleX(-1)"; b.appendChild(sv);
+      const sv = fishSvg(f.species, px, true); if (slot) sv.style.transform = "scaleX(-1)"; b.appendChild(sv);
       b.addEventListener("click", () => tankInfo(f, kind, info, opts));
       tank.appendChild(b);
     });
@@ -250,7 +260,7 @@
     const bg = el("div", "ask-bg"), box = el("div", "ask-box best-pop");
     box.setAttribute("role", "alertdialog"); box.setAttribute("aria-modal", "true");
     for (let i = 0; i < 14; i++) { const c = el("span", "confetti"); c.style.left = (4 + i * 7) + "%"; c.style.animationDelay = (i % 5) * 0.15 + "s"; c.style.background = ["#f2b134", "#e4572e", "#29a3a3", "#7bbf4a", "#c25ea8"][i % 5]; box.appendChild(c); }
-    const fw = el("div", "best-fish"); fw.appendChild(fishSvg(r.species, 150)); box.appendChild(fw);
+    const fw = el("div", "best-fish"); fw.appendChild(fishSvg(r.species, 150, true)); box.appendChild(fw);
     box.appendChild(el("div", "best-t", r.first ? `🐠 New fish for your ${salt ? "saltwater" : "freshwater"} tank!` : `✨ New best ${r.species}!`));
     const lines = [];
     if (r.first) lines.push(`Your first ${r.species}${r.now ? " — " + r.now : ""}. It's swimming in the ${salt ? "saltwater" : "freshwater"} tank now.`);

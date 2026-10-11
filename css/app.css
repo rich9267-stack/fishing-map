@@ -473,3 +473,17 @@
   .tank.feeding .tfish { animation: tfeed .5s ease-in-out 4; }
   @keyframes tfeed { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-8px) rotate(-6deg); } }
   @media (prefers-reduced-motion: reduce) { .flake { display: none; } .tank.feeding .tfish { animation: none; } }
+
+  /* 🐟 Fish with moving parts (step 1 of the simulator) */
+  .fish-live .fs-rig, .fish-live .fs-tail, .fish-live .fs-fin, .fish-live .fs-fin2, .fish-live .fs-eye { transform-box: fill-box; }
+  .fish-live .fs-rig { transform-origin: 30% 50%; animation: fs-sway var(--fd, 1s) ease-in-out var(--fo, 0s) infinite alternate; }
+  .fish-live .fs-tail { transform-origin: 100% 50%; animation: fs-tail var(--fd, 1s) ease-in-out var(--fo, 0s) infinite alternate; }
+  .fish-live .fs-fin { transform-origin: 50% 100%; animation: fs-fin calc(var(--fd, 1s) * 1.3) ease-in-out var(--fo, 0s) infinite alternate; }
+  .fish-live .fs-fin2 { transform-origin: 50% 0%; animation: fs-fin2 calc(var(--fd, 1s) * 1.3) ease-in-out var(--fo, 0s) infinite alternate; }
+  .fish-live .fs-eye { transform-origin: 50% 50%; animation: fs-blink var(--bl, 5s) steps(1, end) var(--fo, 0s) infinite; }
+  @keyframes fs-sway { from { transform: rotate(-1.8deg); } to { transform: rotate(1.8deg); } }
+  @keyframes fs-tail { from { transform: rotate(-14deg) scaleY(.92); } to { transform: rotate(14deg) scaleY(1.05); } }
+  @keyframes fs-fin { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+  @keyframes fs-fin2 { from { transform: rotate(6deg); } to { transform: rotate(-6deg); } }
+  @keyframes fs-blink { 0%, 94% { transform: scaleY(1); } 95%, 98% { transform: scaleY(.1); } 99%, 100% { transform: scaleY(1); } }
+  @media (prefers-reduced-motion: reduce) { .fish-live .fs-rig, .fish-live .fs-tail, .fish-live .fs-fin, .fish-live .fs-fin2, .fish-live .fs-eye { animation: none; } }
