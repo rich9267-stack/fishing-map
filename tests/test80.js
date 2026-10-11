@@ -366,6 +366,59 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   console.log("finished collection asked once, unfinished one not:", JSON.stringify(w.__calls6.filter(x => x.startsWith("claim_collection"))), "| wallet now:", wb().slice(0, 30));
   w.eval("window.__wal.collections = ['inshore']; tankClaim(true)"); await sleep(60);
   console.log("already-claimed collection is not asked again:", w.__calls6.filter(x => x.startsWith("claim_collection")).length === 1);
+  // ---- shop + customize (step 7) ----
+  w.eval(`window.__CAT = [
+    { key: 'gravel_black', name: 'Black volcanic gravel', category: 'gravel', water: 'both', coins: 40, gems: null, how: 'shop', sort: 10 },
+    { key: 'gravel_blue', name: 'Blue glass gravel', category: 'gravel', water: 'both', coins: 50, gems: null, how: 'shop', sort: 11 },
+    { key: 'wood_small', name: 'Small driftwood', category: 'wood', water: 'both', coins: 60, gems: null, how: 'shop', sort: 20 },
+    { key: 'coral_fan', name: 'Sea fan', category: 'coral', water: 'salt', coins: 200, gems: null, how: 'shop', sort: 51 },
+    { key: 'plant_leafy', name: 'Leafy water plant', category: 'plant', water: 'fresh', coins: 40, gems: null, how: 'shop', sort: 32 },
+    { key: 'diver', name: 'Diver figurine', category: 'diver', water: 'both', coins: null, gems: 8, how: 'shop', sort: 70 },
+    { key: 'chest', name: 'Treasure chest', category: 'chest', water: 'both', coins: null, gems: 12, how: 'shop', sort: 71 },
+    { key: 'trophy_gold', name: 'Gold trophy cup', category: 'trophy', water: 'both', coins: null, gems: null, how: 'tournament', sort: 80 }];
+    window.__OWN = ['gravel_blue', 'wood_small', 'chest'];
+    window.__SETUPS = [{ tank: 'salt', gravel: 'gravel_blue', placed: [{ key: 'wood_small', x: 30, layer: 'back' }, { key: 'chest', x: 70, layer: 'front' }] }];
+    window.__rpc7 = [];
+    const __of = db.from.bind(db); db.from = t => { const mk = rows => { const o = { select: () => o, order: () => o, eq: () => o, then: (a, b) => Promise.resolve({ data: rows, error: null }).then(a, b) }; return o; };
+      if (t === 'shop_items') return mk(window.__CAT); if (t === 'user_items') return mk(window.__OWN.map(k => ({ item_key: k }))); if (t === 'tank_setups') return mk(window.__SETUPS); return __of(t); };
+    const __or = db.rpc; db.rpc = async (fn, a) => { if (fn === 'save_tank_setup' || fn === 'buy_item') { window.__rpc7.push([fn, a]); if (fn === 'buy_item') { window.__OWN.push(a.p_key); return { data: Object.assign({}, window.__wal, { coins: 153 }), error: null }; } return { error: null }; } return __or.call(db, fn, a); };
+    shop.ready = false; shop.loading = false; tankMode = 'tanks'; renderTank();`);
+  await sleep(150);
+  const saltTank = d.querySelector("#tank-body .tank-salt");
+  const bg = saltTank.querySelector(".tank-sand").style.background;
+  console.log("gravel colour applied:", /111, 168, 220|6fa8dc/i.test(bg), "|", bg.slice(0, 60));
+  console.log("placed pieces on the salt tank:", saltTank.querySelectorAll(".placed").length, "| back:", saltTank.querySelectorAll(".placed.lay-back").length, "front:", saltTank.querySelectorAll(".placed.lay-front").length, "| chest drawn as picture:", !!saltTank.querySelector(".placed.chest svg"), "| x position:", saltTank.querySelector(".placed.lay-back").style.left);
+  const custom = d.querySelector("#tank-body .custom-btn"); console.log("customize button on my tank:", !!custom);
+  click(custom); await sleep(30);
+  const panel = d.querySelector("#tank-body .tank-custom");
+  console.log("panel lists my pieces for this water (not the coral I don't own):", panel && [...panel.querySelectorAll(".piece-name")].map(x => x.textContent.trim()).join(" | "));
+  console.log("gravel choices (sand + owned):", panel.querySelectorAll(".gravel-sw").length);
+  const woodRow = [...panel.querySelectorAll(".piece-row")].find(r => /driftwood/i.test(r.textContent)); const rg = woodRow.querySelector("input[type=range]"); rg.value = 10; rg.dispatchEvent(new w.Event("input"));
+  console.log("moving the slider moves it live:", saltTank.querySelector(".placed.lay-back").style.left);
+  const chestRow = [...panel.querySelectorAll(".piece-row")].find(r => /chest/i.test(r.textContent)); chestRow.querySelector("input[type=checkbox]").click(); await sleep(10);
+  console.log("unticking a piece removes it from the tank:", saltTank.querySelectorAll(".placed").length);
+  [...panel.querySelectorAll(".gravel-sw")][0].click(); await sleep(10); console.log("choosing sand again repaints:", /230, 211, 161|e6d3a1/i.test(saltTank.querySelector(".tank-sand").style.background));
+  const sv = d.querySelector("#tank-body .tank-custom .btn:not(.ghost)"); click(sv); await sleep(40);
+  console.log("Save asks the server:", JSON.stringify(w.__rpc7.filter(x => x[0] === "save_tank_setup").map(x => ({ tank: x[1].p_tank, gravel: x[1].p_gravel, placed: x[1].p_placed }))), "| panel closed:", !d.querySelector("#tank-body .tank-custom"));
+  click(d.querySelector("#tank-body .custom-btn")); await sleep(10); click([...d.querySelectorAll("#tank-body .tank-custom .btn.ghost")].find(b => /cancel/i.test(b.textContent))); await sleep(10);
+  console.log("cancel puts the saved look back:", saltTank.querySelectorAll(".placed").length, "| panel gone:", !d.querySelector("#tank-body .tank-custom"));
+  // the shop
+  w.eval("tankMode = 'shop'; renderTank()"); await sleep(30);
+  const sb = d.getElementById("shop-body"); const txt7 = sb.textContent.replace(/\s+/g, " ");
+  console.log("shop shown:", !sb.hidden, "| tanks hidden:", d.getElementById("tank-body").hidden, "| categories:", [...sb.querySelectorAll(".tank-card > .label")].map(x => x.textContent).join(" / "));
+  console.log("owned items say Owned:", (txt7.match(/✓ Owned/g) || []).length, "| can't afford sea fan (wallet 43 coins):", /Need 157 more 🪙/.test(txt7), "| diver needs gems (wallet 0):", /Need 8 more 💎/.test(txt7), "| trophy is won, not bought:", /Won in official tournaments/.test(txt7));
+  const buy = [...sb.querySelectorAll(".shop-item")].find(x => /Black volcanic/.test(x.textContent)).querySelector("button");
+  console.log("affordable item has an enabled Buy:", !buy.disabled, "|", buy.textContent);
+  click(buy); console.log("first tap only asks to confirm:", buy.textContent, "| bought yet:", w.__rpc7.filter(x => x[0] === "buy_item").length);
+  click(buy); await sleep(60);
+  console.log("second tap buys:", JSON.stringify(w.__rpc7.filter(x => x[0] === "buy_item")), "| now owned:", /Black volcanic gravel[^]*?✓ Owned/.test(d.getElementById("shop-body").textContent.replace(/\s+/g, " ")) , "| coins now:", d.getElementById("wallet-box").textContent.slice(0, 12));
+  // a friend's tank shows their gravel and pieces
+  const hostBox = document_createBox(); function document_createBox() { const b = d.createElement("div"); d.body.appendChild(b); return b; }
+  const mineC = w.eval("Object.values(catchesBySpot).flat().filter(c => c.created_by === me.id && !c.deleted_at)");
+  w.eval("window.__t = null"); w.tankProfile(JSON.parse(JSON.stringify(mineC)), w.eval("spots"), hostBox, false, { salt: { tank: "salt", gravel: "gravel_blue", placed: [{ key: "rock_small", x: 20, layer: "front" }] } });
+  const ft = hostBox.querySelector(".tank-salt");
+  console.log("friend's tank shows their setup:", ft ? ft.querySelectorAll(".placed").length + " piece(s), gravel " + /111, 168, 220|6fa8dc/i.test(ft.querySelector(".tank-sand").style.background) : "no salt tank", "| friend has no Customize button:", !hostBox.querySelector(".custom-btn"));
+  hostBox.remove(); w.eval("tankMode = 'tanks'; renderTank()");
   w.eval("window.matchMedia = () => ({ matches: true }); renderTank()");
   const rb = d.querySelector("#tank-body .feed-btn"); console.log("reduced motion: feeding button disabled with a reason:", rb.disabled, "|", rb.textContent);
   w.eval("window.matchMedia = () => ({ matches: false })");

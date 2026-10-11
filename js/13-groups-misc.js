@@ -449,6 +449,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-12d", title: "🛍 Tank shop and 🎨 Customize", items: [
+      "🛍 There's a new Shop tab in 🐠 Tank. Spend coins on gravel colors, driftwood, plants, rocks, coral and shells — and gems on the diver and the treasure chest (it opens and blows bubbles!).",
+      "🎨 Tap Customize on a tank to pick your gravel and place your pieces, in front of or behind the fish. Your free decorations stay too.",
+      "👀 Friends see your decorated tanks on your profile page. Trophy cups are only won in official tournaments."
+    ] },
     { id: "2026-10-12c", title: "🪙 Coins and 💎 gems", items: [
       "🪙 Log a catch with a photo and earn 2 coins (3 if you measure it), up to 50 a day. A brand-new species pays 40, a new personal best 25, and finishing a collection 150.",
       "💎 Gems are earned only: 2 for finishing a collection, and 3 / 2 / 1 for 1st / 2nd / 3rd in an official tournament (plus 200 / 120 / 80 coins). They're never for sale.",

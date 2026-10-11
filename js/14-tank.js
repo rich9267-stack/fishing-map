@@ -377,6 +377,7 @@
     const deco = TANK_DECOR[salt ? "salt" : "fresh"], got = deco.filter(d => fish.length >= d.at);
     got.forEach((d, i) => { const e = el("span", "decor", d.e); e.style.left = (5 + i * (76 / Math.max(deco.length - 1, 1))) + "%"; e.style.fontSize = d.sz + "px"; e.title = d.n; e.setAttribute("aria-hidden", "true"); tank.appendChild(e); });
     card.appendChild(tank);
+    tankApplySetup(tank, opts.setup);
     tankSwim(tank, items, { seed: salt ? 1 : 2, chase: true });
     const nxt = deco.find(d => fish.length < d.at);
     card.appendChild(el("div", "spot-meta", got.length ? `${got.length} of ${deco.length} decorations unlocked` + (nxt ? ` · next one at ${nxt.at} species` : " — tank fully decorated! 🎉") : `First decoration unlocks at ${deco[0].at} species.`));
@@ -384,6 +385,7 @@
     const acts = el("div", "tank-actions");
     if (!opts.other) { tankFeedBind(tank); acts.appendChild(feedBtn(tank, true)); }
     acts.appendChild(fullBtn(tank, salt ? "🌊 Saltwater tank" : "🌿 Freshwater tank", !opts.other));
+    if (opts.own && !opts.other) { const cb = el("button", "btn ghost custom-btn", "🎨 Customize"); cb.type = "button"; cb.addEventListener("click", () => { if (!shop.ready) { if (typeof toast === "function") toast("Opening your items…"); shopLoad().then(() => tankCustomize(kind, tank, card)); } else tankCustomize(kind, tank, card); }); acts.appendChild(cb); }
     card.appendChild(acts);
     const info = el("div", "tank-info"); info.hidden = true; card.appendChild(info);
     box.appendChild(card);
@@ -427,16 +429,18 @@
   }
   let tankMode = "tanks";
   function renderTank() {
-    const box = $("tank-body"), pbox = $("pond-body"), lbox = $("lagoon-body"); if (!box) return; box.innerHTML = ""; pbox.innerHTML = ""; lbox.innerHTML = "";
+    const box = $("tank-body"), pbox = $("pond-body"), lbox = $("lagoon-body"), sbox = $("shop-body"); if (!box) return; box.innerHTML = ""; pbox.innerHTML = ""; lbox.innerHTML = ""; if (sbox) sbox.innerHTML = "";
     document.querySelectorAll("#tank-sw button").forEach(b => { b.classList.toggle("ghost", b.dataset.mode !== tankMode); b.setAttribute("aria-pressed", String(b.dataset.mode === tankMode)); });
-    box.hidden = tankMode !== "tanks"; pbox.hidden = tankMode !== "pond"; lbox.hidden = tankMode !== "lagoon";
+    box.hidden = tankMode !== "tanks"; pbox.hidden = tankMode !== "pond"; lbox.hidden = tankMode !== "lagoon"; if (sbox) sbox.hidden = tankMode !== "shop";
+    if (me && !shop.ready && !shop.loading) shopLoad().then(() => renderTank());
     if (!me || spots === null) { box.appendChild(el("div", "empty", "Loading your catches…")); return; }
     const mine = Object.values(catchesBySpot).flat().filter(c => c.created_by === me.id && !c.deleted_at);
     const t = tankBuild(mine, spots), n = t.salt.fish.length + t.fresh.fish.length;
     const sum = x => x.pond.reduce((s, p) => s + p.n, 0);
     $("tank-sum").textContent = n ? `${n} species in your tanks · ${t.salt.fish.length} saltwater · ${t.fresh.fish.length} freshwater · ${sum(t.salt)} in the lagoon · ${sum(t.fresh)} in the pond` : "Log a catch and your first fish appears.";
     walletDraw(); tankClaim();
-    tankDraw("salt", t.salt, box); tankDraw("fresh", t.fresh, box); collectionDraw(mine, box); overflowDraw(t, "fresh", pbox); overflowDraw(t, "salt", lbox);
+    tankDraw("salt", t.salt, box, { own: true, setup: shop.setups.salt }); tankDraw("fresh", t.fresh, box, { own: true, setup: shop.setups.fresh }); collectionDraw(mine, box); overflowDraw(t, "fresh", pbox); overflowDraw(t, "salt", lbox);
+    if (sbox && tankMode === "shop") shopDraw(sbox);
   }
   document.querySelectorAll("#tank-sw button").forEach(b => b.addEventListener("click", () => { tankMode = b.dataset.mode; renderTank(); }));
 
@@ -444,7 +448,7 @@
   // All the rules and the daily limit live in the database (setup/41); the app only asks "claim_coins" and shows the result.
   // Gems are earned only. The shop that spends them comes next (simulator step 7).
   let wallet = null, walletBusy = false, walletAt = 0;
-  const COIN_WHY = { catch: "photographed catch", measured: "measured it", species: "new species", best: "new personal best", collection: "finished a collection", tournament: "tournament placing" };
+  const COIN_WHY = { catch: "photographed catch", measured: "measured it", species: "new species", best: "new personal best", collection: "finished a collection", tournament: "tournament placing", purchase: "bought" };
   const COIN_GROUPS = { inshore: "Inshore", beach: "Beach & pier", offshore: "Offshore", fresh: "Freshwater" };
   function walletToast(added) {
     if (!added || !added.length) return;
@@ -459,6 +463,7 @@
     try {
       const r = await db.rpc("claim_coins"); if (r.error || !r.data || typeof r.data.coins !== "number") throw (r.error || new Error("no wallet"));
       wallet = r.data; walletAt = Date.now(); walletToast(wallet.added); walletDraw();
+      if ((wallet.added || []).some(x => x.reason === "tournament")) shop.ready = false; // a trophy cup may have arrived: reload what you own
       // finished collection groups: ask once per group (the server checks every species has a photographed catch)
       const mine = Object.values(catchesBySpot || {}).flat().filter(c => c.created_by === me.id && !c.deleted_at);
       for (const g of tankCollection(mine)) {
@@ -486,10 +491,168 @@
       "💎 Gems can only be earned — they are never for sale. The shop where you spend them is coming soon."].forEach(t => det.appendChild(el("div", "spot-meta", t)));
     if ((wallet.recent || []).length) {
       det.appendChild(el("div", "label wallet-h", "Recent"));
-      wallet.recent.forEach(r => det.appendChild(el("div", "spot-meta", `${r.currency === "gems" ? "💎" : "🪙"} +${r.amount} — ${r.reason === "collection" || r.reason === "tournament" ? (COIN_WHY[r.reason] + (r.note ? ": " + (COIN_GROUPS[r.note] || r.note) : "")) : (COIN_WHY[r.reason] || r.reason) + (r.note ? " · " + r.note : "")}`)));
+      wallet.recent.forEach(r => det.appendChild(el("div", "spot-meta", `${r.currency === "gems" ? "💎" : "🪙"} ${r.amount > 0 ? "+" : "−"}${Math.abs(r.amount)} — ${r.reason === "collection" || r.reason === "tournament" ? (COIN_WHY[r.reason] + (r.note ? ": " + (COIN_GROUPS[r.note] || r.note) : "")) : (COIN_WHY[r.reason] || r.reason) + (r.note ? " · " + r.note : "")}`)));
     }
     box.appendChild(det);
   }
+  // ---- 🛍 Shop & 🎨 Customize: gravel colors and pieces you buy (coins/gems) or win, placed in your tanks and saved to your account (setup/42) ----
+  // Prices and what you own live in the database; this is only the pictures (emoji for now — artist art can replace SHOP_ART entry by entry).
+  const GRAVEL = { sand: ["#e6d3a1", "#c9b078", "Natural sand"], gravel_black: ["#55555c", "#2c2c31"], gravel_blue: ["#6fa8dc", "#3b6ea5"], gravel_green: ["#8fbc6f", "#4f8a3b"], gravel_pink: ["#f3a6c3", "#d4709a"], gravel_white: ["#f4f1ea", "#d8d2c4"] };
+  const SHOP_ART = {
+    wood_small: { e: "🪵", sz: 26, n: "Small driftwood" }, wood_big: { e: "🪵", sz: 46, n: "Big driftwood" },
+    plant_grass: { e: "🌾", sz: 36, n: "Sea grass" }, plant_kelp: { e: "🌿", sz: 58, f: "hue-rotate(35deg) saturate(1.4)", n: "Kelp" },
+    plant_leafy: { e: "🍃", sz: 34, n: "Leafy water plant" }, plant_fern: { e: "🌿", sz: 38, n: "Water fern" }, plant_lily: { e: "🪷", sz: 28, n: "Lily pads" },
+    rock_small: { e: "🪨", sz: 22, n: "Small rocks" }, rock_pile: { e: "🪨", sz: 40, n: "Boulder pile" }, rock_arch: { e: "🪨", sz: 58, f: "contrast(1.1)", n: "Rock arch" },
+    coral_brain: { e: "🪸", sz: 32, f: "hue-rotate(300deg)", n: "Brain coral" }, coral_fan: { e: "🪸", sz: 42, n: "Sea fan" }, coral_branch: { e: "🪸", sz: 52, f: "hue-rotate(40deg) saturate(1.3)", n: "Staghorn coral" },
+    shell_scallop: { e: "🦪", sz: 22, n: "Scallop shell" }, shell_conch: { e: "🐚", sz: 24, n: "Conch shell" },
+    diver: { e: "🤿", sz: 40, n: "Diver figurine" }, chest: { e: "💰", sz: 36, n: "Treasure chest", chest: true },
+    trophy_gold: { e: "🏆", sz: 32, n: "Gold trophy cup" }, trophy_silver: { e: "🏆", sz: 30, f: "grayscale(1) brightness(1.25)", n: "Silver trophy cup" }, trophy_bronze: { e: "🏆", sz: 28, f: "sepia(1) saturate(2) hue-rotate(-15deg)", n: "Bronze trophy cup" }
+  };
+  const SHOP_CATS = [["gravel", "Gravel colors"], ["wood", "Driftwood"], ["plant", "Plants"], ["rock", "Rocks"], ["coral", "Coral"], ["shell", "Shells"], ["diver", "Diver"], ["chest", "Treasure chest"], ["trophy", "Trophy cups"]];
+  const shop = { ready: false, loading: false, items: {}, owned: new Set(), setups: { salt: null, fresh: null } };
+  async function shopLoad() {
+    if (!me || !db || shop.loading) return; shop.loading = true;
+    try {
+      const [it, ow, su] = await Promise.all([db.from("shop_items").select("*").order("sort"), db.from("user_items").select("item_key").eq("user_id", me.id), db.from("tank_setups").select("tank,gravel,placed").eq("user_id", me.id)]);
+      shop.items = {}; (it.data || []).forEach(x => { shop.items[x.key] = x; });
+      shop.owned = new Set((ow.data || []).map(x => x.item_key));
+      shop.setups = { salt: null, fresh: null }; (su.data || []).forEach(x => { shop.setups[x.tank] = x; });
+    } catch (e) { /* older database: no shop yet */ }
+    shop.ready = true; shop.loading = false;
+  }
+  function chestSvg() {
+    const NS = "http://www.w3.org/2000/svg", mk = (t, a) => { const n = document.createElementNS(NS, t); Object.keys(a).forEach(k => n.setAttribute(k, a[k])); return n; };
+    const svg = mk("svg", { viewBox: "0 0 48 40", width: "40", height: "34", "aria-hidden": "true" });
+    svg.appendChild(mk("ellipse", { cx: "24", cy: "17", rx: "13", ry: "7", fill: "#ffd54a", class: "chest-glow" }));
+    svg.appendChild(mk("rect", { x: "4", y: "18", width: "40", height: "18", rx: "3", fill: "#8a5a2b", stroke: "#4e3216", "stroke-width": "2" }));
+    svg.appendChild(mk("rect", { x: "4", y: "24", width: "40", height: "4", fill: "#c9a24a" }));
+    const lid = mk("g", { class: "chest-lid" });
+    lid.appendChild(mk("path", { d: "M4 18 Q4 6 24 6 Q44 6 44 18 Z", fill: "#a8713a", stroke: "#4e3216", "stroke-width": "2" }));
+    lid.appendChild(mk("rect", { x: "4", y: "14", width: "40", height: "4", fill: "#c9a24a" }));
+    svg.appendChild(lid); svg.appendChild(mk("rect", { x: "21", y: "21", width: "6", height: "8", rx: "1", fill: "#ffd54a", stroke: "#4e3216", "stroke-width": "1.5" }));
+    return svg;
+  }
+  // The treasure chest opens every so often and lets out a puff of bubbles (never moves under reduced motion)
+  function chestLife(box) {
+    if (tankReduced()) return;
+    const tick = () => {
+      if (!box.isConnected) return;
+      box.classList.add("open");
+      for (let i = 0; i < 6; i++) setTimeout(() => { if (!box.isConnected) return; const b = el("span", "cbubble"); b.style.left = (30 + Math.random() * 40) + "%"; b.style.setProperty("--dx", ((Math.random() - 0.5) * 24).toFixed(0) + "px"); b.style.animationDelay = (i * 0.18) + "s"; box.appendChild(b); setTimeout(() => b.remove(), 2600); }, 0);
+      setTimeout(() => { box.classList.remove("open"); }, 2600);
+      setTimeout(tick, 11000 + Math.random() * 7000);
+    };
+    setTimeout(tick, 2500 + Math.random() * 5000);
+  }
+  // Paint a setup ({gravel, placed:[{key,x,layer}]}) onto a tank element: the gravel colour and the pieces
+  function tankApplySetup(tank, setup) {
+    tank.querySelectorAll(".placed").forEach(e => e.remove());
+    const sand = tank.querySelector(".tank-sand"), g = GRAVEL[(setup && setup.gravel) || "sand"] || GRAVEL.sand;
+    if (sand) sand.style.background = `linear-gradient(${g[0]}, ${g[1]})`;
+    ((setup && setup.placed) || []).forEach(p => {
+      const a = SHOP_ART[p.key]; if (!a) return;
+      const d = el("span", "decor placed " + (p.layer === "front" ? "lay-front" : "lay-back"));
+      d.style.left = Math.max(0, Math.min(100, +p.x || 0)) + "%"; d.title = a.n; d.setAttribute("aria-hidden", "true");
+      if (a.chest) { d.classList.add("chest"); d.appendChild(chestSvg()); chestLife(d); } else { d.textContent = a.e; d.style.fontSize = a.sz + "px"; if (a.f) d.style.filter = a.f + " drop-shadow(0 2px 2px rgba(0,0,0,.35))"; }
+      tank.appendChild(d);
+    });
+  }
+  function tankCustomize(kind, tank, card) {
+    const old = card.querySelector(".tank-custom"); if (old) { old.remove(); tankApplySetup(tank, shop.setups[kind]); return; }
+    const saved = shop.setups[kind] || { gravel: null, placed: [] };
+    const draft = { gravel: saved.gravel || "sand", placed: (saved.placed || []).map(p => ({ key: p.key, x: p.x, layer: p.layer })) };
+    const panel = el("div", "tank-custom"); card.appendChild(panel);
+    const mine = Object.keys(shop.items).filter(k => shop.owned.has(k)).map(k => shop.items[k]).filter(i => i.water === "both" || i.water === kind);
+    const preview = () => tankApplySetup(tank, draft);
+    const draw = () => {
+      panel.innerHTML = ""; panel.appendChild(el("div", "label", "🎨 Customize this tank"));
+      const gl = mine.filter(i => i.category === "gravel"), pieces = mine.filter(i => i.category !== "gravel");
+      panel.appendChild(el("div", "spot-meta", "Gravel"));
+      const sw = el("div", "gravel-row");
+      [{ key: "sand", name: "Natural sand" }].concat(gl).forEach(i => {
+        const b = el("button", "gravel-sw" + (draft.gravel === i.key ? " on" : "")); b.type = "button"; b.title = i.name; b.setAttribute("aria-label", i.name + (draft.gravel === i.key ? " (selected)" : ""));
+        const c = GRAVEL[i.key] || GRAVEL.sand; b.style.background = `linear-gradient(${c[0]}, ${c[1]})`;
+        b.addEventListener("click", () => { draft.gravel = i.key; preview(); draw(); }); sw.appendChild(b);
+      });
+      panel.appendChild(sw);
+      panel.appendChild(el("div", "spot-meta", "Pieces (up to 10 per tank)"));
+      if (!pieces.length) panel.appendChild(el("div", "spot-meta", "You don't own any pieces for this tank yet — the 🛍 Shop has driftwood, plants, rocks and more."));
+      pieces.forEach(i => {
+        const cur = draft.placed.find(p => p.key === i.key), row = el("div", "piece-row");
+        const lab = el("label", "piece-name"); const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!cur;
+        cb.disabled = !cur && draft.placed.length >= 10;
+        cb.addEventListener("change", () => { if (cb.checked) draft.placed.push({ key: i.key, x: 50, layer: i.category === "plant" || i.category === "coral" ? "back" : "front" }); else draft.placed = draft.placed.filter(p => p.key !== i.key); preview(); draw(); });
+        lab.appendChild(cb); lab.appendChild(document.createTextNode(" " + ((SHOP_ART[i.key] && SHOP_ART[i.key].e) || "✨") + " " + i.name)); row.appendChild(lab);
+        if (cur) {
+          const rg = document.createElement("input"); rg.type = "range"; rg.min = 0; rg.max = 100; rg.value = cur.x; rg.setAttribute("aria-label", i.name + " position, left to right");
+          rg.addEventListener("input", () => { cur.x = +rg.value; preview(); });
+          const sel = document.createElement("select"); sel.setAttribute("aria-label", i.name + " layer");
+          [["back", "Behind the fish"], ["front", "In front"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; if (cur.layer === v) o.selected = true; sel.appendChild(o); });
+          sel.addEventListener("change", () => { cur.layer = sel.value; preview(); });
+          row.appendChild(rg); row.appendChild(sel);
+        }
+        panel.appendChild(row);
+      });
+      const acts = el("div", "tank-actions"), save = el("button", "btn small", "Save"), cancel = el("button", "btn ghost small", "Cancel"), msg = el("div", "msg");
+      save.type = "button"; cancel.type = "button";
+      cancel.addEventListener("click", () => { tankApplySetup(tank, shop.setups[kind]); panel.remove(); });
+      save.addEventListener("click", async () => {
+        save.disabled = true; msg.className = "msg"; msg.textContent = "Saving…";
+        const r = await db.rpc("save_tank_setup", { p_tank: kind, p_gravel: draft.gravel === "sand" ? null : draft.gravel, p_placed: draft.placed });
+        if (r.error) { save.disabled = false; msg.className = "msg err"; msg.textContent = r.error.message; return; }
+        shop.setups[kind] = { tank: kind, gravel: draft.gravel === "sand" ? null : draft.gravel, placed: draft.placed.map(p => ({ key: p.key, x: p.x, layer: p.layer })) };
+        panel.remove(); if (typeof toast === "function") toast("🎨 Tank saved — friends can see it on your profile");
+      });
+      acts.appendChild(save); acts.appendChild(cancel); panel.appendChild(acts); panel.appendChild(msg);
+    };
+    draw(); panel.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+  function shopDraw(box) {
+    box.innerHTML = "";
+    if (!shop.ready) { box.appendChild(el("div", "empty", "Opening the shop…")); return; }
+    const items = Object.values(shop.items);
+    if (!items.length) { box.appendChild(el("div", "empty", "The shop isn't open yet.")); return; }
+    const wal = wallet || { coins: 0, gems: 0 };
+    const head = el("div", "tank-card"); head.appendChild(el("div", "label", "🛍 Tank shop"));
+    head.appendChild(el("div", "spot-meta", "Buy pieces with 🪙 coins or 💎 gems, then place them with 🎨 Customize on a tank. Trophy cups are only won in official tournaments. Purchases are final."));
+    box.appendChild(head);
+    SHOP_CATS.forEach(([cat, label]) => {
+      const list = items.filter(i => i.category === cat); if (!list.length) return;
+      const card = el("div", "tank-card"); card.appendChild(el("div", "label", label));
+      const grid = el("div", "shop-grid"); card.appendChild(grid);
+      list.forEach(i => {
+        const cell = el("div", "shop-item"), art = el("div", "shop-art");
+        if (cat === "gravel") { const c = GRAVEL[i.key] || GRAVEL.sand; art.style.background = `linear-gradient(${c[0]}, ${c[1]})`; art.classList.add("swatch"); }
+        else { const a = SHOP_ART[i.key]; if (a && a.chest) art.appendChild(chestSvg()); else { art.textContent = (a && a.e) || "✨"; if (a && a.f) art.style.filter = a.f; } }
+        cell.appendChild(art); cell.appendChild(el("div", "shop-name", i.name));
+        cell.appendChild(el("div", "spot-meta", i.water === "salt" ? "🌊 saltwater tank" : i.water === "fresh" ? "🌿 freshwater tank" : "any tank"));
+        const owned = shop.owned.has(i.key);
+        if (owned) cell.appendChild(el("div", "shop-own", "✓ Owned"));
+        else if (i.how === "tournament") cell.appendChild(el("div", "spot-meta", "🏆 Won in official tournaments"));
+        else {
+          const price = [i.coins ? i.coins + " 🪙" : "", i.gems ? i.gems + " 💎" : ""].filter(Boolean).join(" + ");
+          const needC = Math.max(0, (i.coins || 0) - wal.coins), needG = Math.max(0, (i.gems || 0) - wal.gems);
+          const b = el("button", "btn small", "Buy · " + price); b.type = "button";
+          if (needC || needG) { b.disabled = true; b.textContent = price; cell.appendChild(b); cell.appendChild(el("div", "spot-meta", "Need " + [needC ? needC + " more 🪙" : "", needG ? needG + " more 💎" : ""].filter(Boolean).join(" and "))); }
+          else {
+            let armed = 0;
+            b.addEventListener("click", async () => {
+              if (!armed) { armed = setTimeout(() => { armed = 0; b.textContent = "Buy · " + price; }, 4000); b.textContent = "Tap again to buy"; return; }
+              clearTimeout(armed); b.disabled = true; b.textContent = "Buying…";
+              const r = await db.rpc("buy_item", { p_key: i.key });
+              if (r.error) { if (typeof toast === "function") toast("Couldn't buy: " + r.error.message, 6000); armed = 0; b.disabled = false; b.textContent = "Buy · " + price; return; }
+              wallet = Object.assign({}, wallet || {}, r.data); shop.owned.add(i.key); walletDraw(); shopDraw(box);
+              if (typeof toast === "function") toast("✓ Bought " + i.name + " — place it with 🎨 Customize on a tank", 6000);
+            });
+            cell.appendChild(b);
+          }
+        }
+        grid.appendChild(cell);
+      });
+      box.appendChild(card);
+    });
+  }
+
   // ---- 🏆 Collections: how many of each Seasons group (inshore, beach & pier, offshore, freshwater) you have caught ----
   // Uses the same species list as the Seasons tab, so a new fish there becomes a new goal here. The mullet run is bait, not a catch.
   function tankCollection(catches) {
@@ -570,12 +733,11 @@
 
   // A person's tank on their profile page. `catches` are only the ones the viewer is allowed to see (database rules) and never private ones.
   // Other people's spots are not named; only size and date show.
-  function tankProfile(catches, spotList, box, own) {
+  function tankProfile(catches, spotList, box, own, setups) {
     const t = tankBuild(catches, spotList), n = t.salt.fish.length + t.fresh.fish.length;
     const head = el("div", "label", "🐠 Tank"); head.style.marginTop = "12px"; head.id = "prof-tank"; box.appendChild(head);
     if (!n) { box.appendChild(el("div", "spot-meta", own ? "No fish yet — public and friends-only catches show here." : "No fish in the tank yet.")); return; }
-    const opts = { noSpot: true, other: !own };
-    ["salt", "fresh"].forEach(k => { if (t[k].fish.length) tankDraw(k, t[k], box, opts); });
+    ["salt", "fresh"].forEach(k => { if (t[k].fish.length) tankDraw(k, t[k], box, { noSpot: true, other: !own, setup: setups && setups[k] }); });
     const sum = x => x.pond.reduce((s, p) => s + p.n, 0), bits = [];
     if (sum(t.salt)) bits.push(`🌴 ${sum(t.salt)} in the lagoon`); if (sum(t.fresh)) bits.push(`🏞 ${sum(t.fresh)} in the pond`);
     if (bits.length) box.appendChild(el("div", "spot-meta", bits.join(" · ")));
