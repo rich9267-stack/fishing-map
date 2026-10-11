@@ -403,7 +403,7 @@
       loadPhotos().then(sweepDeletedCatchPhotos);
       syncSessions().then(loadSessions).then(maybeAskSession);
       renderPins();
-      if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); } // centred on your spots
+      if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); loadOfficialSpots(); } // centred on your spots
       loadSightings();
       loadPlans();
       if (typeof renderSuggestions === "function") renderSuggestions();

@@ -525,3 +525,31 @@
     return `${cond.pressure.toFixed(2)} inHg${arrow}`;
   }
 
+
+  // ---- Official public spots: public boat ramps + parks/piers where fishing is allowed (shared table official_spots) ----
+  // Used by Quick catch to name a new spot after the official place you're standing at.
+  let officialSpots = [];
+  const OFFICIAL_KEY = "fm-official-v1";
+  const OFFICIAL_KINDS = { ramp: "ramp", pier: "pier", jetty: "jetty", bridge: "bridge", park: "dock", dock: "dock" };
+  async function loadOfficialSpots() {
+    try {
+      const c = JSON.parse(localStorage.getItem(OFFICIAL_KEY) || "null");
+      if (c && Array.isArray(c.items) && Date.now() - c.t < 7 * 86400000) { officialSpots = c.items; return; }
+    } catch (e) {}
+    try {
+      const { data, error } = await db.from("official_spots").select("id,name,kind,lat,lng,water_type,county,details").limit(5000);
+      if (error) throw error;
+      officialSpots = data || [];
+      try { localStorage.setItem(OFFICIAL_KEY, JSON.stringify({ t: Date.now(), items: officialSpots })); } catch (e) {}
+    } catch (e) { /* offline or table missing: Quick catch just falls back to the map suggestions */ }
+  }
+  // The closest official spot to a place, if one is within maxMi (default ~400 ft)
+  function officialNear(pos, maxMi) {
+    const lim = maxMi || 0.08;
+    let best = null;
+    (officialSpots || []).forEach(o => {
+      const d = miles(pos.lat, pos.lng, o.lat, o.lng);
+      if (d <= lim && (!best || d < best.d)) best = { o, d };
+    });
+    return best;
+  }

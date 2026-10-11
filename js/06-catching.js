@@ -19,7 +19,8 @@
     const w = $("qc-where");
     if (!qc.pos) return;
     const near = nearbySpots(qc.pos)[0];
-    w.textContent = near && near.d <= QC_NEAR_MI ? `📍 At ${near.s.name}` : "📍 New spot here";
+    const off = !(near && near.d <= QC_NEAR_MI) && officialNear(qc.pos);
+    w.textContent = near && near.d <= QC_NEAR_MI ? `📍 At ${near.s.name}` : off ? `📍 New spot here — ${off.o.name}` : "📍 New spot here";
   }
 
   async function startCamera() {
@@ -224,16 +225,18 @@
   }
 
   async function createSpotHere(pos) {
-    // Name it after a public place right here if there is one; guess saltwater near a tide station
+    // Name it after the official public spot right here (ramp, park, pier), else a map suggestion; guess saltwater near a tide station
+    const off = officialNear(pos);
     const sugg = (suggestions || []).map(g => ({ g, d: miles(pos.lat, pos.lng, g.lat, g.lng) })).sort((a, b) => a.d - b.d)[0];
-    const named = sugg && sugg.d < 0.08 && !/unnamed/.test(sugg.g.name) ? sugg.g : null;
+    const osm = sugg && sugg.d < 0.08 && !/unnamed/.test(sugg.g.name) ? sugg.g : null;
+    const named = off ? { name: off.o.name, kind: OFFICIAL_KINDS[off.o.kind] || "dock", official: off.o } : osm;
     const st = stationFor({ lat: pos.lat, lng: pos.lng });
     const row = {
       name: named ? named.name : `Quick spot · ${new Date().toLocaleDateString([], { month: "short", day: "numeric" })}`,
       spot_type: named ? ({ ramp: "ramp", jetty: "jetty", bridge: "bridge", pier: "pier", dock: "dock" }[named.kind] || "dock") : "dock",
-      water_type: st.dist != null && st.dist < 1.5 ? "saltwater" : "brackish",
-      public_access: "unsure", added_by: me.name, lat: pos.lat, lng: pos.lng, is_private: true,
-      notes: "Created from a quick catch — check the type, water and access."
+      water_type: named && named.official && named.official.water_type ? named.official.water_type : st.dist != null && st.dist < 1.5 ? "saltwater" : "brackish",
+      public_access: named && named.official ? "yes" : "unsure", added_by: me.name, lat: pos.lat, lng: pos.lng, is_private: true,
+      notes: named && named.official ? "Named after an official public spot — check the water type." : "Created from a quick catch — check the type, water and access."
     };
     const { data, error } = await db.from("spots").insert(row).select("*").single();
     if (error) throw error;

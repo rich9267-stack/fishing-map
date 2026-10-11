@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-12a", title: "📍 Official public spots", items: [
+      "📍 The app now knows about ~340 official public places in Broward, Palm Beach and Miami-Dade: boat ramps, fishing piers and parks where you can fish.",
+      "📸 When you do a Quick catch at one of them with no saved spot nearby, the new spot is named after it (like “Pompano Fishing Pier”) and marked as public access."
+    ] },
     { id: "2026-10-11j", title: "📏 Measuring screen fixed", items: [
       "📏 The whole photo now fits on the measuring screen — nothing is cut off, so you can always reach the blue reference dots.",
       "🔍 Zoom ＋ −, Fit, and new ↶ ↷ turn buttons now sit in a row under the photo, so they never cover your dots. Turning keeps your dots on the right spots, and the catch photo is saved the right way up."
