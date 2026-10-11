@@ -119,17 +119,6 @@
     tank.appendChild(el("div", "tank-sand"));
     card.appendChild(tank);
     const info = el("div", "tank-info"); info.hidden = true; card.appendChild(info);
-    // the pond: every other fish of those species
-    const total = data.pond.reduce((n, p) => n + p.n, 0), pond = el("div", "pond");
-    pond.appendChild(el("div", "pond-t", `🏞 Pond · ${total} fish`));
-    if (total) {
-      const strip = el("div", "pond-fish"); let shown = 0;
-      data.pond.forEach(p => { for (let k = 0; k < p.n && shown < 36; k++, shown++) { const s = el("span", "pf"); s.appendChild(fishSvg(p.species, 22)); strip.appendChild(s); } });
-      if (total > shown) strip.appendChild(el("span", "spot-meta", `+${total - shown} more`));
-      pond.appendChild(strip);
-      pond.appendChild(el("div", "spot-meta", data.pond.map(p => `${p.species} ×${p.n}`).join(" · ")));
-    } else pond.appendChild(el("div", "spot-meta", "Smaller catches of the same species land here once you catch more than one."));
-    card.appendChild(pond);
     box.appendChild(card);
   }
   function tankInfo(f, kind, i) {
@@ -138,14 +127,40 @@
     i.appendChild(el("div", null, tankFishText(f) || "No size logged for this one"));
     const when = c.caught_at ? new Date(c.caught_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
     i.appendChild(el("div", "spot-meta", "Your best — " + [when, f.spotName ? "at " + f.spotName : ""].filter(Boolean).join(" ")));
-    if (f.pondCount) i.appendChild(el("div", "spot-meta", `${f.pondCount} smaller ${f.species} in the pond`));
+    if (f.pondCount) i.appendChild(el("div", "spot-meta", `${f.pondCount} smaller ${f.species} in the ${kind === "salt" ? "lagoon" : "pond"}`));
   }
+  // Overflow fish live in their own scene: freshwater -> the pond, saltwater -> the lagoon (a count per species below it).
+  function overflowDraw(t, kind, box) {
+    const salt = kind === "salt", rows = t[kind].pond.slice().sort((a, b) => b.n - a.n);
+    const total = rows.reduce((n, p) => n + p.n, 0), card = el("div", "tank-card");
+    card.appendChild(el("div", "label", salt ? "🌴 Your lagoon" : "🏞 Your pond"));
+    if (!total) { card.appendChild(emptyBox(salt ? "The lagoon is empty. When you catch a second fish of a saltwater species, the smaller one swims here and your best stays in the saltwater tank." : "The pond is empty. When you catch a second fish of a freshwater species, the smaller one swims here and your best stays in the freshwater tank.", "📸 Log a catch", () => { $("qc-fab").click(); })); box.appendChild(card); return; }
+    const scene = el("div", salt ? "pond-scene lagoon-scene" : "pond-scene"); scene.style.height = "230px";
+    [[8, 14, 46], [70, 62, 56], [38, 76, 38], [84, 20, 34]].forEach(([l, tp, w]) => { const d = el("span", salt ? "weed" : "pad"); d.style.cssText = `left:${l}%;top:${tp}%;width:${salt ? Math.round(w * .5) : w}px;height:${salt ? w + 20 : Math.round(w * .72)}px`; scene.appendChild(d); });
+    const fishList = []; rows.forEach(p => { for (let k = 0; k < p.n; k++) fishList.push(p.species); });
+    let shown = 0;
+    fishList.slice(0, 40).forEach((sp, i) => {
+      const b = el("span", "pfish"); b.style.left = (4 + (i * 37) % 84) + "%"; b.style.top = (8 + (i * 53) % 74) + "%";
+      b.style.setProperty("--dx", ((i % 2 ? -1 : 1) * (8 + (i * 5) % 14)) + "px"); b.style.animationDuration = (4 + (i * 3) % 6) + "s"; b.style.animationDelay = (-(i * 1.3) % 5) + "s";
+      const sv = fishSvg(sp, 30); if (i % 2) sv.style.transform = "scaleX(-1)"; b.appendChild(sv); scene.appendChild(b); shown++;
+    });
+    card.appendChild(scene);
+    if (total > shown) card.appendChild(el("div", "spot-meta", `Showing ${shown} of ${total} fish`));
+    const list = el("div", "pond-list");
+    rows.forEach(p => { const r = el("div", "pond-row"); const pf = el("span", "pf"); pf.appendChild(fishSvg(p.species, 34)); r.appendChild(pf); r.appendChild(el("span", "pond-sp", p.species)); r.appendChild(el("b", null, "×" + p.n)); list.appendChild(r); });
+    card.appendChild(list);
+    box.appendChild(card);
+  }
+  let tankMode = "tanks";
   function renderTank() {
-    const box = $("tank-body"); if (!box) return; box.innerHTML = "";
+    const box = $("tank-body"), pbox = $("pond-body"), lbox = $("lagoon-body"); if (!box) return; box.innerHTML = ""; pbox.innerHTML = ""; lbox.innerHTML = "";
+    document.querySelectorAll("#tank-sw button").forEach(b => { b.classList.toggle("ghost", b.dataset.mode !== tankMode); b.setAttribute("aria-pressed", String(b.dataset.mode === tankMode)); });
+    box.hidden = tankMode !== "tanks"; pbox.hidden = tankMode !== "pond"; lbox.hidden = tankMode !== "lagoon";
     if (!me || spots === null) { box.appendChild(el("div", "empty", "Loading your catches…")); return; }
     const mine = Object.values(catchesBySpot).flat().filter(c => c.created_by === me.id && !c.deleted_at);
     const t = tankBuild(mine, spots), n = t.salt.fish.length + t.fresh.fish.length;
-    const pondAll = t.salt.pond.concat(t.fresh.pond).reduce((s, p) => s + p.n, 0);
-    $("tank-sum").textContent = n ? `${n} species · ${t.salt.fish.length} saltwater · ${t.fresh.fish.length} freshwater · ${pondAll} in the pond` : "Log a catch and your first fish appears.";
-    tankDraw("salt", t.salt, box); tankDraw("fresh", t.fresh, box);
+    const sum = x => x.pond.reduce((s, p) => s + p.n, 0);
+    $("tank-sum").textContent = n ? `${n} species in your tanks · ${t.salt.fish.length} saltwater · ${t.fresh.fish.length} freshwater · ${sum(t.salt)} in the lagoon · ${sum(t.fresh)} in the pond` : "Log a catch and your first fish appears.";
+    tankDraw("salt", t.salt, box); tankDraw("fresh", t.fresh, box); overflowDraw(t, "fresh", pbox); overflowDraw(t, "salt", lbox);
   }
+  document.querySelectorAll("#tank-sw button").forEach(b => b.addEventListener("click", () => { tankMode = b.dataset.mode; renderTank(); }));
