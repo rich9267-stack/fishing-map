@@ -254,3 +254,7 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 
 ## UX step 5b — friendlier empty screens
 - `emptyBox(text, buttonLabel, fn)` helper (js/02-spots.js) + `.empty-nice` CSS. Used for: no spots (Add a spot), no feed catches (Log a catch), no trips (Plan a trip), no friends (focus the search box), no friends to message (opens Friends). Other empty lines stay plain text. Test: tests/test75.js.
+
+## UX step 5c — in-app pop-ups
+- `window.alert` is replaced by `noteBox` (js/02-spots.js): small notes in `#toast-box` that fade (max 3, tap to close, aria-live). The older `toast()` in 06-catching (quick-catch banner) is separate and untouched.
+- Every `confirm(` became `await askOk(…)` (19 places). `askOk(text)` shows an in-app dialog (Esc / tap outside / "Never mind" = no; "Delete/Remove/Block/Cancel/Decline/Leave/Stop…" questions get "Yes, delete"-style red button). Test seam: if a test sets `window.confirm`, askOk uses that answer, so old tests are unchanged. New code: `if (!await askOk("…")) return;` inside an async function. `prompt()` (invite-copy fallback) left as is. Test: tests/test76.js.

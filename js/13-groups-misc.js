@@ -85,7 +85,7 @@
       row.appendChild(nameBtn);
       if (owner && m.user_id !== me.id) {
         const x = el("button", "linkbtn", "Remove"); x.type = "button";
-        x.addEventListener("click", async () => { if (!confirm("Remove " + (profName(m.user_id) || "this person") + " from the group?")) return; const { error } = await db.rpc("remove_from_group", { p_gid: gid, p_user: m.user_id }); if (error) alert(error.message); openGroups(); });
+        x.addEventListener("click", async () => { if (!await askOk("Remove " + (profName(m.user_id) || "this person") + " from the group?")) return; const { error } = await db.rpc("remove_from_group", { p_gid: gid, p_user: m.user_id }); if (error) alert(error.message); openGroups(); });
         row.appendChild(x);
       }
       body.appendChild(row);
@@ -179,11 +179,11 @@
       });
       foot.appendChild(nm); foot.appendChild(ds); foot.appendChild(cols); foot.appendChild(el("div", "spot-meta", "Group picture:")); foot.appendChild(pic); foot.appendChild(grPrev); foot.appendChild(save); foot.appendChild(msg);
       const del = el("button", "btn ghost small", "Delete this group"); del.type = "button"; del.id = "gr-delete"; del.style.cssText = "display:block;margin-top:14px;color:#c0392b";
-      del.addEventListener("click", async () => { if (!confirm("Delete \"" + g.name + "\" for everyone?")) return; const { error } = await db.rpc("delete_group", { p_gid: gid }); if (error) { alert(error.message); return; } grOpen = null; openGroups(); });
+      del.addEventListener("click", async () => { if (!await askOk("Delete \"" + g.name + "\" for everyone?")) return; const { error } = await db.rpc("delete_group", { p_gid: gid }); if (error) { alert(error.message); return; } grOpen = null; openGroups(); });
       foot.appendChild(del);
     } else {
       const lv = el("button", "btn ghost small", "Leave this group"); lv.type = "button"; lv.id = "gr-leave";
-      lv.addEventListener("click", async () => { if (!confirm("Leave \"" + g.name + "\"?")) return; const { error } = await db.rpc("leave_group", { p_gid: gid }); if (error) { alert(error.message); return; } grOpen = null; openGroups(); });
+      lv.addEventListener("click", async () => { if (!await askOk("Leave \"" + g.name + "\"?")) return; const { error } = await db.rpc("leave_group", { p_gid: gid }); if (error) { alert(error.message); return; } grOpen = null; openGroups(); });
       foot.appendChild(lv);
     }
     body.appendChild(foot);
@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-10e", title: "Nicer pop-ups", items: [
+      "💬 “Are you sure?” questions (delete, remove, block, leave…) now appear inside the app with clear buttons, instead of the plain browser box.",
+      "📝 Short notices like “Couldn't save — check your signal” now slide up and fade by themselves; tap one to close it."
+    ] },
     { id: "2026-10-10d", title: "Friendlier empty screens", items: [
       "👋 Empty lists (no spots, catches, trips, friends or messages yet) now have a button for the obvious next step."
     ] },

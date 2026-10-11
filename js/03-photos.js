@@ -220,7 +220,7 @@
       if (failed.length) alert(`${ok} of ${files.length} photos were added. ${failed.length} didn't upload (${failed.slice(0, 3).join(", ")}${failed.length > 3 ? "…" : ""}). Pick them again to retry.`);
       else toast(`📷 ${ok} photo${ok === 1 ? "" : "s"} added`, 2500);
       if (firstLoc && !hasLoc(s) && isMine(s) &&
-          confirm(`A photo has a location. Use it to place “${s.name}” on the map?`)) {
+          await askOk(`A photo has a location. Use it to place “${s.name}” on the map?`)) {
         const { error } = await db.from("spots").update({ lat: firstLoc.lat, lng: firstLoc.lng }).eq("id", s.id);
         if (error) alert("Couldn't set the location: " + error.message); else loadSpots();
       }
@@ -245,7 +245,7 @@
   $("viewer-close").addEventListener("click", closeViewer);
   $("viewer").addEventListener("click", e => { if (e.target.id === "viewer") closeViewer(); });
   $("viewer-del").addEventListener("click", async () => {
-    if (!viewing || !confirm("Delete this photo?")) return;
+    if (!viewing || !await askOk("Delete this photo?")) return;
     const ph = viewing;
     const { error } = await db.from("photos").delete().eq("id", ph.id);
     if (error) return alert("Couldn't delete: " + error.message);

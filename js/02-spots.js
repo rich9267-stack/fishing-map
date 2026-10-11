@@ -40,6 +40,42 @@
     if (label) { const btn = el("button", "btn small", label); btn.type = "button"; btn.addEventListener("click", fn); b.appendChild(btn); }
     return b;
   }
+  // Messages that used to be the browser's plain "OK" box: now a small note that fades by itself (tap to close).
+  // Every existing alert("…") call in the app lands here, so the wording stays in one place.
+  function noteBox(msg) {
+    let box = document.getElementById("toast-box");
+    if (!box) { box = el("div"); box.id = "toast-box"; box.setAttribute("role", "status"); box.setAttribute("aria-live", "polite"); document.body.appendChild(box); }
+    const t = el("div", "toast", String(msg));
+    const kill = () => { if (t.parentNode) t.parentNode.removeChild(t); };
+    t.addEventListener("click", kill);
+    box.appendChild(t);
+    while (box.children.length > 3) box.removeChild(box.firstChild);
+    setTimeout(kill, Math.min(12000, 4000 + String(msg).length * 45));
+  }
+  window.alert = noteBox;
+  // In-app "Are you sure?" box (replaces the browser's confirm). Use as: if (!await askOk("Delete this photo?")) return;
+  // Newlines in the text are kept. The safe button (Never mind) gets focus; Esc or tapping outside also says no.
+  const nativeConfirm = window.confirm;
+  function askOk(text) {
+    if (window.confirm !== nativeConfirm) return Promise.resolve(window.confirm(text)); // tests swap in their own answer
+    return new Promise(done => {
+      const m = /^(Delete|Remove|Block|Cancel|Decline|Leave|Stop)\b/i.exec(text);
+      const yes = m ? "Yes, " + m[1].toLowerCase() : "OK", no = m ? "Never mind" : "Cancel";
+      const prev = document.activeElement;
+      const bg = el("div", "ask-bg"), box = el("div", "ask-box");
+      box.setAttribute("role", "alertdialog"); box.setAttribute("aria-modal", "true");
+      const msg = el("div", "ask-text", String(text)), row = el("div", "ask-btns");
+      const bNo = el("button", "btn ghost", no), bYes = el("button", "btn" + (m ? " danger" : ""), yes);
+      bNo.type = bYes.type = "button";
+      row.appendChild(bNo); row.appendChild(bYes); box.appendChild(msg); box.appendChild(row); bg.appendChild(box);
+      const end = ok => { document.removeEventListener("keydown", key, true); bg.remove(); if (prev && prev.focus) { try { prev.focus(); } catch (e) { /* fine */ } } done(ok); };
+      const key = e => { if (e.key === "Escape") { e.preventDefault(); end(false); } };
+      document.addEventListener("keydown", key, true);
+      bNo.addEventListener("click", () => end(false)); bYes.addEventListener("click", () => end(true));
+      bg.addEventListener("click", e => { if (e.target === bg) end(false); });
+      document.body.appendChild(bg); bNo.focus();
+    });
+  }
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
   // ---- Per-spot conditions: nearest tide station or freshwater gauge ----

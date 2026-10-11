@@ -469,7 +469,7 @@
   $("spot-del").addEventListener("click", async () => {
     const sp = editingSpot; if (!sp) return;
     const mine = (catchesBySpot[sp.id] || []).length;
-    if (!confirm(`Delete “${sp.name}”?` + (mine ? `\n\nIts ${mine} catch${mine === 1 ? "" : "es"} will be removed too.` : "") + "\n\nYou'll have a few seconds to Undo.")) return;
+    if (!await askOk(`Delete “${sp.name}”?` + (mine ? `\n\nIts ${mine} catch${mine === 1 ? "" : "es"} will be removed too.` : "") + "\n\nYou'll have a few seconds to Undo.")) return;
     const msg = $("form-msg"); $("spot-del").disabled = true;
     const { error } = await db.rpc("delete_spot", { p_id: sp.id });
     $("spot-del").disabled = false;

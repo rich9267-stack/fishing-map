@@ -559,7 +559,7 @@
         row.appendChild(el("div", null, `🚩 ${h.type}: ${h.snippet || "(gone)"}`));
         row.appendChild(el("div", "spot-meta", `${h.reports} reports · hidden ${new Date(h.hidden_at).toLocaleDateString([], { month: "short", day: "numeric" })}`));
         const decide = (action, ask) => async () => {
-          if (ask && !confirm(ask)) return;
+          if (ask && !await askOk(ask)) return;
           const { error: e2 } = await db.rpc("review_flagged", { p_id: h.id, p_action: action });
           if (e2) { alert("Couldn't do that: " + (e2.message || e2)); return; }
           loadAdminDash(); loadReports(); loadCatches();
@@ -676,7 +676,7 @@
     $("boat-ci-btn").textContent = p ? "✅ I'm back" : "🛟 Check in";
   }
   async function ciBack(id, cancel) {
-    if (cancel && !confirm("Cancel this check-in? Your buddies will be told it was cancelled.")) return;
+    if (cancel && !await askOk("Cancel this check-in? Your buddies will be told it was cancelled.")) return;
     const { error } = await db.rpc("end_float_plan", { p_id: id, p_cancel: !!cancel });
     if (error) { toast("Couldn't update: " + error.message); return; }
     toast(cancel ? "Check-in cancelled — buddies told." : "Welcome back 👋 — your buddies were told you're safe.", 4500);

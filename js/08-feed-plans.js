@@ -52,7 +52,7 @@
     redrawFeeds();
   }
   async function deleteComment(c, cm) {
-    if (!confirm("Delete your comment?")) return;
+    if (!await askOk("Delete your comment?")) return;
     const { error } = await db.from("catch_comments").update({ deleted_at: new Date().toISOString() }).eq("id", cm.id);
     if (error) return alert("Couldn't delete: " + (error.message || error));
     feedComments[c.id] = (feedComments[c.id] || []).filter(x => x !== cm);
@@ -207,7 +207,7 @@
   }
   async function cancelPlan(pl) {
     const hasContest = ctForPlan(pl.id).some(t => ctOpen(t));
-    if (!confirm(hasContest ? "Cancel this plan for everyone? The contest made for this trip will be cancelled too." : "Cancel this plan for everyone?")) return;
+    if (!await askOk(hasContest ? "Cancel this plan for everyone? The contest made for this trip will be cancelled too." : "Cancel this plan for everyone?")) return;
     const { error } = await db.from("trip_plans").update({ cancelled_at: new Date().toISOString() }).eq("id", pl.id);
     if (error) return alert("Couldn't cancel: " + (error.message || error));
     plans = plans.filter(x => x !== pl);
@@ -385,7 +385,7 @@
     if (isNaN(at) || !$("pl-spot").value) { msg.className = "msg err"; msg.textContent = "Pick a spot, day and time."; return; }
     if (at < Date.now() - 30 * 60000) { msg.className = "msg err"; msg.textContent = "That time has already passed."; return; }
     const dup = similarPlans();
-    if (dup.length && !confirm(`${similarText(dup)}.\n\nPost another plan anyway?`)) return;
+    if (dup.length && !await askOk(`${similarText(dup)}.\n\nPost another plan anyway?`)) return;
     msg.className = "msg"; msg.textContent = "Posting…"; $("pl-save").disabled = true;
     try {
       const note = $("pl-note").value.trim() || null;

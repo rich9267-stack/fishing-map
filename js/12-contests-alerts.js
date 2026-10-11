@@ -363,7 +363,7 @@
       const { data: se } = await db.from("tournament_series").select("id,active,months,cadence").eq("id", t.series_id).maybeSingle();
       const rw = se ? CT_REPEAT[se.cadence] || "repeating" : "repeating";
       if (se && se.active) {
-        btn(`⏹ Stop repeating (${rw})`, "btn ghost small", () => { if (confirm("Stop the repeat? This round keeps running; no new round opens.")) ctAct("stop_series", { p_series: t.series_id }); }, "ctd-stopseries");
+        btn(`⏹ Stop repeating (${rw})`, "btn ghost small", async () => { if (await askOk("Stop the repeat? This round keeps running; no new round opens.")) ctAct("stop_series", { p_series: t.series_id }); }, "ctd-stopseries");
         if (se.cadence === "monthly") {
           const mrow = el("div", "fchips"); mrow.id = "ctd-months"; mrow.style.margin = "6px 0";
           const have = new Set(se.months || []);
@@ -374,7 +374,7 @@
         } else seriesBox = [el("div", "spot-meta", "🔁 A new round opens " + rw + ".")];
       } else if (se) acts.appendChild(el("span", "spot-meta", "🔁 The repeat is stopped."));
     }
-    if (!t.cancelled_at && (t.created_by === me.id || me.isAdmin) && st.k !== "ended") btn(t.kind === "official" ? "Cancel tournament" : "Cancel contest", "btn ghost small", () => { if (confirm(t.kind === "official" ? "Cancel this tournament for everyone?" : "Cancel this contest for everyone?")) ctAct("cancel_tournament", { p_id: t.id }); }, "ctd-cancel");
+    if (!t.cancelled_at && (t.created_by === me.id || me.isAdmin) && st.k !== "ended") btn(t.kind === "official" ? "Cancel tournament" : "Cancel contest", "btn ghost small", async () => { if (await askOk(t.kind === "official" ? "Cancel this tournament for everyone?" : "Cancel this contest for everyone?")) ctAct("cancel_tournament", { p_id: t.id }); }, "ctd-cancel");
     box.appendChild(acts);
     seriesBox.forEach(n => box.appendChild(n));
     // standings

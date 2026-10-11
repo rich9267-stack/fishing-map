@@ -633,7 +633,7 @@
     box.scrollTop = box.scrollHeight;
   }
   async function deleteMessage(m) {
-    if (!confirm("Delete this message for both of you?")) return;
+    if (!await askOk("Delete this message for both of you?")) return;
     const { error } = await db.from("messages").delete().eq("id", m.id);
     if (error) { $("chat-msg").className = "msg err"; $("chat-msg").textContent = "Couldn't delete that."; return; }
     chatMsgsAll = chatMsgsAll.filter(x => x.id !== m.id); renderChat(); updateChatBadge();
@@ -702,7 +702,7 @@
   }
   async function blockUser(id) {
     const name = profName(id) || "this person";
-    if (!confirm(`Block ${name}?\n\nYou won't see each other's public posts, comments or messages, neither of you can message the other, and you'll stop being friends. You can unblock later in 👥 Friends.`)) return;
+    if (!await askOk(`Block ${name}?\n\nYou won't see each other's public posts, comments or messages, neither of you can message the other, and you'll stop being friends. You can unblock later in 👥 Friends.`)) return;
     try {
       const { error } = await db.rpc("block_user", { p_user: id });
       if (error) throw error;
@@ -762,7 +762,7 @@
       if (r.snippet) row.appendChild(el("div", "spot-meta", "“" + r.snippet + "”"));
       if (r.details) row.appendChild(el("div", "spot-meta", r.details));
       const acts = el("div", "feed-actions");
-      const act = async (fn, ask) => { if (ask && !confirm(ask)) return; const { error: e2 } = await fn(); if (e2) { alert("Couldn't do that: " + (e2.message || e2)); return; } loadReports(); };
+      const act = async (fn, ask) => { if (ask && !await askOk(ask)) return; const { error: e2 } = await fn(); if (e2) { alert("Couldn't do that: " + (e2.message || e2)); return; } loadReports(); };
       if ((r.target_type === "catch" || r.target_type === "comment") && r.target_id) {
         const rm = frBtn("Remove " + r.target_type, () => act(() => db.rpc("remove_content", { p_type: r.target_type, p_id: r.target_id }), `Remove this ${r.target_type} for everyone?`));
         acts.appendChild(rm);
@@ -819,7 +819,7 @@
   }
   const sendRequest = id => friendAction(() => db.from("friendships").insert({ ...pairOf(id), requested_by: me.id, status: "pending" }), "Couldn't send the request.");
   const acceptRequest = r => friendAction(() => db.from("friendships").update({ status: "accepted" }).eq("user_a", r.user_a).eq("user_b", r.user_b), "Couldn't accept.");
-  const removeRow = (r, ask) => { if (ask && !confirm(ask)) return; return friendAction(() => db.from("friendships").delete().eq("user_a", r.user_a).eq("user_b", r.user_b), "Couldn't do that."); };
+  const removeRow = async (r, ask) => { if (ask && !await askOk(ask)) return; return friendAction(() => db.from("friendships").delete().eq("user_a", r.user_a).eq("user_b", r.user_b), "Couldn't do that."); };
   function renderFriends() {
     const reqBox = $("fr-requests"), list = $("fr-list");
     reqBox.innerHTML = ""; list.innerHTML = "";
@@ -978,7 +978,7 @@
     updateRequestBadge(pending.length);
     loadReports(); loadAdminDash();
     const review = async (m, ok) => {
-      if (!ok && !confirm(`Decline ${m.display_name || m.email}? They won't get in (you can approve them later).`)) return;
+      if (!ok && !await askOk(`Decline ${m.display_name || m.email}? They won't get in (you can approve them later).`)) return;
       const { error: e2 } = await db.rpc("review_access", { p_email: m.email, p_approve: ok });
       if (e2) alert("Couldn't do that: " + e2.message);
       loadMembers();
@@ -1018,7 +1018,7 @@
       if (m.email !== me.email) {
         const rm = el("button", "linkbtn danger", "Remove"); rm.type = "button";
         rm.addEventListener("click", async () => {
-          if (!confirm(`Remove ${m.email} from the invite list? They won't be able to see the map anymore.`)) return;
+          if (!await askOk(`Remove ${m.email} from the invite list? They won't be able to see the map anymore.`)) return;
           const { error: e2 } = await db.from("members").delete().eq("email", m.email);
           if (e2) alert("Couldn't remove: " + e2.message);
           loadMembers();
