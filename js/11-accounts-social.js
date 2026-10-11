@@ -595,7 +595,7 @@
     if (thread) return renderThread();
     const box = $("chat-list"); box.innerHTML = "";
     const ids = chatPartnerIds();
-    if (!ids.length) { box.appendChild(el("div", "empty", "No friends to message yet — add friends first (👥 Friends).")); return; }
+    if (!ids.length) { box.appendChild(emptyBox("No friends to message yet — add friends first.", "👥 Find friends", () => { $("friends-btn").click(); })); return; }
     ids.forEach(id => {
       const msgs = chatMsgsAll.filter(m => chatOther(m) === id), l = msgs[msgs.length - 1], un = unreadFor(id);
       const row = el("div", "feed-top"); row.style.cssText = "padding:10px 0;border-bottom:1px solid var(--line);align-items:center;cursor:pointer";
@@ -842,7 +842,7 @@
       list.appendChild(personLine(friendProfiles[otherOf(r)], act));
     });
     sent.forEach(r => list.appendChild(personLine(friendProfiles[otherOf(r)], frBtn("Cancel request", () => removeRow(r)))));
-    if (!friends.length && !sent.length) list.appendChild(el("div", "empty", "No friends yet — search for someone above."));
+    if (!friends.length && !sent.length) list.appendChild(emptyBox("No friends yet — search for someone by username or name.", "🔍 Search for friends", () => { $("fr-q").focus(); }));
     const bl = $("fr-blocked"); bl.innerHTML = "";
     if (blockedIds.size) {
       bl.appendChild(el("div", "label", "Blocked people"));

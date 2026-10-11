@@ -251,3 +251,6 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 
 ## UX step 5a — remember the last tab
 - `showView` saves the tab name in localStorage `fm-last-tab`; at sign-in (`restoreTab` in the navigation shell) the app clicks that tab, except when the link has `?go=` or the tab was Home. Spot filters (`fm-filters`) and spot sort (`fm-spot-sort`) were already remembered. Test: tests/test74.js (defaults to LAST=insights).
+
+## UX step 5b — friendlier empty screens
+- `emptyBox(text, buttonLabel, fn)` helper (js/02-spots.js) + `.empty-nice` CSS. Used for: no spots (Add a spot), no feed catches (Log a catch), no trips (Plan a trip), no friends (focus the search box), no friends to message (opens Friends). Other empty lines stay plain text. Test: tests/test75.js.

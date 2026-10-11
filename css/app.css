@@ -387,3 +387,5 @@
   details#cond-more .card { box-shadow: none; padding-left: 0; padding-right: 0; }
   details.how { margin-top: 8px; color: var(--muted); font-size: .85rem; }
   details.how > summary { cursor: pointer; color: var(--accent); font-weight: 600; padding: 6px 0; }
+  .empty-nice { text-align: center; padding: 18px 8px; }
+  .empty-nice .btn { margin-top: 10px; }

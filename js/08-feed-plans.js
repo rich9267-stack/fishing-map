@@ -137,7 +137,7 @@
     box.innerHTML = "";
     if (feedError) box.appendChild(el("div", "msg err", feedError));
     const all = Object.values(catchesBySpot).flat().sort((a, b) => new Date(b.caught_at) - new Date(a.caught_at));
-    if (!all.length) { box.appendChild(el("div", "empty", "No catches yet — log one and it shows up here.")); return; }
+    if (!all.length) { box.appendChild(emptyBox("No catches yet — log one and it shows up here.", "📸 Log a catch", () => { $("qc-fab").click(); })); return; }
     all.slice(0, feedShown).forEach(c => box.appendChild(feedCard(c, {})));
     if (all.length > feedShown) {
       const more = el("button", "btn ghost small", "Show more"); more.type = "button";
@@ -220,7 +220,7 @@
     if (!box) return;
     box.innerHTML = "";
     if (planError) box.appendChild(el("div", "msg err", planError));
-    else if (!plans.length) box.appendChild(el("div", "empty", "No trips planned yet."));
+    else if (!plans.length) box.appendChild(emptyBox("No trips planned yet.", "📅 Plan a trip", () => { $("plan-add").click(); }));
     plans.forEach(pl => {
       const spot = (spots || []).find(x => x.id === pl.spot_id);
       const item = el("div", "feed-item");

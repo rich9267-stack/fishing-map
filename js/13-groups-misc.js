@@ -449,6 +449,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-10d", title: "Friendlier empty screens", items: [
+      "👋 Empty lists (no spots, catches, trips, friends or messages yet) now have a button for the obvious next step."
+    ] },
     { id: "2026-10-10c", title: "Opens where you left off", items: [
       "↩️ The app now reopens on the tab you were last using (Map, Stats, Community…). Your spot filters and sort were already remembered."
     ] },

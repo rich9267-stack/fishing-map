@@ -34,6 +34,12 @@
     if (text != null) e.textContent = text; // textContent keeps typed text safe
     return e;
   }
+  // A friendly "nothing here yet" box with one button that does the obvious next thing
+  function emptyBox(text, label, fn) {
+    const b = el("div", "empty empty-nice"); b.appendChild(el("div", null, text));
+    if (label) { const btn = el("button", "btn small", label); btn.type = "button"; btn.addEventListener("click", fn); b.appendChild(btn); }
+    return b;
+  }
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
   // ---- Per-spot conditions: nearest tide station or freshwater gauge ----

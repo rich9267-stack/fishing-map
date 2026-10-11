@@ -332,7 +332,7 @@
     if (spotsError) { list.appendChild(el("div", "empty", spotsError)); return; }
     if (spots === null) { list.appendChild(el("div", "empty", "Loading spots…")); return; }
     if (!spots.length) {
-      list.appendChild(el("div", "empty", "No spots yet. Tap “+ Add a spot” to save your first one."));
+      list.appendChild(emptyBox("No spots yet — save the first place you fish.", "+ Add a spot", () => { $("add-btn").click(); }));
       return;
     }
     const shown = filteredSpots();
