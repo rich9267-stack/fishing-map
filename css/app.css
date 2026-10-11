@@ -414,3 +414,23 @@
   a { color: var(--accent); }
   button { color: var(--text); }
   @media (prefers-color-scheme: dark) { .sea-badge.peak { background: #ff6b5e33; color: #ffa096; } }
+
+  /* ---- 🐠 Tank ---- */
+  .tank-card { background: var(--card); border-radius: 14px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .tank { position: relative; overflow: hidden; border-radius: 14px; margin-top: 10px; border: 3px solid #6b7b85; }
+  .tank-salt { background: linear-gradient(#58b6d6, #1f6f9e 70%, #174f78); }
+  .tank-fresh { background: linear-gradient(#8fd2a8, #3f9a78 70%, #2c6f58); }
+  .tank-sand { position: absolute; left: 0; right: 0; bottom: 0; height: 18px; background: linear-gradient(#e6d3a1, #c9b078); }
+  .tfish { position: absolute; appearance: none; background: none; border: 0; padding: 0; cursor: pointer; min-height: 0; animation: tswim 6s ease-in-out infinite alternate; filter: drop-shadow(0 2px 2px rgba(0,0,0,.3)); }
+  .tfish svg { display: block; overflow: visible; }
+  .tfish:focus-visible { outline: 3px solid #fff; border-radius: 8px; }
+  @keyframes tswim { from { transform: translateX(0); } to { transform: translateX(var(--dx, 12px)); } }
+  .bubble { position: absolute; bottom: 14px; width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.45); animation: tbubble 8s linear infinite; }
+  @keyframes tbubble { from { transform: translateY(0); opacity: .7; } to { transform: translateY(-260px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .tfish, .bubble { animation: none; } }
+  .tank-info { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); }
+  .tank-info-t { font-weight: 700; font-size: 1.05rem; }
+  .pond { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); }
+  .pond-t { font-weight: 700; margin-bottom: 6px; }
+  .pond-fish { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 6px; }
+  .pf { display: inline-block; line-height: 0; }

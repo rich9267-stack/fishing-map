@@ -601,6 +601,9 @@
     $("view-list").hidden = which !== "list";
     $("view-insights").hidden = which !== "insights";
     $("view-seasons").hidden = which !== "seasons";
+    $("view-tank").hidden = which !== "tank";
+    $("tab-tank").classList.toggle("on", which === "tank");
+    if (which === "tank") renderTank();
     $("tab-seasons").classList.toggle("on", which === "seasons");
     if (which === "seasons") renderSeasons();
     $("view-feed").hidden = which !== "feed";
@@ -623,12 +626,12 @@
   }
   // ---- 🧭 Navigation shell (UX step 1): bottom bar, Me menu, Stats switch. The old tab buttons stay (hidden) and do the real work. ----
   (function navShell() {
-    const bn = $("bnav"), TABS = ["tab-list", "tab-map", "tab-insights", "tab-seasons", "tab-feed"];
+    const bn = $("bnav"), TABS = ["tab-list", "tab-map", "tab-insights", "tab-seasons", "tab-tank", "tab-feed"];
     const on = id => $(id).classList.contains("on");
     const btn = k => bn.querySelector(`[data-nav="${k}"]`);
     function sync() {
       btn("home").classList.toggle("on", on("tab-list")); btn("map").classList.toggle("on", on("tab-map"));
-      btn("community").classList.toggle("on", on("tab-feed")); btn("stats").classList.toggle("on", on("tab-insights") || on("tab-seasons"));
+      btn("community").classList.toggle("on", on("tab-feed")); btn("stats").classList.toggle("on", on("tab-insights") || on("tab-seasons") || on("tab-tank"));
       document.querySelectorAll(".stats-sw button").forEach(b => b.classList.toggle("ghost", !on(b.dataset.tab)));
     }
     TABS.forEach(id => new MutationObserver(sync).observe($(id), { attributes: true, attributeFilter: ["class"] }));
@@ -638,12 +641,12 @@
       const k = b.dataset.nav;
       if (k === "log") $("qc-fab").click();
       else if (k === "home") go("tab-list"); else if (k === "map") go("tab-map"); else if (k === "community") go("tab-feed");
-      else if (k === "stats") { if (on("tab-insights") || on("tab-seasons")) window.scrollTo({ top: 0, behavior: "smooth" }); else $("tab-insights").click(); }
+      else if (k === "stats") { if (on("tab-insights") || on("tab-seasons") || on("tab-tank")) window.scrollTo({ top: 0, behavior: "smooth" }); else $("tab-insights").click(); }
     });
     // Insights / Seasons switch at the top of both Stats pages
-    ["view-insights", "view-seasons"].forEach(v => {
+    ["view-insights", "view-seasons", "view-tank"].forEach(v => {
       const row = el("div", "stats-sw");
-      [["tab-insights", "📊 Insights"], ["tab-seasons", "📅 Seasons"]].forEach(([t, label]) => { const b = el("button", "btn small", label); b.type = "button"; b.dataset.tab = t; b.addEventListener("click", () => $(t).click()); row.appendChild(b); });
+      [["tab-insights", "📊 Insights"], ["tab-seasons", "📅 Seasons"], ["tab-tank", "🐠 Tank"]].forEach(([t, label]) => { const b = el("button", "btn small", label); b.type = "button"; b.dataset.tab = t; b.addEventListener("click", () => $(t).click()); row.appendChild(b); });
       $(v).insertBefore(row, $(v).firstChild);
     });
     // show only when signed in
@@ -721,6 +724,7 @@
   $("tab-map").addEventListener("click", () => showView("map"));
   $("tab-insights").addEventListener("click", () => { stopPlacing(); showView("insights"); });
   $("tab-seasons").addEventListener("click", () => { stopPlacing(); showView("seasons"); });
+  $("tab-tank").addEventListener("click", () => { stopPlacing(); showView("tank"); });
   $("tab-feed").addEventListener("click", () => { stopPlacing(); showView("feed"); });
 
   function initMap() {

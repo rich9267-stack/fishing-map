@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=45">
+<link rel="stylesheet" href="css/app.css?v=47">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -372,6 +372,7 @@
     <button id="tab-map" type="button" role="tab">🗺 Map</button>
     <button id="tab-insights" type="button" role="tab">📊 Insights</button>
     <button id="tab-seasons" type="button" role="tab">📅 Seasons</button>
+    <button id="tab-tank" type="button" role="tab">🐠 Tank</button>
     <button id="tab-feed" type="button" role="tab">🎣 Feed</button>
   </div>
 
@@ -421,6 +422,15 @@
       <button class="btn ghost small" id="pub-back" type="button">← Back</button>
       <div id="pub-profile-body"></div>
     </div>
+  </div>
+
+  <div id="view-tank" hidden>
+    <div class="card">
+      <div class="label">🐠 Your tank</div>
+      <div class="spot-meta" id="tank-sum"></div>
+      <div class="spot-meta">Your heaviest catch of each species swims in the tank (length breaks a tie). Every other fish of that species goes to the pond. Tap a fish to see it.</div>
+    </div>
+    <div id="tank-body"></div>
   </div>
 
   <div id="view-seasons" hidden>
@@ -923,19 +933,20 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=45"></script>
-<script src="js/02-spots.js?v=45"></script>
-<script src="js/03-photos.js?v=45"></script>
-<script src="js/04-insights.js?v=45"></script>
-<script src="js/05-seasons-records.js?v=45"></script>
-<script src="js/06-catching.js?v=45"></script>
-<script src="js/07-measure-fishid.js?v=45"></script>
-<script src="js/08-feed-plans.js?v=45"></script>
-<script src="js/09-map-forecast.js?v=45"></script>
-<script src="js/10-tools-safety.js?v=45"></script>
-<script src="js/11-accounts-social.js?v=45"></script>
-<script src="js/12-contests-alerts.js?v=45"></script>
-<script src="js/13-groups-misc.js?v=45"></script>
-<script src="js/99-boot.js?v=45"></script>
+<script src="js/01-core.js?v=47"></script>
+<script src="js/02-spots.js?v=47"></script>
+<script src="js/03-photos.js?v=47"></script>
+<script src="js/04-insights.js?v=47"></script>
+<script src="js/05-seasons-records.js?v=47"></script>
+<script src="js/06-catching.js?v=47"></script>
+<script src="js/07-measure-fishid.js?v=47"></script>
+<script src="js/08-feed-plans.js?v=47"></script>
+<script src="js/09-map-forecast.js?v=47"></script>
+<script src="js/10-tools-safety.js?v=47"></script>
+<script src="js/11-accounts-social.js?v=47"></script>
+<script src="js/12-contests-alerts.js?v=47"></script>
+<script src="js/13-groups-misc.js?v=47"></script>
+<script src="js/14-tank.js?v=47"></script>
+<script src="js/99-boot.js?v=47"></script>
 </body>
 </html>

@@ -449,6 +449,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-11", title: "🐠 Your fish tank", items: [
+      "🐠 New Tank page (Stats → 🐠 Tank): your heaviest catch of each species swims in a saltwater or freshwater tank — length breaks a tie.",
+      "🏞 Every smaller catch of the same species goes into your pond. Tap a fish to see its size, date and spot.",
+      "Beat your best and the new fish takes its place in the tank — the old one moves to the pond."
+    ] },
     { id: "2026-10-10g", title: "Easier to tap and read", items: [
       "👆 Buttons, menus and drop-downs are now at least thumb-sized, so they're harder to miss.",
       "🌙 In dark mode, the main buttons now have dark text on the light teal, so they're easier to read."
