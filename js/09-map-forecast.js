@@ -595,6 +595,7 @@
   let placing = null; // null, {mode:"new"}, {mode:"form"} or {mode:"move", spot}
 
   function showView(which) {
+    try { localStorage.setItem("fm-last-tab", which); } catch (e) { /* fine */ }
     const isMap = which === "map";
     $("view-map").hidden = !isMap;
     $("view-list").hidden = which !== "list";
@@ -647,7 +648,15 @@
     });
     // show only when signed in
     const showBar = () => { bn.hidden = $("app").hidden; document.body.classList.toggle("has-bnav", !$("app").hidden); };
-    new MutationObserver(showBar).observe($("app"), { attributes: true, attributeFilter: ["hidden"] }); showBar();
+    // reopen on the tab you were last on (not when the link itself says where to go)
+    let restored = false;
+    const restoreTab = () => {
+      if (restored || $("app").hidden) return; restored = true;
+      if (/[?&]go=/.test(location.search)) return;
+      let t; try { t = localStorage.getItem("fm-last-tab"); } catch (e) { /* fine */ }
+      if (t && t !== "list" && $("tab-" + t)) setTimeout(() => $("tab-" + t).click(), 0);
+    };
+    new MutationObserver(() => { showBar(); restoreTab(); }).observe($("app"), { attributes: true, attributeFilter: ["hidden"] }); showBar(); restoreTab();
     // Me menu
     const mb = $("me-btn"), mm = $("me-menu");
     const closeMe = () => { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); };

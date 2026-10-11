@@ -248,3 +248,6 @@ Table `profile_extras` (RLS = `can_view_profile(user_id)`): visibility public|fr
 ## UX step 4 — Settings page
 - New `#settings-card` (Me menu → ⚙️ Settings). The blocks `#push-box` (phone alerts, quiet hours, install-to-Home-Screen help), photo saving, and "Your data" export moved out of the Profile card unchanged (same ids, so their code still works). Added a Privacy shortcut (opens Profile → "Who can see your profile page", which stays with the profile-page save), and About (What's new, privacy policy).
 - Code: "Settings page" block in js/11-accounts-social.js after `profile-close`; `pushRefresh()` now runs when Settings opens. Test: tests/test73.js (second half).
+
+## UX step 5a — remember the last tab
+- `showView` saves the tab name in localStorage `fm-last-tab`; at sign-in (`restoreTab` in the navigation shell) the app clicks that tab, except when the link has `?go=` or the tab was Home. Spot filters (`fm-filters`) and spot sort (`fm-spot-sort`) were already remembered. Test: tests/test74.js (defaults to LAST=insights).
