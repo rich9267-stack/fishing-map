@@ -190,6 +190,13 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   const ptr = (t, id, x, y) => { const e = new w.MouseEvent(t, { bubbles: true, clientX: x, clientY: y }); e.pointerId = id; $("m-svg").dispatchEvent(e); };
   click($("m-zin")); console.log("zoom in button:", w.eval("ms.z.toFixed(2)"), "|", $("m-wrap").style.transform);
   click($("m-zreset")); console.log("reset:", w.eval("ms.z"), "| transform cleared:", $("m-wrap").style.transform === "");
+  // ---- photo fit, tools bar and rotate (Oct 11 fix) ----
+  console.log("tools bar sits below the picture (not on it):", !d.getElementById("m-stage").contains($("m-zoom")), "| buttons:", [...$("m-zoom").querySelectorAll("button")].map(b => b.getAttribute("aria-label")).join(", "));
+  Object.defineProperty($("m-stage"), "clientWidth", { value: 393, configurable: true }); Object.defineProperty($("m-stage"), "clientHeight", { value: 280, configurable: true });
+  w.eval("mFit()"); console.log("photo is told the picture area's size:", $("m-stage").style.getPropertyValue("--mw"), "x", $("m-stage").style.getPropertyValue("--mh"));
+  console.log("turn right moves dots (clockwise):", w.eval("JSON.stringify(mRotatePts([{x:10,y:20},{x:100,y:0}], 200, 150, 1))"), "| turn left:", w.eval("JSON.stringify(mRotatePts([{x:10,y:20},{x:100,y:0}], 200, 150, -1))"));
+  console.log("four turns right bring a dot home:", w.eval("(() => { let p = [{x:37,y:91}], W = 200, H = 150; for (let i = 0; i < 4; i++) { p = mRotatePts(p, W, H, 1); [W, H] = [H, W]; } return JSON.stringify(p); })()"));
+  console.log("rotate does nothing without a loaded photo (no crash):", (() => { try { click($("m-rotr")); click($("m-rotl")); return true; } catch (e) { return false; } })());
   ptr("pointerdown", 1, 100, 300); ptr("pointerdown", 2, 200, 300); ptr("pointermove", 2, 300, 300); ptr("pointerup", 2, 300, 300); ptr("pointerup", 1, 100, 300);
   console.log("pinch out doubles zoom:", w.eval("ms.z.toFixed(2)"), "| dot size shrinks with zoom (r attr):", d.querySelector("#m-svg circle[data-i]").getAttribute("r"));
   ptr("pointerdown", 1, 250, 20); ptr("pointermove", 1, 230, 40); ptr("pointerup", 1, 230, 40);

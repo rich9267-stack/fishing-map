@@ -230,7 +230,7 @@
   }
   async function mStartCamera() {
     ms.camera = true;
-    $("m-live").hidden = false; $("m-edit").hidden = true; $("m-retake").hidden = true; $("m-zoom").hidden = true; mZoomReset();
+    $("m-live").hidden = false; $("m-edit").hidden = true; $("m-retake").hidden = true; $("m-zoom").hidden = true; mFit(); mZoomReset();
     $("m-img").hidden = true; $("m-svg").innerHTML = ""; $("m-readout").textContent = "—";
     $("m-help").textContent = "Lay a dollar bill or card flat next to the fish, hold the phone flat above both, and tap the red button.";
     const v = $("m-video");
@@ -253,7 +253,7 @@
     if (last) { const [r, i] = last.split("|"); if (M_REFS.some(x => x[0] === r)) ms.ref = r; ms.refIn = i || ""; }
     $("m-ref-in").value = ms.refIn;
     mBuildRefs();
-    $("measure").hidden = false;
+    $("measure").hidden = false; mFit();
     if (opts.camera) { mTiltStart(); mStartCamera(); } else mShowPhoto(src, false);
   }
   function mBuildRefs() {
@@ -269,7 +269,7 @@
   function mShowPhoto(src, fromCamera) {
     ms.camera = false;
     $("m-video").hidden = true; $("m-reticle").hidden = true; $("m-level").hidden = true;
-    $("m-live").hidden = true; $("m-edit").hidden = false; $("m-retake").hidden = !fromCamera; $("m-zoom").hidden = false; mZoomReset();
+    $("m-live").hidden = true; $("m-edit").hidden = false; $("m-retake").hidden = !fromCamera; $("m-zoom").hidden = false; mFit(); mZoomReset();
     const img = $("m-img"); img.hidden = false;
     img.onload = () => mPlace();
     if (src instanceof Blob) { ms.url = URL.createObjectURL(src); img.src = ms.url; } else img.src = src;
@@ -318,7 +318,7 @@
     const note = $("m-note");
     if (ms.autoMsg) { note.className = ms.autoMsg.startsWith("✅") ? "" : "warn"; note.textContent = ms.autoMsg; }
     else if (ms.shotTilt != null && ms.shotTilt > 10) { note.className = "warn"; note.textContent = `⚠️ The phone was tilted ${Math.round(ms.shotTilt)}° — the length can be off. Retake it flat above the fish for best accuracy.`; }
-    else { note.className = ""; note.textContent = mNeedsIn() && !(refInches() > 0) ? "Type the inches between the two blue dots above." : "Most accurate when the reference lies flat right beside the fish and the picture is taken from straight above (within about an inch)."; }
+    else { note.className = ""; note.textContent = mNeedsIn() && !(refInches() > 0) ? "Type the inches between the two blue dots above." : "Best when the reference lies flat beside the fish and the photo is taken from straight above."; }
   }
   function mPoint(e) {
     const img = $("m-img"), b = img.getBoundingClientRect();
@@ -335,6 +335,29 @@
     try { c.drawImage(img, p.x - S / 2, p.y - S / 2, S, S, 0, 0, 240, 240); } catch (e) { /* not ready */ }
     c.strokeStyle = "#fff"; c.lineWidth = 2; c.beginPath(); c.moveTo(120, 100); c.lineTo(120, 140); c.moveTo(100, 120); c.lineTo(140, 120); c.stroke();
   }
+  // Keep the whole photo (or live camera picture) inside the picture area: its largest allowed size is the area's own size.
+  function mFit() {
+    const st = $("m-stage"); if (!st.clientWidth || !st.clientHeight) return;
+    st.style.setProperty("--mw", st.clientWidth + "px"); st.style.setProperty("--mh", st.clientHeight + "px");
+    if (!$("m-img").hidden) mApplyZoom();
+  }
+  if (typeof ResizeObserver === "function") { try { new ResizeObserver(() => mFit()).observe($("m-stage")); } catch (e) { /* the calls below cover it */ } }
+  window.addEventListener("resize", mFit); window.addEventListener("orientationchange", () => setTimeout(mFit, 120));
+  // Where a dot lands after the photo is turned a quarter turn (dir 1 = clockwise, -1 = anticlockwise); W×H is the size before turning
+  const mRotatePts = (pts, W, H, dir) => pts.map(p => dir > 0 ? { x: H - p.y, y: p.x } : { x: p.y, y: W - p.x });
+  async function mRotate(dir) {
+    const img = $("m-img"); if (ms.camera || !img.naturalWidth || !ms.W) return;
+    const W = img.naturalWidth, H = img.naturalHeight, cv = document.createElement("canvas"); cv.width = H; cv.height = W;
+    const c = cv.getContext && cv.getContext("2d"); if (!c) return;
+    c.translate(dir > 0 ? H : 0, dir > 0 ? 0 : W); c.rotate(dir > 0 ? Math.PI / 2 : -Math.PI / 2); c.drawImage(img, 0, 0);
+    const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.92)); if (!blob) return;
+    const pts = mRotatePts(ms.pts, W, H, dir);
+    if (ms.url) URL.revokeObjectURL(ms.url); ms.url = URL.createObjectURL(blob);
+    ms.quad = null; ms.autoMsg = "";
+    img.onload = () => { img.onload = () => mPlace(); ms.W = H; ms.H = W; ms.pts = pts; mZoomReset(); mFit(); mDraw(); };
+    img.src = ms.url;
+    if (ms.onPhoto) { try { ms.onPhoto(blob); } catch (e) { /* optional */ } } // the catch photo is the turned one too
+  }
   // Zoom / pan (pinch with two fingers, or the ＋ － buttons) — dots keep their on-screen size
   const mClamp = (v, a, b) => Math.min(b, Math.max(a, v));
   function mApplyZoom() {
@@ -345,6 +368,7 @@
   }
   function mZoomReset() { ms.z = 1; ms.tx = 0; ms.ty = 0; ms.pan = null; ms.pinch = null; ms.ptrs.clear(); mApplyZoom(); }
   function mZoomBy(f) { const z = mClamp(ms.z * f, 1, 8), k = z / ms.z; ms.tx *= k; ms.ty *= k; ms.z = z; mApplyZoom(); }
+  $("m-rotl").addEventListener("click", () => mRotate(-1)); $("m-rotr").addEventListener("click", () => mRotate(1));
   $("m-zin").addEventListener("click", () => mZoomBy(1.6));
   $("m-zout").addEventListener("click", () => mZoomBy(1 / 1.6));
   $("m-zreset").addEventListener("click", mZoomReset);

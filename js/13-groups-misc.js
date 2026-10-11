@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-11j", title: "📏 Measuring screen fixed", items: [
+      "📏 The whole photo now fits on the measuring screen — nothing is cut off, so you can always reach the blue reference dots.",
+      "🔍 Zoom ＋ −, Fit, and new ↶ ↷ turn buttons now sit in a row under the photo, so they never cover your dots. Turning keeps your dots on the right spots, and the catch photo is saved the right way up."
+    ] },
     { id: "2026-10-11i", title: "🍤 Feed them by hand", items: [
       "🍤 Tap \"Feed the fish\" on a tank, then touch and drag inside it: you hold a pinch of food and hungry fish swim over to nibble it from your fingertip.",
       "😋 A fish that has eaten its fill backs off for a while so everyone gets a turn. Let go and the flakes sprinkle down for the fish to catch. Works in full screen too."

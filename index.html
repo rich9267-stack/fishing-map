@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=58">
+<link rel="stylesheet" href="css/app.css?v=59">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -895,10 +895,10 @@
   <div id="m-stage">
     <div id="m-wrap"><video id="m-video" playsinline muted autoplay hidden></video><img id="m-img" alt="Catch photo" hidden><svg id="m-svg"></svg></div>
     <div id="m-reticle" hidden></div>
-    <div id="m-zoom" hidden><button type="button" id="m-zin" aria-label="Zoom in">＋</button><button type="button" id="m-zout" aria-label="Zoom out">－</button><button type="button" id="m-zreset" aria-label="Reset zoom">⟲</button></div>
     <div id="m-level" hidden></div>
     <canvas id="m-loupe" width="240" height="240" hidden></canvas>
   </div>
+  <div id="m-zoom" hidden role="toolbar" aria-label="Photo tools"><button type="button" id="m-zout" aria-label="Zoom out" title="Zoom out">－</button><button type="button" id="m-zin" aria-label="Zoom in" title="Zoom in">＋</button><button type="button" id="m-zreset" aria-label="Fit the whole photo" title="Fit the whole photo">⤢ Fit</button><button type="button" id="m-rotl" aria-label="Rotate left" title="Rotate left">↶</button><button type="button" id="m-rotr" aria-label="Rotate right" title="Rotate right">↷</button></div>
   <div class="m-bottom">
     <div id="m-live">
       <div id="m-help" class="spot-meta" style="color:#9db2ba;text-align:center">Lay a dollar bill or card flat next to the fish, hold the phone flat above both, and tap the red button.</div>
@@ -906,7 +906,7 @@
       <div style="text-align:center"><button type="button" id="m-pick" class="linkbtn">Choose a photo instead</button><input id="m-file" type="file" accept="image/*" hidden></div>
     </div>
     <div id="m-edit" hidden>
-      <div class="spot-meta" style="color:#9db2ba">🟡 Drag the yellow dots to the fish's nose and tail. 🔵 Drag the blue dots to the two ends of what you laid beside it.</div>
+      <div class="spot-meta" style="color:#9db2ba">🟡 Drag the yellow dots to the fish's nose and tail. 🔵 Drag the blue dots to the ends of what you laid beside it.</div>
       <button type="button" class="btn ghost small" id="m-detect" style="margin:6px 0">🔍 Find the bill / card / can / ruler for me</button>
       <div class="m-nudge"><span id="m-sel">Fine-tune:</span><button type="button" id="m-nl" aria-label="Nudge left">◀</button><button type="button" id="m-nu" aria-label="Nudge up">▲</button><button type="button" id="m-nd" aria-label="Nudge down">▼</button><button type="button" id="m-nr" aria-label="Nudge right">▶</button></div>
       <div class="m-refs" id="m-refs"></div>
@@ -940,20 +940,20 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=58"></script>
-<script src="js/02-spots.js?v=58"></script>
-<script src="js/03-photos.js?v=58"></script>
-<script src="js/04-insights.js?v=58"></script>
-<script src="js/05-seasons-records.js?v=58"></script>
-<script src="js/06-catching.js?v=58"></script>
-<script src="js/07-measure-fishid.js?v=58"></script>
-<script src="js/08-feed-plans.js?v=58"></script>
-<script src="js/09-map-forecast.js?v=58"></script>
-<script src="js/10-tools-safety.js?v=58"></script>
-<script src="js/11-accounts-social.js?v=58"></script>
-<script src="js/12-contests-alerts.js?v=58"></script>
-<script src="js/13-groups-misc.js?v=58"></script>
-<script src="js/14-tank.js?v=58"></script>
-<script src="js/99-boot.js?v=58"></script>
+<script src="js/01-core.js?v=59"></script>
+<script src="js/02-spots.js?v=59"></script>
+<script src="js/03-photos.js?v=59"></script>
+<script src="js/04-insights.js?v=59"></script>
+<script src="js/05-seasons-records.js?v=59"></script>
+<script src="js/06-catching.js?v=59"></script>
+<script src="js/07-measure-fishid.js?v=59"></script>
+<script src="js/08-feed-plans.js?v=59"></script>
+<script src="js/09-map-forecast.js?v=59"></script>
+<script src="js/10-tools-safety.js?v=59"></script>
+<script src="js/11-accounts-social.js?v=59"></script>
+<script src="js/12-contests-alerts.js?v=59"></script>
+<script src="js/13-groups-misc.js?v=59"></script>
+<script src="js/14-tank.js?v=59"></script>
+<script src="js/99-boot.js?v=59"></script>
 </body>
 </html>
