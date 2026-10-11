@@ -516,6 +516,9 @@
   .bite-pop { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 2px solid rgba(255,255,255,.85); pointer-events: none; z-index: 31; animation: bitepop .5s ease-out forwards; }
   @keyframes bitepop { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .bite-pop { animation: none; opacity: 0; } }
+  .ripple { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; border: 2px solid rgba(255,255,255,.8); pointer-events: none; z-index: 31; animation: ripplering .8s ease-out forwards; }
+  @keyframes ripplering { from { transform: scale(.3); opacity: .9; } to { transform: scale(3.2); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .ripple { animation: none; opacity: 0; } }
 
   /* measuring screen: compact instructions so the photo gets the room */
   #m-edit > .spot-meta, #m-note { font-size: .78rem; line-height: 1.3; }

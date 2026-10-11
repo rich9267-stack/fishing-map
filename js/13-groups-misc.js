@@ -453,6 +453,10 @@
       "👥 When you make a contest or tournament there's a new Teams choice: individuals only, teams allowed (a team board plus a separate individual board), or teams only.",
       "🏁 Teams are your groups — the group owner enters the team, and each member taps Join so their catches count. Repeating contests keep the choice every round."
     ] },
+    { id: "2026-10-12b", title: "🐠 Tap the water, weather moods", items: [
+      "👆 Tap the water in your tank, pond or lagoon and the fish nearby dart away from a little ripple. Tap a fish and it wiggles while its details open.",
+      "🌦 The fish now have moods that follow the weather where you are: lively and hungry when the pressure is falling, nervous and low when it's windy, lazy on a hot afternoon, sleepy at night. A line under each tank tells you how they feel."
+    ] },
     { id: "2026-10-12a", title: "📍 Official public spots", items: [
       "📍 The app now knows about ~340 official public places in Broward, Palm Beach and Miami-Dade: boat ramps, fishing piers and parks where you can fish.",
       "📸 When you do a Quick catch at one of them with no saved spot nearby, the new spot is named after it (like “Pompano Fishing Pier”) and marked as public access."

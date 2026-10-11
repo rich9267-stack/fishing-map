@@ -313,6 +313,43 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   console.log("full screen feed button turns it on:", tankEl.classList.contains("feeding-mode"), "|", fsBtn.textContent, "| card button follows:", fb.textContent, "| no hint squeezed into full screen:", !d.querySelector(".tank-full .feed-hint"));
   click(d.querySelector(".tank-full .tf-bar button")); await sleep(30);
   console.log("after closing full screen, mode still on, button synced:", tankEl.classList.contains("feeding-mode"), fb.textContent); click(fb); await sleep(10);
+  // ---- touch reactions + weather moods (step 5) ----
+  const tm = JSON.parse(w.eval(`(() => {
+    const out = {}; const set = (o) => { Object.keys(cond).forEach(k => { if (["windMph","tempF","pressureTrend"].includes(k)) delete cond[k]; }); Object.assign(cond, o); };
+    const RD = Date; const atHour = (h, fn) => { const real = Date; const fake = new real(2026, 9, 11, h, 0, 0).getTime(); global_Date = null; return fn; };
+    const moodAt = (h, c) => { set(c); const D = Date; const fixed = new D(2026, 9, 11, h, 0, 0).getTime(); window.Date = class extends D { constructor(...a) { if (a.length) super(...a); else super(fixed); } static now() { return fixed; } }; const m = tankMood(); window.Date = D; return m.key; };
+    out.calm = moodAt(10, {}); out.night = moodAt(23, {}); out.pre = moodAt(3, {}); out.falling = moodAt(10, { pressureTrend: "falling" }); out.windy = moodAt(10, { windMph: 25, pressureTrend: "falling" });
+    out.hot = moodAt(13, { tempF: 94 }); out.hotNight = moodAt(13, { tempF: 85 }); out.windyNight = moodAt(23, { windMph: 30 });
+    set({});
+    const sc = document.createElement("div"); sc.style.width = "366px"; document.body.appendChild(sc);
+    const items = []; for (let i = 0; i < 6; i++) { const el = document.createElement("button"); el.className = "tfish"; const te = document.createElement("span"); el.appendChild(te); sc.appendChild(el); items.push({ el, turnEl: te, w: 50, h: 27, depth: 0.6, kind: "k" + i }); }
+    const sim = tankSwim(sc, items, { chase: false, seed: 5 }); sim.W = 366; sim.H = 300; sim.scale = 1; sim.still = false; TANK_SIMS.delete(sim);
+    for (let s = 0; s < 120; s++) tankStep(sim, 1/30);
+    // tap on open water: a ripple appears and nearby fish bolt away from the tap
+    const near = sim.fish[0]; const cx = near.x + 25, cy = near.y + 13;
+    const before = sim.fish.map(f => f.mode);
+    tankRipple(sim, cx, cy); const n = tankStartle(sim, cx, cy, 150);
+    out.rippleShown = sc.querySelectorAll(".ripple").length; out.startled = n; out.nearMode = near.mode; out.hasScare = !!near.scare;
+    const d0 = Math.hypot(near.x + 25 - cx, near.y + 13 - cy);
+    for (let s = 0; s < 45; s++) tankStep(sim, 1/30);
+    out.fledFurther = Math.hypot(near.x + 25 - cx, near.y + 13 - cy) > d0 + 20;
+    for (let s = 0; s < 300; s++) tankStep(sim, 1/30);
+    out.calmAgain = sim.fish.every(f => f.mode === "swim") && sim.fish.every(f => !f.scare);
+    // a fish far outside the radius is left alone
+    sim.fish.forEach(f => { f.mode = "swim"; f.scare = null; }); sim.fish[1].x = 300; sim.fish[1].y = 200; const far = tankStartle(sim, 0, 0, 40); out.farFish = far;
+    // moods change the speed and nerves
+    sim.mood = { speed: 0.55, full: 1.2, hide: false, scare: 0.8 }; out.sleepyScare = tankStartle(sim, near.x + 25, near.y + 13, 150) >= 1;
+    sim.fish.forEach(f => { f.mode = "swim"; f.scare = null; });
+    sim.mood = { speed: 1.1, full: 1, hide: true, scare: 1.5 }; for (let s = 0; s < 1500; s++) tankStep(sim, 1/30); // keeps mood object? refresh resets it
+    out.refreshResets = sim.mood && typeof sim.mood.key === "string";
+    return JSON.stringify(out);
+  })()`));
+  console.log("moods:", JSON.stringify(tm));
+  w.eval("renderTank()"); const mline = d.querySelector("#tank-body .tank-mood"); console.log("mood line shown on the tank card:", !!mline, "|", mline && mline.textContent);
+  // real click on empty water makes a ripple; click on a fish does not
+  const live = d.querySelector("#tank-body .tank-salt"); if (live && live.__sim) { live.__sim.still = false; const r0 = live.querySelectorAll(".ripple").length; live.dispatchEvent(new w.MouseEvent("click", { bubbles: true, clientX: 50, clientY: 50 })); console.log("tap on water adds a ripple:", live.querySelectorAll(".ripple").length - r0);
+    const fb2 = live.querySelector(".tfish"); const r1 = live.querySelectorAll(".ripple").length; fb2.dispatchEvent(new w.MouseEvent("click", { bubbles: true })); console.log("tap on a fish adds no ripple:", live.querySelectorAll(".ripple").length - r1, "| info opened:", !d.querySelector("#tank-body .tank-info").hidden);
+    live.__sim.feedMode = true; const r2 = live.querySelectorAll(".ripple").length; live.dispatchEvent(new w.MouseEvent("click", { bubbles: true, clientX: 60, clientY: 60 })); console.log("no ripple while feeding:", live.querySelectorAll(".ripple").length - r2); live.__sim.feedMode = false; }
   w.eval("window.matchMedia = () => ({ matches: true }); renderTank()");
   const rb = d.querySelector("#tank-body .feed-btn"); console.log("reduced motion: feeding button disabled with a reason:", rb.disabled, "|", rb.textContent);
   w.eval("window.matchMedia = () => ({ matches: false })");
