@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-11c", title: "✨ New best!", items: [
+      "✨ When a catch beats your best fish of that kind, a little celebration pops up — and the old fish moves to your pond or lagoon.",
+      "🐠 The first fish of a new kind gets a welcome to your tank too."
+    ] },
     { id: "2026-10-11b", title: "🐠 Tanks on profile pages", items: [
       "🐠 Your tank now shows on your profile page, and you can see your friends' tanks on theirs.",
       "🔒 Only catches the viewer is already allowed to see count — private catches never show, and spots aren't named."

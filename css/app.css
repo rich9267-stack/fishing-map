@@ -445,3 +445,13 @@
   .mode-sw { display: flex; gap: 8px; margin: 12px 0 0; }
   .lagoon-scene { border-color: #2f8f9a; background: linear-gradient(#7fd8d4, #34b0b8 55%, #1c8696 85%, #e3d29c 100%); }
   .weed { position: absolute; background: #2f8a55; border-radius: 40% 40% 0 0; opacity: .85; transform: rotate(-6deg); }
+
+  /* ✨ New best! celebration */
+  .best-pop { position: relative; overflow: hidden; text-align: center; }
+  .best-fish { margin: 6px auto 4px; animation: bestpop .7s ease-out; }
+  .best-fish svg { max-width: 100%; height: auto; }
+  .best-t { font-weight: 700; font-size: 1.2rem; margin: 4px 0 8px; }
+  .confetti { position: absolute; top: -12px; width: 8px; height: 12px; border-radius: 2px; opacity: .9; animation: confall 2.4s ease-in forwards; pointer-events: none; }
+  @keyframes confall { to { transform: translateY(340px) rotate(540deg); opacity: 0; } }
+  @keyframes bestpop { 0% { transform: scale(.3) rotate(-8deg); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .confetti { display: none; } .best-fish { animation: none; } }

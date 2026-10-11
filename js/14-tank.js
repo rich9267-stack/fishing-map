@@ -166,6 +166,46 @@
   }
   document.querySelectorAll("#tank-sw button").forEach(b => b.addEventListener("click", () => { tankMode = b.dataset.mode; renderTank(); }));
 
+  // ---- ✨ New best! When a fresh catch beats the best of its species (or is the first of its kind), a small celebration shows. ----
+  // Called right after a catch is saved, before the lists reload, so "your tank before" is still the old one. Never throws.
+  function tankCheck(row) {
+    try {
+      if (!me || !row || !String(row.species || "").trim()) return null;
+      const mine = Object.values(catchesBySpot).flat().filter(c => c.created_by === me.id && !c.deleted_at && c.id !== row.id);
+      const nr = Object.assign({}, row, { id: row.id || "new-catch", created_by: me.id, how_many: row.how_many || 1 });
+      const key = String(row.species).trim().toLowerCase();
+      const find = t => { for (const k of ["salt", "fresh"]) { const f = t[k].fish.find(x => x.key === key); if (f) return { f, kind: k }; } return null; };
+      const after = find(tankBuild(mine.concat(nr), spots)), before = find(tankBuild(mine, spots));
+      if (!after || after.f.catchRow !== nr) return null;
+      if (before) {
+        const w = x => x.weight_lb == null ? -1 : +x.weight_lb, l = x => x.length_in == null ? -1 : +x.length_in;
+        if (!(((w(nr) - w(before.f.catchRow)) || (l(nr) - l(before.f.catchRow))) > 0)) return null; // a tie is not a new best
+      }
+      return { species: after.f.species, kind: after.kind, first: !before, now: tankFishText(after.f), old: before ? tankFishText(before.f) : "" };
+    } catch (e) { return null; }
+  }
+  function tankPop(r) {
+    if (!r) return;
+    const salt = r.kind === "salt", prev = document.activeElement;
+    const bg = el("div", "ask-bg"), box = el("div", "ask-box best-pop");
+    box.setAttribute("role", "alertdialog"); box.setAttribute("aria-modal", "true");
+    for (let i = 0; i < 14; i++) { const c = el("span", "confetti"); c.style.left = (4 + i * 7) + "%"; c.style.animationDelay = (i % 5) * 0.15 + "s"; c.style.background = ["#f2b134", "#e4572e", "#29a3a3", "#7bbf4a", "#c25ea8"][i % 5]; box.appendChild(c); }
+    const fw = el("div", "best-fish"); fw.appendChild(fishSvg(r.species, 150)); box.appendChild(fw);
+    box.appendChild(el("div", "best-t", r.first ? `🐠 New fish for your ${salt ? "saltwater" : "freshwater"} tank!` : `✨ New best ${r.species}!`));
+    const lines = [];
+    if (r.first) lines.push(`Your first ${r.species}${r.now ? " — " + r.now : ""}. It's swimming in the ${salt ? "saltwater" : "freshwater"} tank now.`);
+    else { lines.push(`${r.now || "This one"} beats your old ${r.old || "best"}.`); lines.push(`The old fish moved to the ${salt ? "lagoon" : "pond"}.`); }
+    lines.forEach(t => box.appendChild(el("div", "ask-text", t)));
+    const row = el("div", "ask-btns"), bOk = el("button", "btn", "Nice!"), bSee = el("button", "btn ghost", "See my tank");
+    bOk.type = bSee.type = "button"; row.appendChild(bSee); row.appendChild(bOk); box.appendChild(row); bg.appendChild(box);
+    const end = () => { document.removeEventListener("keydown", key, true); bg.remove(); if (prev && prev.focus) { try { prev.focus(); } catch (e) { /* fine */ } } };
+    const key = e => { if (e.key === "Escape") { e.preventDefault(); end(); } };
+    document.addEventListener("keydown", key, true);
+    bOk.addEventListener("click", end); bg.addEventListener("click", e => { if (e.target === bg) end(); });
+    bSee.addEventListener("click", () => { end(); tankMode = "tanks"; $("tab-tank").click(); });
+    document.body.appendChild(bg); bOk.focus();
+  }
+
   // A person's tank on their profile page. `catches` are only the ones the viewer is allowed to see (database rules) and never private ones.
   // Other people's spots are not named; only size and date show.
   function tankProfile(catches, spotList, box, own) {

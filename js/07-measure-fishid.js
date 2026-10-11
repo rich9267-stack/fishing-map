@@ -689,6 +689,7 @@
         : await db.from("catches").insert(row).select("id").single();
       if (error) throw error;
       if (!editingCatch) { const gp = await liveGeoIfNeeded(); await saveCatchGeo(savedRow.id, gp); }
+      const newBest = editingCatch ? null : tankCheck({ id: savedRow.id, species: row.species, how_many: row.how_many, caught_at: row.caught_at, spot_id: row.spot_id, weight_lb: row.weight_lb, length_in: row.length_in }); // ✨ new best?
       const photoFile = q("#c-photo").files && q("#c-photo").files[0];
       if (photoFile) {
         msg.textContent = "Uploading photo…";
@@ -715,6 +716,7 @@
       openCatchSpot = null;
       editingCatch = null;
       await loadCatches();
+      tankPop(newBest);
     } catch (err) {
       msg.className = "msg err";
       msg.textContent = "Couldn't save: " + (err.message || err);

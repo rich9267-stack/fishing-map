@@ -265,13 +265,14 @@
       ({ data: saved, error } = await db.from("catches").insert(base).select("id").single());
     if (error) throw error;
     await saveCatchGeo(saved.id, item.pos); // live GPS stamp for geo-locked contests
+    const best = tankCheck({ id: saved.id, species: item.species, how_many: item.count, caught_at: base.caught_at, spot_id: spot.id, weight_lb: base.weight_lb, length_in: base.length_in }); // ✨ new best?
     let photoOk = true;
     if (item.blob) {
       try { await uploadPhoto(new File([item.blob], "catch.jpg", { type: "image/jpeg" }), spot.id, saved.id, { when, lat: item.pos ? item.pos.lat : null, lng: item.pos ? item.pos.lng : null }); }
       catch (pe) { photoOk = false; }
     }
     expanded.add(spot.id);
-    return { spot, c, photoOk };
+    return { spot, c, photoOk, best };
   }
 
   $("qc-save").addEventListener("click", async () => {
@@ -298,6 +299,7 @@
       await loadSpots();
       toast(`✓ ${item.count > 1 ? item.count + " " : ""}${item.species} logged at ${r.spot.name}${r.c.tide_stage ? " · " + r.c.tide_stage + " tide" : ""}` +
             (r.photoOk ? "" : " (photo didn't upload)"));
+      tankPop(r.best);
       if (!activeSession() && Date.now() - new Date(item.when) < 30 * 60000) showAsk(r.spot, `🎣 Fishing at ${r.spot.name} for a while? Start a trip so the hours count.`);
     } catch (err) {
       if (isNetErr(err)) await queueCatch(item); // signal dropped mid-save — keep it for later
