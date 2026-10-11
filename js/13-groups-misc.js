@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-12b", title: "👥 Teams in contests", items: [
+      "👥 When you make a contest or tournament there's a new Teams choice: individuals only, teams allowed (a team board plus a separate individual board), or teams only.",
+      "🏁 Teams are your groups — the group owner enters the team, and each member taps Join so their catches count. Repeating contests keep the choice every round."
+    ] },
     { id: "2026-10-12a", title: "📍 Official public spots", items: [
       "📍 The app now knows about ~340 official public places in Broward, Palm Beach and Miami-Dade: boat ramps, fishing piers and parks where you can fish.",
       "📸 When you do a Quick catch at one of them with no saved spot nearby, the new spot is named after it (like “Pompano Fishing Pier”) and marked as public access."

@@ -144,7 +144,7 @@
     top.appendChild(el("span", "spot-meta", st.label));
     d.appendChild(top);
     const n = ctMembers.filter(m => m.tournament_id === t.id && m.status === "joined").length;
-    d.appendChild(el("div", "spot-meta", `${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · ${t.boards.map(b => CT_BOARDS[b]).join(", ")}${n ? " · " + n + " in" : ""}${t.geo_lat != null ? " · 📍 " + (t.geo_label || "area") : ""}${t.series_id ? " · 🔁 repeating" : ""}`));
+    d.appendChild(el("div", "spot-meta", `${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · ${t.boards.map(b => CT_BOARDS[b]).join(", ")}${n ? " · " + n + " in" : ""}${t.geo_lat != null ? " · 📍 " + (t.geo_label || "area") : ""}${t.series_id ? " · 🔁 repeating" : ""}${t.team_mode === "teams" ? " · 👥 teams only" : t.team_mode === "both" ? " · 👥 teams welcome" : ""}`));
     d.addEventListener("click", () => { ctId = t.id; ctView = "detail"; ctRender(); });
     return d;
   }
@@ -214,6 +214,9 @@
       <div class="spot-meta" id="ctf-repnote" hidden></div>
       <label>Winners (each one gets its own board)</label>
       <div class="fchips" id="ctf-boards">${Object.entries(CT_BOARDS).map(([k, v]) => `<button class="fchip${k === "length" ? " on" : ""}" type="button" data-b="${k}">${v}</button>`).join("")}</div>
+      <label for="ctf-teams">Teams</label>
+      <select id="ctf-teams"><option value="singles">Individuals only</option><option value="both">Teams allowed — separate team and individual boards</option><option value="teams">Teams only — just team boards</option></select>
+      <div class="spot-meta" id="ctf-teamsnote">Teams are your groups (Feed → Groups). A group's owner enters the team; each member still taps Join so their catches count.</div>
       <label for="ctf-species">Only count one species? (optional)</label><input id="ctf-species" maxlength="40" placeholder="e.g. Snook — leave empty for any fish">
       <label>Proof required</label>
       <label class="check-row"><input type="checkbox" id="ctf-photo"><span>📷 Photo on every catch</span></label>
@@ -312,6 +315,11 @@
         const lk = await db.rpc("link_contest_to_plan", { p_contest: data, p_plan: pre.planId });
         if (lk.error) toast("Contest made, but couldn't link it to the trip: " + lk.error.message, 6000);
       }
+      const teamMode = wrap.querySelector("#ctf-teams").value;
+      if (!error && teamMode !== "singles") { // the creator picks how teams work (a repeating contest passes it to every new round)
+        const tm = data ? await db.rpc("set_team_mode", { p_id: data, p_mode: teamMode }) : cadence ? await db.rpc("set_latest_series_team_mode", { p_mode: teamMode }) : { error: null };
+        if (tm.error) toast("Made it, but couldn't set the team option: " + tm.error.message, 6000);
+      }
       ctBusy = false;
       if (error) { msg.className = "msg err"; msg.textContent = "Couldn't create it: " + error.message; return; }
       if (cadence && !data) { // saved, but this month isn't one of the chosen months
@@ -350,6 +358,8 @@
     if (t.species) rules.push("only " + t.species);
     if (t.geo_lat != null) rules.push(`📍 logged live within ${t.geo_radius_mi} mi of ${t.geo_label || "the center"}`);
     box.appendChild(el("div", "spot-meta", "Rules: " + (rules.length ? rules.join(" · ") : "any catch in the time window")));
+    const tmode = t.team_mode || "singles";
+    if (tmode !== "singles") box.appendChild(el("div", "spot-meta", tmode === "teams" ? "👥 Teams only — scores are for teams (join the contest so your catches count for your team)." : "👥 Teams welcome — there's a team board and a separate individual board."));
     // actions
     let seriesBox = [];
     const acts = el("div"); acts.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin:10px 0";
@@ -385,8 +395,8 @@
       rows = a.data || []; mineRows = b.data || [];
       await ensureProfiles(rows.map(r => r.user_id));
     }
-    t.boards.forEach(bd => {
-      box.appendChild(el("div", "label", CT_BOARDS[bd])); box.lastChild.style.marginTop = "12px";
+    (tmode === "teams" ? [] : t.boards).forEach(bd => {
+      box.appendChild(el("div", "label", (tmode === "both" ? "Individual · " : "") + CT_BOARDS[bd])); box.lastChild.style.marginTop = "12px";
       const list = rows.filter(r => r.board === bd).sort((x, y) => y.value - x.value || new Date(x.caught_at) - new Date(y.caught_at));
       if (!list.length) { box.appendChild(el("div", "empty", st.k === "soon" ? "Starts " + ctFmt(t.starts_at) : "No qualifying catches yet.")); return; }
       list.slice(0, 10).forEach((r, i) => {
@@ -396,7 +406,7 @@
       });
     });
     // teams (setup/37)
-    try {
+    if (tmode !== "singles") try {
       const tb = await db.rpc("tournament_team_board", { p_id: t.id });
       const trows = (tb && tb.data) || [];
       const ownG = open && !t.cancelled_at ? (((await db.from("groups").select("id,name,created_by").eq("created_by", me.id)).data) || []) : [];

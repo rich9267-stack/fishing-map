@@ -46,8 +46,8 @@ let WXLIST = (process.env.WX === 'none') ? [] : [{ properties: { event: 'Special
 const GM = [{ id: "g1", scope: "trip", scope_id: "pnow", sender: "other", body: "Bring shrimp!", created_at: new Date().toISOString() }, { id: "g2", scope: "contest", scope_id: "t2", sender: "other", body: "Game on", created_at: new Date().toISOString() }];
 const NOW = Date.now(), H = 3600000;
 const TOURS = [
-  { id: "t1", kind: "official", title: "October Snook Slam", description: "Biggest snook wins", created_by: "u-rich", starts_at: new Date(NOW - 5 * H).toISOString(), ends_at: new Date(NOW + 48 * H).toISOString(), boards: ["length", "fish"], species: null, require_photo: true, require_length: true, geo_lat: null, geo_lng: null, geo_radius_mi: null, geo_label: null, cancelled_at: null },
-  { id: "t2", kind: "friends", title: "Keys weekend showdown", description: null, created_by: "other", starts_at: new Date(NOW - 2 * H).toISOString(), ends_at: new Date(NOW + 20 * H).toISOString(), boards: ["length"], species: null, require_photo: false, require_length: true, geo_lat: 26.25, geo_lng: -80.08, geo_radius_mi: 5, geo_label: "Hillsboro Inlet", cancelled_at: null },
+  { id: "t1", kind: "official", title: "October Snook Slam", description: "Biggest snook wins", created_by: "u-rich", starts_at: new Date(NOW - 5 * H).toISOString(), ends_at: new Date(NOW + 48 * H).toISOString(), boards: ["length", "fish"], team_mode: "both", species: null, require_photo: true, require_length: true, geo_lat: null, geo_lng: null, geo_radius_mi: null, geo_label: null, cancelled_at: null },
+  { id: "t2", kind: "friends", title: "Keys weekend showdown", description: null, created_by: "other", starts_at: new Date(NOW - 2 * H).toISOString(), ends_at: new Date(NOW + 20 * H).toISOString(), boards: ["length"], team_mode: "teams", species: null, require_photo: false, require_length: true, geo_lat: 26.25, geo_lng: -80.08, geo_radius_mi: 5, geo_label: "Hillsboro Inlet", cancelled_at: null },
   { id: "t3", kind: "official", title: "Old Tournament", description: null, created_by: "u-rich", starts_at: new Date(NOW - 90 * H).toISOString(), ends_at: new Date(NOW - 60 * H).toISOString(), boards: ["species"], species: null, require_photo: true, require_length: true, geo_lat: null, geo_lng: null, geo_radius_mi: null, geo_label: null, cancelled_at: null }
 ];
 let TMEM = [
@@ -175,8 +175,16 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   console.log("teams heading:", /👥 Teams/.test(ct), "| both teams listed:", /Pompano Posse/.test(ct) && /Other Crew/.test(ct), "| joined note:", /2 of 3 joined/.test(ct), "| explainer:", /counts the members who have joined/.test(ct));
   const tb = d.querySelector(".ctd-team-btn");
   console.log("owner button:", !!tb && /Withdraw Pompano Posse/.test(tb.textContent));
+  console.log("both mode: note:", /Teams welcome/.test(ct), "| individual boards labelled:", /Individual · /.test(ct));
   click(tb); await sleep(400);
   console.log("withdraw rpc:", JSON.stringify(calls2.filter(c => c[0] === "withdraw_team")));
+  // teams-only contest (t2): no individual boards, team boards shown; singles contest (t3): no team section
+  w.eval("ctId = 't2'; ctView = 'detail'; ctRender()"); await sleep(800);
+  const c2 = txt("ct-body");
+  console.log("teams-only: note:", /Teams only/.test(c2), "| individual board hidden:", !/Individual · /.test(c2) && !/No qualifying catches yet/.test(c2), "| team section:", /👥 Teams/.test(c2));
+  w.eval("ctId = 't3'; ctView = 'detail'; ctRender()"); await sleep(800);
+  console.log("singles: no team section:", !/👥 Teams/.test(txt("ct-body")), "| no enter button:", !d.querySelector(".ctd-team-btn"));
+  w.eval("ctId = 't1'; ctView = 'detail'; ctRender()"); await sleep(500);
   // ---- trophy case ----
   GR[0].showcase = [{ k: "custom", icon: "🥇", title: "Sept contest winners", detail: "1st of 6 teams" }];
   w.eval("grOpen = 'G1'; feedMode = 'groups'"); click($("feed-mode-groups")); await sleep(300); w.eval("grOpen = 'G1'"); await w.eval("openGroups()"); await sleep(400);
