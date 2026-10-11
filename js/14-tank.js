@@ -103,6 +103,105 @@
     if (c.length_in != null) bits.push(`${(+c.length_in).toFixed(1)} in`);
     return bits.join(" · ");
   }
+  // ---- 🏊 Swimming engine: fish wander on their own, turn around smoothly, stay in the water, and sit at different depths ----
+  // One shared timer drives every scene on screen; it stops when nothing is showing. A fish is { el, turnEl, w, h, depth } — `el` moves,
+  // `turnEl` flips (scaleX passes through 0, so a turn looks like the fish rolling round) and tilts with its climb or dive.
+  const TANK_SIMS = new Set(); let tankRaf = 0, tankLast = 0;
+  const tankReduced = () => { try { return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { return false; } };
+  function tankRng(seed) { let a = seed | 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function tankSwim(scene, items, opts) {
+    opts = opts || {};
+    const sim = { scene, W: 0, H: 0, scale: 1, floor: opts.floor == null ? 18 : opts.floor, visible: true, time: 0, fish: [], still: tankReduced() };
+    sim.resize = () => {
+      sim.W = scene.clientWidth || sim.W || 340; sim.H = scene.clientHeight || sim.H || 260;
+      sim.scale = Math.max(1, Math.min(2.2, Math.min(sim.W / 360, sim.H / 300)));
+    };
+    sim.resize();
+    items.forEach((it, i) => {
+      const r = tankRng(1000 + i * 7919 + (opts.seed || 0)), f = Object.assign({ x: 0, y: 0, vx: 0, vy: 0, turn: 1, tx: 0, ty: 0, tt: 0, rnd: r, sp: 0, phase: r() * 6.28, depth: 0.5 }, it);
+      f.sp = (opts.speed || 26) * (0.8 + r() * 0.5) * (1 + 18 / Math.max(f.w, 20) * 0.6);
+      f.x = r() * Math.max(1, sim.W - f.w); f.y = r() * Math.max(1, sim.H - sim.floor - f.h);
+      f.turn = r() < 0.5 ? 1 : -1; f.tt = 0;
+      f.el.style.zIndex = String(2 + Math.round(f.depth * 6));
+      f.el.style.filter = `drop-shadow(0 2px 2px rgba(0,0,0,.3)) brightness(${(0.78 + 0.22 * f.depth).toFixed(2)})`;
+      sim.fish.push(f);
+    });
+    tankStep(sim, 0);
+    if (!sim.still && typeof requestAnimationFrame === "function") {
+      TANK_SIMS.add(sim);
+      if (typeof IntersectionObserver === "function") { try { new IntersectionObserver(es => { sim.visible = es[es.length - 1].isIntersecting; }).observe(scene); } catch (e) { /* always visible */ } }
+      if (typeof ResizeObserver === "function") { try { new ResizeObserver(() => sim.resize()).observe(scene); } catch (e) { /* manual resize only */ } }
+      if (!tankRaf) tankRaf = requestAnimationFrame(tankTick);
+    }
+    scene.__sim = sim;
+    return sim;
+  }
+  function tankStep(sim, dt) {
+    sim.time += dt;
+    const S = sim.scale, top = 6;
+    sim.fish.forEach(f => {
+      const w = f.w * S * (0.8 + 0.2 * f.depth), h = f.h * S * (0.8 + 0.2 * f.depth), maxX = Math.max(0, sim.W - w - 4), maxY = Math.max(top, sim.H - sim.floor - h - 2);
+      if (dt > 0) {
+        f.tt -= dt;
+        const dx0 = f.tx - f.x, dy0 = f.ty - f.y;
+        if (f.tt <= 0 || Math.hypot(dx0, dy0) < 14) { // pick somewhere new to go (sometimes just a short drift)
+          const far = f.rnd() < 0.7;
+          f.tx = far ? 4 + f.rnd() * maxX : Math.max(4, Math.min(maxX, f.x + (f.rnd() - 0.5) * 120));
+          f.ty = far ? top + f.rnd() * (maxY - top) : Math.max(top, Math.min(maxY, f.y + (f.rnd() - 0.5) * 60));
+          f.tt = 2.5 + f.rnd() * 4;
+        }
+        const dx = f.tx - f.x, dy = f.ty - f.y, d = Math.hypot(dx, dy) || 1, sp = f.sp * S * Math.min(1, d / 50 + 0.3);
+        const k = Math.min(1, dt * 1.5);
+        f.vx += (dx / d * sp - f.vx) * k; f.vy += (dy / d * sp * 0.55 - f.vy) * k;
+        f.x += f.vx * dt; f.y += f.vy * dt;
+        if (f.x < 0) { f.x = 0; f.vx = Math.abs(f.vx) * 0.3; f.tt = 0; } else if (f.x > maxX) { f.x = maxX; f.vx = -Math.abs(f.vx) * 0.3; f.tt = 0; }
+        if (f.y < top) { f.y = top; f.vy = Math.abs(f.vy) * 0.3; } else if (f.y > maxY) { f.y = maxY; f.vy = -Math.abs(f.vy) * 0.3; }
+        if (Math.abs(f.vx) > 5) { const want = f.vx > 0 ? 1 : -1, rate = 5.5 * dt; f.turn += Math.max(-rate, Math.min(rate, want - f.turn)); }
+      }
+      const bob = Math.sin(sim.time * 1.7 + f.phase) * 1.6, tilt = Math.max(-22, Math.min(22, Math.atan2(f.vy, Math.max(Math.abs(f.vx), 14)) * 57.3));
+      const sc = S * (0.8 + 0.2 * f.depth);
+      f.el.style.transform = `translate(${f.x.toFixed(1)}px, ${(f.y + bob).toFixed(1)}px)`;
+      f.turnEl.style.transform = `scaleX(${(f.turn * sc).toFixed(3)}) scaleY(${sc.toFixed(3)}) rotate(${tilt.toFixed(1)}deg)`;
+    });
+  }
+  function tankTick(now) {
+    tankRaf = 0;
+    const dt = Math.min(0.05, ((now - tankLast) / 1000) || 0); tankLast = now;
+    TANK_SIMS.forEach(s => { if (!s.scene.isConnected) { TANK_SIMS.delete(s); return; } if (s.visible && !document.hidden) tankStep(s, dt); });
+    if (TANK_SIMS.size) tankRaf = requestAnimationFrame(tankTick);
+  }
+  // Full-screen view of a tank / pond / lagoon: the scene itself moves into a screen-filling layer and goes back on close.
+  function tankFull(scene, title, canFeed) {
+    const home = scene.parentNode, next = scene.nextSibling, oldH = scene.style.height, prev = document.activeElement, oldOv = document.body.style.overflow;
+    const bg = el("div", "tank-full"); bg.setAttribute("role", "dialog"); bg.setAttribute("aria-modal", "true"); bg.setAttribute("aria-label", title);
+    const bar = el("div", "tf-bar"), close = el("button", "btn", "✕ Close"); close.type = "button";
+    bar.appendChild(el("b", null, title)); bar.appendChild(close);
+    const stage = el("div", "tf-stage"), info = el("div", "tank-info tf-info"); info.hidden = true;
+    scene.style.height = "100%"; stage.appendChild(scene);
+    const foot = el("div", "tf-foot"); foot.appendChild(info);
+    if (canFeed) { const fb = el("button", "btn ghost feed-btn", "🍤 Feed the fish"); fb.type = "button"; fb.addEventListener("click", () => tankFeed(scene, fb)); foot.appendChild(fb); }
+    bg.appendChild(bar); bg.appendChild(stage); bg.appendChild(foot);
+    document.body.style.overflow = "hidden"; document.body.appendChild(bg);
+    let gotFs = false, closed = false;
+    const refit = () => { if (scene.__sim) scene.__sim.resize(); };
+    const end = () => {
+      if (closed) return; closed = true;
+      document.removeEventListener("keydown", key, true); document.removeEventListener("fullscreenchange", fsc); window.removeEventListener("resize", refit); window.removeEventListener("orientationchange", refit);
+      try { if (document.fullscreenElement === bg && document.exitFullscreen) document.exitFullscreen().catch(() => {}); } catch (e) { /* fine */ }
+      scene.style.height = oldH; home.insertBefore(scene, next && next.parentNode === home ? next : null); bg.remove(); document.body.style.overflow = oldOv; refit();
+      if (prev && prev.focus) { try { prev.focus(); } catch (e) { /* fine */ } }
+    };
+    const key = e => { if (e.key === "Escape") { e.preventDefault(); end(); } };
+    const fsc = () => { if (gotFs && !document.fullscreenElement) end(); };
+    document.addEventListener("keydown", key, true); document.addEventListener("fullscreenchange", fsc);
+    window.addEventListener("resize", refit); window.addEventListener("orientationchange", refit);
+    close.addEventListener("click", end);
+    try { const r = bg.requestFullscreen && bg.requestFullscreen(); if (r && r.then) r.then(() => { gotFs = true; refit(); }).catch(() => {}); } catch (e) { /* the filled-screen layer still works */ }
+    refit(); setTimeout(refit, 60); close.focus();
+    return { end, info };
+  }
+  const fullBtn = (scene, title, canFeed) => { const b = el("button", "btn ghost full-btn", "⛶ Full screen"); b.type = "button"; b.addEventListener("click", () => tankFull(scene, title, canFeed)); return b; };
+
   function tankDraw(kind, data, box, opts) {
     opts = opts || {};
     const salt = kind === "salt", fish = data.fish;
@@ -112,33 +211,35 @@
       card.appendChild(emptyBox(salt ? "No saltwater fish yet. Your best catch of each saltwater species will swim here." : "No freshwater fish yet. Your best catch of each freshwater species will swim here.", "📸 Log a catch", () => { $("qc-fab").click(); }));
       box.appendChild(card); return;
     }
-    const rows = Math.ceil(fish.length / 2), tank = el("div", "tank " + (salt ? "tank-salt" : "tank-fresh"));
-    tank.style.height = (rows * 78 + 46) + "px";
+    const tank = el("div", "tank " + (salt ? "tank-salt" : "tank-fresh"));
+    tank.style.height = Math.min(440, 230 + Math.ceil(fish.length / 2) * 26) + "px";
     for (let i = 0; i < 6; i++) { const b = el("span", "bubble"); b.style.left = (8 + i * 16) + "%"; b.style.animationDelay = (i * 1.3) + "s"; b.style.animationDuration = (7 + (i % 3) * 2) + "s"; tank.appendChild(b); }
+    const items = [];
     fish.forEach((f, i) => {
-      const slot = i % 2, row = Math.floor(i / 2), px = tankPx(f.catchRow);
-      const b = el("button", "tfish"); b.type = "button";
-      b.style.top = (row * 78 + 8 + Math.round((60 - px * 68 / 128) / 2)) + "px";
-      b.style.left = slot ? "50%" : "4%";
-      b.style.setProperty("--dx", (slot ? -1 : 1) * (10 + (i * 7) % 16) + "px");
-      b.style.animationDuration = (5 + (i * 3) % 5) + "s"; b.style.animationDelay = (-(i * 1.7) % 5) + "s";
+      const px = tankPx(f.catchRow);
+      const b = el("button", "tfish sim"); b.type = "button";
       b.setAttribute("aria-label", `${f.species}, ${tankFishText(f) || "no size logged"}. Tap for details.`);
-      const sv = fishSvg(f.species, px, true); if (slot) sv.style.transform = "scaleX(-1)"; b.appendChild(sv);
-      b.addEventListener("click", () => tankInfo(f, kind, info, opts));
+      const turnEl = el("span", "tf-turn"); turnEl.appendChild(fishSvg(f.species, px, i < 20)); b.appendChild(turnEl); // only the first 20 get moving parts (phone speed)
+      b.addEventListener("click", () => { const fs = tank.closest(".tank-full"); tankInfo(f, kind, fs ? fs.querySelector(".tf-info") : info, opts); });
       tank.appendChild(b);
+      items.push({ el: b, turnEl, w: px, h: Math.round(px * 68 / 128), depth: [0.25, 0.6, 1][i % 3] });
     });
     tank.appendChild(el("div", "tank-sand"));
     // Decorations are earned: one more for every couple of species in this tank (so friends see the same ones on your profile)
     const deco = TANK_DECOR[salt ? "salt" : "fresh"], got = deco.filter(d => fish.length >= d.at);
     got.forEach((d, i) => { const e = el("span", "decor", d.e); e.style.left = (5 + i * (76 / Math.max(deco.length - 1, 1))) + "%"; e.style.fontSize = d.sz + "px"; e.title = d.n; e.setAttribute("aria-hidden", "true"); tank.appendChild(e); });
     card.appendChild(tank);
+    tankSwim(tank, items, { seed: salt ? 1 : 2 });
     const nxt = deco.find(d => fish.length < d.at);
     card.appendChild(el("div", "spot-meta", got.length ? `${got.length} of ${deco.length} decorations unlocked` + (nxt ? ` · next one at ${nxt.at} species` : " — tank fully decorated! 🎉") : `First decoration unlocks at ${deco[0].at} species.`));
+    const acts = el("div", "tank-actions");
     if (!opts.other) {
       const fb = el("button", "btn ghost feed-btn", "🍤 Feed the fish"); fb.type = "button";
       fb.addEventListener("click", () => tankFeed(tank, fb));
-      card.appendChild(fb);
+      acts.appendChild(fb);
     }
+    acts.appendChild(fullBtn(tank, salt ? "🌊 Saltwater tank" : "🌿 Freshwater tank", !opts.other));
+    card.appendChild(acts);
     const info = el("div", "tank-info"); info.hidden = true; card.appendChild(info);
     box.appendChild(card);
   }
@@ -172,13 +273,14 @@
     const scene = el("div", salt ? "pond-scene lagoon-scene" : "pond-scene"); scene.style.height = "230px";
     [[8, 14, 46], [70, 62, 56], [38, 76, 38], [84, 20, 34]].forEach(([l, tp, w]) => { const d = el("span", salt ? "weed" : "pad"); d.style.cssText = `left:${l}%;top:${tp}%;width:${salt ? Math.round(w * .5) : w}px;height:${salt ? w + 20 : Math.round(w * .72)}px`; scene.appendChild(d); });
     const fishList = []; rows.forEach(p => { for (let k = 0; k < p.n; k++) fishList.push(p.species); });
-    let shown = 0;
+    let shown = 0; const items = [];
     fishList.slice(0, 40).forEach((sp, i) => {
-      const b = el("span", "pfish"); b.style.left = (4 + (i * 37) % 84) + "%"; b.style.top = (8 + (i * 53) % 74) + "%";
-      b.style.setProperty("--dx", ((i % 2 ? -1 : 1) * (8 + (i * 5) % 14)) + "px"); b.style.animationDuration = (4 + (i * 3) % 6) + "s"; b.style.animationDelay = (-(i * 1.3) % 5) + "s";
-      const sv = fishSvg(sp, 30); if (i % 2) sv.style.transform = "scaleX(-1)"; b.appendChild(sv); scene.appendChild(b); shown++;
+      const b = el("span", "pfish sim"), turnEl = el("span", "tf-turn"); turnEl.appendChild(fishSvg(sp, 30)); b.appendChild(turnEl); scene.appendChild(b); shown++;
+      items.push({ el: b, turnEl, w: 30, h: 16, depth: [0.3, 0.65, 1][i % 3] });
     });
     card.appendChild(scene);
+    tankSwim(scene, items, { floor: salt ? 30 : 6, speed: 22, seed: salt ? 3 : 4 });
+    const acts = el("div", "tank-actions"); acts.appendChild(fullBtn(scene, salt ? "🌴 Your lagoon" : "🏞 Your pond", false)); card.appendChild(acts);
     if (total > shown) card.appendChild(el("div", "spot-meta", `Showing ${shown} of ${total} fish`));
     const list = el("div", "pond-list");
     rows.forEach(p => { const r = el("div", "pond-row"); const pf = el("span", "pf"); pf.appendChild(fishSvg(p.species, 34)); r.appendChild(pf); r.appendChild(el("span", "pond-sp", p.species)); r.appendChild(el("b", null, "×" + p.n)); list.appendChild(r); });

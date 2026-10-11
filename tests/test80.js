@@ -215,6 +215,42 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   const lf = d.querySelector("#tank-body .tfish svg");
   console.log("fish has moving parts:", !!lf && lf.classList.contains("fish-live"), "| parts:", ["fs-rig","fs-tail","fs-fin","fs-fin2","fs-body","fs-eye","fs-gill"].map(c => c + "=" + (lf ? lf.querySelectorAll("." + c).length : 0)).join(" "), "| own speed set:", !!(lf && lf.style.getPropertyValue("--fd")));
   console.log("pond/collection fish stay still:", !d.querySelector("#pond-body svg.fish-live") && !d.querySelector(".col-chip svg.fish-live"));
+  // ---- swimming engine + full screen ----
+  w.__c1.push(C("y1", "Snook", "s1", { weight_lb: 2 }), C("y2", "Snook", "s1", { weight_lb: 1 })); w.__c2.push(C("y3", "Peacock bass", "s2", { weight_lb: 1 })); w.eval("catchesBySpot = { s1: window.__c1, s2: window.__c2 }");
+  w.eval("window.requestAnimationFrame = () => 1; tankMode='tanks'; renderTank()"); // no real animation clock in this fake browser: the test steps time by hand
+  const simInfo = () => JSON.parse(w.eval(`JSON.stringify({ sims: TANK_SIMS.size, scenes: [...document.querySelectorAll('.tank')].map(s => !!s.__sim) })`));
+  console.log("swimming scenes registered:", JSON.stringify(simInfo()), "| roaming fish:", d.querySelectorAll("#tank-body .tfish.sim").length, "| each has a turn wrapper:", [...d.querySelectorAll("#tank-body .tfish.sim")].every(b => b.querySelector(".tf-turn svg")));
+  const run = w.eval(`(() => { const sim = [...TANK_SIMS].find(s => s.scene.classList.contains("tank-salt")); sim.W = 366; sim.H = 300; sim.scale = 1;
+    let out = 0, flips = 0, minT = 9, maxT = -9, moved = 0; const start = sim.fish.map(f => [f.x, f.y]);
+    const lastFace = sim.fish.map(f => Math.sign(f.turn));
+    for (let n = 0; n < 1800; n++) { tankStep(sim, 1 / 30);
+      sim.fish.forEach((f, i) => { const w = f.w * (0.8 + 0.2 * f.depth), h = f.h * (0.8 + 0.2 * f.depth);
+        if (f.x < -0.5 || f.x > sim.W - w + 0.5 || f.y < 0 || f.y > sim.H - sim.floor - h + 0.5) out++;
+        minT = Math.min(minT, f.turn); maxT = Math.max(maxT, f.turn);
+        const sg = Math.sign(f.turn); if (sg && sg !== lastFace[i]) { flips++; lastFace[i] = sg; } }); }
+    sim.fish.forEach((f, i) => { if (Math.hypot(f.x - start[i][0], f.y - start[i][1]) > 40) moved++; });
+    return JSON.stringify({ fish: sim.fish.length, outOfWater: out, turnedAround: flips > 0, turnRange: [minT.toFixed(2), maxT.toFixed(2)], movedFar: moved }); })()`);
+  console.log("60 seconds of swimming:", run);
+  console.log("turn is a smooth squash, not a jump (a fish mid-turn exists):", w.eval(`(() => { const sim = [...TANK_SIMS][0]; const f = sim.fish[0]; f.vx = 40; f.turn = -1; let mid = false; for (let i = 0; i < 20; i++) { tankStep(sim, 1/30); if (Math.abs(f.turn) < 0.5) mid = true; } return mid; })()`));
+  console.log("depth layers: back fish dimmer than front:", w.eval(`(() => { const f = [...TANK_SIMS][0].fish; const b = e => parseFloat(/brightness\\(([\\d.]+)\\)/.exec(e.el.style.filter)[1]); return Math.min(...f.map(b)) < Math.max(...f.map(b)); })()`));
+  // full screen
+  const salt = d.querySelector("#tank-body .tank-salt"), home = salt.parentNode, fbtn = [...d.querySelectorAll("#tank-body .full-btn")][0];
+  click(fbtn); await sleep(100);
+  const ov = d.querySelector(".tank-full");
+  console.log("full screen opens:", !!ov, "| tank moved inside:", !!ov && ov.contains(salt), "| title:", ov && ov.querySelector(".tf-bar b").textContent, "| feed button there:", !!(ov && ov.querySelector(".feed-btn")), "| page scroll locked:", d.body.style.overflow);
+  click(salt.querySelector(".tfish")); console.log("fish info shows in the full-screen bar:", ov.querySelector(".tf-info").hidden === false, "|", ov.querySelector(".tf-info").textContent.replace(/\s+/g, " ").slice(0, 60));
+  click(ov.querySelector(".tf-bar button")); await sleep(50);
+  console.log("close puts the tank back:", !d.querySelector(".tank-full") && salt.parentNode === home && home.contains(salt) && salt.style.height !== "100%", "| scroll unlocked:", d.body.style.overflow === "");
+  click(fbtn); await sleep(50); d.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Escape", bubbles: true })); await sleep(50);
+  console.log("Esc closes full screen:", !d.querySelector(".tank-full") && salt.parentNode === home);
+  click(d.querySelector("#tank-sw button[data-mode='lagoon']")); await sleep(50);
+  const lag = d.querySelector("#lagoon-body .pond-scene"), lfb = d.querySelector("#lagoon-body .full-btn");
+  console.log("lagoon fish roam:", d.querySelectorAll("#lagoon-body .pfish.sim").length, "| full-screen button on lagoon:", !!lfb, "| no feed button in lagoon full screen:", (() => { click(lfb); const o = d.querySelector(".tank-full"); const r = !!o && !o.querySelector(".feed-btn") && o.contains(lag); click(o.querySelector(".tf-bar button")); return r; })());
+  click(d.querySelector("#tank-sw button[data-mode='tanks']")); await sleep(50);
+  w.eval("renderTank(); renderTank()"); await sleep(20);
+  console.log("old scenes dropped after redraw (no leftover sims in the list after a tick):", w.eval("(() => { tankTick(performance.now()); return TANK_SIMS.size; })()"), "of", d.querySelectorAll(".tank, .pond-scene").length, "scenes on screen");
+  w.eval("window.matchMedia = () => ({ matches: true })"); w.eval("renderTank()");
+  console.log("reduced motion: fish placed, none registered to move:", d.querySelectorAll("#tank-body .tfish.sim").length > 0 && w.eval("[...TANK_SIMS].every(s => !s.still)") , "| still tanks flagged:", w.eval("[...document.querySelectorAll('.tank')].every(s => s.__sim.still)"), "| fish have positions:", /translate/.test(d.querySelector("#tank-body .tfish.sim").style.transform));
   const fb = d.querySelector("#tank-body .feed-btn"); click(fb); await sleep(50);
   console.log("feed: flakes", d.querySelectorAll("#tank-body .flake").length, "| tank feeding:", !!d.querySelector("#tank-body .feeding"), "| button:", fb.textContent, fb.disabled);
   await sleep(2800); console.log("feed done:", !d.querySelector("#tank-body .feeding"), fb.textContent, fb.disabled);

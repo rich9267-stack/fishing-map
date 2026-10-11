@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-11g", title: "🏊 Swimming + full screen", items: [
+      "🏊 Your fish now swim around the whole tank on their own, turn around, and some stay deeper in the back than others. The pond and lagoon fish swim too.",
+      "⛶ New Full screen button on your tanks, pond and lagoon. Tap a fish to see it; close with the ✕ button."
+    ] },
     { id: "2026-10-11f", title: "🐟 Fish that move", items: [
       "🐟 The fish in your tank now swish their tails, flutter their fins, sway and blink — each one a little differently.",
       "This is the first step toward a full aquarium: swimming, feeding by hand and more are coming."

@@ -203,7 +203,7 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   console.log("lagoon (salt): shown", vis("lagoon-body"), "| pond hidden", !vis("pond-body"), "| swimming:", d.querySelectorAll("#lagoon-body .pfish").length, "| species:", rowsOf("lagoon-body"), "| lagoon look:", !!d.querySelector("#lagoon-body .lagoon-scene"));
   click(d.querySelector("#tank-sw button[data-mode='tanks']")); await sleep(100);
   const first = d.querySelector(".tank-salt .tfish"); console.log("fish has a spoken label:", first.getAttribute("aria-label"));
-  click(first); console.log("tap fish info:", d.querySelector(".tank-salt + .tank-info").textContent.replace(/\s+/g, " "));
+  click(first); console.log("tap fish info:", d.querySelector(".tank-salt ~ .tank-info").textContent.replace(/\s+/g, " "));
   click(d.querySelector("#view-tank .stats-sw button[data-tab='tab-seasons']")); await sleep(200); console.log("switch to Seasons works:", vis("view-seasons") && !vis("view-tank"));
   w.eval("catchesBySpot = {}"); click($("tab-tank")); await sleep(100); click(d.querySelector("#tank-sw button[data-mode='lagoon']")); await sleep(50);
   console.log("empty tanks offer a button:", [...d.querySelectorAll("#tank-body .empty-nice .btn, #pond-body .empty-nice .btn, #lagoon-body .empty-nice .btn")].map(b => b.textContent).join(" | "), "|", txt("tank-sum"));
