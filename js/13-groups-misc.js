@@ -449,6 +449,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-13c", title: "🏅 Fish power", items: [
+      "🏅 Photographed catches with a length now have a rank: a tier (Common to Legendary), a Power number, and Strength / Speed / Stamina. You'll see it when you tap a fish in your tank, on catch lines in the feed and spot lists, in photo captions, and on a new “Strongest fish (Power)” board under Records. Add a photo to a fish to give it a rank."
+    ] },
     { id: "2026-10-13b", title: "🔎 Species suggestions", items: [
       "🔎 In Quick catch, type a few letters in “Other species” and tappable fish names now appear right under the box — it works after picking a photo from your camera roll too."
     ] },

@@ -1,0 +1,27 @@
+// Fish rank: power, tiers, stats, photo rule
+const fs = require("fs");
+const src = fs.readFileSync(__dirname + "/../js/15-fish-rank.js", "utf8");
+const wsrc = fs.readFileSync(__dirname + "/../js/07-measure-fishid.js", "utf8");
+const ref = wsrc.match(/const WEIGHT_REF = \[[\s\S]*?\n  \];/)[0];
+const wr = wsrc.match(/function weightRef[\s\S]*?\n  }\n/)[0];
+const run = new Function("photosBySpot", `${ref} ${wr} ${src}; return { fishRank, rankEntry, FISH_RANK_TABLE, rankLine };`);
+const R = run({});
+let bad = 0; const ok = (n, c) => { console.log((c ? "ok   " : "FAIL ") + n); if (!c) bad++; };
+const snook30 = R.fishRank({ species: "Snook", length_in: 30 }, true), snook20 = R.fishRank({ species: "snook", length_in: 20 }, true);
+console.log("snook 30:", JSON.stringify(snook30)); console.log("snook 20:", JSON.stringify(snook20));
+ok("bigger fish scores higher", snook30.power > snook20.power);
+ok("no photo, no rank", R.fishRank({ species: "snook", length_in: 30 }, false) === null);
+ok("no size, no rank", R.fishRank({ species: "snook" }, true) === null);
+ok("unknown species, no rank", R.fishRank({ species: "unicorn fish", length_in: 30 }, true) === null);
+ok("real weight works when no length", !!R.fishRank({ species: "snook", weight_lb: 8, weight_est: false }, true));
+ok("estimated weight alone does not", R.fishRank({ species: "snook", weight_lb: 8, weight_est: true }, true) === null);
+ok("red snapper beats generic snapper match", R.rankEntry("Red snapper")[0][0] === "red snapper");
+const tarpon = R.fishRank({ species: "tarpon", length_in: 72 }, true), pin = R.fishRank({ species: "pinfish", length_in: 6 }, true);
+ok("record-size tarpon is Legendary", tarpon.tier === "Legendary"); ok("pinfish stays Common", pin.tier === "Common");
+ok("rarity helps (permit > bluegill at full size)", R.fishRank({ species: "permit", length_in: 36 }, true).power > R.fishRank({ species: "bluegill", length_in: 11 }, true).power);
+ok("stats within 0–100", [snook30, tarpon, pin].every(x => Object.values(x.stats).every(v => v >= 1 && v <= 100)));
+ok("giant fish capped", R.fishRank({ species: "snook", length_in: 90 }, true).power === R.fishRank({ species: "snook", length_in: 44.2 }, true).power);
+ok("full-grown pinfish is below a small snook", R.fishRank({ species: "pinfish", length_in: 9 }, true).power < R.fishRank({ species: "snook", length_in: 22 }, true).power);
+ok("every ranked species also has a weight row", R.FISH_RANK_TABLE.every(r => R.fishRank({ species: r[0][0], length_in: r[1] }, true) && true));
+console.log(R.rankLine(snook30));
+process.exit(bad ? 1 : 0);

@@ -39,7 +39,7 @@
     const parts = [];
     if (c.length_in != null) parts.push(`${+Number(c.length_in).toFixed(2)}″`);
     if (c.weight_lb != null) parts.push((c.weight_est ? "≈" : "") + lbText(Number(c.weight_lb)));
-    return parts.length ? ` (${parts.join(", ")})` : "";
+    return parts.length ? ` (${parts.join(", ")}${typeof rankTag === "function" ? rankTag(c) : ""})` : "";
   }
   function updateSizeNote() {
     const q = id => catchForm.querySelector(id);

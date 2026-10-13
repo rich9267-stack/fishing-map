@@ -338,3 +338,7 @@ Fix (Oct 13): the fish-name suggestion list `#species-list` used to sit inside t
 
 ## Quick catch own suggestion chips (Oct 13)
 Phone's built-in datalist didn't show after a camera-roll photo, so `speciesSuggestFor()` (js/06) adds tappable chips under `#qc-species-other`. Test: tests/test84.js.
+
+## Fish rank, step 1 (Oct 13)
+js/15-fish-rank.js: FISH_RANK_TABLE (big-adult length, rarity, strength/speed/stamina per species), `fishRank(catch, hasPhoto)` → Power (40–~1000), tier (Common…Legendary), 3 stats (0–100). Photo + size required. Shown in the photo viewer caption. Client-side only; minigames will need a server copy (see claude/fish-rank-plan.md). Test: tests/test85.js.
+Fish rank step 1b: rank shown in tank fish info (`rankFill`), feed/catch lines via `sizeText` (+`rankTag`), photo caption, Records board "Strongest fish (Power)". Others' photos are looked up lazily (`rankWarm`, queue flushed after 300 ms, then `rankRedraw`). Test: tests/test86.js.

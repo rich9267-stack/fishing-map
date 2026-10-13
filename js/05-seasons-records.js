@@ -701,14 +701,19 @@
         const b = pool.sort((x, y) => board === "length" ? y.length_in - x.length_in : y.weight_lb - x.weight_lb)[0];
         value = board === "length" ? b.length_in : b.weight_lb;
         detail = `${cap((b.species || "").trim())}${recPlace(b) ? " · " + recPlace(b) : ""} · ${recDate(b)}`;
-        return { uid, c: b, value, label: board === "length" ? `${+Number(b.length_in).toFixed(2)}″` : lbText(Number(b.weight_lb)), detail };
+        return { uid, c: b, value, label: board === "length" ? `${+Number(b.length_in).toFixed(2)}″` : lbText(Number(b.weight_lb)), detail: detail + rankTag(b) };
+      }
+      if (board === "power") {
+        let best = null; cs.forEach(c => { const rk = rankOf(c); if (rk && (!best || rk.power > best.rk.power)) best = { c, rk }; });
+        if (!best) return null;
+        return { uid, c: best.c, value: best.rk.power, label: `${best.rk.icon} ${best.rk.power}`, detail: `${best.rk.tier} ${cap((best.c.species || "").trim())}${recSize(best.c) ? " (" + recSize(best.c) + ")" : ""} · 💪${best.rk.stats.strength} ⚡${best.rk.stats.speed} ❤️${best.rk.stats.stamina}` };
       }
       if (board === "fish") { value = cs.reduce((n, c) => n + (c.how_many || 1), 0); return { uid, c: cs[0], value, label: `${value} fish`, detail: `${cs.length} catch${cs.length === 1 ? "" : "es"}` }; }
       const set = new Map(); cs.forEach(c => { if (spKey(c)) set.set(spKey(c), cap((c.species || "").trim())); });
       value = set.size; if (!value) return null;
       return { uid, c: cs[0], value, label: `${value} species`, detail: [...set.values()].slice(0, 4).join(", ") + (set.size > 4 ? "…" : "") };
     }).filter(Boolean).sort((a, b) => b.value - a.value);
-    if (!rows.length) { box.appendChild(el("div", "empty", board === "length" ? "No lengths logged in this selection yet." : board === "weight" ? "No measured weights logged yet." : "Nothing to rank yet.")); return; }
+    if (!rows.length) { box.appendChild(el("div", "empty", board === "power" ? "No ranked fish yet — a fish needs a photo and a length." : board === "length" ? "No lengths logged in this selection yet." : board === "weight" ? "No measured weights logged yet." : "Nothing to rank yet.")); return; }
     const mineIdx = rows.findIndex(r => me && r.uid === me.id);
     rows.slice(0, 10).forEach((r, i) => box.appendChild(boardRow(i, r)));
     if (mineIdx >= 10) { box.appendChild(el("div", "spot-meta", "…")); box.appendChild(boardRow(mineIdx, rows[mineIdx])); }

@@ -413,6 +413,7 @@
     i.appendChild(el("div", null, tankFishText(f) || "No size logged for this one"));
     const when = c.caught_at ? new Date(c.caught_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
     i.appendChild(el("div", "spot-meta", ((opts && opts.other) ? "Their best — " : "Your best — ") + [when, f.spotName && !(opts && opts.noSpot) ? "at " + f.spotName : ""].filter(Boolean).join(" ")));
+    rankFill(i, c, () => !i.hidden && i.firstChild && i.firstChild.textContent.includes(f.species));
     if (f.pondCount) i.appendChild(el("div", "spot-meta", `${f.pondCount} smaller ${f.species} in the ${kind === "salt" ? "lagoon" : "pond"}`));
   }
   // Overflow fish live in their own scene: freshwater -> the pond, saltwater -> the lagoon (a count per species below it).
