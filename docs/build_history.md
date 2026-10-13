@@ -335,3 +335,6 @@ New fish (SEASONS in js/05-seasons-records.js, one entry each): Flounder, Triple
 
 Fix (Oct 13): the fish-name suggestion list `#species-list` used to sit inside the catch form, which is only attached to the page while it is open under a spot, so Quick catch's "Other species…" box (`#qc-species-other`) never showed suggestions. It is now one page-level `<datalist>` built from `SPECIES_SUGGEST` in js/06-catching.js; both boxes point at it.
 
+
+## Quick catch own suggestion chips (Oct 13)
+Phone's built-in datalist didn't show after a camera-roll photo, so `speciesSuggestFor()` (js/06) adds tappable chips under `#qc-species-other`. Test: tests/test84.js.

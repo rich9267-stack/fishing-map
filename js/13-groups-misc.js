@@ -449,6 +449,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-13b", title: "🔎 Species suggestions", items: [
+      "🔎 In Quick catch, type a few letters in “Other species” and tappable fish names now appear right under the box — it works after picking a photo from your camera roll too."
+    ] },
     { id: "2026-10-13a", title: "🐟 14 more fish", items: [
       "🐟 New fish in the app: flounder, tripletail, hogfish, greater amberjack, Atlantic spadefish, blue runner, little tunny (bonito), hardhead catfish, pinfish, black crappie, channel catfish, Florida gar, oscar and tilapia.",
       "📅 Each one has a Seasons card with best months, spawning, water-temperature and tips; flounder, tripletail, hogfish and amberjack also have size and season rules in the keeper checker. Always double-check with FWC.",

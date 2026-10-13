@@ -562,3 +562,4 @@
   .two > * { min-width: 0; }
   .two select { width: 100%; }
 
+  .sp-sugg { margin-top: 6px; }

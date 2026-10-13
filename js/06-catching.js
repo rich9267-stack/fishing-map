@@ -191,7 +191,7 @@
       });
       box.appendChild(b);
     });
-    $("qc-species-other").value = ""; $("qc-count").value = 1; $("qc-msg").textContent = "";
+    $("qc-species-other").value = ""; const sg = $("qc-species-other").nextElementSibling; if (sg && sg.classList.contains("sp-sugg")) sg.innerHTML = ""; $("qc-count").value = 1; $("qc-msg").textContent = "";
     fillBaitList();
     const last = Object.values(catchesBySpot).flat().filter(c => isMine(c) && c.bait).sort((a, b) => new Date(b.caught_at) - new Date(a.caught_at))[0];
     $("qc-bait").value = last ? last.bait : "";
@@ -727,6 +727,26 @@
     SPECIES_SUGGEST.forEach(n => { const o = document.createElement("option"); o.value = n; dl.appendChild(o); });
     document.body.appendChild(dl);
   })();
+  // Our own tappable suggestions (the phone's built-in list is unreliable, e.g. after picking a camera-roll photo)
+  function speciesSuggestFor(input) {
+    const box = el("div", "fchips sp-sugg"); box.setAttribute("role", "listbox"); box.setAttribute("aria-label", "Species suggestions");
+    input.insertAdjacentElement("afterend", box);
+    function refresh() {
+      const q = input.value.trim().toLowerCase(); box.innerHTML = "";
+      if (q.length < 2) return;
+      const hits = SPECIES_SUGGEST.filter(n => n.toLowerCase().includes(q) && n.toLowerCase() !== q)
+        .sort((a, b) => (a.toLowerCase().startsWith(q) ? 0 : 1) - (b.toLowerCase().startsWith(q) ? 0 : 1)).slice(0, 6);
+      hits.forEach(n => {
+        const b = el("button", "fchip", n); b.type = "button"; b.setAttribute("role", "option");
+        b.addEventListener("pointerdown", e => e.preventDefault());   // keep the keyboard up
+        b.addEventListener("click", () => { input.value = n; box.innerHTML = ""; input.dispatchEvent(new Event("input", { bubbles: true })); });
+        box.appendChild(b);
+      });
+    }
+    input.addEventListener("input", refresh);
+    return refresh;
+  }
+  speciesSuggestFor($("qc-species-other"));
   const catchForm = document.createElement("form");
   catchForm.className = "catch-form";
   catchForm.innerHTML = `
