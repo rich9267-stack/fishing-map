@@ -449,6 +449,12 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-13a", title: "🐟 14 more fish", items: [
+      "🐟 New fish in the app: flounder, tripletail, hogfish, greater amberjack, Atlantic spadefish, blue runner, little tunny (bonito), hardhead catfish, pinfish, black crappie, channel catfish, Florida gar, oscar and tilapia.",
+      "📅 Each one has a Seasons card with best months, spawning, water-temperature and tips; flounder, tripletail, hogfish and amberjack also have size and season rules in the keeper checker. Always double-check with FWC.",
+      "🐠 They swim in your tank with their own look, and weights are guessed from length like the others. The catch form also now suggests more fish as you type.",
+      "📐 On the 📊 Stats page, the Spot and Species pickers in Catch insights now stay inside the card."
+    ] },
     { id: "2026-10-12f", title: "♿ Easier map for everyone", items: [
       "📋 The map has a new “See as a list” button that jumps to your spots as a plain list.",
       "📍 When you're placing a spot, “Use map center” puts it exactly where the map is centred — no tap needed.",

@@ -4,6 +4,18 @@
   const TANK_FRESH_RE = /\b(largemouth|peacock|bluegill|crappie|catfish|tilapia|oscar|bowfin|gar|snakehead|knifefish|cichlid|sunfish|panfish|carp|pickerel|bream|shiner|warmouth|redear|bullhead)\b/i;
   // How each species is drawn: shape (torpedo, deep, bass, long, flat), colours and a marking.
   const TANK_LOOKS = [
+    // newer fish first, so specific names win over broad ones ("amberjack" before "jack")
+    { m: /tripletail/, shape: "deep", body: "#8a7b4f", belly: "#cdbf93", mark: "dots" },
+    { m: /flounder/, shape: "flat", body: "#9a8461", belly: "#e5d9bd", mark: "dots" },
+    { m: /hogfish|hog snapper/, shape: "deep", body: "#c9805f", belly: "#f1d3c1", mark: "" },
+    { m: /amberjack/, shape: "torpedo", body: "#8f8a58", belly: "#e7e2bd", mark: "stripe" },
+    { m: /spadefish/, shape: "deep", body: "#9aa3a8", belly: "#e6eaec", mark: "bars" },
+    { m: /blue runner|hardtail/, shape: "torpedo", body: "#5f8fa6", belly: "#dfeaee", mark: "" },
+    { m: /little tunny|bonito|false albacore/, shape: "torpedo", body: "#5f7f94", belly: "#e6edf0", mark: "dots" },
+    { m: /pinfish/, shape: "deep", body: "#b9b27a", belly: "#ece8c4", mark: "stripe" },
+    { m: /crappie|speckled perch/, shape: "deep", body: "#a6aa8a", belly: "#eef0dc", mark: "dots" },
+    { m: /\boscar\b/, shape: "deep", body: "#55503f", belly: "#d98a3d", mark: "bars" },
+    { m: /tilapia/, shape: "deep", body: "#8fa3a5", belly: "#e3ecea", mark: "bars" },
     { m: /snook/, shape: "torpedo", body: "#bcbf78", belly: "#f3f1d2", mark: "stripe" },
     { m: /tarpon/, shape: "deep", body: "#a9b6c0", belly: "#eef2f5", mark: "scales" },
     { m: /redfish|red drum/, shape: "torpedo", body: "#c8683a", belly: "#f2cbaa", mark: "spot" },

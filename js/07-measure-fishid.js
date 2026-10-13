@@ -10,7 +10,11 @@
     [["mahi", "dolphin"], 40, 19.6], [["wahoo"], 60, 48], [["black grouper"], 36, 25], [["red grouper"], 24, 7], [["gag"], 30, 12],
     [["goliath"], 60, 120], [["barracuda"], 40, 14.5], [["cobia"], 40, 19], [["ladyfish"], 20, 1.5], [["black drum"], 30, 15],
     [["largemouth"], 20, 5], [["peacock"], 18, 4], [["snakehead"], 30, 10], [["bluegill", "panfish", "shellcracker"], 8, 0.5],
-    [["mayan", "cichlid"], 10, 0.9], [["mullet"], 16, 1.6]
+    [["mayan", "cichlid"], 10, 0.9], [["mullet"], 16, 1.6],
+    [["tripletail"], 24, 7], [["flounder"], 16, 1.8], [["hogfish"], 20, 5.5], [["amberjack"], 36, 22], [["spadefish"], 14, 2.4],
+    [["blue runner", "hardtail"], 14, 1.3], [["little tunny", "bonito", "false albacore"], 28, 9], [["pinfish"], 6, 0.1],
+    [["hardhead", "gafftopsail"], 12, 0.9], [["crappie", "speckled perch"], 11, 0.8], [["channel catfish"], 20, 3.2],
+    [["florida gar", "longnose gar", "spotted gar"], 24, 2.5], [["oscar"], 10, 1.1], [["tilapia"], 12, 1.6]
   ];
   function weightRef(species) {
     const sp = (species || "").toLowerCase();

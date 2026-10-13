@@ -557,3 +557,8 @@
   .shop-own { color: #1f7a3d; font-weight: 600; }
   .leaflet-interactive:focus-visible { outline: 3px solid #f2b134; outline-offset: 2px; }
   .place-banner { flex-wrap: wrap; gap: 8px; }
+  /* selects with long option names (spot names) must never push a card wider than the screen */
+  select { max-width: 100%; }
+  .two > * { min-width: 0; }
+  .two select { width: 100%; }
+

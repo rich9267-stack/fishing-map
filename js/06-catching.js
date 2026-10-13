@@ -682,6 +682,13 @@
       <option>Goliath grouper (released)</option><option>Gulf toadfish</option>
       <option>Peacock bass</option><option>Largemouth bass</option><option>Mayan cichlid</option>
       <option>Bluegill</option><option>Clown knifefish</option>
+      <option>Spotted seatrout</option><option>Whiting</option><option>Flounder</option><option>Tripletail</option>
+      <option>Hogfish</option><option>Greater amberjack</option><option>Atlantic spadefish</option><option>Blue runner</option>
+      <option>Little tunny (bonito)</option><option>Hardhead catfish</option><option>Pinfish</option><option>Cobia</option>
+      <option>Kingfish (king mackerel)</option><option>Mahi-mahi</option><option>Wahoo</option><option>Sailfish</option>
+      <option>Red snapper</option><option>Red grouper</option><option>Black grouper</option><option>Black crappie</option>
+      <option>Channel catfish</option><option>Florida gar</option><option>Oscar</option><option>Tilapia</option>
+      <option>Bullseye snakehead</option>
     </datalist>
     <div class="two">
       <div><label for="c-count">How many</label><input id="c-count" type="number" min="1" max="500" value="1"></div>
