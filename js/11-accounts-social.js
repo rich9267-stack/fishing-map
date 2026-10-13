@@ -545,7 +545,7 @@
     strangerSpots().forEach(x => {
       const col = WATER_COLOR[x.water_type] || "#555";
       L.circle([x.lat, x.lng], { radius: 400, color: col, weight: 1, dashArray: "4 4", fillColor: col, fillOpacity: 0.08, interactive: false }).addTo(pinLayer);
-      pubMarkers[x.id] = L.circleMarker([x.lat, x.lng], { radius: 8, weight: 3, color: "#ffffff", fillColor: col, fillOpacity: 0.85 }).bindPopup(() => pubPopup(x)).addTo(pinLayer);
+      pubMarkers[x.id] = L.circleMarker([x.lat, x.lng], { radius: 8, weight: 3, color: "#ffffff", fillColor: col, fillOpacity: 0.85, a11y: "Public spot: " + (x.name || "unnamed") }).bindPopup(() => pubPopup(x)).addTo(pinLayer);
     });
     if (pubFocus && pubMarkers[pubFocus]) { const mk = pubMarkers[pubFocus]; pubFocus = null; map.setView(mk.getLatLng(), 15); mk.openPopup(); }
   }

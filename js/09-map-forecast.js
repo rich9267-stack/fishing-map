@@ -728,8 +728,43 @@
   $("tab-tank").addEventListener("click", () => { stopPlacing(); showView("tank"); });
   $("tab-feed").addEventListener("click", () => { stopPlacing(); showView("feed"); });
 
+  // ---- ♿ Map accessibility: pins you can reach with Tab and open with Enter, labelled pop-ups, on/off state on the map buttons ----
+  let mapKeyPin = null; // the pin a keyboard user opened, so focus can go back to it when the pop-up closes
+  let mapHooked = false;
+  function mapHookInstall() { // any shape given an `a11y` label becomes a button for keyboards and screen readers (needs Leaflet, so it runs once Leaflet exists)
+    if (mapHooked || !window.L || !L.Path) return; mapHooked = true;
+    L.Path.addInitHook(function () {
+      this.on("add", () => {
+        const p = this._path; if (!p || !this.options.a11y || this.options.interactive === false) return;
+        p.setAttribute("tabindex", "0"); p.setAttribute("role", "button"); p.setAttribute("aria-label", this.options.a11y + ". Press Enter for details.");
+        p.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); mapKeyPin = p; this.openPopup(); } });
+      });
+    });
+  }
+  mapHookInstall();
+  function mapA11yInit() {
+    const m = $("map"); m.setAttribute("role", "region"); m.setAttribute("aria-label", "Fishing map. Use the arrow keys to move the map and plus or minus to zoom. Tab to reach the pins. The list button above gives the same places as a list.");
+    map.on("popupopen", e => {
+      const c = e.popup.getElement && e.popup.getElement(); if (!c) return;
+      const nm = c.querySelector(".pop-name"); c.setAttribute("role", "dialog"); c.setAttribute("aria-label", nm ? nm.textContent.trim() : "Map details"); c.tabIndex = -1;
+      if (mapKeyPin) { const f = c.querySelector("button, a[href]") || c; try { f.focus({ preventScroll: true }); } catch (err) { /* fine */ } }
+    });
+    map.on("popupclose", () => setTimeout(() => { // another pop-up opening straight away keeps focus where it is
+      if (mapKeyPin && !(map._popup && map.hasLayer(map._popup))) { try { if (mapKeyPin.isConnected) mapKeyPin.focus({ preventScroll: true }); } catch (err) { /* fine */ } mapKeyPin = null; }
+    }, 0));
+  }
+  // The map's on/off buttons show "on" with a CSS class; this mirrors it as aria-pressed so a screen reader says "pressed" / "not pressed"
+  ["map-sst", "map-chl", "map-sight", "map-pub", "mx-chart", "mx-reef", "mx-ramp", "mx-zone"].forEach(id => {
+    const b = $(id); if (!b) return;
+    const sync = () => b.setAttribute("aria-pressed", String(b.classList.contains("on")));
+    sync(); if (window.MutationObserver) new MutationObserver(sync).observe(b, { attributes: true, attributeFilter: ["class"] });
+  });
+  $("map-list").addEventListener("click", () => { stopPlacing(); showView("list"); });
+  $("place-center").addEventListener("click", () => { if (map) onMapTap(map.getCenter()); });
+
   function initMap() {
     if (map || !window.L) return;
+    mapHookInstall();
     map = L.map("map", { zoomControl: true }).setView([LAT, LNG], 12);
     streetTiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19, attribution: "&copy; OpenStreetMap contributors"
@@ -739,6 +774,7 @@
     });
     pinLayer = L.layerGroup().addTo(map);
     map.on("click", e => onMapTap(e.latlng));
+    mapA11yInit();
     let fitted = false;
     map.whenReady(() => { if (!fitted) { fitted = true; fitToSpots(); } });
   }
@@ -791,7 +827,8 @@
     filteredSpots().filter(s => s.lat != null && s.lng != null).forEach(s => {
       L.circleMarker([s.lat, s.lng], {
         radius: 9, weight: 3, color: s.is_private ? "#222222" : "#ffffff", dashArray: s.is_private ? "3 3" : null,
-        fillColor: WATER_COLOR[s.water_type] || "#555", fillOpacity: 1
+        fillColor: WATER_COLOR[s.water_type] || "#555", fillOpacity: 1,
+        a11y: `${s.name}, ${cap(s.spot_type || "spot")}, ${WATER_LABEL[s.water_type] || s.water_type || "water"}${s.is_private ? ", private" : ""}${s.is_exact === false ? ", approximate location" : ""}`
       }).bindPopup(() => popupFor(s)).addTo(pinLayer);
     });
     renderPublicPins();
@@ -829,7 +866,8 @@
     placing = p;
     showView("map");
     $("place-banner").hidden = false;
-    $("place-text").textContent = p.mode === "plan" ? "Tap a pin, then “Use this spot” to plan your trip there" : p.mode === "move" ? `Tap the map where “${p.spot.name}” is` : "Tap the map where the spot is";
+    $("place-center").hidden = p.mode === "plan";
+    $("place-text").textContent = p.mode === "plan" ? "Tap a pin, then “Use this spot” to plan your trip there" : p.mode === "move" ? `Tap the map where “${p.spot.name}” is, or move the map and use “Use map center”` : "Tap the map where the spot is, or move the map and use “Use map center”";
     $("map").scrollIntoView({ behavior: "smooth", block: "center" });
   }
   function stopPlacing() { placing = null; planPick = null; $("place-banner").hidden = true; }
@@ -888,7 +926,7 @@
     navigator.geolocation.getCurrentPosition(pos => {
       const ll = [pos.coords.latitude, pos.coords.longitude];
       if (meMarker) meMarker.setLatLng(ll);
-      else meMarker = L.circleMarker(ll, { radius: 7, weight: 3, color: "#fff", fillColor: "#e53935", fillOpacity: 1 }).addTo(map).bindPopup("You are here");
+      else meMarker = L.circleMarker(ll, { radius: 7, weight: 3, color: "#fff", fillColor: "#e53935", fillOpacity: 1, a11y: "Your location" }).addTo(map).bindPopup("You are here");
       map.setView(ll, 15);
     }, () => alert("Couldn't get your location — allow it in your browser settings."), { enableHighAccuracy: true, timeout: 15000 });
   });
@@ -1030,7 +1068,7 @@
     if (!suggLayer) suggLayer = L.layerGroup();
     suggLayer.clearLayers();
     openSuggestions().forEach(g => {
-      L.circleMarker([g.lat, g.lng], { radius: 6, weight: 2, color: "#777", fillColor: "#ffffff", fillOpacity: 1 })
+      L.circleMarker([g.lat, g.lng], { radius: 6, weight: 2, color: "#777", fillColor: "#ffffff", fillOpacity: 1, a11y: `Suggested spot: ${g.name}` })
         .bindPopup(() => {
           const box = document.createElement("div");
           box.appendChild(el("div", "pop-name", `${KIND_EMOJI[g.kind] || ""} ${g.name}`));
@@ -1300,7 +1338,7 @@
       d.features.forEach(f => {
         if (!f.geometry || f.geometry.y == null) return;
         const ll = [f.geometry.y, f.geometry.x], a = f.attributes || {};
-        const m = L.circleMarker(ll, { radius: kind === "reef" ? 6 : 7, color: "#fff", weight: 1.5, fillColor: def.color, fillOpacity: 0.95 });
+        const m = L.circleMarker(ll, { radius: kind === "reef" ? 6 : 7, color: "#fff", weight: 1.5, fillColor: def.color, fillOpacity: 0.95, a11y: (kind === "reef" ? "Artificial reef" : "Boat ramp") + ": " + (mxVal(a.RampName) || mxVal(a.Name) || "unnamed") });
         m.bindPopup(() => kind === "reef" ? reefPopup(a, ll) : rampPopup(a, ll));
         m.addTo(g);
       });
@@ -1326,7 +1364,7 @@
         if (seq !== mxSeq.zone || !mxOn.zone) return;
         if (d.error || !Array.isArray(d.features)) continue;
         const layer = L.geoJSON(d, { style: { color: "#c0392b", weight: 2, fillColor: "#c0392b", fillOpacity: 0.12, dashArray: "6 4" },
-          onEachFeature: (f, l) => l.bindPopup(() => zonePopup(f.properties || {})) });
+          onEachFeature: (f, l) => { l.options.a11y = "Protected zone: " + ((f.properties && (f.properties.NAME || f.properties.Name || f.properties.SITE_NAME)) || "details"); l.bindPopup(() => zonePopup(f.properties || {})); } });
         layer.addTo(map); mxLayers.zone = layer;
         mxMsg.zone = d.features.length ? "" : "No protected zones in this view.";
         mxNote(); return;

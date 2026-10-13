@@ -491,7 +491,7 @@
     if (!sightLayer) sightLayer = L.layerGroup();
     sightLayer.clearLayers();
     (sightings || []).forEach(o => {
-      L.circleMarker([o.lat, o.lng], { radius: 5, weight: 1.5, color: "#fff", fillColor: "#8e44ad", fillOpacity: 0.9 })
+      L.circleMarker([o.lat, o.lng], { radius: 5, weight: 1.5, color: "#fff", fillColor: "#8e44ad", fillOpacity: 0.9, a11y: "Public sighting: " + o.name })
         .bindPopup(() => {
           const box = document.createElement("div");
           box.appendChild(el("div", "pop-name", "👀 " + o.name));

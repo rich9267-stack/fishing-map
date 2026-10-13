@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=65">
+<link rel="stylesheet" href="css/app.css?v=66">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -470,14 +470,16 @@
   </div>
 
   <div id="view-map" hidden>
-    <div class="place-banner" id="place-banner" hidden>
+    <div class="place-banner" id="place-banner" role="status" aria-live="polite" hidden>
       <span id="place-text">Tap the map where the spot is</span>
+      <button type="button" id="place-center">Use map center</button>
       <button type="button" id="place-cancel">Cancel</button>
     </div>
-    <div class="filter-status" id="map-filter-note" style="margin:0 0 8px" hidden></div>
+    <div class="filter-status" id="map-filter-note" role="status" aria-live="polite" style="margin:0 0 8px" hidden></div>
     <div id="map"></div>
     <div class="map-tools">
       <button class="btn small" id="map-add" type="button">+ Add a spot on the map</button>
+      <button class="btn ghost small" id="map-list" type="button">📋 See as a list</button>
       <button class="btn ghost small" id="map-me" type="button">◎ Show me</button>
       <button class="btn ghost small" id="map-layer" type="button">🛰 Satellite</button>
       <button class="btn ghost small" id="map-sugg" type="button">☆ Show suggestions</button>
@@ -494,7 +496,7 @@
       <button class="btn ghost small" id="mx-ramp" type="button">⛵ Boat ramps</button>
       <button class="btn ghost small" id="mx-zone" type="button">🚫 Protected zones</button>
     </div>
-    <div class="spot-meta" id="mx-note" hidden></div>
+    <div class="spot-meta" id="mx-note" role="status" aria-live="polite" hidden></div>
     <div class="legend">
       <span><span class="dot" style="background:#1d6fd6"></span>Saltwater</span>
       <span><span class="dot" style="background:#16a085"></span>Brackish / tidal canal</span>
@@ -944,20 +946,20 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=65"></script>
-<script src="js/02-spots.js?v=65"></script>
-<script src="js/03-photos.js?v=65"></script>
-<script src="js/04-insights.js?v=65"></script>
-<script src="js/05-seasons-records.js?v=65"></script>
-<script src="js/06-catching.js?v=65"></script>
-<script src="js/07-measure-fishid.js?v=65"></script>
-<script src="js/08-feed-plans.js?v=65"></script>
-<script src="js/09-map-forecast.js?v=65"></script>
-<script src="js/10-tools-safety.js?v=65"></script>
-<script src="js/11-accounts-social.js?v=65"></script>
-<script src="js/12-contests-alerts.js?v=65"></script>
-<script src="js/13-groups-misc.js?v=65"></script>
-<script src="js/14-tank.js?v=65"></script>
-<script src="js/99-boot.js?v=65"></script>
+<script src="js/01-core.js?v=66"></script>
+<script src="js/02-spots.js?v=66"></script>
+<script src="js/03-photos.js?v=66"></script>
+<script src="js/04-insights.js?v=66"></script>
+<script src="js/05-seasons-records.js?v=66"></script>
+<script src="js/06-catching.js?v=66"></script>
+<script src="js/07-measure-fishid.js?v=66"></script>
+<script src="js/08-feed-plans.js?v=66"></script>
+<script src="js/09-map-forecast.js?v=66"></script>
+<script src="js/10-tools-safety.js?v=66"></script>
+<script src="js/11-accounts-social.js?v=66"></script>
+<script src="js/12-contests-alerts.js?v=66"></script>
+<script src="js/13-groups-misc.js?v=66"></script>
+<script src="js/14-tank.js?v=66"></script>
+<script src="js/99-boot.js?v=66"></script>
 </body>
 </html>

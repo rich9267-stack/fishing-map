@@ -449,6 +449,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-12f", title: "♿ Easier map for everyone", items: [
+      "📋 The map has a new “See as a list” button that jumps to your spots as a plain list.",
+      "📍 When you're placing a spot, “Use map center” puts it exactly where the map is centred — no tap needed.",
+      "⌨️ Screen readers and keyboards can now reach every map pin, hear its name, and open its details. The map's on/off buttons now say whether they're on."
+    ] },
     { id: "2026-10-12e", title: "🔊 Tank sounds", items: [
       "🔊 The 🐠 Tank tab has a new Sound button. Sound starts OFF — tap it to turn on a soft water hum, bubbles, food plops, nibbles, the treasure chest creaking open, and a little “ding” when you earn coins.",
       "🔇 Tap the same button any time to mute. It remembers your choice on this phone, and it's in full screen too. Silent mode on your phone still wins."
