@@ -453,6 +453,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14r", title: "💬 Tap a name in Messages", items: [
+      "In your Messages list, tap a friend's name to open their profile — tap anywhere else on the row to open the chat, as before."
+    ] },
     { id: "2026-10-14q", title: "📲 Your lists follow you, more tappable names", items: [
       "★ Want to try and ✕ Not interested on suggested spots now sync across all your devices — set them on your phone, see them on your computer. They're private to you.",
       "Tap a person's name on a fish's species page (longest / heaviest / strongest) or in a photo's caption to open their profile."

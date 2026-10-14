@@ -626,7 +626,8 @@
       const msgs = chatMsgsAll.filter(m => chatOther(m) === id), l = msgs[msgs.length - 1], un = unreadFor(id);
       const row = el("div", "feed-top"); row.style.cssText = "padding:10px 0;border-bottom:1px solid var(--line);align-items:center;cursor:pointer";
       const left = el("div"); left.style.minWidth = "0";
-      left.appendChild(el("b", null, profName(id) || "Someone"));
+      { const nb = el("b"), nm = profName(id) || "Someone";   // the name is tappable (opens their profile, closing Messages first); tapping elsewhere on the row still opens the chat
+        nb.appendChild(typeof personLink === "function" ? personLink(id, nm, null, () => $("chat-close").click()) : document.createTextNode(nm)); left.appendChild(nb); }
       left.appendChild(el("div", "spot-meta", l ? (l.sender === me.id ? "You: " : "") + (l.body.length > 44 ? l.body.slice(0, 44) + "…" : l.body) : "No messages yet — say hi"));
       row.appendChild(left);
       const right = el("span", "spot-meta");

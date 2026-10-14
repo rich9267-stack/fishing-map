@@ -426,3 +426,6 @@ Fishbrain audit (Oct 14): docs/fishbrain-audit.md (also project doc claude/fishb
 - Names: `personLink(id,label,cls,before)` got an optional `before` callback (closes the species sheet / photo viewer first). Species page Longest / Heaviest / Strongest and the photo viewer caption now use it; your own name stays plain. Not done: chat list.
 - Tests: test106 (new).
 
+
+## v94 — tappable names in the Messages list
+- `renderChat()` (js/11): each row's name is now `personLink(id, name, null, () => $("chat-close").click())` — tap the name = their profile (Messages closes first); tap the rest of the row = open the chat as before. Test: test107 (new, asserts and exits non-zero on failure). Tappable names now cover every list/caption. Not done: the name in the open chat's title bar.
