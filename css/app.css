@@ -577,3 +577,23 @@
   .fk-stat { display: block; font-size: .85rem; } .fk-track { display: block; height: 8px; border-radius: 4px; background: var(--line); margin-top: 2px; overflow: hidden; }
   .fk-fill { display: block; height: 100%; background: var(--accent); }
   .fk-card:focus-visible { outline: 3px solid #f2b134; outline-offset: 2px; }
+
+  /* 🏁 Fish race (js/16) */
+  .race-pick { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0; scroll-snap-type: x proximity; }
+  .race-fish { appearance: none; font: inherit; color: var(--text); background: var(--card); border: 2px solid var(--line); border-radius: 12px; padding: 6px 10px; min-width: 104px; min-height: 44px; display: flex; flex-direction: column; align-items: center; gap: 2px; scroll-snap-align: start; cursor: pointer; }
+  .race-fish.on { border-color: #f2b134; box-shadow: 0 0 0 1px #f2b134 inset; }
+  .race-fish:focus-visible, .race-go:focus-visible { outline: 3px solid #f2b134; outline-offset: 2px; }
+  .race-fname { font-weight: 600; font-size: 14px; text-align: center; }
+  .race-class { font-size: 12px; font-weight: 700; color: var(--accent); }
+  .race-go { width: 100%; margin: 6px 0; font-size: 17px; min-height: 48px; }
+  .race-track { margin-top: 8px; }
+  .race-lane { margin: 6px 0; }
+  .race-lane.me .race-who { font-weight: 700; color: #b7791f; }
+  .race-who { font-size: 13px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .race-water { position: relative; height: 34px; border-radius: 8px; background: linear-gradient(90deg, #cfe9f5, #a9d6ec); border: 1px solid var(--line); overflow: hidden; }
+  .race-lane.me .race-water { border-color: #f2b134; }
+  .race-swimmer { position: absolute; left: 0; top: 4px; line-height: 0; }
+  .race-finish { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; background: repeating-linear-gradient(0deg, #222 0 6px, #fff 6px 12px); opacity: .7; }
+  .race-place { position: absolute; right: 12px; top: 7px; font-size: 13px; font-weight: 700; color: #123; }
+  .race-result { margin-top: 10px; padding: 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); }
+  @media (prefers-color-scheme: dark) { .race-water { background: linear-gradient(90deg, #17384a, #0f2a3a); } .race-place { color: #e8f2f8; } .race-lane.me .race-who { color: #f2b134; } }

@@ -268,6 +268,7 @@
     if ($("view-insights").hidden) return;
     renderRecords();
     if (typeof renderMyFish === "function") renderMyFish();
+    if (typeof renderRace === "function") renderRace();
     renderYearReview();
     renderTackle();
     fillInsightPickers();
