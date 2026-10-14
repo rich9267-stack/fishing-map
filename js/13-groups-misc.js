@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14f", title: "📸 Right spot?", items: [
+      "📸 When you log a catch, the app checks where the photo was taken (or where you are). If the spot you picked is more than half a mile away, it says so and offers a one-tap fix — the nearer saved spot, or a new spot right there.",
+      "If you save it far away anyway, it asks once to be sure. No more catches pinned to the wrong water."
+    ] },
     { id: "2026-10-14e", title: "📩 Send a spot to a friend", items: [
       "📩 On any of your spots, tap \"Send to a friend\" and pick who. Only that friend sees its exact pin and notes — even if it's a 🔒 private spot — and they get a message from you.",
       "Changed your mind? Tap \"✓ Shared · Stop\" and it disappears from their map. Your catches there keep their own privacy either way."

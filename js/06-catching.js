@@ -42,7 +42,7 @@
     qc.pos = null;
     if (!navigator.geolocation) { $("qc-where").textContent = "📍 Location not available"; return; }
     qc.watch = navigator.geolocation.watchPosition(p => {
-      qc.pos = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: p.coords.accuracy, at: new Date().toISOString() };
+      qc.pos = { lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: p.coords.accuracy, at: new Date().toISOString(), from: "gps" };
       updateWhere();
       if (!$("qc-review").hidden) fillSpotChoices();
     }, () => { $("qc-where").textContent = "📍 Couldn't get location — you can pick the spot"; },
@@ -51,7 +51,7 @@
   function stopLocation() { if (qc.watch != null) navigator.geolocation.clearWatch(qc.watch); qc.watch = null; }
 
   function openQuickCatch() {
-    qc.blob = null; qc.when = null; qc.source = ""; qc.visTouched = false;
+    qc.blob = null; qc.when = null; qc.source = ""; qc.visTouched = false; qc.farOk = null;
     $("qc-length").value = ""; $("qc-weight").value = ""; $("qc-size-note").textContent = "";
     $("qc-spot").innerHTML = ""; // start fresh — don't carry over the last catch's spot
     $("qc").hidden = false; $("qc-cam").hidden = false; $("qc-review").hidden = true;
@@ -107,7 +107,33 @@
     $("qc-spot-note").textContent = v === "__new"
       ? "A private spot will be created here — add its details later with ✎ Edit spot."
       : !qc.pos ? "No location yet — pick the spot you're at." : "";
+    qcWhereCheck();
     syncQcVis(); qcContestHint();
+  }
+  // 📸 Location check (Fishbrain audit item 9): is the picked spot far from where the photo was taken / where you are?
+  // Live GPS only counts when it's reasonably accurate (within ~800 m). Offers a one-tap fix: a nearer saved spot, or a new spot here.
+  const QC_FAR_MI = 0.5;
+  function qcFar() {
+    const v = $("qc-spot").value, sp = (spots || []).find(x => x.id === v);
+    if (!qc.pos || !sp || !hasLoc(sp) || (qc.pos.acc != null && qc.pos.acc > 800)) return null;
+    const d = miles(sp.lat, sp.lng, qc.pos.lat, qc.pos.lng);
+    return d > QC_FAR_MI ? { sp, d } : null;
+  }
+  function qcWhereCheck() {
+    const box = $("qc-where-check"); if (!box) return;
+    box.innerHTML = "";
+    const far = qcFar();
+    box.hidden = !far; if (!far) return;
+    const what = qc.pos.from === "photo" ? "This photo was taken" : "You're";
+    box.appendChild(el("div", null, `⚠️ ${what} ${far.d.toFixed(1)} mi from ${far.sp.name}. Is that the right spot?`));
+    const near = nearbySpots(qc.pos)[0];
+    const fix = (text, value) => {
+      const b = el("button", "btn small", text); b.type = "button";
+      b.addEventListener("click", () => { $("qc-spot").value = value; spotNote(); });
+      box.appendChild(b);
+    };
+    if (near && near.s.id !== far.sp.id && near.d <= 0.3) fix(`📍 Use ${near.s.name} instead (${near.d < 0.02 ? (qc.pos.from === "photo" ? "right where the photo was taken" : "right where you are") : fmtDist(near.d) + " away"})`, near.s.id);
+    else if ([...$("qc-spot").options].some(o => o.value === "__new")) fix("➕ Make a new spot right here", "__new");
   }
   $("qc-spot").addEventListener("change", spotNote);
 
@@ -284,6 +310,12 @@
     if (!species) { $("qc-msg").className = "msg err"; $("qc-msg").textContent = "Tap a species (or type one)."; return; }
     const choice = $("qc-spot").value;
     if (!choice) { $("qc-msg").className = "msg err"; $("qc-msg").textContent = "Pick a spot."; return; }
+    const far = qcFar();
+    if (far && far.d > 1 && qc.farOk !== choice) {
+      const ok = await askOk(`${qc.pos.from === "photo" ? "This photo was taken" : "You're"} ${far.d.toFixed(1)} miles from ${far.sp.name}.\nSave the catch at ${far.sp.name} anyway?`);
+      if (!ok) return;
+      qc.farOk = choice;
+    }
     const item = {
       id: newId(), when: (qc.when || new Date()).toISOString(), pos: qc.pos || null, choice, species,
       count: Math.max(1, Math.min(500, parseInt($("qc-count").value, 10) || 1)),
@@ -541,7 +573,7 @@
     qc.when = validTime ? info.when : new Date();
     const fmt = d => d.toLocaleString([], { month: "short", day: "numeric", year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined, hour: "numeric", minute: "2-digit" });
     const parts = [validTime ? `🕒 Taken ${fmt(qc.when)} (from the photo)` : "🕒 No time in this photo — using now"];
-    if (info.lat != null) { stopLocation(); qc.pos = { lat: info.lat, lng: info.lng }; parts.push("📍 Location from the photo"); }
+    if (info.lat != null) { stopLocation(); qc.pos = { lat: info.lat, lng: info.lng, from: "photo" }; parts.push("📍 Location from the photo"); }
     else if (Date.now() - qc.when > 30 * 60000) {
       // older photo: where you are now isn't where it was taken
       stopLocation(); qc.pos = null; parts.push("📍 No location in this photo — pick the spot below");

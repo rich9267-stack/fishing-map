@@ -1,6 +1,6 @@
 # Fishbrain research & audit (Oct 14, 2026)
 
-**Status:** items 1, 3 and 4 built Oct 14 (v78); item 2 built Oct 14 (v79); items 6 and 7 built Oct 14 (v80); item 8 built Oct 14 (v81). Richard: do #5 (delete my account) last; next in order is #9.
+**Status:** items 1, 3 and 4 built Oct 14 (v78); item 2 built Oct 14 (v79); items 6 and 7 built Oct 14 (v80); item 8 built Oct 14 (v81); item 9 built Oct 14 (v82). Richard: do #5 (delete my account) last; next in order is #10.
 
 What Fishbrain does, how its screens flow, what anglers love and hate about it, and a ranked list of fixes and missing features for our Fishing Map. Everything we'd build stays **$0** and fits our friends-first, no-spot-burning approach.
 
@@ -70,7 +70,7 @@ Effort: **S** = one session, **M** = one or two sessions, **L** = bigger. All $0
 | 6 | ✅ v80 · **⏰ Bite time per species** — pick a fish in the 3-day outlook; hours scored from catches of that fish + its comfortable water temperature | BiteTime is a Pro headline feature; we score per spot only | M |
 | 7 | ✅ v80 · **👑 King of the spot** — biggest fish (and highest Power) logged at each spot by you and friends, crown on the map pin | "King of the Water" is a fun Fishbrain hook; we have the records, just not per spot | S |
 | 8 | ✅ v81 · **📍 Send a spot to one friend** — share a private spot in Messages, only that friend sees it | Fishbrain lets you share a private waypoint with one buddy | S–M |
-| 9 | **📸 Location check on new catches** — if the photo's GPS is over a mile from the spot you picked, ask "Was this at ___ instead?" | Wrong locations are Fishbrain's #4 complaint; we already read the photo's GPS | S |
+| 9 | ✅ v82 · **📸 Location check on new catches** — if the photo's GPS is over a mile from the spot you picked, ask "Was this at ___ instead?" | Wrong locations are Fishbrain's #4 complaint; we already read the photo's GPS | S |
 | 10 | **🌎 Public feed filters** — "near me" and "last 7 days" | Fishbrain's feed is noisy and can't filter to recent | S |
 | 11 | **🏞 More public water for new users** — FWC freshwater fishing sites / fish attractors on the map | Fishbrain's value comes from data; a new friend joining us starts with an empty map | M |
 | 12 | **🌊 Freshwater depth contours** — only where FWC publishes free lake maps | Depth maps are Pro; free data is thin for canals | L |
