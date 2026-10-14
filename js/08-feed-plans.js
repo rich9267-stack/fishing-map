@@ -58,6 +58,20 @@
     feedComments[c.id] = (feedComments[c.id] || []).filter(x => x !== cm);
     redrawFeeds();
   }
+  // A person's name that opens their profile (tap). Your own name and unknown people stay plain text.
+  function personLink(id, label, cls) {
+    if (!id || !me || id === me.id) return el("span", cls || null, label);
+    const b = el("button", "linkbtn who-link" + (cls ? " " + cls : ""), label); b.type = "button";
+    b.setAttribute("aria-label", "Open " + label + "'s profile");
+    b.addEventListener("click", e => { e.stopPropagation(); if (typeof showProfile === "function") showProfile(id); else openProfile(id); });
+    return b;
+  }
+  // "Mike, Sam and You" as a row of tappable names
+  function personList(items, sep) {
+    const f = document.createDocumentFragment();
+    items.forEach((x, i) => { if (i) f.appendChild(document.createTextNode(sep || ", ")); f.appendChild(personLink(x.id, x.label)); });
+    return f;
+  }
   function feedCard(c, o) {
       const spot = (spots || []).find(x => x.id === c.spot_id);
       const item = el("div", "feed-item");
@@ -104,7 +118,7 @@
         cms.forEach(cm => {
           const p = el("p");
           if (cm.review_state === "blurred") markReview(p, true, cm.id);
-          p.appendChild(el("b", null, (cm.author || "Someone") + ": "));
+          { const b = el("b"); b.appendChild(personLink(cm.created_by, (cm.author || "Someone"))); b.appendChild(document.createTextNode(": ")); p.appendChild(b); }
           p.appendChild(document.createTextNode(cm.body));
           if (me && cm.created_by === me.id) {
             const x = el("button", "linkbtn danger", "✕"); x.type = "button"; x.setAttribute("aria-label", "Delete comment");
@@ -228,9 +242,9 @@
       top.appendChild(el("span", "feed-what", planWhen(new Date(pl.plan_at))));
       top.appendChild(el("span", "feed-when", spot ? "📍 " + spot.name : ""));
       item.appendChild(top);
-      item.appendChild(el("div", "spot-meta", `Planned by ${pl.author || "someone"}` + (pl.note ? ` — ${pl.note}` : "")));
+      { const pb = el("div", "spot-meta"); pb.appendChild(document.createTextNode("Planned by ")); pb.appendChild(personLink(pl.created_by, pl.author || "someone")); if (pl.note) pb.appendChild(document.createTextNode(" — " + pl.note)); item.appendChild(pb); }
       const going = planGoing(pl);
-      item.appendChild(el("div", "spot-meta", `✋ Going (${going.length}): ${going.map(x => x.name || "Someone").join(", ")}`));
+      { const gb = el("div", "spot-meta"); gb.appendChild(document.createTextNode(`✋ Going (${going.length}): `)); gb.appendChild(personList(going.map(x => ({ id: x.user_id, label: x.name || "Someone" })))); item.appendChild(gb); }
       const own = !!(me && pl.created_by === me.id);
       const inn = !!(me && going.some(x => x.user_id === me.id));
       const acts = el("div", "feed-actions");

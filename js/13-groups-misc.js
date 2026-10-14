@@ -368,7 +368,7 @@
           const list = rows.filter(r => r.board === bd).sort((x, y) => y.value - x.value || new Date(x.caught_at) - new Date(y.caught_at)).slice(0, 3);
           d.appendChild(el("div", "spot-meta", CT_BOARDS[bd]));
           if (!list.length) d.appendChild(el("div", "spot-meta", ctState(t).k === "soon" ? "Not started yet" : "No qualifying catches yet"));
-          list.forEach((r, i) => d.appendChild(el("div", null, `${MEDAL[i + 1]} ${nm(r.user_id)} — ${ctBoardLabel(bd, r.value)}${r.species ? " " + cap(r.species) : ""}`)));
+          list.forEach((r, i) => { const row = el("div"); row.appendChild(document.createTextNode(MEDAL[i + 1] + " ")); row.appendChild(personLink(r.user_id, nm(r.user_id))); row.appendChild(document.createTextNode(` — ${ctBoardLabel(bd, r.value)}${r.species ? " " + cap(r.species) : ""}`)); d.appendChild(row); });
         });
         const ob = el("button", "btn ghost small", "Open the contest ›"); ob.type = "button"; ob.className += " trip-open-contest"; ob.style.marginTop = "6px";
         ob.addEventListener("click", () => openContestPage(t));
@@ -453,6 +453,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14p", title: "🗺 Tidier Map, tappable names, smarter suggestions", items: [
+      "The Map page is tidier: one row of buttons, the colour key is folded away under “Map key”, and the doubled-up Boat mode / layer buttons are gone.",
+      "Tap a person's name (comments, trip plans, contests, spot cards, what's-biting pop-ups) to open their profile.",
+      "Suggested spots in Find new water now tell you how sure we are (✅ Public · 🟡 Likely · ⚠ Check access). Tap one for details, then ☆ Want to try, ✕ Not interested, or + Add to my spots in one tap (saved privately — edit any time). Your want-to-try list and hidden spots are kept on this phone."
+    ] },
     { id: "2026-10-14o", title: "✨ Find remembers, friendlier empty screens", items: [
       "🔍 Find now keeps your last few searches as tap-to-repeat chips (with a Clear button).",
       "Empty screens (no spots matching a filter, no records yet, nothing found) now have a button for the obvious next step.",

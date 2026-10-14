@@ -75,7 +75,7 @@
       const b = el("button", "linkbtn", `${fresh ? "🆕 " : ""}${kind}${(c.how_many || 1) > 1 ? " ×" + c.how_many : ""}`); b.type = "button";
       b.title = "About " + kind; b.addEventListener("click", () => { if (typeof openSpecies === "function") openSpecies(kind); });
       row.appendChild(b);
-      row.appendChild(el("span", "pop-meta", ` ${size ? size + " · " : ""}${who} · ${biteAgo(c.caught_at)}`));
+      { const m = el("span", "pop-meta"); m.appendChild(document.createTextNode(` ${size ? size + " · " : ""}`)); m.appendChild(personLink(isMine(c) ? null : c.created_by, who)); m.appendChild(document.createTextNode(` · ${biteAgo(c.caught_at)}`)); row.appendChild(m); }
       box.appendChild(row);
     });
     if (rows.length > 8) box.appendChild(el("div", "pop-meta", `+ ${rows.length - 8} more`));

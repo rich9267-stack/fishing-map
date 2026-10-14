@@ -165,6 +165,28 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   click($("map-sugg")); await wait(100);
   check("Show suggestions on the map still works", /Hide suggestions/.test($("map-sugg").textContent) && ev(`suggOnMap`) === true);
   click($("map-sugg")); await wait(50);
+  // suggestions: trust label, details card, want-to-try, not interested, one-tap add
+  const rowsS = () => [...$("sugg-list").querySelectorAll(".sugg-row")];
+  w.localStorage.removeItem("fm-sugg-hidden"); w.localStorage.removeItem("fm-sugg-want");
+  ev(`suggHidden = new Set(); suggWant = []; suggestions = [
+    { key: "node/1", name: "Pompano Pier", kind: "pier", label: "Pier", trust: "public", lat: 26.24, lng: -80.09 },
+    { key: "node/2", name: "Boat ramp (unnamed)", kind: "ramp", label: "Boat ramp", trust: "unclear", lat: 26.30, lng: -80.10 },
+    { key: "node/3", name: "Cove Jetty", kind: "jetty", label: "Jetty", trust: "likely", lat: 26.26, lng: -80.07 }]; renderSuggestions();`);
+  const n0 = rowsS().length;
+  check("every suggestion shows how sure we are", n0 > 0 && rowsS().every(b => /Public|Likely|Check access/.test(b.textContent)));
+  click(rowsS()[0]); await wait(30);
+  check("tapping a suggestion opens its details card", !!$("sugg-list").querySelector(".sugg-detail") && rowsS()[0].getAttribute("aria-expanded") === "true");
+  click([...$("sugg-list").querySelectorAll(".sugg-acts button")].find(b => /Want to try/.test(b.textContent))); await wait(30);
+  check("☆ Want to try puts it on the want-to-try tab", /\(1\)/.test($("sugg-tabs").querySelector('[data-t="want"]').textContent));
+  click($("sugg-tabs").querySelector('[data-t="want"]')); await wait(30);
+  check("the want-to-try tab lists it", rowsS().length === 1);
+  click($("sugg-tabs").querySelector('[data-t="near"]')); await wait(30);
+  click(rowsS()[0]); click([...$("sugg-list").querySelectorAll(".sugg-acts button")].find(b => /Not interested/.test(b.textContent))); await wait(30);
+  check("✕ Not interested hides it for good (and from want-to-try)", rowsS().length === n0 - 1 && !$("sugg-tabs").querySelector('[data-t="want"]').textContent.includes("("));
+  check("hidden suggestions are remembered on the phone", JSON.parse(w.localStorage.getItem("fm-sugg-hidden") || "[]").length === 1);
+  
+  check("Map page has one Boat mode button and no leftover duplicate ids", d.querySelectorAll("#boat-open").length === 1 && d.querySelectorAll("#mx-chart").length === 1 && !d.getElementById("mx-tools"));
+  check("names open profiles (others) but your own stays plain", ev(`personLink("someone-else", "Mike").tagName`) === "BUTTON" && ev(`personLink(me.id, "You").tagName`) === "SPAN");
   const mapBtn = [...$("pw-list").querySelectorAll(".btn")].find(b => b.textContent === "Map"); click(mapBtn); await wait(300);
   check("tapping Map on a lake closes the sheet and shows the lake layer", $("find-sheet").hidden && $("mx-water").classList.contains("on"));
   click($("map-find-btn")); await wait(100);

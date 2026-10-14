@@ -413,3 +413,9 @@ Fishbrain audit (Oct 14): docs/fishbrain-audit.md (also project doc claude/fishb
 - Empty states with a next-step button (existing `emptyBox`): Spots filter (Clear filters), Records and ranked boards (📸 Log a catch).
 - CSS: `.me-it` text wraps (min-width:0), `#me-sub` wraps, visible focus outlines on Me rows / Find rows / chips / bottom bar, `overscroll-behavior: contain` on Me and Find pages; Me inbox badge has an aria-label. Bottom bar (56px buttons) and Log button already clear the Me/Find pages (they cover the bar, z 1090).
 - Old `?go=` links and test ids untouched. Tests: test105 extended.
+
+## Oct 14 — 🧹 Map tidy-up, tappable names, suggested spots v2 (v92)
+- Map (index.html): removed the stale duplicate `#mx-tools` button block (it repeated ids boat-open/mx-*; copies were unwired); toolbar is a 3-column grid (`.map-primary`); legend sits in a closed `<details class="map-key">`.
+- Names: `personLink(id,label)` / `personList()` in js/08 → `showProfile`. Used in feed comments, plan "Planned by"/"Going", contest people + byline + trip-review podium, spot-card "added by", what's-biting pop-up. Your own name stays plain text. Not done: species-page records, photo caption, chat list.
+- Suggestions (js/09): each OSM suggestion has `trust` = public (tagged fishing/public access) · likely (named only) · unclear (unnamed); cache key bumped to `fm-suggestions-v3`. Rows expand to a details card: Add (one tap, PRIVATE, water guessed from nearest tide station, access from trust), Edit first, Map, ☆ Want to try, ✕ Not interested. Tabs Nearby / ★ Want to try. Hidden + wanted are in localStorage (`fm-sugg-hidden`, `fm-sugg-want`) — per phone, not synced. Map pop-ups got the badge + same buttons.
+- Tests: test103 extended.

@@ -781,3 +781,20 @@
   #me-sub { overflow-wrap: anywhere; }
   #me-card, #find-page { overscroll-behavior: contain; }
   .me-it:focus-visible, .fp-it:focus-visible, .fp-chip:focus-visible, .bnav-in button:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+
+  /* ---- Map page tidy-up: one 3-column button grid, a folded-away key ---- */
+  .map-primary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .map-primary .btn { width: 100%; padding-left: 6px; padding-right: 6px; white-space: normal; text-align: center; }
+  .map-key { margin: 6px 0; } .map-key > summary { color: var(--muted); font-size: .85rem; cursor: pointer; }
+  .who-link { min-height: 0 !important; display: inline !important; padding: 2px 3px !important; font-size: inherit; font-weight: 600; text-decoration: underline dotted; text-underline-offset: 2px; }
+  /* ---- Suggested spots: tap a row for details ---- */
+  #sugg-list { list-style: none; padding: 0; margin: 8px 0 0; }
+  #sugg-list li.sugg-item { display: block; border-top: 1px solid var(--line); padding: 0; }
+  #sugg-list li.sugg-item:first-child { border-top: 0; }
+  .sugg-row { appearance: none; width: 100%; display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 6px 2px; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+  .sugg-txt { flex: 1; min-width: 0; } .sugg-txt > span { display: block; overflow-wrap: anywhere; }
+  .sugg-chev { color: var(--muted); }
+  .sugg-detail { background: var(--bg); border-radius: 12px; padding: 10px 12px; margin: 0 0 10px; display: flex; flex-direction: column; gap: 6px; font-size: .9rem; }
+  .sugg-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
+  .sugg-acts .btn, .sugg-acts .linkbtn { min-height: 44px; }
+  #sugg-tabs button { min-height: 44px; }

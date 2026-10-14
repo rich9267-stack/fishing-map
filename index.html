@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=91">
+<link rel="stylesheet" href="css/app.css?v=92">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -630,13 +630,13 @@
     </div>
     <div class="filter-status" id="map-filter-note" role="status" aria-live="polite" style="margin:0 0 8px" hidden></div>
     <div id="map"></div>
-    <div class="map-tools" id="map-main-tools">
-      <button class="btn small" id="map-add" type="button">+ Add a spot on the map</button>
+    <div class="map-tools map-primary" id="map-main-tools">
+      <button class="btn small" id="map-add" type="button">+ Add spot</button>
       <button class="btn small" id="map-layers-btn" type="button" aria-haspopup="dialog" aria-expanded="false">🗂 Layers</button>
       <button class="btn small" id="map-find-btn" type="button" aria-haspopup="dialog" aria-expanded="false">🧭 Find new water</button>
       <button class="btn ghost small" id="map-me" type="button">◎ Show me</button>
-      <button class="btn ghost small" id="map-list" type="button">📋 See as a list</button>
-      <button class="btn small" id="boat-open" type="button">🚤 Boat mode</button>
+      <button class="btn ghost small" id="map-list" type="button">📋 List</button>
+      <button class="btn ghost small" id="boat-open" type="button">🚤 Boat mode</button>
     </div>
     <div id="layer-real" hidden>
       <button id="map-bite" type="button">🎣 Biting now</button>
@@ -654,18 +654,10 @@
     </div>
     <div id="bite-chips" hidden style="margin:0 0 8px"></div>
     <div class="spot-meta" id="bite-note" role="status" aria-live="polite" hidden style="margin:0 0 8px"></div>
-    <div class="map-tools" id="mx-tools">
-      <button class="btn small" id="boat-open" type="button">🚤 Boat mode</button>
-      <button class="btn ghost small" id="mx-chart" type="button">🧭 Nautical chart</button>
-      <button class="btn ghost small" id="mx-reef" type="button">🪸 Artificial reefs</button>
-      <button class="btn ghost small" id="mx-ramp" type="button">⛵ Boat ramps</button>
-      <button class="btn ghost small" id="mx-zone" type="button">🚫 Protected zones</button>
-      <button class="btn ghost small" id="mx-water" type="button" aria-pressed="false">🏞 Public lakes (FWC)</button>
-      <button class="btn ghost small" id="mx-depth" type="button" aria-pressed="false">〰 Depth lines</button>
-    </div>
     <div class="spot-meta" id="mx-note" role="status" aria-live="polite" hidden></div>
     <div class="spot-meta" id="pw-note" role="status" aria-live="polite" hidden></div>
     <div class="spot-meta" id="dep-note" role="status" aria-live="polite" hidden></div>
+    <details class="map-key"><summary>Map key</summary>
     <div class="legend">
       <span><span class="dot" style="background:#1d6fd6"></span>Saltwater</span>
       <span><span class="dot" style="background:#16a085"></span>Brackish / tidal canal</span>
@@ -675,6 +667,7 @@
       <span id="sight-key" hidden><span class="dot" style="background:#8e44ad"></span>Public sighting</span>
       <span id="bite-key" hidden><span class="dot" style="background:#e67e22"></span>Recent catches</span>
     </div>
+    </details>
     <div class="sat-legend" id="sat-legend" hidden>
       <div class="sat-title" id="sat-title"></div>
       <div class="sat-bar" id="sat-bar"></div>
@@ -717,7 +710,8 @@
       <div class="label">Suggested spots nearby</div>
       <button class="btn ghost small" id="sugg-near" type="button">◎ Near me</button>
     </div>
-    <div class="spot-meta" style="margin-top:4px">Public piers, ramps, jetties and fishing spots from OpenStreetMap that nobody has saved yet. Check access before you go.</div>
+    <div class="spot-meta" style="margin-top:4px">Piers, ramps, jetties and fishing spots from OpenStreetMap that nobody has saved yet. Tap one for details — each shows how sure we are that you can fish there.</div>
+    <div class="seg" id="sugg-tabs" role="group" aria-label="Suggestion lists" style="margin-top:8px"><button type="button" data-t="near" class="on" aria-pressed="true">Nearby</button><button type="button" data-t="want" aria-pressed="false">★ Want to try</button></div>
     <ul id="sugg-list"><li class="empty">Loading suggestions…</li></ul>
     <button class="btn ghost small" id="sugg-more" type="button" hidden>Show more</button>
   </div>
@@ -1198,33 +1192,33 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=91"></script>
-<script src="js/02-spots.js?v=91"></script>
-<script src="js/03-photos.js?v=91"></script>
-<script src="js/04-insights.js?v=91"></script>
-<script src="js/05-seasons-records.js?v=91"></script>
-<script src="js/06-catching.js?v=91"></script>
-<script src="js/07-measure-fishid.js?v=91"></script>
-<script src="js/08-feed-plans.js?v=91"></script>
-<script src="js/09-map-forecast.js?v=91"></script>
-<script src="js/10-tools-safety.js?v=91"></script>
-<script src="js/11-accounts-social.js?v=91"></script>
-<script src="js/12-contests-alerts.js?v=91"></script>
-<script src="js/13-groups-misc.js?v=91"></script>
-<script src="js/14-tank.js?v=91"></script>
-<script src="js/15-fish-rank.js?v=91"></script>
-<script src="js/16-fish-race.js?v=91"></script>
-<script src="js/17-license-help.js?v=91"></script>
-<script src="js/18-species.js?v=91"></script>
-<script src="js/19-biting.js?v=91"></script>
-<script src="js/20-spot-share.js?v=91"></script>
-<script src="js/21-pub-filters.js?v=91"></script>
-<script src="js/22-public-water.js?v=91"></script>
-<script src="js/23-depth.js?v=91"></script>
-<script src="js/24-delete-account.js?v=91"></script>
-<script src="js/25-home-map.js?v=91"></script>
-<script src="js/26-sub-tabs.js?v=91"></script>
-<script src="js/27-me-find.js?v=91"></script>
-<script src="js/99-boot.js?v=91"></script>
+<script src="js/01-core.js?v=92"></script>
+<script src="js/02-spots.js?v=92"></script>
+<script src="js/03-photos.js?v=92"></script>
+<script src="js/04-insights.js?v=92"></script>
+<script src="js/05-seasons-records.js?v=92"></script>
+<script src="js/06-catching.js?v=92"></script>
+<script src="js/07-measure-fishid.js?v=92"></script>
+<script src="js/08-feed-plans.js?v=92"></script>
+<script src="js/09-map-forecast.js?v=92"></script>
+<script src="js/10-tools-safety.js?v=92"></script>
+<script src="js/11-accounts-social.js?v=92"></script>
+<script src="js/12-contests-alerts.js?v=92"></script>
+<script src="js/13-groups-misc.js?v=92"></script>
+<script src="js/14-tank.js?v=92"></script>
+<script src="js/15-fish-rank.js?v=92"></script>
+<script src="js/16-fish-race.js?v=92"></script>
+<script src="js/17-license-help.js?v=92"></script>
+<script src="js/18-species.js?v=92"></script>
+<script src="js/19-biting.js?v=92"></script>
+<script src="js/20-spot-share.js?v=92"></script>
+<script src="js/21-pub-filters.js?v=92"></script>
+<script src="js/22-public-water.js?v=92"></script>
+<script src="js/23-depth.js?v=92"></script>
+<script src="js/24-delete-account.js?v=92"></script>
+<script src="js/25-home-map.js?v=92"></script>
+<script src="js/26-sub-tabs.js?v=92"></script>
+<script src="js/27-me-find.js?v=92"></script>
+<script src="js/99-boot.js?v=92"></script>
 </body>
 </html>

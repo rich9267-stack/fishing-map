@@ -383,8 +383,9 @@
     shown.forEach(s => {
       const item = el("div", "spot");
       item.appendChild(el("div", "spot-name", visIcon(s) + s.name + (spotSort === "near" && sortPos && s.lat != null && s.lng != null ? ` · ${miles(sortPos.lat, sortPos.lng, s.lat, s.lng).toFixed(1)} mi` : "")));
-      item.appendChild(el("div", "spot-meta",
-        `${cap(s.spot_type)} · ${WATER_LABEL[s.water_type] || s.water_type}` + (s.added_by ? ` · added by ${s.added_by}` : "")));
+      { const sm = el("div", "spot-meta"); sm.appendChild(document.createTextNode(`${cap(s.spot_type)} · ${WATER_LABEL[s.water_type] || s.water_type}`));
+        if (s.added_by) { sm.appendChild(document.createTextNode(" · added by ")); sm.appendChild(personLink(isMine(s) ? null : s.created_by, s.added_by)); }
+        item.appendChild(sm); }
       const condEl = el("div", "spot-cond", spotConditions(s));
       condEl.dataset.spot = s.id;
       item.appendChild(condEl);
@@ -1007,7 +1008,7 @@
   });
 
   // ---- Suggested spots (OpenStreetMap via the free Overpass API) ----
-  const SUGG_KEY = "fm-suggestions-v2";
+  const SUGG_KEY = "fm-suggestions-v3";
   let suggAnchor = null; // where suggestions are centred: "Near me", else the middle of your spots, else Pompano
   function suggCenter() {
     if (suggAnchor) return suggAnchor;
@@ -1031,6 +1032,8 @@
     if (lat == null || lng == null) return null;
     if (/^(private|no|customers)$/.test(t.access || "")) return null;
     const publicish = !!t.name || t.fishing === "yes" || t.leisure === "fishing" || /^(yes|public|permissive)$/.test(t.access || "");
+    const tagged = t.fishing === "yes" || t.leisure === "fishing" || /^(yes|public|permissive)$/.test(t.access || "");
+    const trust = tagged ? "public" : t.name ? "likely" : "unclear";
     let kind;
     if (t.leisure === "slipway") kind = "ramp";
     else if (/^(breakwater|groyne)$/.test(t.man_made || "")) kind = "jetty";
@@ -1040,7 +1043,7 @@
     else return null;
     if (kind === "jetty" && !t.name) return null; // unnamed seawall rocks aren't useful suggestions
     const label = { pier: "Pier", ramp: "Boat ramp", jetty: "Jetty", bridge: "Bridge", dock: "Fishing spot" }[kind];
-    return { key: e.type + "/" + e.id, name: t.name || `${label} (unnamed)`, kind, label, lat: +lat.toFixed(5), lng: +lng.toFixed(5) };
+    return { key: e.type + "/" + e.id, name: t.name || `${label} (unnamed)`, kind, label, trust, lat: +lat.toFixed(5), lng: +lng.toFixed(5) };
   }
 
   async function loadSuggestions() {
@@ -1076,12 +1079,31 @@
     renderSuggestions();
   }
 
+  // How sure are we that you can fish here? (from what OpenStreetMap volunteers tagged)
+  const TRUST = {
+    public: { badge: "✅ Public", note: "Tagged as public or as a fishing place on OpenStreetMap." },
+    likely: { badge: "🟡 Likely", note: "Has a name, but nobody tagged whether it is open to the public." },
+    unclear: { badge: "⚠ Check access", note: "No name or access tag on the map — it could be private. Look before you go." }
+  };
+  const trustOf = g => TRUST[g.trust] || TRUST.unclear;
+  // "Not interested" and "Want to try" are remembered on this phone (nothing is sent anywhere)
+  const SUGG_HIDE_KEY = "fm-sugg-hidden", SUGG_WANT_KEY = "fm-sugg-want";
+  const sgGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return Array.isArray(v) ? v : d; } catch (e) { return d; } };
+  const sgSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* fine */ } };
+  let suggHidden = new Set(sgGet(SUGG_HIDE_KEY, [])), suggWant = sgGet(SUGG_WANT_KEY, []), suggTab = "near", suggOpenKey = null;
+  const isWanted = g => suggWant.some(w => w.key === g.key);
+  function hideSuggestion(g) { suggHidden.add(g.key); suggWant = suggWant.filter(w => w.key !== g.key); sgSet(SUGG_HIDE_KEY, [...suggHidden].slice(-500)); sgSet(SUGG_WANT_KEY, suggWant); suggOpenKey = null; renderSuggestions(); }
+  function wantSuggestion(g) {
+    suggWant = isWanted(g) ? suggWant.filter(w => w.key !== g.key) : [{ key: g.key, name: g.name, kind: g.kind, label: g.label, trust: g.trust, lat: g.lat, lng: g.lng }].concat(suggWant).slice(0, 50);
+    sgSet(SUGG_WANT_KEY, suggWant); renderSuggestions();
+  }
   // Suggestions nobody has saved yet (nothing saved within ~150 m), closest to your spots first
   function openSuggestions() {
     if (!suggestions) return [];
     const placed = (spots || []).filter(hasLoc);
     const anchor = suggCenter();
     return suggestions
+      .filter(g => !suggHidden.has(g.key))
       .filter(g => !placed.some(s => miles(s.lat, s.lng, g.lat, g.lng) < 0.1))
       .map(g => ({ ...g, dist: miles(anchor.lat, anchor.lng, g.lat, g.lng) }))
       .sort((a, b) => a.dist - b.dist);
@@ -1101,25 +1123,72 @@
     $("spots-card").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  // One tap: saved as a PRIVATE spot with sensible guesses (you can edit it any time)
+  async function quickAddSuggestion(g, btn) {
+    if (!db || !me) return noteBox("Not connected right now — try again in a moment.");
+    if (btn) { btn.disabled = true; btn.textContent = "Adding…"; }
+    try {
+      const st = stationFor({ lat: g.lat, lng: g.lng });
+      const row = {
+        name: g.name.replace(/ \(unnamed\)$/, "") || g.label,
+        spot_type: ({ ramp: "ramp", jetty: "jetty", bridge: "bridge", pier: "pier", dock: "dock" }[g.kind] || "pier"),
+        water_type: st && st.dist != null && st.dist < 1.5 ? "saltwater" : "brackish",
+        public_access: g.trust === "public" ? "yes" : "unsure", added_by: me.name, lat: g.lat, lng: g.lng, is_private: true, visibility: "private",
+        notes: "Added from a suggestion (OpenStreetMap). " + trustOf(g).note + " Check the water type before you rely on it."
+      };
+      const { error } = await db.from("spots").insert(row);
+      if (error) throw error;
+      suggWant = suggWant.filter(w => w.key !== g.key); sgSet(SUGG_WANT_KEY, suggWant); suggOpenKey = null;
+      noteBox(`Added “${row.name}” as a private spot — tap it in your list to edit.`);
+      await loadSpots();
+    } catch (err) {
+      noteBox("Couldn't add it: " + (err.message || err));
+      if (btn) { btn.disabled = false; btn.textContent = "+ Add to my spots"; }
+    }
+  }
+  function suggDetails(g) {
+    const d = el("div", "sugg-detail");
+    const tr = trustOf(g);
+    d.appendChild(el("div", null, `${tr.badge} — ${tr.note}`));
+    d.appendChild(el("div", "spot-meta", `${g.label} · ${g.dist != null ? g.dist.toFixed(1) + " mi away · " : ""}source: OpenStreetMap (volunteer-edited, so check it)`));
+    const a = el("div", "sugg-acts");
+    const add = el("button", "btn small", "+ Add to my spots"); add.type = "button"; add.addEventListener("click", () => quickAddSuggestion(g, add));
+    const edit = el("button", "btn ghost small", "Edit first"); edit.type = "button"; edit.addEventListener("click", () => addSuggestion(g));
+    const mp = el("button", "btn ghost small", "🗺 Map"); mp.type = "button"; mp.addEventListener("click", () => { if (window.closeMapSheets) closeMapSheets(); showView("map"); setSuggOnMap(true); map.setView([g.lat, g.lng], 16); });
+    const wt = el("button", "btn ghost small", isWanted(g) ? "★ On my want-to-try list" : "☆ Want to try"); wt.type = "button"; wt.addEventListener("click", () => wantSuggestion(g));
+    const no = el("button", "linkbtn", "✕ Not interested"); no.type = "button"; no.addEventListener("click", () => hideSuggestion(g));
+    [add, edit, mp, wt, no].forEach(b => a.appendChild(b)); d.appendChild(a);
+    return d;
+  }
+
   function renderSuggestions() {
     const ul = $("sugg-list");
     ul.innerHTML = "";
     if (suggError) { ul.appendChild(el("li", "empty", suggError)); $("sugg-more").hidden = true; return; }
     if (!suggestions || spots === null) { ul.appendChild(el("li", "empty", "Loading suggestions…")); return; }
-    const list = openSuggestions();
-    if (!list.length) { ul.appendChild(el("li", "empty", "No new suggestions nearby.")); $("sugg-more").hidden = true; return; }
+    const anchor = suggCenter(), placed = (spots || []).filter(hasLoc);
+    const open = openSuggestions();
+    const wanted = suggWant.filter(w => !placed.some(sp => miles(sp.lat, sp.lng, w.lat, w.lng) < 0.1)).map(w => ({ ...w, dist: miles(anchor.lat, anchor.lng, w.lat, w.lng) }));
+    const tabs = $("sugg-tabs");
+    if (tabs) { tabs.querySelector('[data-t="want"]').textContent = "★ Want to try" + (wanted.length ? ` (${wanted.length})` : ""); tabs.querySelector('[data-t="near"]').textContent = `Nearby (${open.length})`;
+      tabs.querySelectorAll("button").forEach(b => { const on = b.dataset.t === suggTab; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }); }
+    const list = suggTab === "want" ? wanted : open;
+    if (!list.length) {
+      const li = el("li", "empty empty-nice");
+      li.appendChild(el("div", null, suggTab === "want" ? "Nothing saved yet. Open a suggestion and tap ☆ Want to try to keep it here for later." : "No new suggestions nearby. Try ◎ Near me, or the FWC public lakes below."));
+      ul.appendChild(li); $("sugg-more").hidden = true; return;
+    }
     list.slice(0, suggShowAll ? 25 : 6).forEach(g => {
-      const li = el("li");
-      const left = el("div");
-      left.appendChild(el("div", "sugg-name", `${KIND_EMOJI[g.kind] || ""} ${g.name}`));
-      left.appendChild(el("div", "spot-meta", `${g.label} · ${g.dist.toFixed(1)} mi`));
-      const btns = el("div", "sugg-btns");
-      const mapBtn = el("button", "btn ghost small", "Map"); mapBtn.type = "button";
-      mapBtn.addEventListener("click", () => { showView("map"); setSuggOnMap(true); map.setView([g.lat, g.lng], 16); });
-      const add = el("button", "btn small", "+ Add"); add.type = "button";
-      add.addEventListener("click", () => addSuggestion(g));
-      btns.appendChild(mapBtn); btns.appendChild(add);
-      li.appendChild(left); li.appendChild(btns);
+      const li = el("li", "sugg-item");
+      const isOpen = suggOpenKey === g.key;
+      const left = el("button", "sugg-row", ""); left.type = "button"; left.setAttribute("aria-expanded", String(isOpen));
+      const txt = el("span", "sugg-txt");
+      txt.appendChild(el("span", "sugg-name", `${KIND_EMOJI[g.kind] || ""} ${g.name}`));
+      txt.appendChild(el("span", "spot-meta", `${trustOf(g).badge} · ${g.label} · ${g.dist.toFixed(1)} mi`));
+      left.appendChild(txt); left.appendChild(el("span", "sugg-chev", isOpen ? "▾" : "▸"));
+      left.addEventListener("click", () => { suggOpenKey = isOpen ? null : g.key; renderSuggestions(); });
+      li.appendChild(left);
+      if (isOpen) li.appendChild(suggDetails(g));
       ul.appendChild(li);
     });
     $("sugg-more").hidden = list.length <= 6;
@@ -1127,6 +1196,7 @@
     if (suggOnMap) renderSuggPins();
   }
   $("sugg-more").addEventListener("click", () => { suggShowAll = !suggShowAll; renderSuggestions(); });
+  $("sugg-tabs").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (!b) return; suggTab = b.dataset.t; suggShowAll = false; suggOpenKey = null; renderSuggestions(); });
   $("sugg-near").addEventListener("click", () => {
     if (!navigator.geolocation) return alert("Location isn't available on this device.");
     $("sugg-near").textContent = "◎ Finding you…";
@@ -1148,11 +1218,16 @@
         .bindPopup(() => {
           const box = document.createElement("div");
           box.appendChild(el("div", "pop-name", `${KIND_EMOJI[g.kind] || ""} ${g.name}`));
-          box.appendChild(el("div", "pop-meta", `${g.label} · suggested from OpenStreetMap`));
+          box.appendChild(el("div", "pop-meta", `${trustOf(g).badge} · ${g.label} · suggested from OpenStreetMap`));
+          box.appendChild(el("div", "pop-meta", trustOf(g).note));
           const actions = el("div", "pop-actions");
           const add = el("button", null, "+ Add to my spots"); add.type = "button";
-          add.addEventListener("click", () => addSuggestion(g));
-          actions.appendChild(add);
+          add.addEventListener("click", () => { map.closePopup(); quickAddSuggestion(g); });
+          const wt = el("button", null, isWanted(g) ? "★ Saved" : "☆ Want to try"); wt.type = "button";
+          wt.addEventListener("click", () => { wantSuggestion(g); map.closePopup(); });
+          const no = el("button", null, "✕ Not interested"); no.type = "button";
+          no.addEventListener("click", () => { map.closePopup(); hideSuggestion(g); });
+          actions.appendChild(add); actions.appendChild(wt); actions.appendChild(no);
           box.appendChild(actions);
           return box;
         }).addTo(suggLayer);

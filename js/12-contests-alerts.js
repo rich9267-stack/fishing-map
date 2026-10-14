@@ -347,7 +347,7 @@
     const st = ctState(t), mineSt = ctMine[t.id];
     const h = el("div", "feed-top"); h.style.marginTop = "10px";
     h.appendChild(el("div", "label", (t.kind === "official" ? "🏆 " : "🎣 ") + t.title)); h.appendChild(el("span", "spot-meta", st.label)); box.appendChild(h);
-    box.appendChild(el("div", "spot-meta", `${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · by ${t.created_by === me.id ? "you" : (profName(t.created_by) || "someone")}${t.series_id ? " · 🔁 repeating" : ""}`));
+    { const bl = el("div", "spot-meta"); bl.appendChild(document.createTextNode(`${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · by `)); bl.appendChild(personLink(t.created_by, t.created_by === me.id ? "you" : (profName(t.created_by) || "someone"))); if (t.series_id) bl.appendChild(document.createTextNode(" · 🔁 repeating")); box.appendChild(bl); }
     if (t.description) box.appendChild(el("div", null, t.description));
     if (t.plan_id) box.appendChild(el("div", "spot-meta", "🗓 Made for a planned trip — everyone going on it is entered automatically."));
     const rules = [];
@@ -449,8 +449,9 @@
     const joined = ctMembers.filter(m => m.tournament_id === t.id && m.status === "joined");
     const invited = ctMembers.filter(m => m.tournament_id === t.id && m.status === "invited");
     box.appendChild(el("div", "label", `People (${joined.length} in)`)); box.lastChild.style.marginTop = "14px";
-    box.appendChild(el("div", "spot-meta", joined.map(m => m.user_id === me.id ? "You" : (profName(m.user_id) || "Someone")).join(", ") || "Nobody yet"));
-    if (invited.length) box.appendChild(el("div", "spot-meta", "Invited: " + invited.map(m => m.user_id === me.id ? "You" : (profName(m.user_id) || "Someone")).join(", ")));
+    const pl2 = ms => ms.map(m => ({ id: m.user_id, label: m.user_id === me.id ? "You" : (profName(m.user_id) || "Someone") }));
+    { const jb = el("div", "spot-meta"); if (joined.length) jb.appendChild(personList(pl2(joined))); else jb.textContent = "Nobody yet"; box.appendChild(jb); }
+    if (invited.length) { const ib = el("div", "spot-meta"); ib.appendChild(document.createTextNode("Invited: ")); ib.appendChild(personList(pl2(invited))); box.appendChild(ib); }
     if (t.kind === "friends" && t.created_by === me.id && open) {
       const circle = await getCircle(); const have = new Set(ctMembers.filter(m => m.tournament_id === t.id && m.status !== "left").map(m => m.user_id));
       const cand = circle ? [...circle].filter(id => !have.has(id)) : [];
