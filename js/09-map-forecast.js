@@ -417,6 +417,7 @@
         editSpot.addEventListener("click", () => openForm(true, s));
         item.appendChild(editSpot);
       }
+      if (typeof spotShareUi === "function") spotShareUi(item, s);   // 📩 send to a friend / shared with you (js/20)
       const olBtn = el("button", "linkbtn", outlookOpen.has(s.id) ? "▴ Hide 3-day outlook" : "📅 3-day outlook");
       olBtn.type = "button";
       olBtn.addEventListener("click", () => { outlookOpen.has(s.id) ? outlookOpen.delete(s.id) : outlookOpen.add(s.id); renderSpots(); });
@@ -450,6 +451,7 @@
       if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); loadOfficialSpots(); }
       if (typeof tankClaim === "function") tankClaim(); // centred on your spots
       if (typeof licLoad === "function") licLoad();       // 🎫 license banner on Home
+      if (typeof shareLoad === "function") shareLoad();   // 📩 spots sent to / by me
       loadSightings();
       loadPlans();
       if (typeof renderSuggestions === "function") renderSuggestions();
@@ -841,6 +843,8 @@
     box.appendChild(el("div", "pop-meta", n ? `${n} fish logged here` : "No catches logged yet"));
     const king = typeof spotKing === "function" ? spotKing(s) : "";
     if (king) box.appendChild(el("div", "pop-meta spot-king", king));
+    const shareLn = typeof spotShareLine === "function" ? spotShareLine(s) : "";
+    if (shareLn) box.appendChild(el("div", "pop-meta", shareLn));
     const actions = el("div", "pop-actions");
     const open = el("button", null, "Open in list"); open.type = "button";
     open.addEventListener("click", () => goToSpot(s.id, false));

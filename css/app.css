@@ -645,3 +645,8 @@
   .bite-row { padding: 2px 0; }
   .bite-row .linkbtn { font-weight: 700; min-height: 32px; padding: 2px 0; }
   .spot-king { font-weight: 600; }
+  /* 📩 Send a spot to a friend (js/20) */
+  .spot-shared { color: var(--accent); font-weight: 600; }
+  .share-box { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin: 6px 0; }
+  .share-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px dashed var(--line); }
+  .share-row .btn { min-height: 40px; }

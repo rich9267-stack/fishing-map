@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14e", title: "📩 Send a spot to a friend", items: [
+      "📩 On any of your spots, tap \"Send to a friend\" and pick who. Only that friend sees its exact pin and notes — even if it's a 🔒 private spot — and they get a message from you.",
+      "Changed your mind? Tap \"✓ Shared · Stop\" and it disappears from their map. Your catches there keep their own privacy either way."
+    ] },
     { id: "2026-10-14d", title: "⏰ Best times per fish, 👑 King of the spot", items: [
       "⏰ In a spot's 3-day outlook, pick a fish (Snook, Mangrove snapper…) to see the best hours for that fish — scored from when your group caught it, plus whether it's a good month and the water's the right temperature.",
       "👑 Each spot now shows its King: the biggest fish and the strongest (Power) logged there by you and your friends. Beat it!"
