@@ -449,6 +449,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-13d", title: "🐟 My fish", items: [
+      "🐟 New “My fish” card at the top of Stats: your best fish of each kind as collection cards with tier colors and Power. Tap a card to see its Strength, Speed and Stamina. Sort by Strongest, Newest or A–Z. Your collection power adds up all your best fish."
+    ] },
     { id: "2026-10-13c", title: "🏅 Fish power", items: [
       "🏅 Photographed catches with a length now have a rank: a tier (Common to Legendary), a Power number, and Strength / Speed / Stamina. You'll see it when you tap a fish in your tank, on catch lines in the feed and spot lists, in photo captions, and on a new “Strongest fish (Power)” board under Records. Add a photo to a fish to give it a rank."
     ] },

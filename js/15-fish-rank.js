@@ -88,6 +88,7 @@
     if (typeof renderSpots === "function") tryIt(renderSpots);
     if (typeof feedRefresh === "function") tryIt(feedRefresh);
     if (typeof renderRecords === "function") tryIt(renderRecords);
+    if (typeof renderMyFish === "function") tryIt(renderMyFish);
   }
   const rankOf = c => fishRank(c, rankHasPhoto(c));
   function rankTag(c) { const rk = rankOf(c); return rk ? ` · ${rk.icon} ${rk.power}` : ""; }
@@ -108,4 +109,61 @@
     };
     if (catchHasPhoto(c) || rankPhoto.has(c.id) || typeof db === "undefined" || !db) put();
     else rankWarm([c.id]).then(put);
+  }
+
+  // ---- 🐟 My fish: your best ranked fish of each species, as collection cards ----
+  let myFishSort = "power", myFishOpen = null;
+  const TIER_CLASS = { Common: "t-common", Uncommon: "t-uncommon", Rare: "t-rare", Epic: "t-epic", Legendary: "t-legendary" };
+  function myFishList() {
+    const mine = Object.values(catchesBySpot).flat().filter(isMine);
+    const best = new Map(); let unranked = 0;
+    mine.forEach(c => {
+      const e = rankEntry(c.species), rk = rankOf(c);
+      if (!rk) { if (e) unranked++; return; }
+      const key = e[0][0], cur = best.get(key);
+      if (!cur || rk.power > cur.rk.power) best.set(key, { key, c, rk });
+    });
+    return { list: [...best.values()], unranked, total: mine.length };
+  }
+  function renderMyFish() {
+    const box = $("fk-body"); if (!box || !me) return;
+    const { list, unranked } = myFishList();
+    box.innerHTML = "";
+    const sum = list.reduce((n, x) => n + x.rk.power, 0);
+    const head = el("div", "fk-head");
+    head.appendChild(el("div", null, `${list.length} of ${FISH_RANK_TABLE.length} species ranked`));
+    head.appendChild(el("b", null, `Collection power ${sum.toLocaleString()}`));
+    box.appendChild(head);
+    const bar = el("div", "fchips"); bar.style.margin = "8px 0";
+    [["power", "💪 Strongest"], ["new", "🕒 Newest"], ["name", "🔤 A–Z"]].forEach(([k, t]) => {
+      const b = el("button", "fchip" + (myFishSort === k ? " on" : ""), t); b.type = "button";
+      b.addEventListener("click", () => { myFishSort = k; renderMyFish(); }); bar.appendChild(b);
+    });
+    box.appendChild(bar);
+    if (!list.length) {
+      box.appendChild(emptyBox("No ranked fish yet. A fish gets a rank when it has a photo and a length — log your next catch with both, or add a photo to an old one.", "➕ Log a catch", () => { const f = $("qc-fab"); if (f) f.click(); }));
+      return;
+    }
+    const by = { power: (a, b) => b.rk.power - a.rk.power, new: (a, b) => new Date(b.c.caught_at) - new Date(a.c.caught_at), name: (a, b) => a.key.localeCompare(b.key) };
+    const grid = el("div", "fk-grid");
+    list.sort(by[myFishSort]).forEach(x => {
+      const open = myFishOpen === x.key;
+      const card = el("button", `fk-card ${TIER_CLASS[x.rk.tier]}${open ? " open" : ""}`); card.type = "button";
+      card.setAttribute("aria-expanded", open ? "true" : "false");
+      const pic = el("span", "fk-pic"); pic.appendChild(fishSvg(x.c.species, 76)); card.appendChild(pic);
+      card.appendChild(el("span", "fk-name", cap((x.c.species || "").trim())));
+      card.appendChild(el("span", "fk-power", `${x.rk.icon} ${x.rk.power}`));
+      card.appendChild(el("span", "spot-meta", `${x.rk.tier}${recSize(x.c) ? " · " + recSize(x.c) : ""}`));
+      if (open) {
+        [["💪 Strength", x.rk.stats.strength], ["⚡ Speed", x.rk.stats.speed], ["❤️ Stamina", x.rk.stats.stamina]].forEach(([n, v]) => {
+          const row = el("span", "fk-stat"); row.appendChild(el("span", null, `${n} ${v}`));
+          const tr = el("span", "fk-track"), fill = el("span", "fk-fill"); fill.style.width = v + "%"; tr.appendChild(fill); row.appendChild(tr); card.appendChild(row);
+        });
+        card.appendChild(el("span", "spot-meta", `${x.rk.size}% of a big ${cap(x.key)} · ${recDate(x.c)}`));
+      }
+      card.addEventListener("click", () => { myFishOpen = open ? null : x.key; renderMyFish(); });
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+    if (unranked) box.appendChild(el("div", "spot-meta", `${unranked} more catch${unranked === 1 ? "" : "es"} can't be ranked yet — they need a photo and a length.`));
   }

@@ -564,3 +564,16 @@
 
   .sp-sugg { margin-top: 6px; }
   .rank-block { margin-top: 6px; } .rank-t { font-weight: 700; }
+  .fk-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: .92rem; }
+  .fk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .fk-card { appearance: none; text-align: left; font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; min-width: 0; }
+  .fk-card.open { grid-column: 1 / -1; }
+  .fk-pic { display: flex; justify-content: center; padding: 4px 0; }
+  .fk-name { font-weight: 700; overflow-wrap: anywhere; }
+  .fk-power { font-size: 1.15rem; font-weight: 800; }
+  .fk-card.t-uncommon { border-left-color: #3fa66b; } .fk-card.t-rare { border-left-color: #3b82d6; }
+  .fk-card.t-epic { border-left-color: #8e5bd6; } .fk-card.t-legendary { border-left-color: #f2b134; box-shadow: 0 0 0 1px #f2b134 inset; }
+  .fk-card.t-common { border-left-color: #9aa3ab; }
+  .fk-stat { display: block; font-size: .85rem; } .fk-track { display: block; height: 8px; border-radius: 4px; background: var(--line); margin-top: 2px; overflow: hidden; }
+  .fk-fill { display: block; height: 100%; background: var(--accent); }
+  .fk-card:focus-visible { outline: 3px solid #f2b134; outline-offset: 2px; }
