@@ -449,6 +449,12 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14k", title: "🧭 New bottom bar", items: [
+      "The bottom bar now has 🏠 Home · 🗺 Map · 🐠 Play · 🏆 Compete · 👥 Community · 📊 Stats.",
+      "🐠 Play holds the games: your Tank, 🐟 My fish and 🏁 Fish race, with your coins on top.",
+      "🏆 Compete holds every tournament and contest (they left Community).",
+      "Log a catch with the round ＋ button at the bottom right — it's on every screen."
+    ] },
     { id: "2026-10-14j", title: "🗑 Delete my account", items: [
       "Settings → Your data → 🗑 Delete my account. It shows what will be removed and offers to download your catches and spots first.",
       "It asks twice (the second time you type DELETE). Friends' catches at your spots are kept — the spot passes to the friend who fished it most."

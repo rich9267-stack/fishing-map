@@ -652,7 +652,11 @@
     $("view-seasons").hidden = which !== "seasons";
     $("view-tank").hidden = which !== "tank";
     $("tab-tank").classList.toggle("on", which === "tank");
-    if (which === "tank") renderTank();
+    if (which === "tank") renderPlay();
+    $("view-compete").hidden = which !== "compete";
+    $("tab-compete").classList.toggle("on", which === "compete");
+    if (which === "compete") { $("contests").hidden = false; if (typeof openContests === "function") openContests(); }
+    document.body.classList.toggle("on-map", isMap);
     $("tab-seasons").classList.toggle("on", which === "seasons");
     if (which === "seasons") renderSeasons();
     $("view-feed").hidden = which !== "feed";
@@ -673,14 +677,30 @@
       if (mapPublic && !focusing) setMapPublic(true);
     }
   }
+  // ---- 🎮 Play (UX v2): one page for the games — 🐠 Tank · 🐟 My fish · 🏁 Fish race (coins on top). The page is view-tank. ----
+  let playSub = "tank";
+  try { const v = localStorage.getItem("fm-play-sub"); if (["tank", "fish", "race"].includes(v)) playSub = v; } catch (e) { /* fine */ }
+  function renderPlay() {
+    document.querySelectorAll("#play-sw button").forEach(b => { const on = b.dataset.sub === playSub; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); });
+    $("play-tank").hidden = playSub !== "tank"; $("fk-card").hidden = playSub !== "fish"; $("race-card").hidden = playSub !== "race";
+    if (playSub === "tank") renderTank();
+    else if (playSub === "fish" && typeof renderMyFish === "function") renderMyFish();
+    else if (playSub === "race" && typeof renderRace === "function") renderRace();
+  }
+  function showPlay(sub) {
+    if (sub) { playSub = sub; try { localStorage.setItem("fm-play-sub", sub); } catch (e) { /* fine */ } }
+    if ($("view-tank").hidden) showView("tank"); else renderPlay();
+  }
+  $("play-sw").addEventListener("click", e => { const b = e.target.closest("[data-sub]"); if (b) showPlay(b.dataset.sub); });
   // ---- 🧭 Navigation shell (UX step 1): bottom bar, Me menu, Stats switch. The old tab buttons stay (hidden) and do the real work. ----
   (function navShell() {
-    const bn = $("bnav"), TABS = ["tab-list", "tab-map", "tab-insights", "tab-seasons", "tab-tank", "tab-feed"];
+    const bn = $("bnav"), TABS = ["tab-list", "tab-map", "tab-insights", "tab-seasons", "tab-tank", "tab-feed", "tab-compete"];
     const on = id => $(id).classList.contains("on");
     const btn = k => bn.querySelector(`[data-nav="${k}"]`);
     function sync() {
       btn("home").classList.toggle("on", on("tab-list")); btn("map").classList.toggle("on", on("tab-map"));
-      btn("community").classList.toggle("on", on("tab-feed")); btn("stats").classList.toggle("on", on("tab-insights") || on("tab-seasons") || on("tab-tank"));
+      btn("community").classList.toggle("on", on("tab-feed")); btn("stats").classList.toggle("on", on("tab-insights") || on("tab-seasons"));
+      btn("play").classList.toggle("on", on("tab-tank")); btn("compete").classList.toggle("on", on("tab-compete"));
       document.querySelectorAll(".stats-sw button").forEach(b => b.classList.toggle("ghost", !on(b.dataset.tab)));
     }
     TABS.forEach(id => new MutationObserver(sync).observe($(id), { attributes: true, attributeFilter: ["class"] }));
@@ -688,18 +708,19 @@
     bn.addEventListener("click", e => {
       const b = e.target.closest("[data-nav]"); if (!b) return;
       const k = b.dataset.nav;
-      if (k === "log") $("qc-fab").click();
-      else if (k === "home") go("tab-list"); else if (k === "map") go("tab-map"); else if (k === "community") go("tab-feed");
-      else if (k === "stats") { if (on("tab-insights") || on("tab-seasons") || on("tab-tank")) window.scrollTo({ top: 0, behavior: "smooth" }); else $("tab-insights").click(); }
+      if (k === "home") go("tab-list"); else if (k === "map") go("tab-map"); else if (k === "community") go("tab-feed");
+      else if (k === "play") go("tab-tank"); else if (k === "compete") go("tab-compete");
+      else if (k === "stats") { if (on("tab-insights") || on("tab-seasons")) window.scrollTo({ top: 0, behavior: "smooth" }); else $("tab-insights").click(); }
     });
+    $("bn-log").addEventListener("click", () => $("qc-fab").click());
     // Insights / Seasons switch at the top of both Stats pages
-    ["view-insights", "view-seasons", "view-tank"].forEach(v => {
+    ["view-insights", "view-seasons"].forEach(v => {
       const row = el("div", "stats-sw");
-      [["tab-insights", "📊 Insights"], ["tab-seasons", "📅 Seasons"], ["tab-tank", "🐠 Tank"]].forEach(([t, label]) => { const b = el("button", "btn small", label); b.type = "button"; b.dataset.tab = t; b.addEventListener("click", () => $(t).click()); row.appendChild(b); });
+      [["tab-insights", "📊 Insights"], ["tab-seasons", "📅 Seasons"]].forEach(([t, label]) => { const b = el("button", "btn small", label); b.type = "button"; b.dataset.tab = t; b.addEventListener("click", () => $(t).click()); row.appendChild(b); });
       $(v).insertBefore(row, $(v).firstChild);
     });
     // show only when signed in
-    const showBar = () => { bn.hidden = $("app").hidden; document.body.classList.toggle("has-bnav", !$("app").hidden); };
+    const showBar = () => { bn.hidden = $("app").hidden; $("bn-log").hidden = $("app").hidden; document.body.classList.toggle("has-bnav", !$("app").hidden); };
     // reopen on the tab you were last on (not when the link itself says where to go)
     let restored = false;
     const restoreTab = () => {
@@ -774,6 +795,7 @@
   $("tab-insights").addEventListener("click", () => { stopPlacing(); showView("insights"); });
   $("tab-seasons").addEventListener("click", () => { stopPlacing(); showView("seasons"); });
   $("tab-tank").addEventListener("click", () => { stopPlacing(); showView("tank"); });
+  $("tab-compete").addEventListener("click", () => { stopPlacing(); showView("compete"); });
   $("tab-feed").addEventListener("click", () => { stopPlacing(); showView("feed"); });
 
   // ---- ♿ Map accessibility: pins you can reach with Tab and open with Enter, labelled pop-ups, on/off state on the map buttons ----

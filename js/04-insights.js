@@ -265,10 +265,9 @@
   $("yir-year").addEventListener("change", renderYearReview);
 
   function renderInsights() {
+    if (!$("view-tank").hidden && typeof renderPlay === "function" && playSub !== "tank") renderPlay();   // My fish / Fish race on Play
     if ($("view-insights").hidden) return;
     renderRecords();
-    if (typeof renderMyFish === "function") renderMyFish();
-    if (typeof renderRace === "function") renderRace();
     renderYearReview();
     renderTackle();
     fillInsightPickers();

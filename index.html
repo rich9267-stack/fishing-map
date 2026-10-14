@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=86">
+<link rel="stylesheet" href="css/app.css?v=87">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -432,22 +432,20 @@
     <button id="tab-seasons" type="button" role="tab">📅 Seasons</button>
     <button id="tab-tank" type="button" role="tab">🐠 Tank</button>
     <button id="tab-feed" type="button" role="tab">🎣 Feed</button>
+    <button id="tab-compete" type="button" role="tab">🏆 Compete</button>
   </div>
 
   <div id="view-feed" hidden>
     <div id="feed-mode" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
       <button class="btn small" id="feed-mode-circle" type="button">👥 My circle</button>
       <button class="btn ghost small" id="feed-mode-public" type="button">🌎 Public</button>
-      <button class="btn ghost small" id="feed-mode-contests" type="button">🏁 Compete</button>
+      <button class="btn ghost small" id="feed-mode-contests" type="button" hidden>🏁 Compete</button>
       <button class="btn ghost small" id="feed-mode-groups" type="button">👥 Groups</button>
       <button class="btn ghost small" id="friends-btn" type="button">👥 Friends</button>
       <button class="btn ghost small" id="chat-btn" type="button">💬 Messages</button>
     </div>
     <div class="card" id="groups" hidden>
       <div id="gr-body"></div>
-    </div>
-    <div class="card" id="contests" hidden>
-      <div id="ct-body"></div>
     </div>
     <div class="card" id="feed-plans-card">
       <div class="label">Who's going?</div>
@@ -482,12 +480,37 @@
     </div>
   </div>
 
+  <div id="view-compete" hidden>
+    <h1 class="page-title">Compete</h1>
+    <div class="card" id="contests">
+      <div id="ct-body"></div>
+    </div>
+  </div>
+
   <div id="view-tank" hidden>
-    <div class="card">
+    <div id="play-top">
+      <h1 class="page-title">Play</h1>
+      <div id="wallet-box"></div>
+      <div class="sub-tabs" id="play-sw" role="tablist" aria-label="Play">
+        <button type="button" role="tab" data-sub="tank" class="on">🐠 Tank</button>
+        <button type="button" role="tab" data-sub="fish">🐟 My fish</button>
+        <button type="button" role="tab" data-sub="race">🏁 Fish race</button>
+      </div>
+    </div>
+    <div class="card" id="fk-card" hidden>
+      <div class="label">🐟 My fish</div>
+      <div class="spot-meta" style="margin:2px 0 8px">Your best fish of each kind, ranked by Power. Tap a card for its stats.</div>
+      <div id="fk-body"></div>
+    </div>
+    <div class="card" id="race-card" hidden>
+      <div class="label">🏁 Fish race</div>
+      <div id="race-body"></div>
+    </div>
+    <div id="play-tank">
+    <div class="card" id="tank-card">
       <div class="label">🐠 Your tank</div>
       <div class="spot-meta" id="tank-sum"></div>
       <div class="spot-meta">Your heaviest catch of each species swims in a tank (length breaks a tie). Every other fish of that species goes to your lagoon (saltwater) or pond (freshwater). Tap a fish to see it.</div>
-      <div id="wallet-box"></div>
       <div class="mode-sw" id="tank-snd-row"></div>
       <div class="mode-sw" id="tank-sw">
         <button class="btn small" type="button" data-mode="tanks">🐠 Tanks</button>
@@ -500,6 +523,7 @@
     <div id="lagoon-body" hidden></div>
     <div id="pond-body" hidden></div>
     <div id="shop-body" hidden></div>
+    </div>
   </div>
 
   <div id="view-seasons" hidden>
@@ -584,15 +608,6 @@
   </div>
 
   <div id="view-insights" hidden>
-    <div class="card" id="fk-card" style="margin-bottom:14px">
-      <div class="label">🐟 My fish</div>
-      <div class="spot-meta" style="margin:2px 0 8px">Your best fish of each kind, ranked by Power. Tap a card for its stats.</div>
-      <div id="fk-body"></div>
-    </div>
-    <div class="card" id="race-card" style="margin-bottom:14px">
-      <div class="label">🏁 Fish race</div>
-      <div id="race-body"></div>
-    </div>
     <div class="card" id="yir-card" style="margin-bottom:14px">
       <div class="row"><div class="label">🎉 Year in review &amp; badges</div><select id="yir-year" aria-label="Year" style="width:auto"></select></div>
       <div id="yir-body"></div>
@@ -1023,39 +1038,41 @@
   <div class="bnav-in">
     <button type="button" data-nav="home" class="on"><span class="bn-i">🏠</span><span>Home</span></button>
     <button type="button" data-nav="map"><span class="bn-i">🗺</span><span>Map</span></button>
-    <button type="button" data-nav="log" class="bn-log" aria-label="Log a catch"><span class="bn-i">📸</span><span>Log</span></button>
+    <button type="button" data-nav="play"><span class="bn-i">🐠</span><span>Play</span></button>
+    <button type="button" data-nav="compete"><span class="bn-i">🏆</span><span>Compete</span></button>
     <button type="button" data-nav="community"><span class="bn-i">👥</span><span>Community</span><span class="nav-badge" id="com-badge" hidden></span></button>
     <button type="button" data-nav="stats"><span class="bn-i">📊</span><span>Stats</span></button>
   </div>
 </nav>
+<button type="button" id="bn-log" hidden aria-label="Log a catch">＋</button>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=86"></script>
-<script src="js/02-spots.js?v=86"></script>
-<script src="js/03-photos.js?v=86"></script>
-<script src="js/04-insights.js?v=86"></script>
-<script src="js/05-seasons-records.js?v=86"></script>
-<script src="js/06-catching.js?v=86"></script>
-<script src="js/07-measure-fishid.js?v=86"></script>
-<script src="js/08-feed-plans.js?v=86"></script>
-<script src="js/09-map-forecast.js?v=86"></script>
-<script src="js/10-tools-safety.js?v=86"></script>
-<script src="js/11-accounts-social.js?v=86"></script>
-<script src="js/12-contests-alerts.js?v=86"></script>
-<script src="js/13-groups-misc.js?v=86"></script>
-<script src="js/14-tank.js?v=86"></script>
-<script src="js/15-fish-rank.js?v=86"></script>
-<script src="js/16-fish-race.js?v=86"></script>
-<script src="js/17-license-help.js?v=86"></script>
-<script src="js/18-species.js?v=86"></script>
-<script src="js/19-biting.js?v=86"></script>
-<script src="js/20-spot-share.js?v=86"></script>
-<script src="js/21-pub-filters.js?v=86"></script>
-<script src="js/22-public-water.js?v=86"></script>
-<script src="js/23-depth.js?v=86"></script>
-<script src="js/24-delete-account.js?v=86"></script>
-<script src="js/99-boot.js?v=86"></script>
+<script src="js/01-core.js?v=87"></script>
+<script src="js/02-spots.js?v=87"></script>
+<script src="js/03-photos.js?v=87"></script>
+<script src="js/04-insights.js?v=87"></script>
+<script src="js/05-seasons-records.js?v=87"></script>
+<script src="js/06-catching.js?v=87"></script>
+<script src="js/07-measure-fishid.js?v=87"></script>
+<script src="js/08-feed-plans.js?v=87"></script>
+<script src="js/09-map-forecast.js?v=87"></script>
+<script src="js/10-tools-safety.js?v=87"></script>
+<script src="js/11-accounts-social.js?v=87"></script>
+<script src="js/12-contests-alerts.js?v=87"></script>
+<script src="js/13-groups-misc.js?v=87"></script>
+<script src="js/14-tank.js?v=87"></script>
+<script src="js/15-fish-rank.js?v=87"></script>
+<script src="js/16-fish-race.js?v=87"></script>
+<script src="js/17-license-help.js?v=87"></script>
+<script src="js/18-species.js?v=87"></script>
+<script src="js/19-biting.js?v=87"></script>
+<script src="js/20-spot-share.js?v=87"></script>
+<script src="js/21-pub-filters.js?v=87"></script>
+<script src="js/22-public-water.js?v=87"></script>
+<script src="js/23-depth.js?v=87"></script>
+<script src="js/24-delete-account.js?v=87"></script>
+<script src="js/99-boot.js?v=87"></script>
 </body>
 </html>

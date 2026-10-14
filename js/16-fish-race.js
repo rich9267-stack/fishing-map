@@ -180,8 +180,8 @@
   function roomsPoll() {
     clearTimeout(roomsTimer);
     roomsTimer = setTimeout(() => {
-      const view = $("view-insights");
-      if (raceMode !== "rooms" || !view || view.hidden) return;
+      const view = $("race-card");
+      if (raceMode !== "rooms" || !view || view.hidden || $("view-tank").hidden) return;
       if (!document.hidden) roomsLoad();
       roomsPoll();
     }, 20000);
@@ -313,7 +313,7 @@
   function raceOpenRoom(id) {
     raceMode = "rooms"; roomOpen = +id || null; rooms = null;
     if (roomOpen) { roomWatch = roomOpen; roomWatchPlay = true; }
-    if (typeof showView === "function") showView("insights");
+    if (typeof showPlay === "function") showPlay("race");
     setTimeout(() => { const c = $("race-card"); if (c && c.scrollIntoView) c.scrollIntoView({ block: "start" }); }, 150);
   }
 

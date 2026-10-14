@@ -92,11 +92,11 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
       record: { races: calls, wins: calls }, wallet: { coins: 123, gems: 0, today: 0, cap: 50, collections: [], recent: [] },
       lanes: [Object.assign(lane(1, "wild", "Wild", "Mahi", nextPlace === 1 ? 2 : 1, 0.4, 0.5), { class: "S" }), Object.assign(lane(2, "me", "You", "Snook", nextPlace, 0.45, 0.5), { class: "A" }), lane(3, "friend", "Fred", "Snook", 3, 0.5, 0.5),
               lane(4, "wild", "Wild", "Crevalle", 4, 0.5, 0.6), lane(5, "wild", "Wild", "Tarpon", 5, 0.6, 0.6)] }, error: null }; };
-  ev(`showView("insights")`); await wait(400);
+  ev(`showPlay("race")`); await wait(400);
   const body = d.getElementById("race-body");
   const fishBtns = [...body.querySelectorAll(".race-fish")];
   console.log("racers offered:", fishBtns.map(b => b.querySelector(".race-fname").textContent).join(", "));
-  ok("race card sits on the Stats tab under My fish", !!d.getElementById("race-card") && d.getElementById("fk-card").nextElementSibling.id === "race-card");
+  ok("race card sits on the Play tab, shown on its own", !!d.getElementById("race-card") && d.getElementById("view-tank").contains(d.getElementById("race-card")) && !d.getElementById("race-card").hidden && d.getElementById("fk-card").hidden);
   ok("one racer per ranked kind (3), strongest picked first", fishBtns.length === 3 && fishBtns[0].getAttribute("aria-checked") === "true");
   // classes: the app's labels match the database's race_class() for these speed/stamina pairs (asked from the database Oct 13)
   const DB = "10/41=C 15/46=C 28/19=C 31/83=B 40/40=B 50/60=A 58/93=A 60/30=A 63/63=A 70/20=A 72/62=A 73/44=A 81/81=S 90/10=A 100/60=S 100/100=S";

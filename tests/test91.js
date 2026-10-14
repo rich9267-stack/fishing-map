@@ -106,7 +106,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
     if (fn === "race_rooms_list") return { data: { rooms: JSON.parse(JSON.stringify(ROOMS)), wallet: wal }, error: null };
     return { data: { id: a.p_room || 99, status: "open", wallet: wal, players: [] }, error: null }; };
   const call = fn => asked.filter(x => x[0] === fn).pop();
-  ev(`showView("insights")`); await wait(400);
+  ev(`showPlay("race")`); await wait(400);
   const body = d.getElementById("race-body");
   [...body.querySelectorAll(".fchip")].find(b => /Race friends/.test(b.textContent)).click();
   await wait(200);
