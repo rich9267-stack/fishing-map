@@ -13,9 +13,14 @@
     [["peacock"], 24, 4, 6, 8, 6], [["snakehead"], 36, 4, 7, 5, 8], [["bluegill", "panfish", "shellcracker"], 11, 1, 1, 3, 2], [["mayan", "cichlid"], 13, 2, 3, 4, 3],
     [["mullet"], 20, 1, 2, 6, 3], [["tripletail"], 30, 4, 5, 3, 5], [["flounder"], 24, 3, 4, 3, 4], [["hogfish"], 26, 4, 5, 4, 5],
     [["amberjack"], 50, 5, 10, 8, 10], [["spadefish"], 20, 2, 4, 4, 5], [["blue runner", "hardtail"], 20, 1, 3, 7, 4],
-    [["little tunny", "bonito", "false albacore"], 32, 3, 6, 10, 7], [["pinfish"], 9, 1, 1, 3, 1], [["hardhead", "gafftopsail"], 20, 1, 3, 2, 3],
+    [["little tunny", "bonito", "false albacore"], 32, 3, 6, 10, 7], [["pinfish"], 9, 1, 1, 3, 1], [["hardhead"], 20, 1, 3, 2, 3],
     [["crappie", "speckled perch"], 15, 1, 2, 3, 2], [["channel catfish"], 32, 2, 5, 2, 6], [["florida gar", "longnose gar", "spotted gar"], 40, 3, 5, 4, 5],
-    [["oscar"], 14, 2, 3, 4, 3], [["tilapia"], 16, 1, 2, 3, 3]
+    [["oscar"], 14, 2, 3, 4, 3], [["tilapia"], 16, 1, 2, 3, 3],
+    // US anglers' catfish (Oct 13 2026) — keep the same order as WEIGHT_REF in js/07 and the database table fish_rank_species
+    [["blue catfish", "blue cat"], 46, 3, 9, 4, 8], [["flathead catfish", "flathead cat", "shovelhead"], 45, 4, 10, 3, 8], [["white catfish", "white cat"], 20, 2, 4, 3, 5],
+    [["black bullhead"], 14, 1, 2, 2, 3], [["brown bullhead"], 15, 1, 3, 2, 4], [["yellow bullhead"], 13, 1, 2, 2, 3], [["flat bullhead"], 10, 3, 2, 2, 2],
+    [["snail bullhead"], 10, 3, 2, 2, 2], [["spotted bullhead"], 10, 4, 2, 2, 2], [["headwater catfish"], 18, 5, 5, 4, 5], [["walking catfish", "clarias"], 15, 2, 3, 2, 5],
+    [["sailfin catfish", "suckermouth", "pleco"], 18, 1, 3, 1, 4], [["brown hoplo", "hoplo"], 9, 1, 1, 1, 3], [["gafftopsail", "gafftop"], 26, 2, 5, 4, 5]
   ];
   const RANK_TIERS = [[900, "Legendary", "🌟"], [650, "Epic", "💜"], [400, "Rare", "💙"], [200, "Uncommon", "💚"], [0, "Common", "⚪"]];
   function rankEntry(species) {

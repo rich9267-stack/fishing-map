@@ -17,7 +17,8 @@ function names(table) {
   const n = [];
   table.forEach(r => r[0].forEach(w => n.push(w)));
   return n.concat(["Snook (common)", "Jack crevalle", "Mangrove snapper", "Red snapper", "snapper", "Black drum", "Speckled trout",
-    "Largemouth bass", "Peacock bass", "Florida gar", "Mystery fish", "", "BLACK GROUPER"]);
+    "Largemouth bass", "Peacock bass", "Florida gar", "Mystery fish", "", "BLACK GROUPER",
+    "Catfish", "Bullhead", "Channel catfish", "Blue catfish", "Flathead catfish", "Hardhead catfish", "Gafftopsail catfish", "Walking catfish", "Sailfin catfish (pleco)", "Brown hoplo"]);
 }
 function rowsFor(sp) {   // same order as the SQL: lengths, then each weight real/estimated, then no size
   const r = LENS.map(l => [l, null, false]);

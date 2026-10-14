@@ -5,6 +5,7 @@
   // closed: yearly closed windows ["MM-DD","MM-DD"] (may wrap past New Year).
   // openOnly: the ONLY open windows; with a year ("2026-10-09") they apply to that year only.
   // match: words that count a logged catch as this fish.
+  // far: where it lives, for fish NOT found around South Florida (shown instead of a bite rating, listed last, not part of Collections).
   const SEASON_GROUPS = [["inshore", "Inshore"], ["beach", "Beach & pier"], ["offshore", "Offshore"], ["fresh", "Freshwater"]];
   const SEASONS = [
     // ---- Inshore ----
@@ -151,12 +152,18 @@
       temp: { low: 68, high: 84, cold: 62 },
       rule: "No size limit. 2 per person or 10 per vessel, whichever is greater. No HMS permit needed (per FWC).",
       tip: "Watch for diving birds and busting bait along the beach and at pier ends in spring and fall; cast small jigs or spoons and retrieve fast. Hard fighters, poor eating unless iced right away." },
-    { name: "Hardhead catfish", group: "beach", match: ["hardhead catfish", "hardhead", "gafftopsail"],
+    { name: "Hardhead catfish", group: "beach", match: ["hardhead catfish", "hardhead"],
       shore: [1,1,1,2,2,2,2,2,2,2,1,1], boat: [1,1,1,2,2,2,2,2,2,2,1,1],
       spawn: { m: [5,6,7,8], where: "males carry the eggs in their mouths in shallow water" },
       temp: { low: 65, high: 92, cold: 58 },
       rule: "No special rule that we could find — check FWC. The spines can sting.",
       tip: "A common pest on shrimp or cut bait at night around docks, piers and the inlet. Grab it with a wet towel or pliers, never bare-handed." },
+    { name: "Gafftopsail catfish", group: "beach", match: ["gafftopsail catfish", "gafftopsail", "gafftop"],
+      shore: [0,0,1,1,2,2,2,2,2,1,1,0], boat: [0,0,1,1,2,2,2,2,2,1,1,0],
+      spawn: { m: [5,6,7,8], where: "males carry the eggs in their mouths for weeks" },
+      temp: { low: 68, high: 90, cold: 60 },
+      rule: "No special rule that we could find — check FWC. The spines can sting; the slime is thick.",
+      tip: "Bigger than a hardhead, with a tall flag-like back fin. Takes cut bait and live shrimp in the surf, inlets and passes, often in the daytime and in murky water after rain. Decent eating." },
     { name: "Pinfish", group: "beach", match: ["pinfish"],
       shore: [1,1,1,2,2,2,2,2,2,2,2,1], boat: [1,1,1,2,2,2,2,2,2,2,2,1],
       spawn: { m: [10,11,12,1,2,3], where: "on grass flats and the bottom nearby" },
@@ -285,6 +292,84 @@
       temp: { low: 60, high: 92, cold: 50 },
       rule: "No statewide bag or size limit that we could find — check FWC for the water you fish.",
       tip: "On the bottom with cut bait, worms or chicken liver in deeper bends and holes, best at night and in warm weather." },
+    { name: "White catfish", group: "fresh", match: ["white catfish", "white cat"],
+      shore: [1,1,1,1,2,2,2,2,2,1,1,1], boat: [1,1,1,1,2,2,2,2,2,1,1,1],
+      spawn: { m: [5,6,7], where: "nests in holes and under cover along the bank" },
+      temp: { low: 60, high: 90, cold: 50 },
+      rule: "No bag or size limit that we could find — catfish are nongame fish in Florida. Check FWC for the water you fish.",
+      tip: "Found statewide in rivers, canals and even slightly salty water. Worms, minnows, shrimp or cut bait on the bottom; best at night. Smaller than a channel cat, with a square-ish tail." },
+    { name: "Brown bullhead", group: "fresh", match: ["brown bullhead"],
+      shore: [1,1,1,2,2,2,2,2,1,1,1,1], boat: [1,1,1,2,2,2,2,2,1,1,1,1],
+      spawn: { m: [4,5,6], where: "shallow nests near cover; parents guard the ball of young" },
+      temp: { low: 58, high: 88, cold: 45 },
+      rule: "No bag or size limit that we could find — catfish are nongame fish in Florida. Check FWC for the water you fish.",
+      tip: "Still or slow water: ponds, lakes and quiet canals. Worms, shrimp or chicken liver on the bottom, best after dark. Dark chin whiskers; mottled sides." },
+    { name: "Yellow bullhead", group: "fresh", match: ["yellow bullhead"],
+      shore: [1,1,1,2,2,2,2,2,1,1,1,1], boat: [1,1,1,2,2,2,2,2,1,1,1,1],
+      spawn: { m: [4,5,6], where: "shallow nests near cover; parents guard the young" },
+      temp: { low: 58, high: 90, cold: 45 },
+      rule: "No bag or size limit that we could find — catfish are nongame fish in Florida. Check FWC for the water you fish.",
+      tip: "Weedy, clear, shallow water in lakes, ponds and canals. Easy on worms, crickets, cut bait or doughballs. White chin whiskers set it apart from the brown bullhead." },
+    { name: "Walking catfish", group: "fresh", match: ["walking catfish", "clarias"],
+      shore: [1,1,1,1,2,2,2,2,2,2,1,1], boat: [1,1,1,1,2,2,2,2,2,2,1,1],
+      spawn: { m: [6,7,8,9], where: "nests in flooded weeds early in the rainy season" },
+      temp: { low: 68, high: 92, cold: 55 },
+      rule: "No bag or size limit. Nonnative \"conditional\" species: you may only keep it DEAD — keeping or moving one alive needs state and federal permits (FWC).",
+      tip: "Everglades canals and shallow weedy ditches; it can wriggle across land on rainy nights. Worms or cut bait on the bottom. Ice it right away if you plan to eat it." },
+    { name: "Sailfin catfish", group: "fresh", match: ["sailfin catfish", "suckermouth", "pleco", "plecostomus"],
+      shore: [1,1,1,2,2,2,2,2,2,2,1,1], boat: [1,1,1,2,2,2,2,2,2,2,1,1],
+      spawn: { m: [4,5,6,7,8,9], where: "in burrows they dig into canal banks" },
+      temp: { low: 68, high: 92, cold: 55 },
+      rule: "No bag or size limit (nonnative, per FWC).",
+      tip: "The armored \"pleco\" grazing along canal edges, most active at dusk. Rarely takes a hook — now and then a worm on the bottom; bowfishers target them. Up to about 20 inches." },
+    { name: "Brown hoplo", group: "fresh", match: ["brown hoplo", "hoplo"],
+      shore: [1,1,1,1,2,2,2,2,2,1,1,1], boat: [1,1,1,1,2,2,2,2,2,1,1,1],
+      spawn: { m: [5,6,7,8,9], where: "floating bubble nests in weedy shallows, guarded by the male" },
+      temp: { low: 68, high: 92, cold: 55 },
+      rule: "No bag or size limit (nonnative, per FWC).",
+      tip: "Small armored catfish, rarely over 10 inches, all over central and south Florida canals. Usually caught in cast nets; sometimes on a small live worm." },
+    { name: "Blue catfish", group: "fresh", match: ["blue catfish", "blue cat"], far: "Big rivers of northwest Florida (Escambia, Yellow, Apalachicola, Suwannee) and the Mississippi basin",
+      shore: [0,0,0,0,0,0,0,0,0,0,0,0], boat: [0,0,0,0,0,0,0,0,0,0,0,0],
+      spawn: { m: [5,6], where: "in cavities along river banks" },
+      temp: { low: 60, high: 88, cold: 45 },
+      rule: "No bag or size limit that we could find — catfish are nongame fish in Florida. Check FWC for the water you fish. FWC Big Catch: 36\" or 25 lb. State record 69.5 lb.",
+      tip: "The giant of the family. Bottom-fish cut fish or stink bait on big hooks with heavy weights in deep river channels." },
+    { name: "Flathead catfish", group: "fresh", match: ["flathead catfish", "flathead cat", "shovelhead"], far: "Apalachicola and Escambia rivers (northwest Florida) and big rivers across the central US",
+      shore: [0,0,0,0,0,0,0,0,0,0,0,0], boat: [0,0,0,0,0,0,0,0,0,0,0,0],
+      spawn: { m: [5,6], where: "in cavities and under logs in late spring" },
+      temp: { low: 62, high: 88, cold: 45 },
+      rule: "No bag or size limit that we could find — catfish are nongame fish in Florida. Check FWC for the water you fish. FWC Big Catch: 36\" or 25 lb. State record 69.9 lb.",
+      tip: "Eats live fish, not stink bait. Heavy tackle and a live or freshly cut fish on the bottom near logs and deep holes, best at night." },
+    { name: "Black bullhead", group: "fresh", match: ["black bullhead"], far: "Ponds and muddy lakes of the central US and Great Plains",
+      shore: [0,0,0,0,0,0,0,0,0,0,0,0], boat: [0,0,0,0,0,0,0,0,0,0,0,0],
+      spawn: { m: [4,5,6], where: "shallow nests; parents guard the ball of young" },
+      temp: { low: 58, high: 88, cold: 40 },
+      rule: "Outside our area — check that state's rules.",
+      tip: "Worms on the bottom in muddy ponds, especially at night." },
+    { name: "Flat bullhead", group: "fresh", match: ["flat bullhead"], far: "Rivers and lakes of the Atlantic coast states, Virginia to Georgia",
+      shore: [0,0,0,0,0,0,0,0,0,0,0,0], boat: [0,0,0,0,0,0,0,0,0,0,0,0],
+      spawn: { m: [5,6], where: "shallow nests near cover" },
+      temp: { low: 58, high: 88, cold: 42 },
+      rule: "Outside our area — check that state's rules.",
+      tip: "Small bullhead with a flattened head and a dark blotch on the back fin. Worms on the bottom." },
+    { name: "Snail bullhead", group: "fresh", match: ["snail bullhead"], far: "Rocky rivers of Georgia, the Carolinas and the Florida Panhandle (Apalachicola system)",
+      shore: [0,0,0,0,0,0,0,0,0,0,0,0], boat: [0,0,0,0,0,0,0,0,0,0,0,0],
+      spawn: { m: [5,6], where: "nests under rocks in flowing water" },
+      temp: { low: 58, high: 86, cold: 42 },
+      rule: "No bag or size limit that we could find — catfish are nongame fish in Florida. Check FWC for the water you fish.",
+      tip: "Lives in flowing, rocky water, unlike most bullheads. Worms or small crayfish on the bottom." },
+    { name: "Spotted bullhead", group: "fresh", match: ["spotted bullhead"], far: "Rivers of the Florida Panhandle and south Georgia (Apalachicola, Ochlockonee, Suwannee)",
+      shore: [0,0,0,0,0,0,0,0,0,0,0,0], boat: [0,0,0,0,0,0,0,0,0,0,0,0],
+      spawn: { m: [4,5,6], where: "nests under rocks and logs in the river" },
+      temp: { low: 60, high: 86, cold: 45 },
+      rule: "No bag or size limit that we could find — catfish are nongame fish in Florida. Check FWC for the water you fish.",
+      tip: "A rare, small bullhead covered in pale spots, found only in a few rivers. Worth a photo if you get one." },
+    { name: "Headwater catfish", group: "fresh", match: ["headwater catfish"], far: "Rio Grande and Pecos rivers of Texas and New Mexico",
+      shore: [0,0,0,0,0,0,0,0,0,0,0,0], boat: [0,0,0,0,0,0,0,0,0,0,0,0],
+      spawn: { m: [4,5,6], where: "under banks and boulders in spring" },
+      temp: { low: 58, high: 86, cold: 42 },
+      rule: "Outside our area — check Texas or New Mexico rules. A rare fish; consider releasing it.",
+      tip: "A smaller cousin of the channel catfish from clear desert rivers. Worms or small baitfish on the bottom." },
     { name: "Florida gar", group: "fresh", match: ["florida gar", "longnose gar", "spotted gar", "gar"],
       shore: [1,1,1,2,2,2,2,2,2,2,1,1], boat: [1,1,1,2,2,2,2,2,2,2,1,1],
       spawn: { m: [3,4,5], where: "shallow vegetation along the banks" },
@@ -415,7 +500,7 @@
 
     const list = SEASONS.filter(f => !seaGroup || f.group === seaGroup)
       .map((f, i) => ({ f, i, lvl: shoreLevel(f, seaMonth), open: seasonOpen(f, ref) }))
-      .sort((a, b) => (b.lvl - a.lvl) || (a.i - b.i));
+      .sort((a, b) => (!!a.f.far - !!b.f.far) || (b.lvl - a.lvl) || (a.i - b.i));   // fish that don't live here go last
     $("sea-list-title").textContent = `What's biting in ${MONTHS[seaMonth]}`;
     const box = $("sea-list"); box.innerHTML = "";
     list.forEach(({ f, lvl, open }) => {
@@ -425,7 +510,8 @@
       const badges = document.createElement("span"); badges.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end";
       const badge = (cls, text) => { const b = document.createElement("span"); b.className = "sea-badge " + cls; b.textContent = text; badges.appendChild(b); };
       if (open === false) badge("closed", "⛔ Closed to keep");
-      badge(["slow", "good", "peak"][lvl], (["Slow", "Good", "🔥 Peak"][lvl]) + " from shore");
+      if (f.far) badge("slow", "📍 Not in S. Florida");
+      else badge(["slow", "good", "peak"][lvl], (["Slow", "Good", "🔥 Peak"][lvl]) + " from shore");
       top.append(name, badges);
       const strip = (arr, label) => {
         const row = document.createElement("div"); row.className = "sea-strip";
@@ -445,7 +531,8 @@
       const tip = document.createElement("div"); tip.className = "sea-rule"; tip.textContent = f.tip;
       const spawnNote = document.createElement("div"); spawnNote.className = "sea-rule"; spawnNote.textContent = spawnText(f, seaMonth);
       const rule = document.createElement("div"); rule.className = "spot-meta"; rule.textContent = "📏 " + f.rule;
-      div.append(top, strip(f.shore, "Shore"), strip(f.boat, "Boat"), tip);
+      if (f.far) { const w = document.createElement("div"); w.className = "sea-rule"; w.textContent = "📍 Lives in: " + f.far; div.append(top, w, tip); }
+      else div.append(top, strip(f.shore, "Shore"), strip(f.boat, "Boat"), tip);
       if (spawnNote.textContent) div.appendChild(spawnNote);
       if (thisMonth && f.group !== "fresh") {
         const w = waterTempNow(LAT, LNG);

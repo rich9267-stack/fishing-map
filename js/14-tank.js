@@ -1,10 +1,24 @@
   // ---- 🐠 Tank: your best catch of each species swims in a saltwater or freshwater tank; every other fish goes to the pond ----
   // "Best" = heaviest, length breaks a tie. Which tank a species lives in: the Seasons list knows (fresh vs not),
   // then a few freshwater names, then where you caught it. Brackish spots never decide it for a known species.
-  const TANK_FRESH_RE = /\b(largemouth|peacock|bluegill|crappie|catfish|tilapia|oscar|bowfin|gar|snakehead|knifefish|cichlid|sunfish|panfish|carp|pickerel|bream|shiner|warmouth|redear|bullhead)\b/i;
+  const TANK_FRESH_RE = /\b(largemouth|peacock|bluegill|crappie|catfish|tilapia|oscar|bowfin|gar|snakehead|knifefish|cichlid|sunfish|panfish|carp|pickerel|bream|shiner|warmouth|redear|bullhead|hoplo|pleco|suckermouth|clarias)\b/i;
   // How each species is drawn: shape (torpedo, deep, bass, long, flat), colours and a marking.
   const TANK_LOOKS = [
     // newer fish first, so specific names win over broad ones ("amberjack" before "jack")
+    // catfish first: "walking" contains "king", which would otherwise draw it as a mackerel
+    { m: /walking catfish|clarias/, shape: "long", body: "#5f5a52", belly: "#b9b2a4", mark: "dots" },
+    { m: /sailfin catfish|suckermouth|pleco/, shape: "bass", body: "#4e4a3f", belly: "#a8a08a", mark: "dots" },
+    { m: /hoplo/, shape: "bass", body: "#5b4a3a", belly: "#b5a38c", mark: "dots" },
+    { m: /gafftop/, shape: "torpedo", body: "#7f8e9b", belly: "#eef1f3", mark: "" },
+    { m: /hardhead/, shape: "torpedo", body: "#8a8f86", belly: "#e7e8e1", mark: "" },
+    { m: /blue cat/, shape: "bass", body: "#6f8aa0", belly: "#e1e8ee", mark: "" },
+    { m: /flathead cat|shovelhead/, shape: "bass", body: "#7a6a3f", belly: "#ddd0a2", mark: "dots" },
+    { m: /channel cat/, shape: "bass", body: "#7d8d98", belly: "#e3e8eb", mark: "dots" },
+    { m: /white cat/, shape: "bass", body: "#9aa3a8", belly: "#f1f3f4", mark: "" },
+    { m: /black bullhead/, shape: "bass", body: "#3c3f3a", belly: "#b8b59c", mark: "" },
+    { m: /yellow bullhead/, shape: "bass", body: "#9a8540", belly: "#ecd98a", mark: "" },
+    { m: /spotted bullhead/, shape: "bass", body: "#5d5747", belly: "#cfc6ae", mark: "dots" },
+    { m: /bullhead|headwater cat/, shape: "bass", body: "#6b5a40", belly: "#cdbb98", mark: "dots" },
     { m: /tripletail/, shape: "deep", body: "#8a7b4f", belly: "#cdbf93", mark: "dots" },
     { m: /flounder/, shape: "flat", body: "#9a8461", belly: "#e5d9bd", mark: "dots" },
     { m: /hogfish|hog snapper/, shape: "deep", body: "#c9805f", belly: "#f1d3c1", mark: "" },
@@ -732,7 +746,7 @@
     const seen = new Set();
     (catches || []).forEach(c => { if (c.deleted_at) return; const f = seasonFor(c.species); if (f) seen.add(f.name); });
     return SEASON_GROUPS.map(([key, label]) => {
-      const all = SEASONS.filter(f => f.group === key && !/mullet run/i.test(f.name)).map(f => f.name);
+      const all = SEASONS.filter(f => f.group === key && !f.far && !/mullet run/i.test(f.name)).map(f => f.name);   // only fish that live here
       const got = all.filter(n => seen.has(n));
       return { key, label, total: all.length, got, missing: all.filter(n => !seen.has(n)) };
     }).filter(g => g.total);

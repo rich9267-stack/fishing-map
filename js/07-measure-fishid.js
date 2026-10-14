@@ -13,8 +13,13 @@
     [["mayan", "cichlid"], 10, 0.9], [["mullet"], 16, 1.6],
     [["tripletail"], 24, 7], [["flounder"], 16, 1.8], [["hogfish"], 20, 5.5], [["amberjack"], 36, 22], [["spadefish"], 14, 2.4],
     [["blue runner", "hardtail"], 14, 1.3], [["little tunny", "bonito", "false albacore"], 28, 9], [["pinfish"], 6, 0.1],
-    [["hardhead", "gafftopsail"], 12, 0.9], [["crappie", "speckled perch"], 11, 0.8], [["channel catfish"], 20, 3.2],
-    [["florida gar", "longnose gar", "spotted gar"], 24, 2.5], [["oscar"], 10, 1.1], [["tilapia"], 12, 1.6]
+    [["hardhead"], 12, 0.9], [["crappie", "speckled perch"], 11, 0.8], [["channel catfish"], 20, 3.2],
+    [["florida gar", "longnose gar", "spotted gar"], 24, 2.5], [["oscar"], 10, 1.1], [["tilapia"], 12, 1.6],
+    // US anglers' catfish (same order as FISH_RANK_TABLE in js/15)
+    [["blue catfish", "blue cat"], 30, 13], [["flathead catfish", "flathead cat", "shovelhead"], 30, 12.5], [["white catfish", "white cat"], 16, 1.8],
+    [["black bullhead"], 12, 0.8], [["brown bullhead"], 12, 0.85], [["yellow bullhead"], 11, 0.65], [["flat bullhead"], 9, 0.35], [["snail bullhead"], 9, 0.35],
+    [["spotted bullhead"], 9, 0.35], [["headwater catfish"], 15, 1.4], [["walking catfish", "clarias"], 12, 0.6], [["sailfin catfish", "suckermouth", "pleco"], 16, 1.5],
+    [["brown hoplo", "hoplo"], 8, 0.3], [["gafftopsail", "gafftop"], 20, 3]
   ];
   function weightRef(species) {
     const sp = (species || "").toLowerCase();

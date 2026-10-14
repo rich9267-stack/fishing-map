@@ -449,6 +449,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-13e", title: "🐱 Catfish", items: [
+      "🐱 14 more catfish: white catfish, brown, yellow, black, flat, snail and spotted bullheads, walking catfish, sailfin catfish (pleco), brown hoplo, blue and flathead catfish, headwater catfish — and gafftopsail now has its own entry, separate from hardhead.",
+      "Each one can be picked when you log a catch, gets a weight estimate, a Power rank and its own look in the tank. Seasons has the Florida rules and tips; catfish that don't live around South Florida are marked 📍 and listed last.",
+      "Walking catfish: Florida only lets you keep it dead — it's illegal to keep or move one alive."
+    ] },
     { id: "2026-10-13d", title: "🐟 My fish", items: [
       "🐟 New “My fish” card at the top of Stats: your best fish of each kind as collection cards with tier colors and Power. Tap a card to see its Strength, Speed and Stamina. Sort by Strongest, Newest or A–Z. Your collection power adds up all your best fish."
     ] },
