@@ -1,7 +1,13 @@
 -- Fish rank rules live in the database so Power cannot be faked by editing the app.
--- Same formula as js/15-fish-rank.js (tests/test88.js checks the two agree). Rank needs a photo and a size; capped at 130% of a big adult.
+-- Same formula as js/15-fish-rank.js (tests/test88.js checks the two agree over 3,042 species/size combinations).
+-- Rank needs a photo and a size; capped at 130% of a big adult; blurred-for-review catches get none.
+-- Applied Oct 13 2026 as three migrations (fish_rank_1_table, fish_rank_2_function, fish_rank_3_view), written with only
+-- create/insert/grant: the Supabase connector cancelled versions containing truncate / drop / revoke (its "destructive" check).
+-- Who can see what: signed-out visitors are refused (is_member() can't even run for them); members get ranks only for catches
+-- they may already see (the view uses the viewer's own rules on catches and photos). Checked with pretend users, see build_history.
 
-create table if not exists public.fish_rank_species (
+-- Part 1: the species table (one row per FISH_RANK_TABLE entry, plus the weight reference from WEIGHT_REF in js/07)
+create table public.fish_rank_species (
   id serial primary key,
   words text[] not null,          -- name fragments, matched inside the species text (longest match wins)
   big_in numeric not null,        -- length of a big adult, inches
@@ -13,10 +19,8 @@ create table if not exists public.fish_rank_species (
   ref_wt numeric not null
 );
 alter table public.fish_rank_species enable row level security;
-drop policy if exists "members read fish rank rules" on public.fish_rank_species;
 create policy "members read fish rank rules" on public.fish_rank_species for select using (public.is_member());
 
-truncate public.fish_rank_species restart identity;
 insert into public.fish_rank_species (words, big_in, rarity, p, s, st, ref_len, ref_wt) values
   (array['snook'], 34, 3, 7, 7, 6, 30, 8.7),
   (array['tarpon'], 72, 5, 10, 8, 10, 60, 85),
@@ -66,9 +70,12 @@ insert into public.fish_rank_species (words, big_in, rarity, p, s, st, ref_len, 
   (array['oscar'], 14, 2, 3, 4, 3, 10, 1.1),
   (array['tilapia'], 16, 1, 2, 3, 3, 12, 1.6);
 
-create or replace function public.fish_rank_calc(sp text, len numeric, wt numeric, wt_est boolean)
+grant select on public.fish_rank_species to authenticated;
+
+-- Part 2: the calculator. Runs with the caller's rights: only members can read fish_rank_species, so anyone else gets no rank.
+create function public.fish_rank_calc(sp text, len numeric, wt numeric, wt_est boolean)
 returns table (power int, tier text, strength int, speed int, stamina int, size_pct int)
-language sql stable security definer set search_path = public as $$
+language sql stable set search_path = public as $$
   with s as (select lower(coalesce(sp, '')) as t),
   e as (   -- the species row: longest matching word wins
     select f.* from public.fish_rank_species f, s
@@ -90,17 +97,16 @@ language sql stable security definer set search_path = public as $$
          floor(r * 100 + 0.5)::int
   from c;
 $$;
+grant execute on function public.fish_rank_calc(text, numeric, numeric, boolean) to authenticated;
 
--- One row per ranked catch: photographed, not blurred for review, species known, size known. Respects who may see the catch.
-create or replace view public.catch_ranks with (security_invoker = true) as
+-- Part 3: one row per ranked catch — photographed, not blurred for review, species and size known.
+-- security_invoker: the viewer's own catch/photo privacy rules apply, so you only see ranks of catches you may see.
+-- (length_in / weight_lb are stored as "real", so they're converted to numeric for the calculator.)
+create view public.catch_ranks with (security_invoker = true) as
 select c.id as catch_id, c.created_by, c.spot_id, c.species, c.caught_at, c.length_in, c.weight_lb, c.weight_est,
        r.power, r.tier, r.strength, r.speed, r.stamina, r.size_pct
 from public.catches c
-cross join lateral public.fish_rank_calc(c.species, c.length_in, c.weight_lb, c.weight_est) r
+cross join lateral public.fish_rank_calc(c.species, c.length_in::numeric, c.weight_lb::numeric, c.weight_est) r
 where c.deleted_at is null and coalesce(c.review_state, '') <> 'blurred'
   and exists (select 1 from public.photos p where p.catch_id = c.id);
-
-revoke all on public.fish_rank_species, public.catch_ranks from anon;
-grant select on public.fish_rank_species, public.catch_ranks to authenticated;
-revoke execute on function public.fish_rank_calc(text, numeric, numeric, boolean) from public, anon;
-grant execute on function public.fish_rank_calc(text, numeric, numeric, boolean) to authenticated;
+grant select on public.catch_ranks to authenticated;

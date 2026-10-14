@@ -238,7 +238,7 @@
     const ct = ph.catch_id ? Object.values(catchesBySpot).flat().find(c => c.id === ph.catch_id) : null;
     const who = ct ? (isMine(ct) ? "you" : (typeof profName === "function" ? profName(ct.created_by) : null) || "a friend") : null;
     $("viewer-cap").textContent = `${ct ? "🎣 " + cap(ct.species || "Fish") + (ct.how_many > 1 ? " ×" + ct.how_many : "") + (ct.length_in ? " " + +Number(ct.length_in).toFixed(1) + "″" : "") + " by " + who + " · " : "📷 "}${spot ? spot.name + " · " : ""}${new Date(ph.created_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}`;
-    const rk = ct && typeof fishRank === "function" ? fishRank(ct, true) : null;   // 🏅 the photo proves the catch, so it can be ranked
+    const rk = ct && typeof rankOf === "function" ? rankOf(ct, true) : null;   // 🏅 the photo proves the catch, so it can be ranked (database answer when we have it)
     if (rk) $("viewer-cap").textContent += `  ·  ${rankLine(rk)}`;
     $("viewer-del").hidden = !isMine(ph);
     $("viewer").hidden = false;

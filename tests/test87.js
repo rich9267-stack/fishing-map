@@ -36,7 +36,7 @@ const dom = new JSDOM(html, { runScripts: "dangerously", url: "https://example.o
   w.supabase = { createClient: () => ({
     auth: { getSession: async () => ({ data: { session: { user: { id: ME, email: "rich9267@gmail.com", user_metadata: {} } } } }), onAuthStateChange: () => {}, signOut: async () => {} },
     rpc: async (fn, a) => { RPCS.push([fn, a]); if (fn === 'request_access') { status = 'pending'; } if (fn === 'review_access') PEND = PEND.map(m => m.email === a.p_email ? { ...m, status: a.p_approve ? 'approved' : 'blocked' } : m); return fn === 'ensure_profile' ? { data: { user_id: 'u-rich', handle: 'richard', display_name: 'Richard', home_area: 'Pompano' }, error: null } : { error: null }; }, storage: { from: () => ({ createSignedUrls: async () => ({ data: [] }) }) },
-    from: t => ({ select: () => chain(t === "members" ? PEND : (t === "spots" || t === "spots_visible") ? SPOTS : t === "catches" ? CATCHES : t === "sessions" ? w.__db.sessions : t === "profiles" ? [{user_id:'other',handle:'mike',display_name:'Mike',home_area:'Miami'},{user_id:'u3',handle:'sam',display_name:'Sam'},{user_id:'u4',handle:'zed',display_name:'Zed'},{user_id:'u-rich',handle:'richard',display_name:'Richard'}] : t === "friendships" ? [{user_a:'other',user_b:'u-rich',status:'accepted',requested_by:'other'},{user_a:'u-rich',user_b:'u3',status:'pending',requested_by:'u3'}] : t === "trip_plans" ? [{id:'p1',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()+86400000).toISOString(),note:'live shrimp'},{id:'p2',spot_id:'s3',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()+2*86400000).toISOString(),note:null}] : t === "trip_plan_rsvps" ? [{plan_id:'p1',user_id:'other',name:'Mike'}] : t === "catch_reactions" ? [{catch_id:'c1',user_id:'other'},{catch_id:'c1',user_id:'other2'}] : t === "catch_comments" ? [{id:'m1',catch_id:'c1',created_by:'other',author:'Mike',body:'Nice snook!',created_at:new Date().toISOString()}] : []),
+    from: t => ({ select: () => chain(t === "catch_ranks" ? (w.__ranks || []) : t === "members" ? PEND : (t === "spots" || t === "spots_visible") ? SPOTS : t === "catches" ? CATCHES : t === "sessions" ? w.__db.sessions : t === "profiles" ? [{user_id:'other',handle:'mike',display_name:'Mike',home_area:'Miami'},{user_id:'u3',handle:'sam',display_name:'Sam'},{user_id:'u4',handle:'zed',display_name:'Zed'},{user_id:'u-rich',handle:'richard',display_name:'Richard'}] : t === "friendships" ? [{user_a:'other',user_b:'u-rich',status:'accepted',requested_by:'other'},{user_a:'u-rich',user_b:'u3',status:'pending',requested_by:'u3'}] : t === "trip_plans" ? [{id:'p1',spot_id:'s1',created_by:'other',author:'Mike',plan_at:new Date(Date.now()+86400000).toISOString(),note:'live shrimp'},{id:'p2',spot_id:'s3',created_by:'u-rich',author:'Richard',plan_at:new Date(Date.now()+2*86400000).toISOString(),note:null}] : t === "trip_plan_rsvps" ? [{plan_id:'p1',user_id:'other',name:'Mike'}] : t === "catch_reactions" ? [{catch_id:'c1',user_id:'other'},{catch_id:'c1',user_id:'other2'}] : t === "catch_comments" ? [{id:'m1',catch_id:'c1',created_by:'other',author:'Mike',body:'Nice snook!',created_at:new Date().toISOString()}] : []),
       delete: () => { w.__db.deletes.push(t); return chain(null); },
       insert: row => { w.__db.inserts.push({ t, row }); if (t === "catches") CATCHES.unshift({ id: "n" + CATCHES.length, ...row }); return chain(null); },
       upsert: row => { w.__db.upserts.push({ t, row }); return Promise.resolve({ error: null }); },
@@ -80,6 +80,8 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   await wait(800);
   const ev = c => w.eval(c);
   ev(`photosBySpot = { s1: [{ catch_id: "c1" }, { catch_id: "c2" }, { catch_id: "c4" }], s3: [{ catch_id: "c5" }] }`);
+  // the pretend database ranks the photographed catches with the same rules (catch_ranks)
+  ev(`window.__ranks = Object.values(catchesBySpot).flat().filter(catchHasPhoto).map(c => { const r = fishRank(c, true); return r && { catch_id: c.id, species: c.species, power: r.power, tier: r.tier, strength: r.stats.strength, speed: r.stats.speed, stamina: r.stats.stamina, size_pct: r.size }; }).filter(Boolean)`);
   ev(`showView("insights")`); await wait(300);
   ev(`renderMyFish()`);
   const body = d.getElementById("fk-body");
@@ -93,7 +95,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   console.log("note about unranked:", /can't be ranked/.test(body.textContent));
   [...body.querySelectorAll(".fchip")].find(b => /A–Z/.test(b.textContent)).click();
   console.log("A–Z order:", [...body.querySelectorAll(".fk-name")].map(x => x.textContent).join(", "));
-  ev(`photosBySpot = {}`); ev(`rankPhoto.clear()`); ev(`renderMyFish()`);
+  ev(`photosBySpot = {}`); ev(`window.__ranks = []; rankServer.clear()`); ev(`renderMyFish()`);
   console.log("empty state with button:", !!body.querySelector(".empty-nice .btn"));
   const good = cards.length === 3 && !!open;
   console.log(good ? "OK" : "FAIL");

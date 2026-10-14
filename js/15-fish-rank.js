@@ -36,7 +36,7 @@
   }
   // Returns null when a fish can't be ranked (no photo, no size, or a species we have no table row for).
   function fishRank(c, hasPhoto) {
-    if (!c || !hasPhoto) return null;
+    if (!c || !hasPhoto || c.review_state === "blurred") return null;   // under review: no rank (same as the database)
     const e = rankEntry(c.species), L = rankLength(c);
     if (!e || !(L > 0)) return null;
     const r = Math.min(L / e[1], 1.3);                       // 1.0 = a big adult of this species
@@ -52,36 +52,54 @@
     return (photosBySpot[c.spot_id] || []).some(p => p.catch_id === c.id);
   }
 
-  // ---- Show rank anywhere a fish is shown. A catch counts only when it has a photo; photos of other people's catches are looked up
-  // in the background (one small query), and the screens redraw themselves when an answer comes back. ----
-  const rankPhoto = new Map();           // catch id -> true/false once we know
-  const rankPending = new Set();         // ids waiting for the next lookup
+  // ---- Show rank anywhere a fish is shown. The DATABASE is the judge (view catch_ranks, setup/44): it only ranks photographed,
+  // not-blurred catches, with the same rules as above, so nobody can fake a Power by editing the app. The app asks in the background
+  // (one small query per batch), remembers each answer per catch, asks again if the species, length or weight changed, and the screens
+  // redraw when answers come back. Until then (or offline) it shows its own calculation for catches it knows have a photo. ----
+  const rankServer = new Map();          // catch id -> { sig, row } (row null = the database says "no rank"; failed = couldn't ask)
+  const rankPending = new Map();         // catch id -> catch, waiting for the next lookup
   let rankTimer = null;
-  function rankHasPhoto(c) {
-    if (!c || !c.id) return false;
-    if (catchHasPhoto(c)) return true;
-    if (rankPhoto.has(c.id)) return rankPhoto.get(c.id);
-    if (typeof db !== "undefined" && db) { rankPending.add(c.id); if (!rankTimer) rankTimer = setTimeout(rankFlush, 300); }
-    return false;
+  const rankSig = c => [c.species || "", c.length_in ?? "", c.weight_lb ?? "", !!c.weight_est, c.review_state || "", catchHasPhoto(c)].join("|");
+  function rankFromRow(r) {
+    const t = RANK_TIERS.find(x => x[1] === r.tier) || RANK_TIERS[RANK_TIERS.length - 1], e = rankEntry(r.species);
+    return { power: r.power, tier: r.tier, icon: t[2], rarity: e ? e[2] : 1, size: r.size_pct, server: true,
+      stats: { strength: r.strength, speed: r.speed, stamina: r.stamina } };
   }
-  async function rankWarm(ids) {         // look up which of these catches have photos; returns how many turned out to have one
-    ids = [...new Set(ids)].filter(id => id && !rankPhoto.has(id));
-    let found = 0;
-    for (let i = 0; i < ids.length; i += 150) {
-      const chunk = ids.slice(i, i + 150);
+  function rankAsk(c) {
+    if (typeof db === "undefined" || !db || !c.id || rankPending.has(c.id)) return;
+    rankPending.set(c.id, c);
+    if (!rankTimer) rankTimer = setTimeout(rankFlush, 300);
+  }
+  // knownPhoto: the caller is showing this catch's photo right now, so the app's own copy may rank it while the database answers.
+  function rankOf(c, knownPhoto) {
+    if (!c || !c.id) return null;
+    const s = rankServer.get(c.id), sig = rankSig(c);
+    if (s && s.sig === sig && !s.failed) return s.row ? rankFromRow(s.row) : null;
+    if (!s || s.sig !== sig || (s.failed && Date.now() - s.at > 60000)) rankAsk(c);   // a failed ask is retried after a minute
+    return fishRank(c, knownPhoto || catchHasPhoto(c));
+  }
+  async function rankWarm(cs) {          // ask the database about these catches; returns how many answers differ from what was shown
+    cs = [...new Map(cs.filter(c => c && c.id).map(c => [c.id, c])).values()];
+    let changed = 0;
+    for (let i = 0; i < cs.length; i += 150) {
+      const chunk = cs.slice(i, i + 150);
       try {
-        const { data, error } = await db.from("photos").select("catch_id").in("catch_id", chunk);
+        const { data, error } = await db.from("catch_ranks").select("catch_id,species,power,tier,strength,speed,stamina,size_pct").in("catch_id", chunk.map(c => c.id));
         if (error) throw error;
-        const has = new Set((data || []).map(p => p.catch_id));
-        chunk.forEach(id => { rankPhoto.set(id, has.has(id)); if (has.has(id)) found++; });
-      } catch (e) { chunk.forEach(id => rankPhoto.set(id, false)); }   // offline: show no rank rather than keep asking
+        const by = new Map((data || []).map(r => [r.catch_id, r]));
+        chunk.forEach(c => {
+          const row = by.get(c.id) || null, before = fishRank(c, catchHasPhoto(c));
+          rankServer.set(c.id, { sig: rankSig(c), row });
+          if (row ? !before || before.power !== row.power || before.tier !== row.tier : !!before) changed++;
+        });
+      } catch (e) { chunk.forEach(c => rankServer.set(c.id, { sig: rankSig(c), row: null, failed: true, at: Date.now() })); }   // offline: keep the app's own answer, don't keep asking
     }
-    return found;
+    return changed;
   }
   async function rankFlush() {
     rankTimer = null;
-    const ids = [...rankPending]; rankPending.clear();
-    if (ids.length && await rankWarm(ids)) rankRedraw();
+    const cs = [...rankPending.values()]; rankPending.clear();
+    if (cs.length && await rankWarm(cs)) rankRedraw();
   }
   function rankRedraw() {
     const tryIt = f => { try { f(); } catch (e) { /* that screen isn't ready — fine */ } };
@@ -90,7 +108,6 @@
     if (typeof renderRecords === "function") tryIt(renderRecords);
     if (typeof renderMyFish === "function") tryIt(renderMyFish);
   }
-  const rankOf = c => fishRank(c, rankHasPhoto(c));
   function rankTag(c) { const rk = rankOf(c); return rk ? ` · ${rk.icon} ${rk.power}` : ""; }
   function rankBlock(rk) {
     const b = document.createElement("div"); b.className = "rank-block";
@@ -103,12 +120,13 @@
   function rankFill(box, c, stillShowing) {
     const put = () => {
       if (stillShowing && !stillShowing()) return;
-      const rk = fishRank(c, rankPhoto.get(c.id) === true || catchHasPhoto(c));
+      const rk = rankOf(c);
       if (rk) box.appendChild(rankBlock(rk));
-      else if (rankLength(c) > 0 && rankEntry(c.species) && me && c.created_by === me.id) { const n = document.createElement("div"); n.className = "spot-meta"; n.textContent = "📷 Add a photo of this fish to give it a rank."; box.appendChild(n); }
+      else if (rankLength(c) > 0 && rankEntry(c.species) && me && c.created_by === me.id && !catchHasPhoto(c) && c.review_state !== "blurred") { const n = document.createElement("div"); n.className = "spot-meta"; n.textContent = "📷 Add a photo of this fish to give it a rank."; box.appendChild(n); }
     };
-    if (catchHasPhoto(c) || rankPhoto.has(c.id) || typeof db === "undefined" || !db) put();
-    else rankWarm([c.id]).then(put);
+    const s = rankServer.get(c.id);
+    if (typeof db === "undefined" || !db || (s && s.sig === rankSig(c))) put();
+    else rankWarm([c]).then(put);
   }
 
   // ---- 🐟 My fish: your best ranked fish of each species, as collection cards ----
