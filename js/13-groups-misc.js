@@ -318,12 +318,15 @@
       const mapDiv = el("div"); mapDiv.id = "trip-map"; mapDiv.style.cssText = "height:260px;border-radius:10px;margin:10px 0;border:1px solid var(--line)"; content.appendChild(mapDiv);
       try {
         if (tripMap) { tripMap.remove(); tripMap = null; }
+        if (typeof mapHookInstall === "function") mapHookInstall(); // lets pins with an `a11y` label be reached with Tab and opened with Enter
+        mapDiv.setAttribute("role", "region"); mapDiv.setAttribute("aria-label", "Trip map. Use the arrow keys to move the map and plus or minus to zoom. Tab to reach the pins. The catches are also listed below the map.");
         tripMap = L.map(mapDiv, { zoomControl: true });
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(tripMap);
         const pts = [];
-        if (hasLoc(spot)) { L.marker([spot.lat, spot.lng]).addTo(tripMap).bindPopup("📍 " + spot.name); pts.push([spot.lat, spot.lng]); }
+        if (hasLoc(spot)) { L.marker([spot.lat, spot.lng], { alt: "Spot: " + spot.name, title: "Spot: " + spot.name }).addTo(tripMap).bindPopup("📍 " + spot.name); pts.push([spot.lat, spot.lng]); }
         geo.forEach(r => {
-          L.circleMarker([r.lat, r.lng], { radius: 8, color: "#fff", weight: 2, fillColor: me && r.user_id === me.id ? "#0e7c86" : "#e08a2c", fillOpacity: 1 })
+          const when = new Date(r.caught_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+          L.circleMarker([r.lat, r.lng], { radius: 8, color: "#fff", weight: 2, fillColor: me && r.user_id === me.id ? "#0e7c86" : "#e08a2c", fillOpacity: 1, a11y: `Catch: ${cap(r.species || "Fish")}${r.how_many > 1 ? " ×" + r.how_many : ""} by ${nm(r.user_id)} at ${when}` })
             .addTo(tripMap).bindPopup(`🎣 ${cap(r.species || "Fish")}${r.how_many > 1 ? " ×" + r.how_many : ""} — ${nm(r.user_id)}<br>${new Date(r.caught_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`);
           pts.push([r.lat, r.lng]);
         });

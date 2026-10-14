@@ -429,3 +429,6 @@ Fishbrain audit (Oct 14): docs/fishbrain-audit.md (also project doc claude/fishb
 
 ## v94 — tappable names in the Messages list
 - `renderChat()` (js/11): each row's name is now `personLink(id, name, null, () => $("chat-close").click())` — tap the name = their profile (Messages closes first); tap the rest of the row = open the chat as before. Test: test107 (new, asserts and exits non-zero on failure). Tappable names now cover every list/caption. Not done: the name in the open chat's title bar.
+
+## v95 — screen-reader labels on the trip-review map
+- `openTripReview()` (js/13): the trip map is now a labelled region; each catch pin gets an `a11y` label ("Catch: Snook by You at 5:44 PM") so Tab reaches it and Enter opens its pop-up (same `mapHookInstall` hook as the main map); the spot marker has alt/title "Spot: name". Nothing looks different. Test: test108 (copy of test44's trip flow plus asserts; exits non-zero on failure).
