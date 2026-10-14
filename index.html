@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=87">
+<link rel="stylesheet" href="css/app.css?v=88">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -257,6 +257,7 @@
     <div class="label" style="margin-top:18px">About</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
       <button class="btn ghost small" id="settings-wn" type="button">✨ What's new</button>
+      <button id="wn-open" type="button" hidden aria-hidden="true" tabindex="-1">✨ What's new</button>
       <button class="btn ghost small" id="bug-btn" type="button">🐞 Report a problem</button>
       <a class="btn ghost small" href="privacy.html" style="text-decoration:none">Privacy policy</a>
     </div>
@@ -389,11 +390,8 @@
 
   <div id="app" hidden>
 
-  <div id="plan-top" class="card" style="padding:10px 14px">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-  <button class="btn small" id="plan-add" type="button">📅 Plan a trip</button>
+  <div id="plan-top" class="card" style="padding:10px 14px" data-quiet="1">
   <span class="spot-meta" id="pl-done" style="margin:0"></span>
-  </div>
   <button class="linkbtn" id="plan-line" type="button" hidden style="display:block;text-align:left;margin-top:6px"></button>
   <div id="ct-banner" hidden style="margin-top:6px"></div>
   <form id="plan-form" hidden>
@@ -422,7 +420,6 @@
     <div id="wx-banner" hidden></div>
     <div id="ci-mine" hidden></div>
     <div id="ci-watch"></div>
-    <button class="btn ghost small" id="ci-start" type="button" style="margin-bottom:10px">🛟 Heading out? Check in with a buddy</button>
   </div>
 
   <div class="tabs" role="tablist">
@@ -559,18 +556,27 @@
     </div>
     <div class="filter-status" id="map-filter-note" role="status" aria-live="polite" style="margin:0 0 8px" hidden></div>
     <div id="map"></div>
-    <div class="map-tools">
+    <div class="map-tools" id="map-main-tools">
       <button class="btn small" id="map-add" type="button">+ Add a spot on the map</button>
-      <button class="btn ghost small" id="map-list" type="button">📋 See as a list</button>
+      <button class="btn small" id="map-layers-btn" type="button" aria-haspopup="dialog" aria-expanded="false">🗂 Layers</button>
+      <button class="btn small" id="map-find-btn" type="button" aria-haspopup="dialog" aria-expanded="false">🧭 Find new water</button>
       <button class="btn ghost small" id="map-me" type="button">◎ Show me</button>
-      <button class="btn ghost small" id="map-layer" type="button">🛰 Satellite</button>
-      <button class="btn ghost small" id="map-sugg" type="button">☆ Show suggestions</button>
-      <button class="btn ghost small" id="map-sst" type="button">🌡 Water temp</button>
-      <button class="btn ghost small" id="map-chl" type="button">🟢 Water clarity</button>
-      <button class="btn small" id="map-bite" type="button">🎣 Biting now</button>
-      <button class="btn ghost small" id="map-sight" type="button">👀 Sightings</button>
-      <button class="btn ghost small" id="map-pub" type="button">🌎 Public spots</button>
-      <button class="btn ghost small" id="map-offline" type="button">⬇ Save map for offline</button>
+      <button class="btn ghost small" id="map-list" type="button">📋 See as a list</button>
+      <button class="btn small" id="boat-open" type="button">🚤 Boat mode</button>
+    </div>
+    <div id="layer-real" hidden>
+      <button id="map-bite" type="button">🎣 Biting now</button>
+      <button id="map-pub" type="button">🌎 Public spots</button>
+      <button id="map-sight" type="button">👀 Sightings</button>
+      <button id="mx-reef" type="button">🪸 Artificial reefs</button>
+      <button id="mx-water" type="button" aria-pressed="false">🏞 Public lakes (FWC)</button>
+      <button id="mx-chart" type="button">🧭 Nautical chart</button>
+      <button id="mx-depth" type="button" aria-pressed="false">〰 Depth lines</button>
+      <button id="map-sst" type="button">🌡 Water temp</button>
+      <button id="map-chl" type="button">🟢 Water clarity</button>
+      <button id="map-layer" type="button">🛰 Satellite</button>
+      <button id="mx-ramp" type="button">⛵ Boat ramps</button>
+      <button id="mx-zone" type="button">🚫 Protected zones</button>
     </div>
     <div id="bite-chips" hidden style="margin:0 0 8px"></div>
     <div class="spot-meta" id="bite-note" role="status" aria-live="polite" hidden style="margin:0 0 8px"></div>
@@ -600,6 +606,57 @@
       <div class="sat-bar" id="sat-bar"></div>
       <div class="sat-scale"><span id="sat-min"></span><span id="sat-max"></span></div>
       <div class="spot-meta" id="sat-note"></div>
+    </div>
+
+    <div class="msheet" id="layers-sheet" role="dialog" aria-modal="false" aria-labelledby="layers-title" hidden>
+      <div class="msheet-grip" aria-hidden="true"></div>
+      <div class="msheet-head"><h2 id="layers-title">Layers</h2><button class="linkbtn" id="layers-done" type="button">Done</button></div>
+      <div class="msheet-body" id="layers-body">
+        <div class="lyr-group">Fishing</div>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-bite"><span class="lyr-t">🎣 What's biting<small>Catches from the last 14 days</small></span><span class="sw" aria-hidden="true"></span></button>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-pub"><span class="lyr-t">🌎 Public spots<small>Shared by people in the app (blurred pins)</small></span><span class="sw" aria-hidden="true"></span></button>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-sight"><span class="lyr-t">👀 Sightings<small>Fish seen by iNaturalist users</small></span><span class="sw" aria-hidden="true"></span></button>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="mx-reef"><span class="lyr-t">🪸 Artificial reefs<small>FWC reef sites</small></span><span class="sw" aria-hidden="true"></span></button>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="mx-water"><span class="lyr-t">🏞 Public lakes &amp; fish attractors<small>FWC lakes, and brush piles inside them</small></span><span class="sw" aria-hidden="true"></span></button>
+        <div class="lyr-group">On the water</div>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="mx-chart"><span class="lyr-t">🧭 Nautical chart</span><span class="sw" aria-hidden="true"></span></button>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="mx-depth"><span class="lyr-t">〰 Depth lines<small>Salt water and surveyed lakes</small></span><span class="sw" aria-hidden="true"></span></button>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-sst"><span class="lyr-t">🌡 Water temperature<small>Satellite</small></span><span class="sw" aria-hidden="true"></span></button>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-chl"><span class="lyr-t">🟢 Water clarity<small>Satellite</small></span><span class="sw" aria-hidden="true"></span></button>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-layer"><span class="lyr-t">🛰 Satellite photos<small>Swap the street map for aerial photos</small></span><span class="sw" aria-hidden="true"></span></button>
+        <div class="lyr-group">Getting there &amp; rules</div>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="mx-ramp"><span class="lyr-t">⛵ Boat ramps</span><span class="sw" aria-hidden="true"></span></button>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="mx-zone"><span class="lyr-t">🚫 Protected &amp; no-fishing zones</span><span class="sw" aria-hidden="true"></span></button>
+        <div class="lyr-group">Offline</div>
+        <div style="padding:6px 0 10px"><button class="btn ghost small" id="map-offline" type="button">⬇ Save map for offline</button></div>
+      </div>
+    </div>
+
+    <div class="msheet" id="find-sheet" role="dialog" aria-modal="false" aria-labelledby="find-title" hidden>
+      <div class="msheet-grip" aria-hidden="true"></div>
+      <div class="msheet-head"><h2 id="find-title">🧭 Find new water</h2><button class="linkbtn" id="find-done" type="button">Done</button></div>
+      <div class="msheet-body" id="find-body">
+        <div class="spot-meta">Places nobody on the app has saved yet. Tap + Add to put one on your list, or Map to look at it first.</div>
+        <div style="margin-top:8px"><button class="btn ghost small" id="map-sugg" type="button">☆ Show suggestions</button></div>
+  <div class="card" id="sugg-card" style="margin-top:12px">
+    <div class="row">
+      <div class="label">Suggested spots nearby</div>
+      <button class="btn ghost small" id="sugg-near" type="button">◎ Near me</button>
+    </div>
+    <div class="spot-meta" style="margin-top:4px">Public piers, ramps, jetties and fishing spots from OpenStreetMap that nobody has saved yet. Check access before you go.</div>
+    <ul id="sugg-list"><li class="empty">Loading suggestions…</li></ul>
+    <button class="btn ghost small" id="sugg-more" type="button" hidden>Show more</button>
+  </div>
+
+  <div class="card" id="pw-card">
+    <div class="label">🏞 Public lakes near you (FWC)</div>
+    <div class="spot-meta" id="pw-new" hidden style="margin-top:4px"><b>New here?</b> These are lakes Florida stocks and manages for fishing — tap + Add to start your map.</div>
+    <div class="spot-meta" style="margin-top:4px">Fish Management Areas from Florida Fish &amp; Wildlife. Some have special rules — check before you go. On the map, 🏞 Public lakes also shows FWC fish attractors (brush piles) inside lakes.</div>
+    <ul id="pw-list" class="sugg-list"><li class="empty">Loading FWC public lakes…</li></ul>
+    <button class="btn ghost small" id="pw-more" type="button" hidden>Show more</button>
+  </div>
+
+      </div>
     </div>
     <div class="card" id="unplaced-card" style="margin-top:14px" hidden>
       <div class="label">Spots without a location</div>
@@ -665,6 +722,12 @@
       <button type="button" class="tile" data-more="weather"><div class="strip-t">🌡 Water</div><div class="strip-v" id="ts-water">…</div><div class="strip-s" id="ts-water2"></div></button>
       <button type="button" class="tile" data-more="moon-card"><div class="strip-t">🌙 Moon</div><div class="strip-v" id="ts-moon">…</div><div class="strip-s" id="ts-moon2"></div></button>
     </div>
+  </div>
+
+  <div class="hq-row" id="home-quick">
+    <button class="btn small" id="hq-start" type="button">▶ Start trip</button>
+    <button class="btn ghost small" id="ci-start" type="button" title="Check in with a buddy">🛟 Heading out</button>
+    <button class="btn ghost small" id="plan-add" type="button">📅 Plan a trip</button>
   </div>
 
   <div class="card" id="best-card">
@@ -804,26 +867,9 @@
     <div id="spot-list"><div class="empty">Loading spots…</div></div>
   </div>
 
-  <div class="card" id="sugg-card">
-    <div class="row">
-      <div class="label">Suggested spots nearby</div>
-      <button class="btn ghost small" id="sugg-near" type="button">◎ Near me</button>
-    </div>
-    <div class="spot-meta" style="margin-top:4px">Public piers, ramps, jetties and fishing spots from OpenStreetMap that nobody has saved yet. Check access before you go.</div>
-    <ul id="sugg-list"><li class="empty">Loading suggestions…</li></ul>
-    <button class="btn ghost small" id="sugg-more" type="button" hidden>Show more</button>
-  </div>
-
-  <div class="card" id="pw-card">
-    <div class="label">🏞 Public lakes near you (FWC)</div>
-    <div class="spot-meta" id="pw-new" hidden style="margin-top:4px"><b>New here?</b> These are lakes Florida stocks and manages for fishing — tap + Add to start your map.</div>
-    <div class="spot-meta" style="margin-top:4px">Fish Management Areas from Florida Fish &amp; Wildlife. Some have special rules — check before you go. On the map, 🏞 Public lakes also shows FWC fish attractors (brush piles) inside lakes.</div>
-    <ul id="pw-list" class="sugg-list"><li class="empty">Loading FWC public lakes…</li></ul>
-    <button class="btn ghost small" id="pw-more" type="button" hidden>Show more</button>
-  </div>
-
   <details id="cond-more">
-    <summary>🌊 More conditions &amp; tide times</summary>
+    <summary>🌊 Weather, tides &amp; moon</summary>
+    <div class="cond-head"><b>🌊 Weather, tides &amp; moon</b><button class="btn ghost small" id="cond-close" type="button">✕ Close</button></div>
   <div class="card" id="status">
     <div class="label">Right now</div>
     <div class="now" id="stage">Loading tides…</div>
@@ -857,7 +903,7 @@
     Heights in feet above mean lower low water.
     Moon &amp; solunar times calculated with SunCalc; past catch conditions from Open-Meteo. Wind, weather &amp; pressure from the <a href="https://www.weather.gov/mfl/" target="_blank" rel="noopener">National Weather Service</a>.
     <br>V3 step 2: satellite layers. Suggestions from OpenStreetMap (Overpass API). Freshwater levels from USGS. Map data &copy; OpenStreetMap contributors; satellite imagery &copy; Esri.
-    <br><a href="privacy.html">Privacy</a> · <button type="button" class="linkbtn" id="wn-open" style="font-size:inherit">✨ What's new</button>
+    <br><a href="privacy.html">Privacy</a>
   </footer>
 </main>
 
@@ -958,6 +1004,20 @@
   </form>
 </div>
 
+<div id="trip-sheet" hidden>
+  <form class="ci-card" id="trip-form">
+    <div class="label" style="font-size:1.15rem">▶ Start a trip</div>
+    <div class="spot-meta">Catches you log while it runs count toward it. Tap End trip when you leave.</div>
+    <label for="tr-spot">Where are you fishing?</label>
+    <select id="tr-spot"></select>
+    <div class="spot-meta" id="tr-note"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn" id="tr-go" type="submit">▶ Start trip</button>
+      <button class="btn ghost" id="tr-cancel" type="button">Not now</button>
+    </div>
+  </form>
+</div>
+
 <div id="share-modal" hidden>
   <div class="ci-card" style="text-align:center">
     <img id="share-img" alt="Share picture" style="width:100%;max-height:60vh;object-fit:contain;border-radius:10px">
@@ -1049,30 +1109,31 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=87"></script>
-<script src="js/02-spots.js?v=87"></script>
-<script src="js/03-photos.js?v=87"></script>
-<script src="js/04-insights.js?v=87"></script>
-<script src="js/05-seasons-records.js?v=87"></script>
-<script src="js/06-catching.js?v=87"></script>
-<script src="js/07-measure-fishid.js?v=87"></script>
-<script src="js/08-feed-plans.js?v=87"></script>
-<script src="js/09-map-forecast.js?v=87"></script>
-<script src="js/10-tools-safety.js?v=87"></script>
-<script src="js/11-accounts-social.js?v=87"></script>
-<script src="js/12-contests-alerts.js?v=87"></script>
-<script src="js/13-groups-misc.js?v=87"></script>
-<script src="js/14-tank.js?v=87"></script>
-<script src="js/15-fish-rank.js?v=87"></script>
-<script src="js/16-fish-race.js?v=87"></script>
-<script src="js/17-license-help.js?v=87"></script>
-<script src="js/18-species.js?v=87"></script>
-<script src="js/19-biting.js?v=87"></script>
-<script src="js/20-spot-share.js?v=87"></script>
-<script src="js/21-pub-filters.js?v=87"></script>
-<script src="js/22-public-water.js?v=87"></script>
-<script src="js/23-depth.js?v=87"></script>
-<script src="js/24-delete-account.js?v=87"></script>
-<script src="js/99-boot.js?v=87"></script>
+<script src="js/01-core.js?v=88"></script>
+<script src="js/02-spots.js?v=88"></script>
+<script src="js/03-photos.js?v=88"></script>
+<script src="js/04-insights.js?v=88"></script>
+<script src="js/05-seasons-records.js?v=88"></script>
+<script src="js/06-catching.js?v=88"></script>
+<script src="js/07-measure-fishid.js?v=88"></script>
+<script src="js/08-feed-plans.js?v=88"></script>
+<script src="js/09-map-forecast.js?v=88"></script>
+<script src="js/10-tools-safety.js?v=88"></script>
+<script src="js/11-accounts-social.js?v=88"></script>
+<script src="js/12-contests-alerts.js?v=88"></script>
+<script src="js/13-groups-misc.js?v=88"></script>
+<script src="js/14-tank.js?v=88"></script>
+<script src="js/15-fish-rank.js?v=88"></script>
+<script src="js/16-fish-race.js?v=88"></script>
+<script src="js/17-license-help.js?v=88"></script>
+<script src="js/18-species.js?v=88"></script>
+<script src="js/19-biting.js?v=88"></script>
+<script src="js/20-spot-share.js?v=88"></script>
+<script src="js/21-pub-filters.js?v=88"></script>
+<script src="js/22-public-water.js?v=88"></script>
+<script src="js/23-depth.js?v=88"></script>
+<script src="js/24-delete-account.js?v=88"></script>
+<script src="js/25-home-map.js?v=88"></script>
+<script src="js/99-boot.js?v=88"></script>
 </body>
 </html>

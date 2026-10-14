@@ -505,6 +505,7 @@
   function renderSessionBar() {
     const a = activeSession();
     $("session-bar").hidden = !a;
+    $("hq-start").hidden = !!a;
     if (!a) return;
     const fish = sessionCatches(a.id).reduce((n, c) => n + (c.how_many || 1), 0);
     $("session-text").textContent = `🎣 Fishing at ${a.spotName} · ${dur(Date.now() - new Date(a.started_at))} · ${fish} fish`;

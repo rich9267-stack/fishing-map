@@ -378,11 +378,13 @@
   .sugg-btns { display: flex; gap: 6px; flex-shrink: 0; }
   .spot.flash { animation: flash 1.6s ease-out; }
   @keyframes flash { from { background: rgba(14,124,134,.18); } to { background: transparent; } }
-  .strip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .tile { appearance: none; text-align: left; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-height: 76px; cursor: pointer; }
-  .strip-t { font-size: .78rem; color: var(--muted); font-weight: 600; }
-  .strip-v { font-size: 1.05rem; font-weight: 700; margin-top: 2px; }
-  .strip-s { font-size: .8rem; color: var(--muted); margin-top: 1px; }
+  .strip-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; }
+  .tile { appearance: none; text-align: left; font: inherit; color: var(--text); background: transparent; border: 0; border-left: 1px solid var(--line); border-radius: 0; padding: 4px 8px; min-height: 64px; cursor: pointer; overflow-wrap: anywhere; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; }
+  .strip-grid .tile:first-child { border-left: 0; padding-left: 0; }
+  .strip-t { font-size: .7rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .strip-v { font-size: .95rem; font-weight: 700; margin-top: 2px; line-height: 1.2; }
+  .strip-s { font-size: .74rem; color: var(--muted); margin-top: 1px; line-height: 1.25; }
+  #today-strip { padding: 10px 12px; }
   details#cond-more { background: var(--card); border-radius: 14px; margin-bottom: 14px; padding: 0 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   details#cond-more > summary { cursor: pointer; font-weight: 700; padding: 16px 0; min-height: 24px; }
   details#cond-more[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
@@ -670,3 +672,41 @@
   .sub-tabs button { flex: none; min-height: 40px; border-radius: 20px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: .9rem; font-weight: 600; padding: 0 14px; cursor: pointer; white-space: nowrap; }
   .sub-tabs button.on { background: var(--text); color: var(--bg); border-color: var(--text); }
   #wallet-box:empty { display: none; }
+
+  /* ---- UX v2 step 2: short Home + Map sheets ---- */
+  .hq-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .hq-row .btn { min-height: 44px; }
+  .hq-row .btn[hidden] { display: none; }
+  /* the full weather/tides/moon details open as a full-screen page from the conditions strip */
+  details#cond-more:not(.as-sheet) { display: none; }
+  details#cond-more .cond-head { display: none; }
+  details#cond-more.as-sheet { position: fixed; inset: 0; z-index: 1100; overflow-y: auto; margin: 0; border-radius: 0; background: var(--bg); box-shadow: none; padding: 0 14px calc(40px + env(safe-area-inset-bottom)); }
+  details#cond-more.as-sheet > summary { display: none; }
+  details#cond-more.as-sheet > * { max-width: 560px; margin-left: auto; margin-right: auto; }
+  details#cond-more.as-sheet .cond-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 14px 0 10px; max-width: 560px; }
+  details#cond-more.as-sheet .card { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.08); padding-left: 14px; padding-right: 14px; }
+  body.cond-open { overflow: hidden; }
+  /* Plan-a-trip card above the tabs only shows when it has something to say */
+  #plan-top[data-quiet]:not(:has(#plan-form:not([hidden]), #plan-line:not([hidden]), #ct-banner:not([hidden]), #pl-done:not(:empty))) { display: none; }
+  #trip-sheet { position: fixed; inset: 0; z-index: 1210; background: rgba(0,0,0,.55); overflow: auto; padding: 16px; }
+  #trip-sheet[hidden] { display: none; }
+  /* Map: Layers / Find new water bottom sheets */
+  .msheet { position: fixed; left: 0; right: 0; bottom: calc(62px + env(safe-area-inset-bottom)); z-index: 840; max-width: 560px; margin: 0 auto; max-height: 50vh; display: flex; flex-direction: column; background: var(--card); color: var(--text); border-radius: 18px 18px 0 0; box-shadow: 0 -4px 18px rgba(0,0,0,.2); padding: 8px 18px 0; }
+  .msheet[hidden] { display: none; }
+  .msheet-grip { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 6px; flex: none; }
+  .msheet-head { display: flex; align-items: center; justify-content: space-between; flex: none; }
+  .msheet-head h2 { margin: 0; font-size: 1.15rem; }
+  .msheet-head .linkbtn { min-height: 44px; padding: 0 6px; font-weight: 600; }
+  .msheet-body { overflow-y: auto; padding-bottom: 14px; -webkit-overflow-scrolling: touch; }
+  .lyr-group { font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 12px 0 2px; }
+  .lyr { appearance: none; width: 100%; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 4px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+  .lyr .lyr-t { flex: 1; }
+  .lyr small { display: block; color: var(--muted); font-size: .78rem; }
+  .sw { width: 42px; height: 26px; border-radius: 13px; background: color-mix(in srgb, var(--muted) 45%, var(--card)); position: relative; flex: none; transition: background .15s; }
+  .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .15s; box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+  .lyr.on .sw { background: var(--accent); }
+  .lyr.on .sw::after { left: 19px; }
+  .msheet h2:focus { outline: none; }
+  .lyr:focus-visible, .msheet button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  body.sheet-open #bn-log, body.sheet-open #qc-toast { display: none; }
+  @media (prefers-reduced-motion: reduce) { .sw, .sw::after { transition: none; } }

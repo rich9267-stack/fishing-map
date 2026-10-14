@@ -387,3 +387,10 @@ Fishbrain audit (Oct 14): docs/fishbrain-audit.md (also project doc claude/fishb
 - Play = view-tank (still showView("tank"), tab-tank): page title, #wallet-box moved to the top, #play-sw sub-tabs Tank / My fish / Fish race (playSub, remembered in fm-play-sub); #fk-card and #race-card moved here from Insights; tank parts wrapped in #play-tank. renderPlay()/showPlay(sub) in js/09. raceOpenRoom → showPlay("race"); rooms poll checks #race-card.
 - Compete = new view-compete + hidden tab-compete; the #contests card moved there. setFeedMode("contests") now redirects to showView("compete"), so every old contest path/alert link lands there. Feed's Compete button hidden.
 - Stats switch is Insights / Seasons only. tests/test102.js; test90/91 open the race with showPlay("race").
+
+## Oct 14 — 🏠 UX v2 step 2: short Home + Map Layers / Find new water sheets (v88)
+- Home (#view-list): conditions strip (now one 4-column strip; tapping it opens #cond-more as a full-screen page via class `as-sheet` + body.cond-open, ✕ #cond-close) → quick row #home-quick (new ▶ #hq-start, and the existing #ci-start and #plan-add moved here, ids unchanged) → Best spot → My spots. #plan-top (data-quiet) now hides itself unless it has a form/line/banner/message.
+- ▶ Start trip: #trip-sheet chooser (#tr-spot, nearest first only if location is already allowed) → startSession(); #hq-start hides while a trip runs (renderSessionBar).
+- Suggested spots (#sugg-card) and Public lakes (#pw-card) moved into #find-sheet on the Map ("🧭 Find new water", #map-find-btn, with #map-sugg inside). What's new left the footer (hidden #wn-open kept; Settings → What's new).
+- Map: one toolbar (#map-main-tools) + 🗂 Layers (#map-layers-btn → #layers-sheet). The 12 real layer buttons keep their ids/handlers inside hidden #layer-real; each switch row (.lyr[data-for]) clicks its real button and mirrors its state (class on / aria-pressed / satellite+suggestion text). #map-offline sits in the sheet. showView() closes the sheets when you leave the map (closeMapSheets).
+- Code: js/25-home-map.js (new, in sw.js APP_FILES). Test: tests/test103.js.

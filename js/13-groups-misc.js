@@ -449,6 +449,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14l", title: "🏠 Shorter Home, tidier Map", items: [
+      "Home is now short: today's tide, wind, water and moon in one strip (tap it for the full weather, tides and moon), quick buttons ▶ Start trip · 🛟 Heading out · 📅 Plan a trip, then Best spot today and your spots.",
+      "Suggested spots and Public lakes moved to the Map: tap 🧭 Find new water.",
+      "The row of map buttons is now one 🗂 Layers button. Open it and flip switches for what's biting, reefs, depth lines, water temperature and more — grouped as Fishing, On the water, and Getting there & rules."
+    ] },
     { id: "2026-10-14k", title: "🧭 New bottom bar", items: [
       "The bottom bar now has 🏠 Home · 🗺 Map · 🐠 Play · 🏆 Compete · 👥 Community · 📊 Stats.",
       "🐠 Play holds the games: your Tank, 🐟 My fish and 🏁 Fish race, with your coins on top.",

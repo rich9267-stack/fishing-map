@@ -646,6 +646,7 @@
   function showView(which) {
     try { localStorage.setItem("fm-last-tab", which); } catch (e) { /* fine */ }
     const isMap = which === "map";
+    if (!isMap && typeof closeMapSheets === "function") closeMapSheets();
     $("view-map").hidden = !isMap;
     $("view-list").hidden = which !== "list";
     $("view-insights").hidden = which !== "insights";
@@ -784,7 +785,7 @@
     });
     document.querySelectorAll('#today-strip .tile').forEach(b => b.addEventListener('click', () => {
       const d = $t('cond-more'), target = $t(b.dataset.more);
-      if (d) d.open = true;
+      if (d) { d.open = true; d.classList.add('as-sheet'); document.body.classList.add('cond-open'); }
       if (target && target.scrollIntoView) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }));
     fill();
