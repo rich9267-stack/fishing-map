@@ -4,7 +4,7 @@ The organization / QOL plan (docs/ux_cleanup_plan.md) is finished: bottom bar, H
 
 Still on the list, no order:
 - **"Host" switch for tournaments** — let a club or brand run official tournaments (today only admins can).
-- **Screen-reader pass of the map** — labels and focus for pins and map buttons.
+- ~~Screen-reader pass~~ — done: main map (v92), trip-review map (v95), tank screens (v96).
 - **Real-phone testing (Richard):** the file split live + offline, the new Home/Settings/pop-ups, light and dark mode; tell Claude anything that looks off.
 - **Fish-tracking data source** — bring in later (Richard's idea).
 - **SFWMD canal gate data** — only if the client ID/secret arrives from datarequests@sfwmd.gov (Richard saves secrets in Supabase himself, never in chat).

@@ -432,3 +432,11 @@ Fishbrain audit (Oct 14): docs/fishbrain-audit.md (also project doc claude/fishb
 
 ## v95 — screen-reader labels on the trip-review map
 - `openTripReview()` (js/13): the trip map is now a labelled region; each catch pin gets an `a11y` label ("Catch: Snook by You at 5:44 PM") so Tab reaches it and Enter opens its pop-up (same `mapHookInstall` hook as the main map); the spot marker has alt/title "Spot: name". Nothing looks different. Test: test108 (copy of test44's trip flow plus asserts; exits non-zero on failure).
+
+## v96 — screen-reader labels on the tank screens
+- js/14-tank.js: each tank is a labelled group ("Saltwater tank with N species…") whose label also names the decorations and placed pieces (kept in step by `tankApplySetup`); fish buttons say "Press Enter for details"; the fish details bar is a live region (also in full screen); bubbles/sand/decoration pictures are hidden from screen readers; pond/lagoon scenes are described as pictures with a count; coin/gem chips read "43 coins" / "2 gems".
+- Customize panel: labelled group that takes focus when opened and gives it back to the 🎨 button on Save/Cancel; gravel colours are a radio group (checked state spoken); sliders speak "30 percent from the left"; emoji hidden; keyboard focus now stays put after a tick/colour choice redraws the panel (it used to be lost); the 10-piece limit explains itself.
+- Shop: each category is a named list, each item a list item (picture hidden); Buy buttons say what they buy and the price in words, the two-tap confirm and the can't-afford state are spoken.
+- index.html: `#qc-toast` is now `role="status"` so every pop-up message (coins, "Tank saved", bought) is announced.
+- Tests: test109 (new, asserts and exits non-zero on failure). Nothing looks different on screen.
+

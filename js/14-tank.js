@@ -348,7 +348,7 @@
     const bg = el("div", "tank-full"); bg.setAttribute("role", "dialog"); bg.setAttribute("aria-modal", "true"); bg.setAttribute("aria-label", title);
     const bar = el("div", "tf-bar"), close = el("button", "btn", "✕ Close"); close.type = "button";
     bar.appendChild(el("b", null, title)); const sb = sndButton(); bar.appendChild(sb); bar.appendChild(close);
-    const stage = el("div", "tf-stage"), info = el("div", "tank-info tf-info"); info.hidden = true;
+    const stage = el("div", "tf-stage"), info = el("div", "tank-info tf-info"); info.hidden = true; info.setAttribute("role", "status");
     scene.style.height = "100%"; stage.appendChild(scene);
     const foot = el("div", "tf-foot"); foot.appendChild(info);
     let fb = null; if (canFeed) { fb = feedBtn(scene, true); if (scene.__sim && scene.__sim.feedMode) { fb.textContent = "✋ Done feeding"; fb.setAttribute("aria-pressed", "true"); } foot.appendChild(fb); }
@@ -387,21 +387,23 @@
     }
     const tank = el("div", "tank " + (salt ? "tank-salt" : "tank-fresh"));
     tank.style.height = Math.min(440, 230 + Math.ceil(fish.length / 2) * 26) + "px";
-    for (let i = 0; i < 6; i++) { const b = el("span", "bubble"); b.style.left = (8 + i * 16) + "%"; b.style.animationDelay = (i * 1.3) + "s"; b.style.animationDuration = (7 + (i % 3) * 2) + "s"; tank.appendChild(b); }
+    for (let i = 0; i < 6; i++) { const b = el("span", "bubble"); b.style.left = (8 + i * 16) + "%"; b.style.animationDelay = (i * 1.3) + "s"; b.style.animationDuration = (7 + (i % 3) * 2) + "s"; b.setAttribute("aria-hidden", "true"); tank.appendChild(b); }
     const items = [];
     fish.forEach((f, i) => {
       const px = tankPx(f.catchRow);
       const b = el("button", "tfish sim"); b.type = "button";
-      b.setAttribute("aria-label", `${f.species}, ${tankFishText(f) || "no size logged"}. Tap for details.`);
+      b.setAttribute("aria-label", `${f.species}, ${tankFishText(f) || "no size logged"}. Press Enter for details.`);
       const turnEl = el("span", "tf-turn"); turnEl.appendChild(fishSvg(f.species, px, i < 20)); b.appendChild(turnEl); // only the first 20 get moving parts (phone speed)
       b.addEventListener("click", () => { const fs = tank.closest(".tank-full"); tankInfo(f, kind, fs ? fs.querySelector(".tf-info") : info, opts); });
       tank.appendChild(b);
       items.push({ el: b, turnEl, w: px, h: Math.round(px * 68 / 128), depth: [0.25, 0.6, 1][i % 3], kind: f.key });
     });
-    tank.appendChild(el("div", "tank-sand"));
+    const sandEl = el("div", "tank-sand"); sandEl.setAttribute("aria-hidden", "true"); tank.appendChild(sandEl);
     // Decorations are earned: one more for every couple of species in this tank (so friends see the same ones on your profile)
     const deco = TANK_DECOR[salt ? "salt" : "fresh"], got = deco.filter(d => fish.length >= d.at);
     got.forEach((d, i) => { const e = el("span", "decor", d.e); e.style.left = (5 + i * (76 / Math.max(deco.length - 1, 1))) + "%"; e.style.fontSize = d.sz + "px"; e.title = d.n; e.setAttribute("aria-hidden", "true"); tank.appendChild(e); });
+    // Spoken description: the tank is a labelled group; its fish are buttons; the decorations are read out in the label (they are only pictures)
+    tank.setAttribute("role", "group"); tank.dataset.a11y = `${salt ? "Saltwater" : "Freshwater"} tank with ${fish.length} species. Tab to a fish and press Enter for its details.`; tank.dataset.decor = got.map(d => d.n).join(", ");
     card.appendChild(tank);
     tankApplySetup(tank, opts.setup);
     tankSwim(tank, items, { seed: salt ? 1 : 2, chase: true });
@@ -413,7 +415,7 @@
     acts.appendChild(fullBtn(tank, salt ? "🌊 Saltwater tank" : "🌿 Freshwater tank", !opts.other));
     if (opts.own && !opts.other) { const cb = el("button", "btn ghost custom-btn", "🎨 Customize"); cb.type = "button"; cb.addEventListener("click", () => { if (!shop.ready) { if (typeof toast === "function") toast("Opening your items…"); shopLoad().then(() => tankCustomize(kind, tank, card)); } else tankCustomize(kind, tank, card); }); acts.appendChild(cb); }
     card.appendChild(acts);
-    const info = el("div", "tank-info"); info.hidden = true; card.appendChild(info);
+    const info = el("div", "tank-info"); info.hidden = true; info.setAttribute("role", "status"); card.appendChild(info);
     box.appendChild(card);
   }
   // Decorations that unlock as a tank fills up (at = number of species in that tank)
@@ -437,6 +439,7 @@
     card.appendChild(el("div", "label", salt ? "🌴 Your lagoon" : "🏞 Your pond"));
     if (!total) { card.appendChild(emptyBox(salt ? "The lagoon is empty. When you catch a second fish of a saltwater species, the smaller one swims here and your best stays in the saltwater tank." : "The pond is empty. When you catch a second fish of a freshwater species, the smaller one swims here and your best stays in the freshwater tank.", "📸 Log a catch", () => { $("qc-fab").click(); })); box.appendChild(card); return; }
     const scene = el("div", salt ? "pond-scene lagoon-scene" : "pond-scene"); scene.style.height = "230px";
+    scene.setAttribute("role", "img"); scene.setAttribute("aria-label", `${salt ? "Your lagoon" : "Your pond"}: ${total > 40 ? "40 of your " + total : total} fish swimming. The list below gives how many of each kind.`);
     [[8, 14, 46], [70, 62, 56], [38, 76, 38], [84, 20, 34]].forEach(([l, tp, w]) => { const d = el("span", salt ? "weed" : "pad"); d.style.cssText = `left:${l}%;top:${tp}%;width:${salt ? Math.round(w * .5) : w}px;height:${salt ? w + 20 : Math.round(w * .72)}px`; scene.appendChild(d); });
     const fishList = []; rows.forEach(p => { for (let k = 0; k < p.n; k++) fishList.push(p.species); });
     let shown = 0; const items = [];
@@ -566,7 +569,7 @@
     const box = $("wallet-box"); if (!box) return; box.innerHTML = "";
     if (!wallet) return;
     const row = el("div", "wallet-row");
-    const chip = (e, n, t) => { const c = el("span", "coin-chip"); c.title = t; c.appendChild(el("span", "", e)); c.appendChild(el("b", "", String(n))); return c; };
+    const chip = (e, n, t) => { const c = el("span", "coin-chip"); c.title = t; c.setAttribute("role", "img"); c.setAttribute("aria-label", `${n} ${e === "💎" ? "gems" : "coins"}`); c.appendChild(el("span", "", e)); c.appendChild(el("b", "", String(n))); return c; };
     row.appendChild(chip("🪙", wallet.coins, "Coins")); row.appendChild(chip("💎", wallet.gems, "Gems — earned only, never sold"));
     box.appendChild(row);
     box.appendChild(el("div", "spot-meta", `Today: ${wallet.today} of ${wallet.cap} catch coins`));
@@ -636,6 +639,10 @@
     tank.querySelectorAll(".placed").forEach(e => e.remove());
     const sand = tank.querySelector(".tank-sand"), g = GRAVEL[(setup && setup.gravel) || "sand"] || GRAVEL.sand;
     if (sand) sand.style.background = `linear-gradient(${g[0]}, ${g[1]})`;
+    if (tank.dataset.a11y) {
+      const names = (tank.dataset.decor ? [tank.dataset.decor] : []).concat(((setup && setup.placed) || []).map(p => SHOP_ART[p.key] && SHOP_ART[p.key].n).filter(Boolean));
+      tank.setAttribute("aria-label", tank.dataset.a11y + (names.length ? " Decorations: " + names.join(", ") + "." : ""));
+    }
     ((setup && setup.placed) || []).forEach(p => {
       const a = SHOP_ART[p.key]; if (!a) return;
       const d = el("span", "decor placed " + (p.layer === "front" ? "lay-front" : "lay-back"));
@@ -648,18 +655,19 @@
     const old = card.querySelector(".tank-custom"); if (old) { old.remove(); tankApplySetup(tank, shop.setups[kind]); return; }
     const saved = shop.setups[kind] || { gravel: null, placed: [] };
     const draft = { gravel: saved.gravel || "sand", placed: (saved.placed || []).map(p => ({ key: p.key, x: p.x, layer: p.layer })) };
-    const panel = el("div", "tank-custom"); card.appendChild(panel);
+    const panel = el("div", "tank-custom"); panel.setAttribute("role", "group"); panel.setAttribute("aria-label", `Customize your ${kind === "salt" ? "saltwater" : "freshwater"} tank`); panel.tabIndex = -1; card.appendChild(panel);
+    const backToButton = () => { const cb = card.querySelector(".custom-btn"); if (cb && cb.focus) cb.focus(); };
     const mine = Object.keys(shop.items).filter(k => shop.owned.has(k)).map(k => shop.items[k]).filter(i => i.water === "both" || i.water === kind);
     const preview = () => tankApplySetup(tank, draft);
-    const draw = () => {
+    const draw = fk => {   // fk = data-fk of the control to put the keyboard focus back on after the redraw
       panel.innerHTML = ""; panel.appendChild(el("div", "label", "🎨 Customize this tank"));
       const gl = mine.filter(i => i.category === "gravel"), pieces = mine.filter(i => i.category !== "gravel");
       panel.appendChild(el("div", "spot-meta", "Gravel"));
-      const sw = el("div", "gravel-row");
+      const sw = el("div", "gravel-row"); sw.setAttribute("role", "radiogroup"); sw.setAttribute("aria-label", "Gravel color");
       [{ key: "sand", name: "Natural sand" }].concat(gl).forEach(i => {
-        const b = el("button", "gravel-sw" + (draft.gravel === i.key ? " on" : "")); b.type = "button"; b.title = i.name; b.setAttribute("aria-label", i.name + (draft.gravel === i.key ? " (selected)" : ""));
+        const b = el("button", "gravel-sw" + (draft.gravel === i.key ? " on" : "")); b.type = "button"; b.title = i.name; b.dataset.fk = "g:" + i.key; b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(draft.gravel === i.key)); b.setAttribute("aria-label", i.name);
         const c = GRAVEL[i.key] || GRAVEL.sand; b.style.background = `linear-gradient(${c[0]}, ${c[1]})`;
-        b.addEventListener("click", () => { draft.gravel = i.key; preview(); draw(); }); sw.appendChild(b);
+        b.addEventListener("click", () => { draft.gravel = i.key; preview(); draw(b.dataset.fk); }); sw.appendChild(b);
       });
       panel.appendChild(sw);
       panel.appendChild(el("div", "spot-meta", "Pieces (up to 10 per tank)"));
@@ -667,12 +675,13 @@
       pieces.forEach(i => {
         const cur = draft.placed.find(p => p.key === i.key), row = el("div", "piece-row");
         const lab = el("label", "piece-name"); const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!cur;
-        cb.disabled = !cur && draft.placed.length >= 10;
-        cb.addEventListener("change", () => { if (cb.checked) draft.placed.push({ key: i.key, x: 50, layer: i.category === "plant" || i.category === "coral" ? "back" : "front" }); else draft.placed = draft.placed.filter(p => p.key !== i.key); preview(); draw(); });
-        lab.appendChild(cb); lab.appendChild(document.createTextNode(" " + ((SHOP_ART[i.key] && SHOP_ART[i.key].e) || "✨") + " " + i.name)); row.appendChild(lab);
+        cb.disabled = !cur && draft.placed.length >= 10; cb.dataset.fk = "p:" + i.key; if (cb.disabled) cb.title = "Limit reached: 10 pieces per tank. Untick one to add this.";
+        cb.addEventListener("change", () => { if (cb.checked) draft.placed.push({ key: i.key, x: 50, layer: i.category === "plant" || i.category === "coral" ? "back" : "front" }); else draft.placed = draft.placed.filter(p => p.key !== i.key); preview(); draw(cb.dataset.fk); });
+        lab.appendChild(cb); lab.appendChild(document.createTextNode(" ")); const em = el("span", null, (SHOP_ART[i.key] && SHOP_ART[i.key].e) || "✨"); em.setAttribute("aria-hidden", "true"); lab.appendChild(em); lab.appendChild(document.createTextNode(" " + i.name)); row.appendChild(lab);
         if (cur) {
           const rg = document.createElement("input"); rg.type = "range"; rg.min = 0; rg.max = 100; rg.value = cur.x; rg.setAttribute("aria-label", i.name + " position, left to right");
-          rg.addEventListener("input", () => { cur.x = +rg.value; preview(); });
+          const say = () => rg.setAttribute("aria-valuetext", rg.value + " percent from the left"); say();
+          rg.addEventListener("input", () => { cur.x = +rg.value; say(); preview(); });
           const sel = document.createElement("select"); sel.setAttribute("aria-label", i.name + " layer");
           [["back", "Behind the fish"], ["front", "In front"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; if (cur.layer === v) o.selected = true; sel.appendChild(o); });
           sel.addEventListener("change", () => { cur.layer = sel.value; preview(); });
@@ -680,19 +689,20 @@
         }
         panel.appendChild(row);
       });
-      const acts = el("div", "tank-actions"), save = el("button", "btn small", "Save"), cancel = el("button", "btn ghost small", "Cancel"), msg = el("div", "msg");
+      const acts = el("div", "tank-actions"), save = el("button", "btn small", "Save"), cancel = el("button", "btn ghost small", "Cancel"), msg = el("div", "msg"); msg.setAttribute("role", "status"); msg.setAttribute("aria-live", "polite");
       save.type = "button"; cancel.type = "button";
-      cancel.addEventListener("click", () => { tankApplySetup(tank, shop.setups[kind]); panel.remove(); });
+      cancel.addEventListener("click", () => { tankApplySetup(tank, shop.setups[kind]); panel.remove(); backToButton(); });
       save.addEventListener("click", async () => {
         save.disabled = true; msg.className = "msg"; msg.textContent = "Saving…";
         const r = await db.rpc("save_tank_setup", { p_tank: kind, p_gravel: draft.gravel === "sand" ? null : draft.gravel, p_placed: draft.placed });
         if (r.error) { save.disabled = false; msg.className = "msg err"; msg.textContent = r.error.message; return; }
         shop.setups[kind] = { tank: kind, gravel: draft.gravel === "sand" ? null : draft.gravel, placed: draft.placed.map(p => ({ key: p.key, x: p.x, layer: p.layer })) };
-        panel.remove(); if (typeof toast === "function") toast("🎨 Tank saved — friends can see it on your profile");
+        panel.remove(); backToButton(); if (typeof toast === "function") toast("🎨 Tank saved — friends can see it on your profile");
       });
       acts.appendChild(save); acts.appendChild(cancel); panel.appendChild(acts); panel.appendChild(msg);
+      if (fk) { const t = panel.querySelector('[data-fk="' + fk + '"]'); if (t && t.focus) t.focus(); }
     };
-    draw(); panel.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    draw(); panel.scrollIntoView({ block: "nearest", behavior: "smooth" }); panel.focus();
   }
   function shopDraw(box) {
     box.innerHTML = "";
@@ -706,9 +716,9 @@
     SHOP_CATS.forEach(([cat, label]) => {
       const list = items.filter(i => i.category === cat); if (!list.length) return;
       const card = el("div", "tank-card"); card.appendChild(el("div", "label", label));
-      const grid = el("div", "shop-grid"); card.appendChild(grid);
+      const grid = el("div", "shop-grid"); grid.setAttribute("role", "list"); grid.setAttribute("aria-label", label); card.appendChild(grid);
       list.forEach(i => {
-        const cell = el("div", "shop-item"), art = el("div", "shop-art");
+        const cell = el("div", "shop-item"), art = el("div", "shop-art"); cell.setAttribute("role", "listitem"); art.setAttribute("aria-hidden", "true");
         if (cat === "gravel") { const c = GRAVEL[i.key] || GRAVEL.sand; art.style.background = `linear-gradient(${c[0]}, ${c[1]})`; art.classList.add("swatch"); }
         else { const a = SHOP_ART[i.key]; if (a && a.chest) art.appendChild(chestSvg()); else { art.textContent = (a && a.e) || "✨"; if (a && a.f) art.style.filter = a.f; } }
         cell.appendChild(art); cell.appendChild(el("div", "shop-name", i.name));
@@ -718,16 +728,17 @@
         else if (i.how === "tournament") cell.appendChild(el("div", "spot-meta", "🏆 Won in official tournaments"));
         else {
           const price = [i.coins ? i.coins + " 🪙" : "", i.gems ? i.gems + " 💎" : ""].filter(Boolean).join(" + ");
+          const priceSay = [i.coins ? i.coins + " coins" : "", i.gems ? i.gems + " gems" : ""].filter(Boolean).join(" and ");
           const needC = Math.max(0, (i.coins || 0) - wal.coins), needG = Math.max(0, (i.gems || 0) - wal.gems);
-          const b = el("button", "btn small", "Buy · " + price); b.type = "button";
-          if (needC || needG) { b.disabled = true; b.textContent = price; cell.appendChild(b); cell.appendChild(el("div", "spot-meta", "Need " + [needC ? needC + " more 🪙" : "", needG ? needG + " more 💎" : ""].filter(Boolean).join(" and "))); }
+          const b = el("button", "btn small", "Buy · " + price); b.type = "button"; b.setAttribute("aria-label", `Buy ${i.name} for ${priceSay}`);
+          if (needC || needG) { b.disabled = true; b.textContent = price; b.setAttribute("aria-label", `${i.name} costs ${priceSay}. You don't have enough yet.`); cell.appendChild(b); cell.appendChild(el("div", "spot-meta", "Need " + [needC ? needC + " more 🪙" : "", needG ? needG + " more 💎" : ""].filter(Boolean).join(" and "))); }
           else {
             let armed = 0;
             b.addEventListener("click", async () => {
-              if (!armed) { armed = setTimeout(() => { armed = 0; b.textContent = "Buy · " + price; }, 4000); b.textContent = "Tap again to buy"; return; }
-              clearTimeout(armed); b.disabled = true; b.textContent = "Buying…";
+              if (!armed) { armed = setTimeout(() => { armed = 0; b.textContent = "Buy · " + price; b.setAttribute("aria-label", `Buy ${i.name} for ${priceSay}`); }, 4000); b.textContent = "Tap again to buy"; b.setAttribute("aria-label", `Press again to confirm buying ${i.name} for ${priceSay}. Purchases are final.`); return; }
+              clearTimeout(armed); b.disabled = true; b.textContent = "Buying…"; b.setAttribute("aria-label", "Buying…");
               const r = await db.rpc("buy_item", { p_key: i.key });
-              if (r.error) { if (typeof toast === "function") toast("Couldn't buy: " + r.error.message, 6000); armed = 0; b.disabled = false; b.textContent = "Buy · " + price; return; }
+              if (r.error) { if (typeof toast === "function") toast("Couldn't buy: " + r.error.message, 6000); armed = 0; b.disabled = false; b.textContent = "Buy · " + price; b.setAttribute("aria-label", `Buy ${i.name} for ${priceSay}`); return; }
               wallet = Object.assign({}, wallet || {}, r.data); shop.owned.add(i.key); walletDraw(); shopDraw(box);
               if (typeof toast === "function") toast("✓ Bought " + i.name + " — place it with 🎨 Customize on a tank", 6000);
             });
@@ -762,7 +773,7 @@
       const btn = el("button", "col-row"); btn.type = "button"; btn.setAttribute("aria-expanded", "false");
       btn.appendChild(el("span", "col-name", (full ? "🏅 " : "") + g.label));
       btn.appendChild(el("b", null, `${g.got.length} of ${g.total}`));
-      const bar = el("span", "col-bar"), fill = el("i"); fill.style.width = pct + "%"; bar.appendChild(fill); btn.appendChild(bar);
+      const bar = el("span", "col-bar"), fill = el("i"); bar.setAttribute("aria-hidden", "true"); fill.style.width = pct + "%"; bar.appendChild(fill); btn.appendChild(bar);
       const det = el("div", "col-det"); det.hidden = true;
       g.got.forEach(n => { const c = el("span", "col-chip got"); c.appendChild(fishSvg(n, 30)); c.appendChild(el("span", null, "✓ " + n)); det.appendChild(c); });
       g.missing.forEach(n => det.appendChild(el("span", "col-chip", "· " + n)));
