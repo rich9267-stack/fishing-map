@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=83">
+<link rel="stylesheet" href="css/app.css?v=84">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -533,8 +533,10 @@
       <button class="btn ghost small" id="mx-reef" type="button">🪸 Artificial reefs</button>
       <button class="btn ghost small" id="mx-ramp" type="button">⛵ Boat ramps</button>
       <button class="btn ghost small" id="mx-zone" type="button">🚫 Protected zones</button>
+      <button class="btn ghost small" id="mx-water" type="button" aria-pressed="false">🏞 Public lakes (FWC)</button>
     </div>
     <div class="spot-meta" id="mx-note" role="status" aria-live="polite" hidden></div>
+    <div class="spot-meta" id="pw-note" role="status" aria-live="polite" hidden></div>
     <div class="legend">
       <span><span class="dot" style="background:#1d6fd6"></span>Saltwater</span>
       <span><span class="dot" style="background:#16a085"></span>Brackish / tidal canal</span>
@@ -663,7 +665,7 @@
             <option value="dock">Dock</option><option value="bridge">Bridge</option>
             <option value="inlet">Inlet</option><option value="pier">Pier</option>
             <option value="jetty">Jetty</option><option value="seawall">Seawall</option>
-            <option value="ramp">Ramp</option>
+            <option value="ramp">Ramp</option><option value="shore">Shore / bank</option>
           </select>
         </div>
         <div>
@@ -770,6 +772,14 @@
     <div class="spot-meta" style="margin-top:4px">Public piers, ramps, jetties and fishing spots from OpenStreetMap that nobody has saved yet. Check access before you go.</div>
     <ul id="sugg-list"><li class="empty">Loading suggestions…</li></ul>
     <button class="btn ghost small" id="sugg-more" type="button" hidden>Show more</button>
+  </div>
+
+  <div class="card" id="pw-card">
+    <div class="label">🏞 Public lakes near you (FWC)</div>
+    <div class="spot-meta" id="pw-new" hidden style="margin-top:4px"><b>New here?</b> These are lakes Florida stocks and manages for fishing — tap + Add to start your map.</div>
+    <div class="spot-meta" style="margin-top:4px">Fish Management Areas from Florida Fish &amp; Wildlife. Some have special rules — check before you go. On the map, 🏞 Public lakes also shows FWC fish attractors (brush piles) inside lakes.</div>
+    <ul id="pw-list" class="sugg-list"><li class="empty">Loading FWC public lakes…</li></ul>
+    <button class="btn ghost small" id="pw-more" type="button" hidden>Show more</button>
   </div>
 
   <details id="cond-more">
@@ -997,27 +1007,28 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=83"></script>
-<script src="js/02-spots.js?v=83"></script>
-<script src="js/03-photos.js?v=83"></script>
-<script src="js/04-insights.js?v=83"></script>
-<script src="js/05-seasons-records.js?v=83"></script>
-<script src="js/06-catching.js?v=83"></script>
-<script src="js/07-measure-fishid.js?v=83"></script>
-<script src="js/08-feed-plans.js?v=83"></script>
-<script src="js/09-map-forecast.js?v=83"></script>
-<script src="js/10-tools-safety.js?v=83"></script>
-<script src="js/11-accounts-social.js?v=83"></script>
-<script src="js/12-contests-alerts.js?v=83"></script>
-<script src="js/13-groups-misc.js?v=83"></script>
-<script src="js/14-tank.js?v=83"></script>
-<script src="js/15-fish-rank.js?v=83"></script>
-<script src="js/16-fish-race.js?v=83"></script>
-<script src="js/17-license-help.js?v=83"></script>
-<script src="js/18-species.js?v=83"></script>
-<script src="js/19-biting.js?v=83"></script>
-<script src="js/20-spot-share.js?v=83"></script>
-<script src="js/21-pub-filters.js?v=83"></script>
-<script src="js/99-boot.js?v=83"></script>
+<script src="js/01-core.js?v=84"></script>
+<script src="js/02-spots.js?v=84"></script>
+<script src="js/03-photos.js?v=84"></script>
+<script src="js/04-insights.js?v=84"></script>
+<script src="js/05-seasons-records.js?v=84"></script>
+<script src="js/06-catching.js?v=84"></script>
+<script src="js/07-measure-fishid.js?v=84"></script>
+<script src="js/08-feed-plans.js?v=84"></script>
+<script src="js/09-map-forecast.js?v=84"></script>
+<script src="js/10-tools-safety.js?v=84"></script>
+<script src="js/11-accounts-social.js?v=84"></script>
+<script src="js/12-contests-alerts.js?v=84"></script>
+<script src="js/13-groups-misc.js?v=84"></script>
+<script src="js/14-tank.js?v=84"></script>
+<script src="js/15-fish-rank.js?v=84"></script>
+<script src="js/16-fish-race.js?v=84"></script>
+<script src="js/17-license-help.js?v=84"></script>
+<script src="js/18-species.js?v=84"></script>
+<script src="js/19-biting.js?v=84"></script>
+<script src="js/20-spot-share.js?v=84"></script>
+<script src="js/21-pub-filters.js?v=84"></script>
+<script src="js/22-public-water.js?v=84"></script>
+<script src="js/99-boot.js?v=84"></script>
 </body>
 </html>

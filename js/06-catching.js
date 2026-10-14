@@ -588,7 +588,7 @@
   const FILTER_GROUPS = [
     { key: "water", title: "Water", options: [["saltwater", "Saltwater"], ["brackish", "Brackish / canal"], ["freshwater", "Freshwater"]],
       test: (s, v) => v.has(s.water_type) },
-    { key: "type", title: "Spot type", options: [["dock", "Dock"], ["bridge", "Bridge"], ["inlet", "Inlet"], ["pier", "Pier"], ["jetty", "Jetty"], ["seawall", "Seawall"], ["ramp", "Ramp"]],
+    { key: "type", title: "Spot type", options: [["dock", "Dock"], ["bridge", "Bridge"], ["inlet", "Inlet"], ["pier", "Pier"], ["jetty", "Jetty"], ["seawall", "Seawall"], ["ramp", "Ramp"], ["shore", "Shore / bank"]],
       test: (s, v) => v.has(s.spot_type) },
     { key: "access", title: "Getting there", options: [["public", "Public access"], ["free", "Free parking"], ["anyparking", "Has parking"], ["nolongwalk", "No long walk"], ["no4x4", "No 4x4 needed"]],
       all: true, // these are each requirements, so every ticked one must be true

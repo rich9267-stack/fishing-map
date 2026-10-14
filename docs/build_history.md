@@ -364,3 +364,9 @@ Fishbrain audit (Oct 14): docs/fishbrain-audit.md (also project doc claude/fishb
 - js/21-pub-filters.js: Feed → 🌎 Public gets a 📍 Local / 🌎 Global switch. Local = public catches whose spot (as you can see it — a stranger's spot uses its blurred pin) is within 25 miles of the phone's location; catches at spots hidden from you only show in Global. Location asked when Local is picked (kept 10 min); refused → plain message.
 - Same filters on both: time 24 h / 7 days / 30 days / all (sent to the database as caught_at ≥), fish (top 10 kinds in what's loaded), water salt/brackish/fresh (spot water_type), 📷 photos only, 🏅 ranked only (rankOf). Newest first. Choices saved on the phone (localStorage fm-pub-filters).
 - loadPublic now loads up to 200 (grows by 200 on Show more) into pubAll; renderPubFeed filters and shows 30 at a time. tests/test98.js.
+
+## Oct 14 — 🏞 Public lakes from FWC (v84, Fishbrain audit #11)
+- js/22-public-water.js. FWC Fish Management Areas (gis.myfwc.com hosting/Open_Data/Fish_Management_Areas_Florida/MapServer/3, ~140 polygons statewide) loaded once as simplified GeoJSON and kept on the phone 30 days (localStorage fm-fwc-fma-v1). Freshwater fish attractors (mapping/Projects_FWC/Freshwater_Fish_Attractors/MapServer/0, points) asked for the map view at zoom ≥ 10.
+- Spots list card "🏞 Public lakes near you (FWC)": closest unsaved lakes (from the Suggested spots centre), Map / + Add; "New here?" line when you have fewer than 3 spots. Map button 🏞 Public lakes (FWC) next to Map extras. + Add fills the spot form (Shore / bank, freshwater, public access, notes with the FWC rules link; lake pin = middle of the lake, the person moves it).
+- setup/53: spot type `shore` (new check constraint added, old one dropped — the connector allowed this drop).
+- tests/test99.js.

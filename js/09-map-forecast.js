@@ -455,6 +455,7 @@
       loadSightings();
       loadPlans();
       if (typeof renderSuggestions === "function") renderSuggestions();
+      if (typeof pwLoadFma === "function") { pwLoadFma(); renderPwCard(); }   // 🏞 FWC public lakes near you
     } catch (err) {
       const copy = isNetErr(err) && loadCopy("spots");
       if (copy) {
@@ -1111,6 +1112,7 @@
       suggAnchor = { lat: p.coords.latitude, lng: p.coords.longitude };
       $("sugg-near").textContent = "◎ Near me ✓";
       loadSuggestions();
+      if (typeof renderPwCard === "function") renderPwCard();
     }, () => { $("sugg-near").textContent = "◎ Near me"; alert("Couldn't get your location — allow it in your browser settings."); },
     { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 });
   });

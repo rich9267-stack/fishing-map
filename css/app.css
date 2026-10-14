@@ -373,7 +373,7 @@
   .pop-cond { margin-top: 6px; font-size: .85rem; }
   .pop-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
   .pop-actions a, .pop-actions button { font: inherit; font-size: .85rem; font-weight: 600; padding: 6px 10px; border-radius: 8px; border: 1px solid #dfe7ea; background: #fff; color: #0e7c86; text-decoration: none; cursor: pointer; }
-  #sugg-list li { gap: 8px; }
+  #sugg-list li, #pw-list li { gap: 8px; }
   .sugg-name { font-weight: 600; }
   .sugg-btns { display: flex; gap: 6px; flex-shrink: 0; }
   .spot.flash { animation: flash 1.6s ease-out; }
