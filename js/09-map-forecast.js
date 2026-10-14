@@ -729,7 +729,11 @@
     // Me menu
     const mb = $("me-btn"), mm = $("me-menu");
     const closeMe = () => { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); };
-    mb.addEventListener("click", e => { e.stopPropagation(); mm.hidden = !mm.hidden; mb.setAttribute("aria-expanded", String(!mm.hidden)); });
+    mb.addEventListener("click", e => {
+      e.stopPropagation();
+      if (typeof openMe === "function") { openMe(); return; }   // UX v2 step 4: your picture opens the Me page (js/27); the old dropdown is only a fallback
+      mm.hidden = !mm.hidden; mb.setAttribute("aria-expanded", String(!mm.hidden));
+    });
     mm.addEventListener("click", () => setTimeout(closeMe, 0));
     document.addEventListener("click", e => { if (!mm.hidden && !mm.contains(e.target) && e.target !== mb) closeMe(); });
     document.addEventListener("keydown", e => { if (e.key === "Escape") closeMe(); });

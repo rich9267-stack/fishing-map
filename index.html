@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=89">
+<link rel="stylesheet" href="css/app.css?v=90">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -29,8 +29,9 @@
   <div class="userbar" id="userbar" hidden>
     <span id="who"></span>
     <span class="userbar-links" style="position:relative">
-      <button class="linkbtn" id="me-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Menu — profile, alerts, sign out"><span id="me-avatar"></span><span class="nav-badge" id="me-badge" hidden></span></button>
-      <div id="me-menu" hidden role="menu">
+      <button class="linkbtn" id="find-btn" type="button" aria-label="Find anything — spots, fish, people, catches">🔍</button>
+      <button class="linkbtn" id="me-btn" type="button" aria-label="Me — profile, settings, alerts"><span id="me-avatar"></span><span class="nav-badge" id="me-badge" hidden></span></button>
+      <div id="me-menu" hidden role="menu" aria-hidden="true"><!-- old menu: never shown now; the Me page presses these buttons, so old links and tests still work -->
         <button class="linkbtn" id="profile-btn" type="button" role="menuitem">🙂 Profile</button>
         <button class="linkbtn" id="settings-btn" type="button" role="menuitem">⚙️ Settings</button>
         <button class="linkbtn" id="inbox-btn" type="button" role="menuitem">🔔 Alerts</button>
@@ -92,6 +93,49 @@
     </div>
   </div>
 
+  <div class="card" id="me-card" hidden role="dialog" aria-modal="true" aria-labelledby="me-name">
+    <div class="me-top"><button class="linkbtn me-back" id="me-close" type="button">‹ Back</button></div>
+    <div class="me-head">
+      <span id="me-big-avatar" aria-hidden="true"></span>
+      <div class="me-who"><div class="me-name" id="me-name"></div><div class="spot-meta" id="me-sub"></div></div>
+      <button class="linkbtn" id="me-edit" type="button">Edit</button>
+    </div>
+    <div class="me-lab">Alerts</div>
+    <div class="me-grp">
+      <button class="me-it" type="button" data-me="inbox"><span>Alerts inbox</span><span class="me-badge" id="me-inbox-n" hidden></span></button>
+      <button class="me-it" type="button" data-me="alerts"><span>Phone alerts &amp; quiet hours</span></button>
+    </div>
+    <div class="me-lab">Fishing</div>
+    <div class="me-grp">
+      <button class="me-it" type="button" data-me="license"><span>Fishing license</span></button>
+      <button class="me-it" type="button" data-me="privacy"><span>Privacy &amp; blocked people</span></button>
+    </div>
+    <div class="me-lab">This phone</div>
+    <div class="me-grp">
+      <button class="me-it" type="button" data-me="offline"><span>Offline maps</span></button>
+      <button class="me-it" type="button" data-me="phone"><span>Photos &amp; Home Screen app</span></button>
+    </div>
+    <div class="me-lab">Your data &amp; help</div>
+    <div class="me-grp">
+      <button class="me-it" type="button" data-me="data"><span>Download or delete my data</span></button>
+      <button class="me-it" type="button" data-me="whatsnew"><span>What's new</span></button>
+      <button class="me-it" type="button" data-me="help"><span>Report a problem</span></button>
+      <button class="me-it" type="button" data-me="invite" hidden><span id="me-invite-t">Invite to app</span><small>admin</small></button>
+    </div>
+    <div class="me-btns">
+      <button class="btn ghost" id="me-refresh" type="button">Refresh</button>
+      <button class="btn ghost" id="me-signout" type="button">Sign out</button>
+    </div>
+  </div>
+
+  <div id="find-page" hidden role="dialog" aria-modal="true" aria-label="Find anything">
+    <div class="fp-bar">
+      <label class="fp-in"><span aria-hidden="true">🔍</span><input id="find-q" type="search" placeholder="Spots, fish, people, catches…" aria-label="Find anything" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search"></label>
+      <button class="linkbtn" id="find-cancel" type="button">Cancel</button>
+    </div>
+    <div id="find-out" aria-live="polite"></div>
+  </div>
+
   <div class="card" id="profile-card" hidden>
     <div class="row">
       <div class="label">Your profile</div>
@@ -150,13 +194,19 @@
 
   <div class="card" id="settings-card" hidden>
     <div class="row">
-      <div class="label">⚙️ Settings</div>
+      <div class="label" id="settings-title">⚙️ Settings</div>
       <button class="linkbtn" id="settings-close" type="button">Close</button>
     </div>
+    <div class="me-sec" data-sec="privacy">
     <div class="label" style="margin-top:6px">🔒 Privacy</div>
     <p class="spot-meta" style="margin:4px 0 8px">Who can see your profile page is set on your profile page screen. Private catches and spots are never shown to anyone.</p>
-    <button class="btn ghost small" id="settings-privacy" type="button">🪪 Open my profile page settings</button>
-    <div id="lic-box" style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost small" id="settings-privacy" type="button">🪪 Open my profile page settings</button>
+      <button class="btn ghost small" id="settings-blocked" type="button">🚫 Blocked people</button>
+    </div>
+    <p class="spot-meta" style="margin:8px 0 0"><a href="privacy.html">Privacy policy</a></p>
+    </div>
+    <div id="lic-box" class="me-sec" data-sec="license" style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
       <div class="label">🎫 Fishing license</div>
       <p class="spot-meta" style="margin:4px 0 8px">Add your license and the date it ends. You'll get a phone alert 2 weeks before and when it runs out. Only you can see this.</p>
       <div id="lic-list"></div>
@@ -176,14 +226,10 @@
         — Florida residents 65+ and anyone under 16 don't need one.
       </p>
     </div>
-    <div id="push-box" style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
+    <div id="push-box" class="me-sec" data-sec="alerts" style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
       <div class="label">🔔 Phone alerts</div>
       <div class="spot-meta" id="push-status"></div>
-      <div class="spot-meta" id="push-ios" hidden>iPhone alerts only work from the Home Screen app — follow the steps below.</div>
-      <details id="a2hs" style="margin-top:8px">
-        <summary style="cursor:pointer;font-weight:600">📲 How to add this app to your Home Screen</summary>
-        <div id="a2hs-body"></div>
-      </details>
+      <div class="spot-meta" id="push-ios" hidden>iPhone alerts only work from the Home Screen app. <button class="linkbtn" id="push-a2hs-go" type="button">Show me how</button></div>
       <div id="push-prefs" hidden style="margin-top:8px">
         <label class="check-row" for="push-p-social"><input id="push-p-social" type="checkbox"><span>👥 Messages, friend requests, comments, “I’m in”</span></label>
         <label class="check-row" for="push-p-contests"><input id="push-p-contests" type="checkbox"><span>🏁 Contest invites, starting soon, ended</span></label>
@@ -219,12 +265,24 @@
       </div>
       <div class="msg" id="push-msg"></div>
     </div>
+    <div class="me-sec" data-sec="phone">
+      <details id="a2hs" style="margin-top:0">
+        <summary style="cursor:pointer;font-weight:600">📲 How to add this app to your Home Screen</summary>
+        <div id="a2hs-body"></div>
+      </details>
     <div class="label" style="margin-top:18px">📷 Photos taken in the app</div>
     <label class="check-row"><input type="checkbox" id="save-pics" checked><span>💾 Keep a copy of every photo I take inside the app on my phone, so I don't lose it if I don't post it</span></label>
     <p class="spot-meta" style="margin:4px 0 8px">Android saves a copy by itself. iPhone doesn't let websites save to Photos silently, so you get a one-tap “Save to Photos” button after each shot. The app also keeps the last 14 days of shots here, just in case.</p>
     <button class="btn ghost small" id="pic-stash-btn" type="button">📥 My recent app photos</button>
     <div id="pic-stash" hidden style="margin-top:8px"></div>
-    <div class="label" style="margin-top:18px">Your data</div>
+    </div>
+    <div class="me-sec" data-sec="offline">
+      <div class="label" style="margin-top:6px">🗺 Offline maps</div>
+      <p class="spot-meta" style="margin:4px 0 8px">Save the part of the map you are looking at so it still works with no signal. Zoom the map to your fishing area, then tap <b>Save map for offline</b> under Layers.</p>
+      <button class="btn small" id="me-offline-go" type="button">Open the map layers</button>
+    </div>
+    <div class="me-sec" data-sec="data">
+    <div class="label" style="margin-top:6px">Your data</div>
     <p class="spot-meta" style="margin:4px 0 8px">Download your own catches and spots as spreadsheet files (CSV) — they open in Excel, Numbers or Google Sheets.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn ghost small" id="export-catches" type="button">⬇ My catches</button>
@@ -254,7 +312,9 @@
       </div>
       <div class="msg" id="del-msg" role="status"></div>
     </div>
-    <div class="label" style="margin-top:18px">About</div>
+    </div>
+    <div class="me-sec" data-sec="help">
+    <div class="label" style="margin-top:6px">Help</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
       <button class="btn ghost small" id="settings-wn" type="button">✨ What's new</button>
       <button id="wn-open" type="button" hidden aria-hidden="true" tabindex="-1">✨ What's new</button>
@@ -274,6 +334,7 @@
     <div id="bug-admin" hidden style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
       <div class="label">🐞 Problem reports</div>
       <div id="bug-admin-list"></div>
+    </div>
     </div>
   </div>
 
@@ -1137,32 +1198,33 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=89"></script>
-<script src="js/02-spots.js?v=89"></script>
-<script src="js/03-photos.js?v=89"></script>
-<script src="js/04-insights.js?v=89"></script>
-<script src="js/05-seasons-records.js?v=89"></script>
-<script src="js/06-catching.js?v=89"></script>
-<script src="js/07-measure-fishid.js?v=89"></script>
-<script src="js/08-feed-plans.js?v=89"></script>
-<script src="js/09-map-forecast.js?v=89"></script>
-<script src="js/10-tools-safety.js?v=89"></script>
-<script src="js/11-accounts-social.js?v=89"></script>
-<script src="js/12-contests-alerts.js?v=89"></script>
-<script src="js/13-groups-misc.js?v=89"></script>
-<script src="js/14-tank.js?v=89"></script>
-<script src="js/15-fish-rank.js?v=89"></script>
-<script src="js/16-fish-race.js?v=89"></script>
-<script src="js/17-license-help.js?v=89"></script>
-<script src="js/18-species.js?v=89"></script>
-<script src="js/19-biting.js?v=89"></script>
-<script src="js/20-spot-share.js?v=89"></script>
-<script src="js/21-pub-filters.js?v=89"></script>
-<script src="js/22-public-water.js?v=89"></script>
-<script src="js/23-depth.js?v=89"></script>
-<script src="js/24-delete-account.js?v=89"></script>
-<script src="js/25-home-map.js?v=89"></script>
-<script src="js/26-sub-tabs.js?v=89"></script>
-<script src="js/99-boot.js?v=89"></script>
+<script src="js/01-core.js?v=90"></script>
+<script src="js/02-spots.js?v=90"></script>
+<script src="js/03-photos.js?v=90"></script>
+<script src="js/04-insights.js?v=90"></script>
+<script src="js/05-seasons-records.js?v=90"></script>
+<script src="js/06-catching.js?v=90"></script>
+<script src="js/07-measure-fishid.js?v=90"></script>
+<script src="js/08-feed-plans.js?v=90"></script>
+<script src="js/09-map-forecast.js?v=90"></script>
+<script src="js/10-tools-safety.js?v=90"></script>
+<script src="js/11-accounts-social.js?v=90"></script>
+<script src="js/12-contests-alerts.js?v=90"></script>
+<script src="js/13-groups-misc.js?v=90"></script>
+<script src="js/14-tank.js?v=90"></script>
+<script src="js/15-fish-rank.js?v=90"></script>
+<script src="js/16-fish-race.js?v=90"></script>
+<script src="js/17-license-help.js?v=90"></script>
+<script src="js/18-species.js?v=90"></script>
+<script src="js/19-biting.js?v=90"></script>
+<script src="js/20-spot-share.js?v=90"></script>
+<script src="js/21-pub-filters.js?v=90"></script>
+<script src="js/22-public-water.js?v=90"></script>
+<script src="js/23-depth.js?v=90"></script>
+<script src="js/24-delete-account.js?v=90"></script>
+<script src="js/25-home-map.js?v=90"></script>
+<script src="js/26-sub-tabs.js?v=90"></script>
+<script src="js/27-me-find.js?v=90"></script>
+<script src="js/99-boot.js?v=90"></script>
 </body>
 </html>

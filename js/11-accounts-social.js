@@ -941,7 +941,10 @@
   });
   $("profile-close").addEventListener("click", () => { $("profile-card").hidden = true; });
   // ---- Settings page (UX step 4): alerts, photos, data export, what's new ----
+  let meSecWant = null;   // set by the Me page (js/27) just before it presses ⚙️ Settings, so only that one section shows
   $("settings-btn").addEventListener("click", () => {
+    if (!meSecWant && typeof meSettingsAll === "function") meSettingsAll();   // old links / tests: the whole Settings page, as before
+    meSecWant = null;
     $("profile-card").hidden = true; $("settings-card").hidden = false;
     pushRefresh(); $("settings-card").scrollIntoView({ behavior: "smooth", block: "start" });
   });

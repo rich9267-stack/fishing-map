@@ -453,6 +453,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14n", title: "🙂 Your Me page + 🔍 Find anything", items: [
+      "Tap your picture (top right) to open your Me page. Alerts, phone alerts & quiet hours, fishing license, privacy, offline maps, Home Screen help, your data, What's new and Report a problem are each one tap away. Your profile is now just your profile (tap Edit).",
+      "🔍 Find anything (top right) searches your spots, fish, friends and catches in one go — and the app's own features too. Try “license”, “race” or “quiet hours”.",
+      "Your picture is hidden on the Map so it doesn't cover the pins."
+    ] },
     { id: "2026-10-14m", title: "📊 Stats and 👥 Community, tidied into tabs", items: [
       "📊 Stats now has tabs along the top: Insights · Records · Seasons · Species · Tackle. Records also holds your Year in review & badges, Species has 🐟 My fish and a page for every fish, and Tackle is your tackle box.",
       "👥 Community now has tabs too: Feed · Trips · Friends · Messages · Groups. The Feed keeps “Who's going?” and the My circle / Public switch; your past trips moved to Trips.",

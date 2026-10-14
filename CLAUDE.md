@@ -13,4 +13,4 @@ Owner: Richard (Pompano Beach, no programming experience). Plain language, small
 - Keep this file and README.md short.
 
 ## Now
-UX v2 (layout + navigation; design = Design canvas "Fishing Map — New Layout" in Richard's artifacts). Steps 1–3 done (v87 bar; v88 short Home + Map Layers / Find new water sheets, js/25; v89 Stats + Community sub-tabs, js/26). Next: 4) Me page (settings as sections, profile picture on every page except Map/Settings/Find) + 🔍 Find anything. Artist work (tank step 9) is ON HOLD until Richard says go. #5 delete my account needs setup/54 pasted in the SQL Editor by Richard. On hold: SFWMD gate data.
+UX v2 (layout + navigation; design = Design canvas "Fishing Map — New Layout" in Richard's artifacts). Steps 1–4 done (v87 bar; v88 short Home + Map sheets, js/25; v89 Stats + Community sub-tabs, js/26; v90 Me page + 🔍 Find anything, js/27). Next: 5) polish pass on the new layout (Richard to say what). Artist work (tank step 9) is ON HOLD until Richard says go. #5 delete my account needs setup/54 pasted in the SQL Editor by Richard. On hold: SFWMD gate data.

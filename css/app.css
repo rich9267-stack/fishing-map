@@ -724,3 +724,53 @@
   #sp-q { width: 100%; box-sizing: border-box; }
   #sp-entry-list .fchip { min-height: 40px; }
 
+
+  /* ---- UX v2 step 4: Me page, Settings sections, 🔍 Find anything ---- */
+  #me-menu { display: none !important; }
+  body.on-map #me-btn, body.me-open #me-btn, body.find-open #me-btn { display: none; }
+  body.me-open, body.find-open { overflow: hidden; }
+  #find-btn { font-size: 1.05rem; min-width: 44px; min-height: 44px; }
+  #me-btn { min-width: 44px; min-height: 44px; }
+  #me-card, #settings-card[data-show], #find-page { position: fixed; inset: 0; z-index: 1090; margin: 0; border: 0; border-radius: 0; box-shadow: none; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    background: var(--bg); box-sizing: border-box; padding: calc(8px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom)); }
+  body.me-open #toast-box, body.find-open #toast-box { z-index: 1195; }
+  body.me-open .ask-bg, body.find-open .ask-bg { z-index: 1195; }
+  #me-card[hidden], #find-page[hidden] { display: none; }
+  #me-card > *, #settings-card[data-show] > *, #find-page > * { max-width: 560px; margin-left: auto; margin-right: auto; }
+  #settings-card[data-show] .me-sec { display: none; }
+  #settings-card[data-show="alerts"] .me-sec[data-sec="alerts"], #settings-card[data-show="license"] .me-sec[data-sec="license"], #settings-card[data-show="privacy"] .me-sec[data-sec="privacy"],
+  #settings-card[data-show="offline"] .me-sec[data-sec="offline"], #settings-card[data-show="phone"] .me-sec[data-sec="phone"], #settings-card[data-show="data"] .me-sec[data-sec="data"],
+  #settings-card[data-show="help"] .me-sec[data-sec="help"] { display: block; }
+  #settings-card[data-show] .me-sec { border-top: 0 !important; margin-top: 8px !important; padding-top: 0 !important; }
+  #settings-card[data-show] #settings-close { min-height: 44px; font-weight: 600; }
+  #settings-card[data-show] > .row { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 6px 0; flex-direction: row-reverse; justify-content: flex-end; gap: 12px; align-items: center; }
+  .me-top { display: flex; padding: 6px 0 2px; }
+  .me-back { min-height: 44px; font-weight: 600; }
+  .me-head { display: flex; align-items: center; gap: 12px; margin: 2px auto 4px; }
+  .me-who { flex: 1; min-width: 0; }
+  .me-name { font-size: 1.25rem; font-weight: 700; overflow-wrap: anywhere; }
+  #me-edit { min-height: 44px; font-weight: 600; }
+  .me-lab, .fp-lab { font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 16px auto 6px; padding: 0 4px; }
+  .me-grp, .fp-grp { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .me-it, .fp-it { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 6px 14px; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--text);
+    font: inherit; text-align: left; cursor: pointer; box-sizing: border-box; }
+  .me-it:first-child, .fp-it:first-child { border-top: 0; }
+  .me-it[hidden] { display: none; }
+  .me-it > span:first-child { flex: 1; }
+  .me-it::after { content: "›"; color: var(--muted); font-size: 1.2rem; }
+  .me-it small, .fp-it small { color: var(--muted); font-size: .8rem; display: block; }
+  .me-it small { display: inline; }
+  .me-badge { background: #c0392b; color: #fff; border-radius: 999px; font-size: .7rem; font-weight: 700; min-width: 18px; padding: 0 5px; line-height: 18px; text-align: center; }
+  .me-btns { display: flex; gap: 10px; margin-top: 16px; }
+  .me-btns .btn { flex: 1; min-height: 44px; }
+  .fp-bar { display: flex; align-items: center; gap: 10px; padding: 8px 0; position: sticky; top: 0; background: var(--bg); z-index: 2; }
+  .fp-in { flex: 1; display: flex; align-items: center; gap: 8px; background: var(--card); border: 2px solid var(--accent); border-radius: 12px; padding: 0 12px; height: 46px; }
+  .fp-in input { border: 0; outline: 0; font: inherit; flex: 1; min-width: 0; background: transparent; color: var(--text); margin: 0; padding: 0; height: 100%; }
+  #find-cancel { min-height: 44px; font-weight: 600; }
+  .fp-it { min-height: 54px; }
+  .fp-it > div { flex: 1; min-width: 0; }
+  .fp-it b { display: block; overflow-wrap: anywhere; }
+  .fp-ic { width: 34px; height: 34px; border-radius: 10px; background: var(--bg); display: flex; align-items: center; justify-content: center; flex: none; }
+  .fp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .fp-chip { min-height: 38px; border-radius: 19px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: .9rem; padding: 0 12px; cursor: pointer; }
+  .fp-hint, .fp-more, .fp-empty { margin-top: 12px; }
