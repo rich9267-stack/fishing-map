@@ -325,6 +325,7 @@
 
   // ---- 🌎 Public (V4.5 step D): public catches, a map of public spots, and profile pages ----
   let pubCatches = [], pubShown = 30, pubMore = false, pubProfiles = {}, pubPhotos = {}, pubError = null;
+  let pubAll = [], pubFetch = 200, pubLoading = false;   // pubAll = everything loaded for the chosen time; filters (js/21) pick from it
   let pubProfileId = null, profView = null, feedMode = "circle", mapPublic = false, pubMarkers = {}, pubFocus = null;
   try { mapPublic = localStorage.getItem("fm-map-public") === "1"; } catch (e) {}
   function pubOpen() { return !!$("view-feed") && !$("view-feed").hidden && feedMode === "public"; }
@@ -366,14 +367,20 @@
     }
   }
   async function loadPublic() {
+    pubLoading = true;
+    if (typeof pubF !== "undefined" && pubF.scope === "local" && typeof pubLocate === "function") pubLocate();
     try {
-      const { data, error } = await db.from("catches").select("*").eq("visibility", "public").is("deleted_at", null).order("caught_at", { ascending: false }).limit(pubShown + 1);
+      let q = db.from("catches").select("*").eq("visibility", "public").is("deleted_at", null);
+      const since = typeof pubSinceIso === "function" ? pubSinceIso() : null;
+      if (since) q = q.gte("caught_at", since);
+      const { data, error } = await q.order("caught_at", { ascending: false }).limit(pubFetch);
       if (error) throw error;
-      pubMore = data.length > pubShown; pubCatches = data.slice(0, pubShown);
-      await ensureProfiles(pubCatches.map(c => c.created_by));
-      await loadPubPhotos(pubCatches);
+      pubAll = data || [];
+      await ensureProfiles(pubAll.map(c => c.created_by));
+      await loadPubPhotos(pubAll);
       pubError = null;
     } catch (e) { pubError = "Couldn't load the public feed right now."; }
+    pubLoading = false;
     renderPublic();
   }
   const pubPlace = c => { const sp = spotsAll.find(x => x.id === c.spot_id); return sp ? "📍 " + sp.name : "📍 Location kept private"; };
@@ -390,12 +397,21 @@
   }
   function renderPubFeed() {
     const box = $("pub-feed-list"); box.innerHTML = "";
+    const filtered = typeof pubFilter === "function" ? pubFilter(pubAll) : pubAll;
+    if (typeof pubFilterBar === "function") { box.appendChild(pubFilterBar(pubAll)); box.appendChild(el("div", "spot-meta pub-summary", pubSummary(filtered.length))); }
     if (pubError) box.appendChild(errBox(pubError, () => { loadPublic(); }));
-    if (!pubCatches.length && !pubError) { box.appendChild(el("div", "empty", "No public catches yet. Set one of your catches to 🌎 Public and it shows up here.")); return; }
+    pubCatches = filtered.slice(0, pubShown);
+    pubMore = filtered.length > pubShown || pubAll.length >= pubFetch;
+    if (!pubCatches.length && !pubError) {
+      const any = pubAll.length > 0;
+      box.appendChild(el("div", "empty", pubLoading ? "Loading…" : any ? "No public catches match these filters — try a longer time or clear a filter."
+        : "No public catches in this time yet. Set one of your catches to 🌎 Public and it shows up here."));
+      return;
+    }
     pubCatches.forEach(c => box.appendChild(pubCard(c)));
     if (pubMore) {
       const more = el("button", "btn ghost small", "Show more"); more.type = "button";
-      more.addEventListener("click", () => { pubShown += 30; loadPublic(); });
+      more.addEventListener("click", () => { pubShown += 30; if (pubShown > filtered.length && pubAll.length >= pubFetch) { pubFetch += 200; loadPublic(); } else renderPubFeed(); });
       box.appendChild(more);
     }
   }

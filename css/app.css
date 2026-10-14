@@ -653,3 +653,7 @@
   /* 📸 Quick catch location check (js/06) */
   .qc-where-check { margin: 6px 0; padding: 8px 10px; border-radius: 10px; border-left: 4px solid #f2b134; background: var(--card); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
   .qc-where-check .btn { min-height: 40px; }
+  /* 🌎 Public feed filters (js/21) */
+  .pub-filters { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+  .pub-filters .fchips:first-child .fchip { font-weight: 700; }
+  .pub-summary { margin: 0 0 8px; }

@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14g", title: "🌎 Local & Global feeds", items: [
+      "🌎 Feed → Public now has two feeds: 📍 Local (public catches within 25 miles of where you are) and 🌎 Global (everyone's).",
+      "Both have the same filters: 24 h / 7 days / 30 days / all, which fish, salt / brackish / fresh water, 📷 photos only and 🏅 ranked only. Your choices are remembered on this phone."
+    ] },
     { id: "2026-10-14f", title: "📸 Right spot?", items: [
       "📸 When you log a catch, the app checks where the photo was taken (or where you are). If the spot you picked is more than half a mile away, it says so and offers a one-tap fix — the nearer saved spot, or a new spot right there.",
       "If you save it far away anyway, it asks once to be sure. No more catches pinned to the wrong water."
