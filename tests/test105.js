@@ -195,6 +195,19 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   click($("find-btn")); click($("find-cancel"));
   check("Cancel closes Find", fp.hidden && !d.body.classList.contains("find-open"));
   click($("find-btn")); d.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Escape", bubbles: true })); check("Escape closes Find", fp.hidden);
+  // step 5 polish: recent searches, friendlier empty result, tap sizes
+  click($("find-btn")); await wait(30);
+  const recChips = () => [...$("find-out").querySelectorAll(".fp-chip")].map(b => b.textContent);
+  check("Find remembers the last searches as chips", recChips().slice(0, 4).includes("license") && recChips().includes("hillsboro") && recChips().length > 5);
+  click($("find-out").querySelector(".fp-clear")); await wait(20);
+  check("Clear forgets them (only the 5 Try chips stay)", recChips().length === 5 && !$("find-out").querySelector(".fp-clear"));
+  type($("find-q"), "zzzzqq");
+  check("nothing found offers chips and a Clear search button", $("find-out").querySelectorAll(".fp-empty .fp-chip").length > 0 && [...$("find-out").querySelectorAll(".fp-empty button")].some(b => /Clear search/.test(b.textContent)));
+  click([...$("find-out").querySelectorAll(".fp-empty button")].find(b => /Clear search/.test(b.textContent)));
+  check("Clear search empties the box and shows Try again", $("find-q").value === "" && recChips().length === 5);
+  click($("find-cancel"));
+  const css = require("fs").readFileSync(require("path").join(__dirname, "..", "css", "app.css"), "utf8");
+  check("Find chips are at least 44px tall", /\.fp-chip \{ min-height: 44px/.test(css));
   // service worker caches the new file
   check("sw.js caches js/27-me-find.js", require("fs").readFileSync(require("path").join(__dirname, "..", "sw.js"), "utf8").includes("./js/27-me-find.js"));
   console.log(good ? "OK" : "FAIL");

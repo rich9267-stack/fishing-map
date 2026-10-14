@@ -407,3 +407,9 @@ Fishbrain audit (Oct 14): docs/fishbrain-audit.md (also project doc claude/fishb
 - 🔍 `#find-btn` → `#find-page`: one box over features (static list in js/27), spots, fish (SEASONS + caught species → openSpecies), people (friendProfiles + pubProfiles → openProfile) and catches (catchesBySpot → goToSpot). Try-chips when empty; Enter opens the first result.
 - Tests: tests/test105.js (new); test72 updated (picture → Me page, Edit) and its stale "log" button line fixed.
 
+
+## Oct 14 — ✨ UX v2 step 5: polish pass (v91)
+- Find (js/27): remembers the last 5 searches (`localStorage` key `fm-find-recent`) as "Recent" chips + Clear; "nothing found" now has suggestion chips and a Clear search button; chips 44px; result sub-lines wrap.
+- Empty states with a next-step button (existing `emptyBox`): Spots filter (Clear filters), Records and ranked boards (📸 Log a catch).
+- CSS: `.me-it` text wraps (min-width:0), `#me-sub` wraps, visible focus outlines on Me rows / Find rows / chips / bottom bar, `overscroll-behavior: contain` on Me and Find pages; Me inbox badge has an aria-label. Bottom bar (56px buttons) and Log button already clear the Me/Find pages (they cover the bar, z 1090).
+- Old `?go=` links and test ids untouched. Tests: test105 extended.

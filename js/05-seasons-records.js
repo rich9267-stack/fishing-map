@@ -742,7 +742,7 @@
       : recScope === "circle" ? "You and your friends. Only catches shared with Friends or Public count. “Heaviest” skips weights estimated from length."
       : "Catches people marked 🌎 Public. “Heaviest” skips weights estimated from length.";
     if (recScope === "public") { if (recPublicErr) { box.appendChild(el("div", "msg err", recPublicErr)); return; } if (!recPublicAt) { box.appendChild(el("div", "spot-meta", "Loading…")); loadRecPublic(); return; } }
-    if (!list.length) { box.appendChild(el("div", "empty", recScope === "me" ? "No catches in this period yet." : "No catches here yet.")); return; }
+    if (!list.length) { box.appendChild(emptyBox(recScope === "me" ? "No catches in this period yet." : "No catches here yet.", "📸 Log a catch", () => $("bn-log").click())); return; }
     if (recScope === "me") return renderBests(box, list);
     // who needs a name?
     const ids = [...new Set(list.map(c => c.created_by).filter(Boolean))].filter(id => !profOf(id) && !recAsked.has(id));
@@ -801,7 +801,7 @@
       value = set.size; if (!value) return null;
       return { uid, c: cs[0], value, label: `${value} species`, detail: [...set.values()].slice(0, 4).join(", ") + (set.size > 4 ? "…" : "") };
     }).filter(Boolean).sort((a, b) => b.value - a.value);
-    if (!rows.length) { box.appendChild(el("div", "empty", board === "power" ? "No ranked fish yet — a fish needs a photo and a length." : board === "length" ? "No lengths logged in this selection yet." : board === "weight" ? "No measured weights logged yet." : "Nothing to rank yet.")); return; }
+    if (!rows.length) { box.appendChild(emptyBox(board === "power" ? "No ranked fish yet — a fish needs a photo and a length." : board === "length" ? "No lengths logged in this selection yet." : board === "weight" ? "No measured weights logged yet." : "Nothing to rank yet.", "📸 Log a catch", () => $("bn-log").click())); return; }
     const mineIdx = rows.findIndex(r => me && r.uid === me.id);
     rows.slice(0, 10).forEach((r, i) => box.appendChild(boardRow(i, r)));
     if (mineIdx >= 10) { box.appendChild(el("div", "spot-meta", "…")); box.appendChild(boardRow(mineIdx, rows[mineIdx])); }

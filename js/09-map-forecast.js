@@ -379,7 +379,7 @@
     }
     const shown = filteredSpots();
     updateFilterStatus(shown.length);
-    if (!shown.length) list.appendChild(el("div", "empty", "No spots match these filters."));
+    if (!shown.length) list.appendChild(emptyBox("No spots match these filters.", "Clear filters", clearFilters));
     shown.forEach(s => {
       const item = el("div", "spot");
       item.appendChild(el("div", "spot-name", visIcon(s) + s.name + (spotSort === "near" && sortPos && s.lat != null && s.lng != null ? ` · ${miles(sortPos.lat, sortPos.lng, s.lat, s.lng).toFixed(1)} mi` : "")));

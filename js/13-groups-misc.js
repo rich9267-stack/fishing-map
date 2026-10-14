@@ -453,6 +453,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14o", title: "✨ Find remembers, friendlier empty screens", items: [
+      "🔍 Find now keeps your last few searches as tap-to-repeat chips (with a Clear button).",
+      "Empty screens (no spots matching a filter, no records yet, nothing found) now have a button for the obvious next step.",
+      "Bigger tap targets and long names wrap properly on the Me page and in Find."
+    ] },
     { id: "2026-10-14n", title: "🙂 Your Me page + 🔍 Find anything", items: [
       "Tap your picture (top right) to open your Me page. Alerts, phone alerts & quiet hours, fishing license, privacy, offline maps, Home Screen help, your data, What's new and Report a problem are each one tap away. Your profile is now just your profile (tap Edit).",
       "🔍 Find anything (top right) searches your spots, fish, friends and catches in one go — and the app's own features too. Try “license”, “race” or “quiet hours”.",

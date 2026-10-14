@@ -31,7 +31,7 @@
       $("me-name").textContent = p.display_name || (me && me.name) || "Me";
       $("me-sub").textContent = [p.handle ? "@" + p.handle : "", p.home_area || ""].filter(Boolean).join(" · ");
       const n = +((/\((\d+)\)/.exec($("inbox-btn").textContent) || [])[1] || 0);
-      $("me-inbox-n").hidden = !n; $("me-inbox-n").textContent = n;
+      $("me-inbox-n").hidden = !n; $("me-inbox-n").textContent = n; $("me-inbox-n").setAttribute("aria-label", n + " unread");
       const inv = mc.querySelector('[data-me="invite"]'); inv.hidden = !(me && me.isAdmin);
       $("me-invite-t").textContent = /\(\d+\)/.test($("invite-btn").textContent) ? $("invite-btn").textContent.replace(/^✉\s*/, "") : "Invite to app";
       bigAvatar();
@@ -156,13 +156,32 @@
       return res;
     }
     const GROUPS = [["features", "Features", "✨"], ["spots", "Spots", "📍"], ["fish", "Fish", "🐟"], ["people", "People", "🙂"], ["catches", "Catches", "🎣"]];
+    // the last few searches come back as chips next time (kept on this phone only)
+    const RECENT_KEY = "fm-find-recent";
+    const recents = () => { try { const a = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); return Array.isArray(a) ? a.filter(x => typeof x === "string" && x).slice(0, 5) : []; } catch (e) { return []; } };
+    const setRecents = a => { try { if (a.length) localStorage.setItem(RECENT_KEY, JSON.stringify(a.slice(0, 5))); else localStorage.removeItem(RECENT_KEY); } catch (e) { /* fine */ } };
+    function rememberSearch(t) {
+      t = String(t || "").trim().slice(0, 40); if (t.length < 2) return;
+      setRecents([t].concat(recents().filter(x => x.toLowerCase() !== t.toLowerCase())));
+    }
+    function chipRow(words) {
+      const row = el("div", "fp-chips");
+      words.forEach(w => { const b = el("button", "fp-chip", w); b.type = "button"; b.addEventListener("click", () => { q.value = w; render(); q.focus(); }); row.appendChild(b); });
+      return row;
+    }
     function render() {
       const text = q.value.trim(); out.innerHTML = "";
       if (!text) {
+        const rec = recents();
+        if (rec.length) {
+          const head = el("div", "fp-labrow"); head.appendChild(el("div", "fp-lab", "Recent"));
+          const clr = el("button", "linkbtn fp-clear", "Clear"); clr.type = "button"; clr.setAttribute("aria-label", "Clear recent searches");
+          clr.addEventListener("click", () => { setRecents([]); render(); });
+          head.appendChild(clr); out.appendChild(head);
+          out.appendChild(chipRow(rec));
+        }
         out.appendChild(el("div", "fp-lab", "Try"));
-        const row = el("div", "fp-chips");
-        ["license", "race", "quiet hours", "tank", "boat mode"].forEach(w => { const b = el("button", "fp-chip", w); b.type = "button"; b.addEventListener("click", () => { q.value = w; render(); q.focus(); }); row.appendChild(b); });
-        out.appendChild(row);
+        out.appendChild(chipRow(["license", "race", "quiet hours", "tank", "boat mode"]));
         out.appendChild(el("p", "spot-meta fp-hint", "Type a spot, a fish, a friend's name, or something the app does."));
         return;
       }
@@ -175,13 +194,18 @@
           const b = el("button", "fp-it"); b.type = "button";
           b.appendChild(el("span", "fp-ic", ic));
           const d = el("div"); d.appendChild(el("b", null, it.title)); d.appendChild(el("small", null, it.sub || it.where || "")); b.appendChild(d);
-          b.addEventListener("click", () => { closeFind(); setTimeout(it.run, 0); });
+          b.addEventListener("click", () => { rememberSearch(q.value); closeFind(); setTimeout(it.run, 0); });
           grp.appendChild(b);
         });
         out.appendChild(grp);
         if (list.length > 6) out.appendChild(el("div", "spot-meta fp-more", `+ ${list.length - 6} more — type a little more to narrow it down.`));
       });
-      if (!any) out.appendChild(el("p", "empty fp-empty", `Nothing found for “${text}”. Try a fish name, a spot, or a friend's name.`));
+      if (!any) {
+        const box = el("div", "empty fp-empty"); box.appendChild(el("div", null, `Nothing found for “${text}”. Try a fish name, a spot, or a friend's name — or one of these:`));
+        box.appendChild(chipRow(["license", "race", "tank", "records"]));
+        const clr = el("button", "btn small", "Clear search"); clr.type = "button"; clr.addEventListener("click", () => { q.value = ""; render(); q.focus(); });
+        box.appendChild(clr); out.appendChild(box);
+      }
     }
     function openFind() {
       if (!me) return;
