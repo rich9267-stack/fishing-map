@@ -186,6 +186,10 @@
       }
       card.addEventListener("click", () => { myFishOpen = open ? null : x.key; renderMyFish(); });
       grid.appendChild(card);
+      if (open && typeof openSpecies === "function") {   // a separate button (a button can't sit inside the card button)
+        const about = el("button", "btn ghost small fk-about", `📖 About ${cap((x.c.species || "").trim())}`); about.type = "button";
+        about.addEventListener("click", () => openSpecies(x.c.species)); grid.appendChild(about);
+      }
     });
     box.appendChild(grid);
     if (unranked) box.appendChild(el("div", "spot-meta", `${unranked} more catch${unranked === 1 ? "" : "es"} can't be ranked yet — they need a photo and a length.`));

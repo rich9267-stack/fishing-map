@@ -405,6 +405,7 @@
       renderPins();
       if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); loadOfficialSpots(); }
       if (typeof tankClaim === "function") tankClaim(); // centred on your spots
+      if (typeof licLoad === "function") licLoad();       // 🎫 license banner on Home
       loadSightings();
       loadPlans();
       if (typeof renderSuggestions === "function") renderSuggestions();

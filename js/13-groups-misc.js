@@ -449,6 +449,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14b", title: "🐟 Fish pages, 🎫 license reminder", items: [
+      "🐟 Every fish now has its own page: tap a fish name in Seasons (or 📖 About on a card in My fish). It shows when to catch it, the rules, and what's working for your group — best tide, time, baits and spots, the biggest one so far — plus its race stats.",
+      "🎫 Settings → Fishing license: add your license and the date it ends. You'll get a phone alert 2 weeks before and when it runs out, and a reminder on Home.",
+      "🐞 Settings → Report a problem: tell Richard what went wrong. It can include the app version and recent error messages, so it's easier to fix."
+    ] },
     { id: "2026-10-14a", title: "👥 Race your friends", items: [
       "👥 New in Stats → 🏁 Fish race: \"Race friends\". Open a race (pick the class, the entry fee and when it starts), and your friends get a phone alert to join with one of their fish.",
       "Everyone pays the same entry fee. The pot goes 🥇 60% · 🥈 30% · 🥉 10%. The race starts when 5 fish are in, when the host presses Start, or at the start time.",

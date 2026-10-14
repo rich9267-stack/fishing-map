@@ -610,3 +610,34 @@
   .room-players li.me { font-weight: 700; }
   .room-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
   .room-actions .btn { min-height: 44px; }
+  /* 🎫 Fishing license + 🐞 problem reports (js/17) */
+  .lic-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 8px 0; border-top: 1px dashed var(--line); }
+  .lic-name { font-weight: 600; }
+  .lic-when { font-size: 14px; }
+  .lic-row.warn .lic-when { color: #b7791f; font-weight: 700; }
+  .lic-row.bad .lic-when { color: #c0392b; font-weight: 700; }
+  .lic-acts { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; }
+  .lic-edit { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
+  .lic-warn { border-left: 5px solid #f2b134; }
+  .lic-warn.bad { border-left-color: #c0392b; }
+  .lic-warn .lic-acts { margin: 8px 0 0; }
+  .bug-row { border-top: 1px dashed var(--line); padding: 6px 0; }
+  .bug-row summary { cursor: pointer; }
+  .bug-row.new summary { font-weight: 700; }
+  @media (prefers-color-scheme: dark) { .lic-row.warn .lic-when { color: #f2b134; } .lic-row.bad .lic-when { color: #ff8a7a; } }
+  /* 🐟 Species pages (js/18) */
+  .sp-sheet { position: fixed; inset: 0; z-index: 950; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  body.sp-open { overflow: hidden; }
+  .sp-inner { max-width: 640px; margin: 0 auto; padding: calc(12px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); }
+  .sp-head { display: flex; justify-content: flex-end; }
+  .sp-hero { display: flex; align-items: center; gap: 12px; margin: 4px 0 8px; }
+  .sp-title { margin: 0; font-size: 24px; }
+  .sp-sec { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin: 10px 0; }
+  .sp-sec .label { margin-bottom: 4px; }
+  .sp-list { margin: 6px 0 0; padding-left: 0; list-style: none; }
+  .sp-list li { padding: 3px 0; }
+  .sp-months { margin: 6px 0; }
+  .sp-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .sp-actions .btn { min-height: 44px; }
+  .sea-name.linkbtn { font: inherit; font-weight: 700; color: var(--text); text-decoration: underline dotted; text-align: left; padding: 0; }
+  .fk-about { grid-column: 1 / -1; justify-self: start; }

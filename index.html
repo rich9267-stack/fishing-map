@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=77">
+<link rel="stylesheet" href="css/app.css?v=78">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -156,6 +156,26 @@
     <div class="label" style="margin-top:6px">🔒 Privacy</div>
     <p class="spot-meta" style="margin:4px 0 8px">Who can see your profile page is set on your profile page screen. Private catches and spots are never shown to anyone.</p>
     <button class="btn ghost small" id="settings-privacy" type="button">🪪 Open my profile page settings</button>
+    <div id="lic-box" style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
+      <div class="label">🎫 Fishing license</div>
+      <p class="spot-meta" style="margin:4px 0 8px">Add your license and the date it ends. You'll get a phone alert 2 weeks before and when it runs out. Only you can see this.</p>
+      <div id="lic-list"></div>
+      <form id="lic-form" style="margin-top:8px">
+        <div class="two">
+          <div><label for="lic-kind">License</label><select id="lic-kind"></select></div>
+          <div id="lic-date-box"><label for="lic-date">Ends on</label><input id="lic-date" type="date"></div>
+        </div>
+        <input id="lic-other" maxlength="60" placeholder="Name of the license" hidden style="margin-top:6px">
+        <label class="check-row" for="lic-never"><input id="lic-never" type="checkbox"><span>It never runs out (lifetime, or I don't need one)</span></label>
+        <button class="btn small" type="submit" id="lic-add">＋ Add license</button>
+      </form>
+      <div class="msg" id="lic-msg"></div>
+      <p class="spot-meta" style="margin:8px 0 0">
+        <a href="https://myfwc.com/license/recreational/" target="_blank" rel="noopener">Buy or renew (FWC) ↗</a> ·
+        <a href="https://myfwc.com/license/recreational/do-i-need-one/" target="_blank" rel="noopener">Do I need one? ↗</a>
+        — Florida residents 65+ and anyone under 16 don't need one.
+      </p>
+    </div>
     <div id="push-box" style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
       <div class="label">🔔 Phone alerts</div>
       <div class="spot-meta" id="push-status"></div>
@@ -214,7 +234,22 @@
     <div class="label" style="margin-top:18px">About</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
       <button class="btn ghost small" id="settings-wn" type="button">✨ What's new</button>
+      <button class="btn ghost small" id="bug-btn" type="button">🐞 Report a problem</button>
       <a class="btn ghost small" href="privacy.html" style="text-decoration:none">Privacy policy</a>
+    </div>
+    <form id="bug-form" hidden style="margin-top:10px">
+      <label for="bug-note">What went wrong? What were you doing when it happened?</label>
+      <textarea id="bug-note" rows="4" maxlength="2000" placeholder="e.g. The race screen froze when I tapped Watch the race"></textarea>
+      <label class="check-row" for="bug-tech"><input id="bug-tech" type="checkbox" checked><span>Include technical details (app version, phone type, recent error messages) — no photos, spots or location</span></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn small" type="submit" id="bug-send">Send</button>
+        <button class="btn ghost small" type="button" id="bug-cancel">Never mind</button>
+      </div>
+    </form>
+    <div class="msg" id="bug-msg"></div>
+    <div id="bug-admin" hidden style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
+      <div class="label">🐞 Problem reports</div>
+      <div id="bug-admin-list"></div>
     </div>
   </div>
 
@@ -573,6 +608,8 @@
   </div>
 
   <div id="view-list">
+
+  <div class="card lic-warn" id="lic-warn" hidden role="status"></div>
 
   <div class="card" id="today-strip" aria-label="Conditions right now">
     <div class="msg err err-retry" id="ts-retry" hidden><span id="ts-retry-msg">Couldn't load some conditions.</span> <button type="button" class="btn ghost small" id="ts-retry-btn">↻ Try again</button></div>
@@ -955,22 +992,24 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=77"></script>
-<script src="js/02-spots.js?v=77"></script>
-<script src="js/03-photos.js?v=77"></script>
-<script src="js/04-insights.js?v=77"></script>
-<script src="js/05-seasons-records.js?v=77"></script>
-<script src="js/06-catching.js?v=77"></script>
-<script src="js/07-measure-fishid.js?v=77"></script>
-<script src="js/08-feed-plans.js?v=77"></script>
-<script src="js/09-map-forecast.js?v=77"></script>
-<script src="js/10-tools-safety.js?v=77"></script>
-<script src="js/11-accounts-social.js?v=77"></script>
-<script src="js/12-contests-alerts.js?v=77"></script>
-<script src="js/13-groups-misc.js?v=77"></script>
-<script src="js/14-tank.js?v=77"></script>
-<script src="js/15-fish-rank.js?v=77"></script>
-<script src="js/16-fish-race.js?v=77"></script>
-<script src="js/99-boot.js?v=77"></script>
+<script src="js/01-core.js?v=78"></script>
+<script src="js/02-spots.js?v=78"></script>
+<script src="js/03-photos.js?v=78"></script>
+<script src="js/04-insights.js?v=78"></script>
+<script src="js/05-seasons-records.js?v=78"></script>
+<script src="js/06-catching.js?v=78"></script>
+<script src="js/07-measure-fishid.js?v=78"></script>
+<script src="js/08-feed-plans.js?v=78"></script>
+<script src="js/09-map-forecast.js?v=78"></script>
+<script src="js/10-tools-safety.js?v=78"></script>
+<script src="js/11-accounts-social.js?v=78"></script>
+<script src="js/12-contests-alerts.js?v=78"></script>
+<script src="js/13-groups-misc.js?v=78"></script>
+<script src="js/14-tank.js?v=78"></script>
+<script src="js/15-fish-rank.js?v=78"></script>
+<script src="js/16-fish-race.js?v=78"></script>
+<script src="js/17-license-help.js?v=78"></script>
+<script src="js/18-species.js?v=78"></script>
+<script src="js/99-boot.js?v=78"></script>
 </body>
 </html>

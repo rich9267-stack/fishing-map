@@ -1,3 +1,14 @@
+  // ---- 🐞 Error log: remember the last few errors on this phone, so "Report a problem" (js/17) can include them ----
+  const appErrors = [];
+  function logAppError(msg, at) {
+    try {
+      appErrors.push({ msg: String(msg || "").slice(0, 300), at: String(at || "").slice(0, 120), t: new Date().toISOString() });
+      if (appErrors.length > 10) appErrors.shift();
+    } catch (e) { /* never let the error log cause an error */ }
+  }
+  window.addEventListener("error", e => logAppError(e.message, e.filename ? e.filename.split("/").pop().split("?")[0] + ":" + e.lineno : ""));
+  window.addEventListener("unhandledrejection", e => logAppError(e.reason && (e.reason.message || e.reason), "promise"));
+
   const STATION = "8722859";
   // Today's conditions, shared by every spot for now (all spots are in the Hillsboro area)
   const cond = { tide: null, wind: null };

@@ -506,7 +506,8 @@
     list.forEach(({ f, lvl, open }) => {
       const div = document.createElement("div"); div.className = "sea-fish";
       const top = document.createElement("div"); top.className = "sea-top";
-      const name = document.createElement("span"); name.className = "sea-name"; name.textContent = f.name;
+      const name = document.createElement("button"); name.type = "button"; name.className = "sea-name linkbtn"; name.textContent = f.name;
+      name.title = "About " + f.name; name.addEventListener("click", () => { if (typeof openSpecies === "function") openSpecies(f.name); });
       const badges = document.createElement("span"); badges.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end";
       const badge = (cls, text) => { const b = document.createElement("span"); b.className = "sea-badge " + cls; b.textContent = text; badges.appendChild(b); };
       if (open === false) badge("closed", "⛔ Closed to keep");

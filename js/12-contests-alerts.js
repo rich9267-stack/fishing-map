@@ -604,6 +604,8 @@
     else if (go === "invite" && me.isAdmin) $("invite-btn").click();
     else if (go === "insights") { showView("insights"); window.scrollTo({ top: 0 }); }
     else if (go === "race" && typeof raceOpenRoom === "function") raceOpenRoom(q.get("room"));
+    else if (go === "license" && typeof goLicense === "function") goLicense();
+    else if (go === "problems" && me.isAdmin && typeof goProblems === "function") goProblems();
     else { feedMode = "circle"; showView("feed"); window.scrollTo({ top: 0 }); }
   }
   function runPendingGo() { if (pendingGo && me) { const g = pendingGo; pendingGo = null; try { history.replaceState(null, "", SITE); } catch (e) {} handleGo(g); } }
