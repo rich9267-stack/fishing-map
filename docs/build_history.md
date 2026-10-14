@@ -370,3 +370,8 @@ Fishbrain audit (Oct 14): docs/fishbrain-audit.md (also project doc claude/fishb
 - Spots list card "🏞 Public lakes near you (FWC)": closest unsaved lakes (from the Suggested spots centre), Map / + Add; "New here?" line when you have fewer than 3 spots. Map button 🏞 Public lakes (FWC) next to Map extras. + Add fills the spot form (Shore / bank, freshwater, public access, notes with the FWC rules link; lake pin = middle of the lake, the person moves it).
 - setup/53: spot type `shore` (new check constraint added, old one dropped — the connector allowed this drop).
 - tests/test99.js.
+
+## Oct 14 — 〰 Depth lines, salt + fresh (v85, Fishbrain audit #12)
+- js/23-depth.js. One map button draws two FWC MapServer export layers as see-through tiles (same trick as the NOAA chart): Projects_FWC/Bathymetric_Contours_Southeast_US (layer 0, DEPTH_FT; from zoom 7) and Open_Data/Bathymetry_of_Select_Lakes_in_Florida (layer 3, DEPTHF negative feet; from zoom 13; surveyed lakes from about Lake Osborne north — nothing in Broward / Miami-Dade or canals).
+- Tap the map while it's on (not while placing a spot) → query both services in a ~24-dot box → "≈ 13 ft" pop-up; nothing near → no pop-up; service down → plain message. Note line under the map tools changes with zoom; "a guide only, not for navigation".
+- tests/test100.js.

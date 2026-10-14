@@ -449,6 +449,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14i", title: "〰 Depth lines", items: [
+      "〰 New map button Depth lines: the ocean's depth lines (3, 6, 13, 20, 33, 66, 98 ft and deeper) — good for finding reef edges and drop-offs.",
+      "Zoom in on a lake FWC has surveyed (Palm Beach County and north) to see its 1-foot depth lines. There's no free depth data for Broward lakes or the canals yet.",
+      "Tap near a line to read its depth. A guide only — not for navigation."
+    ] },
     { id: "2026-10-14h", title: "🏞 Public lakes from FWC", items: [
       "🏞 Spots now has \"Public lakes near you\": lakes Florida stocks and manages for fishing (FWC Fish Management Areas), closest first. Tap + Add to save one.",
       "On the map, 🏞 Public lakes (FWC) shows those lakes in green, and when you zoom in, the brush piles FWC sinks in lakes (fish attractors).",

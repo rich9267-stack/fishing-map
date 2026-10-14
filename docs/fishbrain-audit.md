@@ -1,6 +1,6 @@
 # Fishbrain research & audit (Oct 14, 2026)
 
-**Status:** items 1, 3 and 4 built Oct 14 (v78); item 2 built Oct 14 (v79); items 6 and 7 built Oct 14 (v80); item 8 built Oct 14 (v81); item 9 built Oct 14 (v82); item 10 built Oct 14 (v83) as a 📍 Local (25 mi of you) / 🌎 Global switch with the same filters on both. item 11 built Oct 14 (v84): FWC Fish Management Areas + freshwater fish attractors. Richard: do #5 (delete my account) last; next in order is #12.
+**Status:** items 1, 3 and 4 built Oct 14 (v78); item 2 built Oct 14 (v79); items 6 and 7 built Oct 14 (v80); item 8 built Oct 14 (v81); item 9 built Oct 14 (v82); item 10 built Oct 14 (v83) as a 📍 Local (25 mi of you) / 🌎 Global switch with the same filters on both. item 11 built Oct 14 (v84): FWC Fish Management Areas + freshwater fish attractors. item 12 built Oct 14 (v85) as 〰 Depth lines for salt AND fresh water (FWC contours). Richard: do #5 (delete my account) last — it is the only item left.
 
 What Fishbrain does, how its screens flow, what anglers love and hate about it, and a ranked list of fixes and missing features for our Fishing Map. Everything we'd build stays **$0** and fits our friends-first, no-spot-burning approach.
 
@@ -73,7 +73,7 @@ Effort: **S** = one session, **M** = one or two sessions, **L** = bigger. All $0
 | 9 | ✅ v82 · **📸 Location check on new catches** — if the photo's GPS is over a mile from the spot you picked, ask "Was this at ___ instead?" | Wrong locations are Fishbrain's #4 complaint; we already read the photo's GPS | S |
 | 10 | ✅ v83 · **🌎 Public feed filters** — 📍 Local (within 25 mi of you) / 🌎 Global, both with time (24 h · 7 d · 30 d · all), fish, water, photos only, ranked only | Fishbrain's feed is noisy and can't filter to recent | S |
 | 11 | ✅ v84 · **🏞 More public water for new users** — FWC Fish Management Areas (public lakes) card on Spots + map layer with freshwater fish attractors; new spot type Shore / bank | Fishbrain's value comes from data; a new friend joining us starts with an empty map | M |
-| 12 | **🌊 Freshwater depth contours** — only where FWC publishes free lake maps | Depth maps are Pro; free data is thin for canals | L |
+| 12 | ✅ v85 · **🌊 Depth contours, salt + fresh** — one 〰 Depth lines button: FWC Southeast US contours offshore + FWC 1-ft lines for surveyed lakes (Palm Beach County north; none in Broward/canals); tap a line for its depth | Depth maps are Pro; free data is thin for canals | L |
 
 ## 6. Don't copy
 - **The paywall and ads** — the #1 complaint. Keep everything free.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=84">
+<link rel="stylesheet" href="css/app.css?v=85">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -534,9 +534,11 @@
       <button class="btn ghost small" id="mx-ramp" type="button">⛵ Boat ramps</button>
       <button class="btn ghost small" id="mx-zone" type="button">🚫 Protected zones</button>
       <button class="btn ghost small" id="mx-water" type="button" aria-pressed="false">🏞 Public lakes (FWC)</button>
+      <button class="btn ghost small" id="mx-depth" type="button" aria-pressed="false">〰 Depth lines</button>
     </div>
     <div class="spot-meta" id="mx-note" role="status" aria-live="polite" hidden></div>
     <div class="spot-meta" id="pw-note" role="status" aria-live="polite" hidden></div>
+    <div class="spot-meta" id="dep-note" role="status" aria-live="polite" hidden></div>
     <div class="legend">
       <span><span class="dot" style="background:#1d6fd6"></span>Saltwater</span>
       <span><span class="dot" style="background:#16a085"></span>Brackish / tidal canal</span>
@@ -1007,28 +1009,29 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=84"></script>
-<script src="js/02-spots.js?v=84"></script>
-<script src="js/03-photos.js?v=84"></script>
-<script src="js/04-insights.js?v=84"></script>
-<script src="js/05-seasons-records.js?v=84"></script>
-<script src="js/06-catching.js?v=84"></script>
-<script src="js/07-measure-fishid.js?v=84"></script>
-<script src="js/08-feed-plans.js?v=84"></script>
-<script src="js/09-map-forecast.js?v=84"></script>
-<script src="js/10-tools-safety.js?v=84"></script>
-<script src="js/11-accounts-social.js?v=84"></script>
-<script src="js/12-contests-alerts.js?v=84"></script>
-<script src="js/13-groups-misc.js?v=84"></script>
-<script src="js/14-tank.js?v=84"></script>
-<script src="js/15-fish-rank.js?v=84"></script>
-<script src="js/16-fish-race.js?v=84"></script>
-<script src="js/17-license-help.js?v=84"></script>
-<script src="js/18-species.js?v=84"></script>
-<script src="js/19-biting.js?v=84"></script>
-<script src="js/20-spot-share.js?v=84"></script>
-<script src="js/21-pub-filters.js?v=84"></script>
-<script src="js/22-public-water.js?v=84"></script>
-<script src="js/99-boot.js?v=84"></script>
+<script src="js/01-core.js?v=85"></script>
+<script src="js/02-spots.js?v=85"></script>
+<script src="js/03-photos.js?v=85"></script>
+<script src="js/04-insights.js?v=85"></script>
+<script src="js/05-seasons-records.js?v=85"></script>
+<script src="js/06-catching.js?v=85"></script>
+<script src="js/07-measure-fishid.js?v=85"></script>
+<script src="js/08-feed-plans.js?v=85"></script>
+<script src="js/09-map-forecast.js?v=85"></script>
+<script src="js/10-tools-safety.js?v=85"></script>
+<script src="js/11-accounts-social.js?v=85"></script>
+<script src="js/12-contests-alerts.js?v=85"></script>
+<script src="js/13-groups-misc.js?v=85"></script>
+<script src="js/14-tank.js?v=85"></script>
+<script src="js/15-fish-rank.js?v=85"></script>
+<script src="js/16-fish-race.js?v=85"></script>
+<script src="js/17-license-help.js?v=85"></script>
+<script src="js/18-species.js?v=85"></script>
+<script src="js/19-biting.js?v=85"></script>
+<script src="js/20-spot-share.js?v=85"></script>
+<script src="js/21-pub-filters.js?v=85"></script>
+<script src="js/22-public-water.js?v=85"></script>
+<script src="js/23-depth.js?v=85"></script>
+<script src="js/99-boot.js?v=85"></script>
 </body>
 </html>
