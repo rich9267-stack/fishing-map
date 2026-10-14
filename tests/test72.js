@@ -178,10 +178,10 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   console.log("Community: feed shown:", vis("view-feed"), "| active:", navb("community").classList.contains("on"), "| friends+messages buttons in the row:", !!$("feed-mode").querySelector("#friends-btn") && !!$("feed-mode").querySelector("#chat-btn"));
   click(navb("stats")); await sleep(400);
   console.log("Stats: insights shown:", vis("view-insights"), "| Stats active:", navb("stats").classList.contains("on"));
-  const sw = [...d.querySelectorAll("#view-insights .stats-sw button")].map(b => b.textContent);
+  const sw = [...d.querySelectorAll("#view-insights .sub-tabs button")].map(b => b.textContent);
   console.log("switch labels:", JSON.stringify(sw));
-  click(d.querySelector("#view-insights .stats-sw button[data-tab='tab-seasons']")); await sleep(400);
-  console.log("Seasons via switch: shown:", vis("view-seasons"), "| Stats still active:", navb("stats").classList.contains("on"), "| seasons switch has Insights button:", !!d.querySelector("#view-seasons .stats-sw button[data-tab='tab-insights']"));
+  click(d.querySelector("#view-insights .sub-tabs button[data-sub='seasons']")); await sleep(400);
+  console.log("Seasons via switch: shown:", vis("view-seasons"), "| Stats still active:", navb("stats").classList.contains("on"), "| seasons bar has Insights button:", !!d.querySelector("#view-seasons .sub-tabs button[data-sub='insights']"));
   // Log opens quick catch
   let qc = 0; $("qc-fab").addEventListener("click", () => qc++); click(navb("log")); console.log("Log taps quick catch:", qc === 1);
   // Me menu

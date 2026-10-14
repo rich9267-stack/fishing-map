@@ -644,6 +644,7 @@
   let placing = null; // null, {mode:"new"}, {mode:"form"} or {mode:"move", spot}
 
   function showView(which) {
+    const comArrive = which === "feed" && $("view-feed").hidden;   // coming to Community from another page → it opens on the Feed sub-tab
     try { localStorage.setItem("fm-last-tab", which); } catch (e) { /* fine */ }
     const isMap = which === "map";
     if (!isMap && typeof closeMapSheets === "function") closeMapSheets();
@@ -662,13 +663,13 @@
     if (which === "seasons") renderSeasons();
     $("view-feed").hidden = which !== "feed";
     $("tab-feed").classList.toggle("on", which === "feed");
-    if (which === "feed") { renderFeed(); loadFeed(); setFeedMode(feedMode); }
+    if (which === "feed") { if (comArrive && typeof comReset === "function") comReset(); renderFeed(); loadFeed(); setFeedMode(feedMode); }
     renderPlanLine();
     if (which === "feed" || Date.now() - plansLoadedAt > 60000) loadPlans();
     $("tab-map").classList.toggle("on", isMap);
     $("tab-list").classList.toggle("on", which === "list");
     $("tab-insights").classList.toggle("on", which === "insights");
-    if (which === "insights") renderInsights();
+    if (which === "insights") { if (typeof statsApply === "function") statsApply(); renderInsights(); }
     if (isMap) {
       initMap();
       if (!map) { $("map").textContent = "The map couldn't load — check your connection and refresh."; return; }
@@ -702,7 +703,6 @@
       btn("home").classList.toggle("on", on("tab-list")); btn("map").classList.toggle("on", on("tab-map"));
       btn("community").classList.toggle("on", on("tab-feed")); btn("stats").classList.toggle("on", on("tab-insights") || on("tab-seasons"));
       btn("play").classList.toggle("on", on("tab-tank")); btn("compete").classList.toggle("on", on("tab-compete"));
-      document.querySelectorAll(".stats-sw button").forEach(b => b.classList.toggle("ghost", !on(b.dataset.tab)));
     }
     TABS.forEach(id => new MutationObserver(sync).observe($(id), { attributes: true, attributeFilter: ["class"] }));
     const go = id => { if (on(id)) window.scrollTo({ top: 0, behavior: "smooth" }); else $(id).click(); };
@@ -714,12 +714,7 @@
       else if (k === "stats") { if (on("tab-insights") || on("tab-seasons")) window.scrollTo({ top: 0, behavior: "smooth" }); else $("tab-insights").click(); }
     });
     $("bn-log").addEventListener("click", () => $("qc-fab").click());
-    // Insights / Seasons switch at the top of both Stats pages
-    ["view-insights", "view-seasons"].forEach(v => {
-      const row = el("div", "stats-sw");
-      [["tab-insights", "📊 Insights"], ["tab-seasons", "📅 Seasons"]].forEach(([t, label]) => { const b = el("button", "btn small", label); b.type = "button"; b.dataset.tab = t; b.addEventListener("click", () => $(t).click()); row.appendChild(b); });
-      $(v).insertBefore(row, $(v).firstChild);
-    });
+    // (the Stats sub-tabs — Insights · Records · Seasons · Species · Tackle — are built in js/26-sub-tabs.js)
     // show only when signed in
     const showBar = () => { bn.hidden = $("app").hidden; $("bn-log").hidden = $("app").hidden; document.body.classList.toggle("has-bnav", !$("app").hidden); };
     // reopen on the tab you were last on (not when the link itself says where to go)

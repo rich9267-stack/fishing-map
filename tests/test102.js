@@ -57,7 +57,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   check("sub-tab remembered", w.localStorage.getItem("fm-play-sub") === "race");
   // Stats no longer holds the games
   nav("stats").click(); await wait(100);
-  check("Stats has no My fish / race / tank", !$("view-insights").contains($("fk-card")) && !$("view-insights").contains($("race-card")) && ![...d.querySelectorAll("#view-insights .stats-sw button")].some(b => /Tank/.test(b.textContent)));
+  check("Stats has no My fish / race / tank", !$("view-insights").contains($("fk-card")) && !$("view-insights").contains($("race-card")) && ![...d.querySelectorAll("#view-insights .sub-tabs button")].some(b => /Tank/.test(b.textContent)));
   // Compete
   nav("compete").click(); await wait(150);
   check("Compete page shows contests", !$("view-compete").hidden && !$("contests").hidden && $("view-compete").contains($("contests")) && nav("compete").classList.contains("on"));

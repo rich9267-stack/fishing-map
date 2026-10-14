@@ -242,7 +242,7 @@
 
   // ---- 📖 Trip review: catches by everyone on a planned trip, with exact catch pins (only people on the trip see them, only here) ----
   const TRIP_BEFORE_H = 1, TRIP_AFTER_H = 12;
-  let pastTrips = [], tripMap = null, tripOpen = null;
+  let pastTrips = [], pastTripsLoaded = false, tripMap = null, tripOpen = null;
   const openPlanChats = new Set();
   const onTrip = (pl, rs) => !!(me && (pl.created_by === me.id || (rs || planRsvps[pl.id] || []).some(x => x.user_id === me.id)));
   const tripWindow = pl => { const t = new Date(pl.plan_at).getTime(); return [t - TRIP_BEFORE_H * 3600000, t + TRIP_AFTER_H * 3600000]; };
@@ -269,11 +269,14 @@
       const by = {}; (r.data || []).forEach(x => (by[x.plan_id] = by[x.plan_id] || []).push(x));
       pastTrips = (p.data || []).filter(pl => onTrip(pl, by[pl.id]));
     } catch (e) { pastTrips = []; }
+    pastTripsLoaded = true;
     renderPastTrips();
   }
   function renderPastTrips() {
     const card = $("feed-trips-card"), box = $("feed-trips-list"); if (!card) return;
-    box.innerHTML = ""; card.hidden = !pastTrips.length || feedMode !== "circle" || !$("trip-review").hidden;
+    box.innerHTML = ""; card.hidden = feedMode !== "circle" || comSub !== "trips" || !$("trip-review").hidden;
+    if (!pastTripsLoaded) box.appendChild(el("div", "spot-meta", "Loading your trips…"));
+    else if (!pastTrips.length) box.appendChild(emptyBox("No past trips yet. Plan one from the Feed (“+ Plan a trip”) or tap ▶ Start trip on a spot — once it's over it shows up here.", "📅 Go to the Feed", () => { if (typeof comMark === "function") comMark("feed"); }));
     pastTrips.forEach(pl => {
       const spot = (spots || []).find(x => x.id === pl.spot_id);
       const it = el("div", "feed-item"); it.style.cursor = "pointer";
@@ -286,6 +289,7 @@
     });
   }
   async function openTripReview(pl) {
+    if (typeof comMark === "function" && comSub !== "trips") comMark("trips");
     tripOpen = pl; $("trip-review").hidden = false; $("feed-trips-card").hidden = true;
     const body = $("trip-review-body"); body.innerHTML = "";
     const spot = (spots || []).find(x => x.id === pl.spot_id);
@@ -449,6 +453,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14m", title: "📊 Stats and 👥 Community, tidied into tabs", items: [
+      "📊 Stats now has tabs along the top: Insights · Records · Seasons · Species · Tackle. Records also holds your Year in review & badges, Species has 🐟 My fish and a page for every fish, and Tackle is your tackle box.",
+      "👥 Community now has tabs too: Feed · Trips · Friends · Messages · Groups. The Feed keeps “Who's going?” and the My circle / Public switch; your past trips moved to Trips.",
+      "Red numbers on Friends and Messages show waiting friend requests and unread messages."
+    ] },
     { id: "2026-10-14l", title: "🏠 Shorter Home, tidier Map", items: [
       "Home is now short: today's tide, wind, water and moon in one strip (tap it for the full weather, tides and moon), quick buttons ▶ Start trip · 🛟 Heading out · 📅 Plan a trip, then Best spot today and your spots.",
       "Suggested spots and Public lakes moved to the Map: tap 🧭 Find new water.",

@@ -31,7 +31,6 @@
   #me-menu[hidden] { display: none; }
   #me-menu button { text-align: left; padding: 10px 12px; font-size: .95rem; }
   #me-menu button[hidden] { display: none; }
-  .stats-sw { display: flex; gap: 8px; margin-bottom: 14px; }
   main { max-width: 520px; margin: 0 auto; padding: 20px 16px 40px; }
   h1 { font-size: 1.4rem; margin: 0 0 2px; }
   .sub { color: var(--muted); margin: 0 0 18px; font-size: .95rem; }
@@ -710,3 +709,18 @@
   .lyr:focus-visible, .msheet button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   body.sheet-open #bn-log, body.sheet-open #qc-toast { display: none; }
   @media (prefers-reduced-motion: reduce) { .sw, .sw::after { transition: none; } }
+
+  /* ---- UX v2 step 3: Stats + Community sub-tabs ---- */
+  .sub-tabs.tight { gap: 5px; }
+  .sub-tabs.tight button { padding: 0 11px; font-size: .86rem; display: inline-flex; align-items: center; }
+  .sub-tabs button .nav-badge { margin-left: 5px; }
+  .sub-tabs button .nav-badge[hidden] { display: none; }
+  .seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--line); border-radius: 12px; padding: 3px; margin: 0 0 14px; }
+  .seg[hidden] { display: none; }
+  .seg button { min-height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; }
+  .seg button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  [data-pane][hidden] { display: none; }
+  #view-feed #friends-close, #view-feed #chat-close { display: none; }   /* the sub-tabs above are the way out */
+  #sp-q { width: 100%; box-sizing: border-box; }
+  #sp-entry-list .fchip { min-height: 40px; }
+

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=88">
+<link rel="stylesheet" href="css/app.css?v=89">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -286,44 +286,6 @@
     <div id="inbox-list"></div>
   </div>
 
-  <div class="card" id="friends-card" hidden>
-    <div class="row">
-      <div class="label">Friends</div>
-      <button class="linkbtn" id="friends-close" type="button">Close</button>
-    </div>
-    <div class="spot-meta">Friends see the spots and catches you share with "Friends" (and the exact pin, unless you hide it).</div>
-    <div id="fr-requests"></div>
-    <form id="fr-search-form" style="display:flex;gap:8px;margin-top:10px">
-      <input id="fr-q" maxlength="30" autocapitalize="none" autocomplete="off" placeholder="Find people by username or name" style="flex:1;min-width:0">
-      <button class="btn small" type="submit">Search</button>
-    </form>
-    <div id="fr-results"></div>
-    <div class="label" style="margin-top:14px">Your friends</div>
-    <div id="fr-list"></div>
-    <div id="fr-blocked"></div>
-    <div class="msg" id="fr-msg"></div>
-  </div>
-
-  <div class="card" id="chat-card" hidden>
-    <div class="row">
-      <div class="label" id="chat-title">Messages</div>
-      <button class="linkbtn" id="chat-close" type="button">Close</button>
-    </div>
-    <div id="chat-list"></div>
-    <div id="chat-thread" hidden>
-      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between">
-        <button class="btn ghost small" id="chat-back" type="button">← All messages</button>
-        <span><button class="linkbtn" id="chat-report" type="button">⚑ Report</button> <button class="linkbtn danger" id="chat-block" type="button">🚫 Block</button></span>
-      </div>
-      <div class="chat-msgs" id="chat-msgs"></div>
-      <form id="chat-form" style="display:flex;gap:8px">
-        <input id="chat-input" maxlength="1000" autocomplete="off" placeholder="Write a message…" style="flex:1;min-width:0">
-        <button class="btn small" id="chat-send" type="submit">Send</button>
-      </form>
-    </div>
-    <div class="msg" id="chat-msg"></div>
-  </div>
-
   <div class="card" id="report-card" hidden>
     <div class="row">
       <div class="label" id="rp-title">Report</div>
@@ -433,7 +395,20 @@
   </div>
 
   <div id="view-feed" hidden>
-    <div id="feed-mode" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <h1 class="page-title">Community</h1>
+    <div class="sub-tabs tight" id="com-sw" role="tablist" aria-label="Community">
+      <button type="button" role="tab" data-sub="feed" class="on" aria-selected="true">Feed</button>
+      <button type="button" role="tab" data-sub="trips" aria-selected="false">Trips</button>
+      <button type="button" role="tab" data-sub="friends" aria-selected="false">Friends<span class="nav-badge" id="com-b-friends" hidden></span></button>
+      <button type="button" role="tab" data-sub="messages" aria-selected="false">Messages<span class="nav-badge" id="com-b-messages" hidden></span></button>
+      <button type="button" role="tab" data-sub="groups" aria-selected="false">Groups</button>
+    </div>
+    <div class="seg" id="com-seg" role="group" aria-label="Whose catches">
+      <button type="button" data-feedmode="circle" class="on" aria-pressed="true">👥 My circle</button>
+      <button type="button" data-feedmode="public" aria-pressed="false">🌎 Public</button>
+    </div>
+    <!-- the old button row stays in the page (hidden): the sub-tabs above press these, and old links/tests still can -->
+    <div id="feed-mode" style="display:none">
       <button class="btn small" id="feed-mode-circle" type="button">👥 My circle</button>
       <button class="btn ghost small" id="feed-mode-public" type="button">🌎 Public</button>
       <button class="btn ghost small" id="feed-mode-contests" type="button" hidden>🏁 Compete</button>
@@ -441,6 +416,43 @@
       <button class="btn ghost small" id="friends-btn" type="button">👥 Friends</button>
       <button class="btn ghost small" id="chat-btn" type="button">💬 Messages</button>
     </div>
+  <div class="card" id="friends-card" hidden>
+    <div class="row">
+      <div class="label">Friends</div>
+      <button class="linkbtn" id="friends-close" type="button">Close</button>
+    </div>
+    <div class="spot-meta">Friends see the spots and catches you share with "Friends" (and the exact pin, unless you hide it).</div>
+    <div id="fr-requests"></div>
+    <form id="fr-search-form" style="display:flex;gap:8px;margin-top:10px">
+      <input id="fr-q" maxlength="30" autocapitalize="none" autocomplete="off" placeholder="Find people by username or name" style="flex:1;min-width:0">
+      <button class="btn small" type="submit">Search</button>
+    </form>
+    <div id="fr-results"></div>
+    <div class="label" style="margin-top:14px">Your friends</div>
+    <div id="fr-list"></div>
+    <div id="fr-blocked"></div>
+    <div class="msg" id="fr-msg"></div>
+  </div>
+
+  <div class="card" id="chat-card" hidden>
+    <div class="row">
+      <div class="label" id="chat-title">Messages</div>
+      <button class="linkbtn" id="chat-close" type="button">Close</button>
+    </div>
+    <div id="chat-list"></div>
+    <div id="chat-thread" hidden>
+      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between">
+        <button class="btn ghost small" id="chat-back" type="button">← All messages</button>
+        <span><button class="linkbtn" id="chat-report" type="button">⚑ Report</button> <button class="linkbtn danger" id="chat-block" type="button">🚫 Block</button></span>
+      </div>
+      <div class="chat-msgs" id="chat-msgs"></div>
+      <form id="chat-form" style="display:flex;gap:8px">
+        <input id="chat-input" maxlength="1000" autocomplete="off" placeholder="Write a message…" style="flex:1;min-width:0">
+        <button class="btn small" id="chat-send" type="submit">Send</button>
+      </form>
+    </div>
+    <div class="msg" id="chat-msg"></div>
+  </div>
     <div class="card" id="groups" hidden>
       <div id="gr-body"></div>
     </div>
@@ -524,6 +536,7 @@
   </div>
 
   <div id="view-seasons" hidden>
+    <h1 class="page-title" id="seasons-title">Stats</h1>
     <div class="card">
       <div class="sea-head">
         <button class="btn ghost small" id="sea-prev" type="button" aria-label="Previous month">◀</button>
@@ -665,11 +678,12 @@
   </div>
 
   <div id="view-insights" hidden>
-    <div class="card" id="yir-card" style="margin-bottom:14px">
+    <h1 class="page-title" id="insights-title">Stats</h1>
+    <div class="card" id="yir-card" data-pane="records" style="margin-bottom:14px">
       <div class="row"><div class="label">🎉 Year in review &amp; badges</div><select id="yir-year" aria-label="Year" style="width:auto"></select></div>
       <div id="yir-body"></div>
     </div>
-    <div class="card" id="rec-card" style="margin-bottom:14px">
+    <div class="card" id="rec-card" data-pane="records" style="margin-bottom:14px">
       <div class="label">🏆 Records &amp; leaderboard</div>
       <div id="rec-scope" style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap">
         <button class="btn small" id="rec-s-me" type="button">👤 Me</button>
@@ -686,7 +700,7 @@
       <div id="rec-body"></div>
       <p class="spot-meta" id="rec-note" style="margin:8px 0 0"></p>
     </div>
-    <div class="card" id="tackle-card" style="margin-bottom:14px">
+    <div class="card" id="tackle-card" data-pane="tackle" style="margin-bottom:14px">
       <div class="label">🎒 My tackle box</div>
       <p class="spot-meta" style="margin:4px 0 0">Private — only you see this. Add what you fish with; the stats come from the “Bait / lure” you write on catches, and the names pop up as suggestions when you log.</p>
       <form id="tk-form" class="row" style="gap:6px;margin-top:8px">
@@ -697,7 +711,7 @@
       <div id="tk-list"></div>
       <div id="tk-sugg"></div>
     </div>
-    <div class="card">
+    <div class="card" data-pane="insights">
       <div class="label">Catch insights</div>
       <div class="two" style="margin-top:4px">
         <div><label for="ins-spot">Spot</label><select id="ins-spot"><option value="">All spots</option></select></div>
@@ -705,9 +719,23 @@
       </div>
       <label class="check-row" for="ins-mine"><input id="ins-mine" type="checkbox"><span>Only my catches</span></label>
     </div>
-    <div class="tiles" id="ins-tiles"></div>
-    <p class="spot-meta" id="ins-note" style="margin:0 0 14px"></p>
-    <div id="ins-charts"></div>
+    <div class="tiles" id="ins-tiles" data-pane="insights"></div>
+    <p class="spot-meta" id="ins-note" data-pane="insights" style="margin:0 0 14px"></p>
+    <div id="ins-charts" data-pane="insights"></div>
+    <div id="stats-species" data-pane="species" hidden>
+      <div class="card" id="fk-card2" style="margin-bottom:14px">
+        <div class="label">🐟 My fish</div>
+        <div class="spot-meta" style="margin:2px 0 8px">Your best fish of each kind, ranked by Power. Tap a card for its stats.</div>
+        <div id="fk-body2"></div>
+      </div>
+      <div class="card" id="sp-entry-card" style="margin-bottom:14px">
+        <div class="label">📖 Species pages</div>
+        <div class="spot-meta" style="margin:2px 0 8px">One page per fish: when it bites, the keeper rule, best bait and times, records. Tap a fish to open its page.</div>
+        <input id="sp-q" type="search" placeholder="🔍 Find a fish…" autocomplete="off" aria-label="Find a fish">
+        <div id="sp-entry-list" class="fchips" style="margin-top:10px;flex-wrap:wrap"></div>
+        <button class="btn ghost small" id="sp-entry-more" type="button" hidden style="margin-top:10px"></button>
+      </div>
+    </div>
   </div>
 
   <div id="view-list">
@@ -1109,31 +1137,32 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=88"></script>
-<script src="js/02-spots.js?v=88"></script>
-<script src="js/03-photos.js?v=88"></script>
-<script src="js/04-insights.js?v=88"></script>
-<script src="js/05-seasons-records.js?v=88"></script>
-<script src="js/06-catching.js?v=88"></script>
-<script src="js/07-measure-fishid.js?v=88"></script>
-<script src="js/08-feed-plans.js?v=88"></script>
-<script src="js/09-map-forecast.js?v=88"></script>
-<script src="js/10-tools-safety.js?v=88"></script>
-<script src="js/11-accounts-social.js?v=88"></script>
-<script src="js/12-contests-alerts.js?v=88"></script>
-<script src="js/13-groups-misc.js?v=88"></script>
-<script src="js/14-tank.js?v=88"></script>
-<script src="js/15-fish-rank.js?v=88"></script>
-<script src="js/16-fish-race.js?v=88"></script>
-<script src="js/17-license-help.js?v=88"></script>
-<script src="js/18-species.js?v=88"></script>
-<script src="js/19-biting.js?v=88"></script>
-<script src="js/20-spot-share.js?v=88"></script>
-<script src="js/21-pub-filters.js?v=88"></script>
-<script src="js/22-public-water.js?v=88"></script>
-<script src="js/23-depth.js?v=88"></script>
-<script src="js/24-delete-account.js?v=88"></script>
-<script src="js/25-home-map.js?v=88"></script>
-<script src="js/99-boot.js?v=88"></script>
+<script src="js/01-core.js?v=89"></script>
+<script src="js/02-spots.js?v=89"></script>
+<script src="js/03-photos.js?v=89"></script>
+<script src="js/04-insights.js?v=89"></script>
+<script src="js/05-seasons-records.js?v=89"></script>
+<script src="js/06-catching.js?v=89"></script>
+<script src="js/07-measure-fishid.js?v=89"></script>
+<script src="js/08-feed-plans.js?v=89"></script>
+<script src="js/09-map-forecast.js?v=89"></script>
+<script src="js/10-tools-safety.js?v=89"></script>
+<script src="js/11-accounts-social.js?v=89"></script>
+<script src="js/12-contests-alerts.js?v=89"></script>
+<script src="js/13-groups-misc.js?v=89"></script>
+<script src="js/14-tank.js?v=89"></script>
+<script src="js/15-fish-rank.js?v=89"></script>
+<script src="js/16-fish-race.js?v=89"></script>
+<script src="js/17-license-help.js?v=89"></script>
+<script src="js/18-species.js?v=89"></script>
+<script src="js/19-biting.js?v=89"></script>
+<script src="js/20-spot-share.js?v=89"></script>
+<script src="js/21-pub-filters.js?v=89"></script>
+<script src="js/22-public-water.js?v=89"></script>
+<script src="js/23-depth.js?v=89"></script>
+<script src="js/24-delete-account.js?v=89"></script>
+<script src="js/25-home-map.js?v=89"></script>
+<script src="js/26-sub-tabs.js?v=89"></script>
+<script src="js/99-boot.js?v=89"></script>
 </body>
 </html>

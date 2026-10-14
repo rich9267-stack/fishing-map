@@ -326,14 +326,18 @@
   // ---- 🌎 Public (V4.5 step D): public catches, a map of public spots, and profile pages ----
   let pubCatches = [], pubShown = 30, pubMore = false, pubProfiles = {}, pubPhotos = {}, pubError = null;
   let pubAll = [], pubFetch = 200, pubLoading = false;   // pubAll = everything loaded for the chosen time; filters (js/21) pick from it
+  let comSub = "feed";   // which Community sub-tab is open: feed · trips · friends · messages · groups (UX v2 step 3, bar in js/26)
   let pubProfileId = null, profView = null, feedMode = "circle", mapPublic = false, pubMarkers = {}, pubFocus = null;
   try { mapPublic = localStorage.getItem("fm-map-public") === "1"; } catch (e) {}
   function pubOpen() { return !!$("view-feed") && !$("view-feed").hidden && feedMode === "public"; }
   function setFeedMode(m) {
     if (m === "contests") { feedMode = "circle"; showView("compete"); return; }   // contests moved to the 🏆 Compete tab
     feedMode = m;
+    if (m === "groups") comSub = "groups"; else if (comSub === "groups") comSub = "feed";
+    if (comSub !== "friends" && comSub !== "messages" && typeof closeComCards === "function") closeComCards();   // only the open sub-tab's card stays
+    const feedPage = comSub === "feed";   // "Who's going" and the catch feed only show on the Feed sub-tab
     renderPlanLine();
-    const pub = m === "public";
+    const pub = m === "public" && feedPage;
     $("feed-mode-circle").className = "btn small" + (pub ? " ghost" : "");
     $("feed-mode-public").className = "btn small" + (pub ? "" : " ghost");
     const ct = m === "contests";
@@ -342,8 +346,9 @@
     $("feed-mode-groups").className = "btn small" + (gr ? "" : " ghost");
     if (ct || gr) $("feed-mode-circle").className = "btn small ghost";
     $("contests").hidden = !ct; $("groups").hidden = !gr;
-    $("feed-plans-card").hidden = pub || ct || gr; $("feed-circle-card").hidden = pub || ct || gr;
-    if (m !== "circle") { closeTripReview(); $("feed-trips-card").hidden = true; } else loadPastTrips();
+    $("feed-plans-card").hidden = pub || ct || gr || !feedPage; $("feed-circle-card").hidden = pub || ct || gr || !feedPage;
+    if (m !== "circle" || comSub !== "trips") { closeTripReview(); $("feed-trips-card").hidden = true; } else loadPastTrips();
+    if (typeof comSync === "function") comSync();
     if (ct) { $("pub-feed").hidden = true; $("pub-profile").hidden = true; openContests(); return; }
     if (gr) { $("pub-feed").hidden = true; $("pub-profile").hidden = true; openGroups(); return; }
     if (pub) { loadPublic(); renderPublic(); } else { $("pub-feed").hidden = true; $("pub-profile").hidden = true; renderFeed(); }
@@ -669,6 +674,7 @@
     }
   }
   async function openChatWith(id) {
+    if (typeof comMark === "function") comMark("messages");
     $("friends-card").hidden = true;
     $("chat-card").hidden = false; chatWith = id;
     renderChat(); $("chat-card").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -677,13 +683,14 @@
   }
   function startChatPolling() { clearInterval(chatTimer); chatTimer = setInterval(() => { if (chatOpen() && !document.hidden) loadChat().then(() => { if (chatWith != null && unreadFor(chatWith)) openThread(chatWith); }); }, 10000); }
   $("chat-btn").addEventListener("click", async () => {
+    if (typeof comMark === "function") comMark("messages");
     $("chat-card").hidden = false; chatWith = null; $("chat-msg").textContent = "";
     renderChat(); $("chat-card").scrollIntoView({ behavior: "smooth", block: "start" });
     startChatPolling();
     await Promise.all([loadChat(), loadFriends()]);
     renderChat();
   });
-  $("chat-close").addEventListener("click", () => { $("chat-card").hidden = true; clearInterval(chatTimer); chatWith = null; });
+  $("chat-close").addEventListener("click", () => { $("chat-card").hidden = true; clearInterval(chatTimer); chatWith = null; if (typeof comMark === "function" && comSub === "messages") comMark("feed"); });
   $("chat-back").addEventListener("click", () => { chatWith = null; renderChat(); });
   $("chat-form").addEventListener("submit", async e => {
     e.preventDefault();
@@ -893,11 +900,12 @@
     });
   });
   $("friends-btn").addEventListener("click", async () => {
+    if (typeof comMark === "function") comMark("friends");
     $("friends-card").hidden = false; $("fr-msg").textContent = ""; $("fr-results").innerHTML = ""; $("fr-q").value = "";
     renderFriends(); $("friends-card").scrollIntoView({ behavior: "smooth", block: "start" });
     await loadFriends();
   });
-  $("friends-close").addEventListener("click", () => { $("friends-card").hidden = true; });
+  $("friends-close").addEventListener("click", () => { $("friends-card").hidden = true; if (typeof comMark === "function" && comSub === "friends") comMark("feed"); });
 
   // ---- Profile (V4 social): a username, home waters and a short bio ----
   async function ensureProfile() {

@@ -602,11 +602,11 @@
     else if (go === "spot" && q.get("id")) { goToSpot(q.get("id"), false); }
     else if (go === "plan" || go === "weather") { showView("list"); ciLoad(); wxRefresh(true); setTimeout(() => $("safety-strip").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }
     else if (go === "invite" && me.isAdmin) $("invite-btn").click();
-    else if (go === "insights") { showView("insights"); window.scrollTo({ top: 0 }); }
+    else if (go === "insights") { if (typeof statsOpen === "function") statsOpen("insights"); else showView("insights"); window.scrollTo({ top: 0 }); }
     else if (go === "race" && typeof raceOpenRoom === "function") raceOpenRoom(q.get("room"));
     else if (go === "license" && typeof goLicense === "function") goLicense();
     else if (go === "problems" && me.isAdmin && typeof goProblems === "function") goProblems();
-    else { feedMode = "circle"; showView("feed"); window.scrollTo({ top: 0 }); }
+    else { feedMode = "circle"; if (typeof comMark === "function") comMark("feed"); else showView("feed"); window.scrollTo({ top: 0 }); }
   }
   function runPendingGo() { if (pendingGo && me) { const g = pendingGo; pendingGo = null; try { history.replaceState(null, "", SITE); } catch (e) {} handleGo(g); } }
   if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", e => { if (e.data && e.data.go) { pendingGo = e.data.go; runPendingGo(); } });

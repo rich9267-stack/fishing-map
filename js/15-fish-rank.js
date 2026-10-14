@@ -148,8 +148,9 @@
     });
     return { list: [...best.values()], unranked, total: mine.length };
   }
-  function renderMyFish() {
-    const box = $("fk-body"); if (!box || !me) return;
+  function renderMyFish() { ["fk-body", "fk-body2"].forEach(id => renderMyFishInto($(id))); }   // Play › My fish and Stats › Species show the same collection
+  function renderMyFishInto(box) {
+    if (!box || !me) return;
     const { list, unranked } = myFishList();
     box.innerHTML = "";
     const sum = list.reduce((n, x) => n + x.rk.power, 0);

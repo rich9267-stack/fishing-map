@@ -130,7 +130,11 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   console.log("saved size:", row.length_in, row.weight_lb, row.weight_est, "| geo stamp:", w.__db.inserts.filter(i => i.t === "catch_geo").length);
   // 2) Trip review
   d.getElementById("tab-feed").click(); await wait(500);
+  console.log("past trips are NOT on the Feed sub-tab:", d.getElementById("feed-trips-card").hidden);
+  d.querySelector('#com-sw [data-sub="trips"]').click(); await wait(500);   // past trips live on Community › Trips (UX v2 step 3)
+  d.querySelector('#com-sw [data-sub="feed"]').click(); await wait(100);
   console.log("plan card review button:", [...d.querySelectorAll("#plan-list button")].map(b => b.textContent).filter(t => /Review/.test(t)).join(","));
+  d.querySelector('#com-sw [data-sub="trips"]').click(); await wait(400);
   console.log("past trips card:", !d.getElementById("feed-trips-card").hidden, "|", txt("feed-trips-list").slice(0, 80));
   d.querySelector("#feed-trips-list .feed-item").click(); await wait(600);
   console.log("review:", txt("trip-review-body").slice(0, 330));

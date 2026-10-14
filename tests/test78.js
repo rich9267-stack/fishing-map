@@ -191,8 +191,8 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   console.log("brackish: tilapia fresh:", /Tilapia/.test(nm(t.fresh)), "| unknown fish at brackish spot goes salt:", /Mystery/.test(nm(t.salt)), "| largemouth at brackish goes fresh:", /Largemouth/.test(nm(t.fresh)));
   // screen
   click(d.querySelector('#bnav [data-nav="stats"]')); await sleep(200);
-  click(d.querySelector("#view-insights .stats-sw button[data-tab='tab-tank']")); await sleep(300);
-  console.log("Tank view shown:", vis("view-tank"), "| Stats still lit:", d.querySelector('#bnav [data-nav="stats"]').classList.contains("on"), "| saved tab:", w.localStorage.getItem("fm-last-tab"));
+  click($("tab-tank")); await sleep(300);   // (the Tank moved to the 🐠 Play tab in UX v2)
+  console.log("Tank view shown:", vis("view-tank"), "| saved tab:", w.localStorage.getItem("fm-last-tab"));
   console.log("summary:", txt("tank-sum"));
   console.log("fish drawn: salt", d.querySelectorAll(".tank-salt .tfish").length, "| fresh", d.querySelectorAll(".tank-fresh .tfish").length, "| fish svgs:", d.querySelectorAll(".tfish svg").length, "| pond not inside the tank cards:", !d.querySelector(".tank-card .pond"));
   console.log("tank view default: tanks shown, pond hidden:", vis("tank-body") && !vis("pond-body"));
@@ -204,7 +204,7 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   click(d.querySelector("#tank-sw button[data-mode='tanks']")); await sleep(100);
   const first = d.querySelector(".tank-salt .tfish"); console.log("fish has a spoken label:", first.getAttribute("aria-label"));
   click(first); console.log("tap fish info:", d.querySelector(".tank-salt ~ .tank-info").textContent.replace(/\s+/g, " "));
-  click(d.querySelector("#view-tank .stats-sw button[data-tab='tab-seasons']")); await sleep(200); console.log("switch to Seasons works:", vis("view-seasons") && !vis("view-tank"));
+  click($("tab-seasons")); await sleep(200); console.log("switch to Seasons works:", vis("view-seasons") && !vis("view-tank"));
   w.eval("catchesBySpot = {}"); click($("tab-tank")); await sleep(100); click(d.querySelector("#tank-sw button[data-mode='lagoon']")); await sleep(50);
   console.log("empty tanks offer a button:", [...d.querySelectorAll("#tank-body .empty-nice .btn, #pond-body .empty-nice .btn, #lagoon-body .empty-nice .btn")].map(b => b.textContent).join(" | "), "|", txt("tank-sum"));
   console.log("DONE");

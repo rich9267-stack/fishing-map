@@ -168,7 +168,7 @@
     b.hidden = false;
     b.textContent = "📅 Already planned: " + show.slice(0, 2).map(planShort).join(" · ") + (show.length > 2 ? ` · +${show.length - 2} more` : "") + " — tap to see";
   }
-  $("plan-line").addEventListener("click", () => { stopPlacing(); feedMode = "circle"; ctView = "list"; showView("feed"); window.scrollTo({ top: 0, behavior: "smooth" }); });
+  $("plan-line").addEventListener("click", () => { stopPlacing(); feedMode = "circle"; ctView = "list"; if (typeof comMark === "function") comMark("feed"); else showView("feed"); window.scrollTo({ top: 0, behavior: "smooth" }); });
   async function loadPlans() {
     try {
       const since = new Date(Date.now() - 3 * 3600000).toISOString(); // a plan stays up until 3 h after its start

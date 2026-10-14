@@ -130,7 +130,7 @@
     if (all.length) {
       const ch = el("button", "btn ghost", "📊 All charts for this fish"); ch.type = "button";
       ch.addEventListener("click", () => {
-        spClose(); showView("insights");
+        spClose(); if (typeof statsOpen === "function") statsOpen("insights"); else showView("insights");
         const sel = $("ins-species"); if (!sel) return;
         if (typeof fillInsightPickers === "function") fillInsightPickers();
         const opt = [...sel.options].find(o => o.value && spMatch(f, title)({ species: o.value }));
