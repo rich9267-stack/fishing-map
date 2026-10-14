@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14j", title: "🗑 Delete my account", items: [
+      "Settings → Your data → 🗑 Delete my account. It shows what will be removed and offers to download your catches and spots first.",
+      "It asks twice (the second time you type DELETE). Friends' catches at your spots are kept — the spot passes to the friend who fished it most."
+    ] },
     { id: "2026-10-14i", title: "〰 Depth lines", items: [
       "〰 New map button Depth lines: the ocean's depth lines (3, 6, 13, 20, 33, 66, 98 ft and deeper) — good for finding reef edges and drop-offs.",
       "Zoom in on a lake FWC has surveyed (Palm Beach County and north) to see its 1-foot depth lines. There's no free depth data for Broward lakes or the canals yet.",

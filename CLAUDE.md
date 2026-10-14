@@ -13,4 +13,4 @@ Owner: Richard (Pompano Beach, no programming experience). Plain language, small
 - Keep this file and README.md short.
 
 ## Now
-Fishbrain audit (`docs/fishbrain-audit.md`, Project doc `claude/fishbrain-audit.md`): all done except #5 delete my account (needs a step Richard runs in the SQL Editor). Then (Richard's order): tank simulator step 9 (artist art; hold the artist brief until he says go — `docs/parked_ideas.md`, Project doc `claude/tank-vision.md`). On hold: SFWMD gate data (only if Richard gets an API key; he saves secrets himself).
+Fishbrain audit (`docs/fishbrain-audit.md`): all 12 items done (#5 delete my account = v86, needs setup/54 pasted in the SQL Editor by Richard). Next (Richard's order): tank simulator step 9 (artist art; hold the artist brief until he says go — `docs/parked_ideas.md`, Project doc `claude/tank-vision.md`). On hold: SFWMD gate data (only if Richard gets an API key; he saves secrets himself).

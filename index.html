@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=85">
+<link rel="stylesheet" href="css/app.css?v=86">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -231,6 +231,29 @@
       <button class="btn ghost small" id="export-spots" type="button">⬇ My spots</button>
     </div>
     <div class="msg" id="export-msg"></div>
+    <div id="del-area" style="margin-top:18px;border-top:1px solid var(--line);padding-top:12px">
+      <div class="label">🗑 Delete my account</div>
+      <p class="spot-meta" style="margin:4px 0 8px">Removes your spots, catches, photos, messages, friends and profile, and your sign-in. It can't be undone.</p>
+      <button class="btn ghost small" id="del-btn" type="button">🗑 Delete my account…</button>
+      <div id="del-box" hidden style="margin-top:10px">
+        <div id="del-sum" class="spot-meta"></div>
+        <p class="spot-meta" style="margin:8px 0 6px"><b>First, save a copy?</b> Download your catches and spots as spreadsheet files before they're gone.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost small" id="del-exp-catches" type="button">⬇ My catches</button>
+          <button class="btn ghost small" id="del-exp-spots" type="button">⬇ My spots</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn danger small" id="del-go1" type="button">Delete my account</button>
+          <button class="btn ghost small" id="del-cancel" type="button">Never mind</button>
+        </div>
+        <div id="del-step2" hidden style="margin-top:10px">
+          <label for="del-type">Last check — type <b>DELETE</b> to remove everything for good:</label>
+          <input id="del-type" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" placeholder="DELETE">
+          <button class="btn danger small" id="del-final" type="button" disabled style="margin-top:6px">Delete everything now</button>
+        </div>
+      </div>
+      <div class="msg" id="del-msg" role="status"></div>
+    </div>
     <div class="label" style="margin-top:18px">About</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
       <button class="btn ghost small" id="settings-wn" type="button">✨ What's new</button>
@@ -1009,29 +1032,30 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=85"></script>
-<script src="js/02-spots.js?v=85"></script>
-<script src="js/03-photos.js?v=85"></script>
-<script src="js/04-insights.js?v=85"></script>
-<script src="js/05-seasons-records.js?v=85"></script>
-<script src="js/06-catching.js?v=85"></script>
-<script src="js/07-measure-fishid.js?v=85"></script>
-<script src="js/08-feed-plans.js?v=85"></script>
-<script src="js/09-map-forecast.js?v=85"></script>
-<script src="js/10-tools-safety.js?v=85"></script>
-<script src="js/11-accounts-social.js?v=85"></script>
-<script src="js/12-contests-alerts.js?v=85"></script>
-<script src="js/13-groups-misc.js?v=85"></script>
-<script src="js/14-tank.js?v=85"></script>
-<script src="js/15-fish-rank.js?v=85"></script>
-<script src="js/16-fish-race.js?v=85"></script>
-<script src="js/17-license-help.js?v=85"></script>
-<script src="js/18-species.js?v=85"></script>
-<script src="js/19-biting.js?v=85"></script>
-<script src="js/20-spot-share.js?v=85"></script>
-<script src="js/21-pub-filters.js?v=85"></script>
-<script src="js/22-public-water.js?v=85"></script>
-<script src="js/23-depth.js?v=85"></script>
-<script src="js/99-boot.js?v=85"></script>
+<script src="js/01-core.js?v=86"></script>
+<script src="js/02-spots.js?v=86"></script>
+<script src="js/03-photos.js?v=86"></script>
+<script src="js/04-insights.js?v=86"></script>
+<script src="js/05-seasons-records.js?v=86"></script>
+<script src="js/06-catching.js?v=86"></script>
+<script src="js/07-measure-fishid.js?v=86"></script>
+<script src="js/08-feed-plans.js?v=86"></script>
+<script src="js/09-map-forecast.js?v=86"></script>
+<script src="js/10-tools-safety.js?v=86"></script>
+<script src="js/11-accounts-social.js?v=86"></script>
+<script src="js/12-contests-alerts.js?v=86"></script>
+<script src="js/13-groups-misc.js?v=86"></script>
+<script src="js/14-tank.js?v=86"></script>
+<script src="js/15-fish-rank.js?v=86"></script>
+<script src="js/16-fish-race.js?v=86"></script>
+<script src="js/17-license-help.js?v=86"></script>
+<script src="js/18-species.js?v=86"></script>
+<script src="js/19-biting.js?v=86"></script>
+<script src="js/20-spot-share.js?v=86"></script>
+<script src="js/21-pub-filters.js?v=86"></script>
+<script src="js/22-public-water.js?v=86"></script>
+<script src="js/23-depth.js?v=86"></script>
+<script src="js/24-delete-account.js?v=86"></script>
+<script src="js/99-boot.js?v=86"></script>
 </body>
 </html>
