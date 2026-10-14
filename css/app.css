@@ -641,3 +641,6 @@
   .sp-actions .btn { min-height: 44px; }
   .sea-name.linkbtn { font: inherit; font-weight: 700; color: var(--text); text-decoration: underline dotted; text-align: left; padding: 0; }
   .fk-about { grid-column: 1 / -1; justify-self: start; }
+  /* 🎣 Biting now (js/19) */
+  .bite-row { padding: 2px 0; }
+  .bite-row .linkbtn { font-weight: 700; min-height: 32px; padding: 2px 0; }

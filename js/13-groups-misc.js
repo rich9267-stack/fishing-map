@@ -449,6 +449,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14c", title: "🎣 Biting now", items: [
+      "🎣 New on the Map: \"Biting now\". Orange dots show where fish were caught lately — by you, your friends, and public catches — bigger dot = more fish, white ring = last 2 days.",
+      "Pick 3 days, a week, 2 weeks or a month, and tap a fish (Snook, Mangrove…) to see only that kind. Tap a dot for what was caught, how big, by whom and when.",
+      "Strangers' spots still show only as an approximate area, so nobody's honey hole gets burned."
+    ] },
     { id: "2026-10-14b", title: "🐟 Fish pages, 🎫 license reminder", items: [
       "🐟 Every fish now has its own page: tap a fish name in Seasons (or 📖 About on a card in My fish). It shows when to catch it, the rules, and what's working for your group — best tide, time, baits and spots, the biggest one so far — plus its race stats.",
       "🎫 Settings → Fishing license: add your license and the date it ends. You'll get a phone alert 2 weeks before and when it runs out, and a reminder on Home.",

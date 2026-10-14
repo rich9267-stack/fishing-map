@@ -833,6 +833,7 @@
       }).bindPopup(() => popupFor(s)).addTo(pinLayer);
     });
     renderPublicPins();
+    if (typeof biteRefresh === "function") biteRefresh();   // 🎣 Biting now layer (js/19)
     const n = activeFilterCount();
     $("map-filter-note").hidden = !n;
     if (n) $("map-filter-note").textContent = `Filters on — showing ${filteredSpots().length} of ${(spots || []).length} spots. Change them in the list view.`;

@@ -1,6 +1,6 @@
 # Fishbrain research & audit (Oct 14, 2026)
 
-**Status:** items 1, 3 and 4 built Oct 14 (v78). Next in Richard's order: to be picked.
+**Status:** items 1, 3 and 4 built Oct 14 (v78); item 2 built Oct 14 (v79). Next: to be picked.
 
 What Fishbrain does, how its screens flow, what anglers love and hate about it, and a ranked list of fixes and missing features for our Fishing Map. Everything we'd build stays **$0** and fits our friends-first, no-spot-burning approach.
 
@@ -63,7 +63,7 @@ Effort: **S** = one session, **M** = one or two sessions, **L** = bigger. All $0
 | # | What | Why (Fishbrain lesson) | Effort |
 |---|---|---|---|
 | 1 | ✅ v78 · **🐟 Species pages** — one page per fish: season & rule, best baits *from our group*, best tides/times from our catches, your best + group record, Power/class, recent sightings nearby, link to log one | Top Baits + species info is a core Pro feature; we have all the data, just spread over 5 screens | M |
-| 2 | **🗺 "What's biting near me" map layer** — catches from the last 14 days, filter by species, "new" badge; friends' catches at their spot, public catches only as a blurred area | Seeing recent catches is why people open Fishbrain; we can do it without burning spots | M |
+| 2 | ✅ v79 · **🗺 "What's biting near me" map layer** — catches from the last 14 days, filter by species, "new" badge; friends' catches at their spot, public catches only as a blurred area | Seeing recent catches is why people open Fishbrain; we can do it without burning spots | M |
 | 3 | ✅ v78 · **🎫 Fishing license** — save your license type and expiry date, phone alert 2 weeks before it runs out, link to FWC's Go Outdoors Florida | Fishbrain lists license info for 30+ states; we have nothing; very cheap | S |
 | 4 | ✅ v78 · **🐞 "Report a problem" button** — in Settings: a short note + app version + recent error messages, sent to you as a phone alert | Bugs and slow support are Fishbrain's #2 and #3 complaints; with a solo builder, fast reports matter | S |
 | 5 | **🗑 Delete my account** (after offering the CSV export) | Trust; Fishbrain users complain about support for account issues. Needs a database step you run once in the SQL Editor (the connector blocks deletes) | M |

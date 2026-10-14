@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=78">
+<link rel="stylesheet" href="css/app.css?v=79">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -520,10 +520,13 @@
       <button class="btn ghost small" id="map-sugg" type="button">☆ Show suggestions</button>
       <button class="btn ghost small" id="map-sst" type="button">🌡 Water temp</button>
       <button class="btn ghost small" id="map-chl" type="button">🟢 Water clarity</button>
+      <button class="btn small" id="map-bite" type="button">🎣 Biting now</button>
       <button class="btn ghost small" id="map-sight" type="button">👀 Sightings</button>
       <button class="btn ghost small" id="map-pub" type="button">🌎 Public spots</button>
       <button class="btn ghost small" id="map-offline" type="button">⬇ Save map for offline</button>
     </div>
+    <div id="bite-chips" hidden style="margin:0 0 8px"></div>
+    <div class="spot-meta" id="bite-note" role="status" aria-live="polite" hidden style="margin:0 0 8px"></div>
     <div class="map-tools" id="mx-tools">
       <button class="btn small" id="boat-open" type="button">🚤 Boat mode</button>
       <button class="btn ghost small" id="mx-chart" type="button">🧭 Nautical chart</button>
@@ -539,6 +542,7 @@
       <span><span class="dot" style="background:#fff;border-color:#888"></span>Suggested</span>
       <span><span class="dot" style="background:#1d6fd6;box-shadow:0 0 0 2px #222"></span>Private (yours)</span>
       <span id="sight-key" hidden><span class="dot" style="background:#8e44ad"></span>Public sighting</span>
+      <span id="bite-key" hidden><span class="dot" style="background:#e67e22"></span>Recent catches</span>
     </div>
     <div class="sat-legend" id="sat-legend" hidden>
       <div class="sat-title" id="sat-title"></div>
@@ -992,24 +996,25 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=78"></script>
-<script src="js/02-spots.js?v=78"></script>
-<script src="js/03-photos.js?v=78"></script>
-<script src="js/04-insights.js?v=78"></script>
-<script src="js/05-seasons-records.js?v=78"></script>
-<script src="js/06-catching.js?v=78"></script>
-<script src="js/07-measure-fishid.js?v=78"></script>
-<script src="js/08-feed-plans.js?v=78"></script>
-<script src="js/09-map-forecast.js?v=78"></script>
-<script src="js/10-tools-safety.js?v=78"></script>
-<script src="js/11-accounts-social.js?v=78"></script>
-<script src="js/12-contests-alerts.js?v=78"></script>
-<script src="js/13-groups-misc.js?v=78"></script>
-<script src="js/14-tank.js?v=78"></script>
-<script src="js/15-fish-rank.js?v=78"></script>
-<script src="js/16-fish-race.js?v=78"></script>
-<script src="js/17-license-help.js?v=78"></script>
-<script src="js/18-species.js?v=78"></script>
-<script src="js/99-boot.js?v=78"></script>
+<script src="js/01-core.js?v=79"></script>
+<script src="js/02-spots.js?v=79"></script>
+<script src="js/03-photos.js?v=79"></script>
+<script src="js/04-insights.js?v=79"></script>
+<script src="js/05-seasons-records.js?v=79"></script>
+<script src="js/06-catching.js?v=79"></script>
+<script src="js/07-measure-fishid.js?v=79"></script>
+<script src="js/08-feed-plans.js?v=79"></script>
+<script src="js/09-map-forecast.js?v=79"></script>
+<script src="js/10-tools-safety.js?v=79"></script>
+<script src="js/11-accounts-social.js?v=79"></script>
+<script src="js/12-contests-alerts.js?v=79"></script>
+<script src="js/13-groups-misc.js?v=79"></script>
+<script src="js/14-tank.js?v=79"></script>
+<script src="js/15-fish-rank.js?v=79"></script>
+<script src="js/16-fish-race.js?v=79"></script>
+<script src="js/17-license-help.js?v=79"></script>
+<script src="js/18-species.js?v=79"></script>
+<script src="js/19-biting.js?v=79"></script>
+<script src="js/99-boot.js?v=79"></script>
 </body>
 </html>
