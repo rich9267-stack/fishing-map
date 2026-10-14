@@ -449,6 +449,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14a", title: "👥 Race your friends", items: [
+      "👥 New in Stats → 🏁 Fish race: \"Race friends\". Open a race (pick the class, the entry fee and when it starts), and your friends get a phone alert to join with one of their fish.",
+      "Everyone pays the same entry fee. The pot goes 🥇 60% · 🥈 30% · 🥉 10%. The race starts when 5 fish are in, when the host presses Start, or at the start time.",
+      "Changed your mind? Leave before the start and your fee comes back. If fewer than 2 fish show up, the race is cancelled and everyone is refunded. Tap ▶ Watch the race to see how it went."
+    ] },
     { id: "2026-10-13f", title: "🏁 Fish race", items: [
       "🏁 New on the Stats tab: Fish race. Pick one of your ranked fish and race it against 4 others in a straight line.",
       "Class races keep it fair: every fish has a class from its speed (⚡ S fastest … 🐢 C slowest), and you only race fish of your class — no mahi against a bluegill. 🪙 10 per win.",

@@ -597,3 +597,16 @@
   .race-place { position: absolute; right: 12px; top: 7px; font-size: 13px; font-weight: 700; color: #123; }
   .race-result { margin-top: 10px; padding: 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); }
   @media (prefers-color-scheme: dark) { .race-water { background: linear-gradient(90deg, #17384a, #0f2a3a); } .race-place { color: #e8f2f8; } .race-lane.me .race-who { color: #f2b134; } }
+  /* 👥 Race friends (js/16) */
+  .room-form { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+  .room-list { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+  .room-card { border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 12px; padding: 10px; background: var(--card); }
+  .room-card.mine { border-left-color: #f2b134; }
+  .room-card.hi { box-shadow: 0 0 0 2px #f2b134; }
+  .room-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .room-fee { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .room-players { list-style: none; margin: 6px 0; padding: 0; font-size: 14px; }
+  .room-players li { padding: 3px 0; border-top: 1px dashed var(--line); }
+  .room-players li.me { font-weight: 700; }
+  .room-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .room-actions .btn { min-height: 44px; }
