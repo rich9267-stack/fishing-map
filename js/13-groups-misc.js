@@ -449,6 +449,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14d", title: "⏰ Best times per fish, 👑 King of the spot", items: [
+      "⏰ In a spot's 3-day outlook, pick a fish (Snook, Mangrove snapper…) to see the best hours for that fish — scored from when your group caught it, plus whether it's a good month and the water's the right temperature.",
+      "👑 Each spot now shows its King: the biggest fish and the strongest (Power) logged there by you and your friends. Beat it!"
+    ] },
     { id: "2026-10-14c", title: "🎣 Biting now", items: [
       "🎣 New on the Map: \"Biting now\". Orange dots show where fish were caught lately — by you, your friends, and public catches — bigger dot = more fish, white ring = last 2 days.",
       "Pick 3 days, a week, 2 weeks or a month, and tap a fish (Snook, Mangrove…) to see only that kind. Tap a dot for what was caught, how big, by whom and when.",

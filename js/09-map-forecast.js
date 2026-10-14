@@ -152,21 +152,57 @@
   }
   const fcHour = (hours, t) => hours.find(h => t.getTime() >= h.t && t.getTime() < h.t + 3600000) || null;
   // The catch history / baseline / extras for one spot (same rules as Best spot today); null if too few catches
-  function historyFor(s) {
-    const has = c => c.moon_phase || c.tide_stage || c.pressure_trend;
+  // `kind` (optional, ⏰ bite time per species): only catches of that fish (a Seasons name, else the species text)
+  const olKindOf = c => { const f = typeof seasonFor === "function" ? seasonFor(c.species) : null; return f ? f.name : cap((c.species || "").trim()); };
+  function historyFor(s, kind) {
+    const isKind = c => !kind || olKindOf(c) === kind;
+    const has = c => (c.moon_phase || c.tide_stage || c.pressure_trend) && isKind(c);
     const all = Object.values(catchesBySpot).flat().filter(has);
     const toHist = list => list.map(c => ({ f: catchFactors(c), n: c.how_many || 1 }));
     const own = (catchesBySpot[s.id] || []).filter(has);
     const ownFish = own.reduce((n, c) => n + (c.how_many || 1), 0);
     let hist;
     if (ownFish >= 3) hist = toHist(own);
-    else if (all.reduce((n, c) => n + (c.how_many || 1), 0) >= 5) hist = toHist(all);
+    else if (all.reduce((n, c) => n + (c.how_many || 1), 0) >= (kind ? 3 : 5)) hist = toHist(all);
     else return null;
     const allTrips = Object.values(sessionsBySpot).flat().filter(x => x.ended_at);
     const trips = (sessionsBySpot[s.id] || []).filter(x => x.ended_at);
     const expo = (trips.length >= 3 ? trips : allTrips).flatMap(x => x.hours || []);
     const sameWater = all.filter(c => { const cs = spots.find(x => x.id === c.spot_id); return cs && cs.water_type === s.water_type; });
-    return { hist, expo, extra: spotExtras(s, ownFish >= 3 ? own : sameWater) };
+    return { hist, expo, extra: spotExtras(s, ownFish >= 3 ? own : sameWater), local: ownFish >= 3 };
+  }
+  // ⏰ Which fish to score the outlook for (spot id -> kind, "" = any fish). Offered: kinds with 3+ fish logged in your group.
+  const outlookKind = {};
+  function olKinds() {
+    const m = new Map();
+    Object.values(catchesBySpot).flat().forEach(c => { if (c.species && !c.deleted_at) { const k = olKindOf(c); m.set(k, (m.get(k) || 0) + (c.how_many || 1)); } });
+    return [...m.entries()].filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k]) => k);
+  }
+  function olKindPicker(box, s) {
+    const kinds = olKinds(), cur = outlookKind[s.id] || "";
+    if (!kinds.length && !cur) return;
+    const chips = el("div", "fchips ol-kinds"); chips.setAttribute("role", "radiogroup"); chips.setAttribute("aria-label", "Best times for which fish");
+    ["", ...kinds, ...(cur && !kinds.includes(cur) ? [cur] : [])].forEach(k => {
+      const on = cur === k, b = el("button", "fchip" + (on ? " on" : ""), k || "Any fish"); b.type = "button";
+      b.setAttribute("role", "radio"); b.setAttribute("aria-checked", on ? "true" : "false");
+      b.addEventListener("click", () => { outlookKind[s.id] = k; fillOutlook(box, s); });
+      chips.appendChild(b);
+    });
+    box.appendChild(chips);
+  }
+  // A line about the chosen fish: this month's season from shore and today's water temperature vs. what it likes
+  function olKindNote(box, s, kind) {
+    const f = typeof SEASONS !== "undefined" ? SEASONS.find(x => x.name === kind) : null;
+    if (!f) return;
+    const m = new Date().getMonth(), bits = [];
+    if (f.far) bits.push("📍 doesn't live around South Florida");
+    else bits.push(`${MONTHS[m]} is ${["a slow", "a good", "a 🔥 peak"][f.shore[m]]} month for ${kind} from shore`);
+    if (typeof spawnText === "function") { const sp = spawnText(f, m); if (sp) bits.push(sp.replace(/^🥚 /, "🥚 ")); }
+    if (s.water_type !== "freshwater" && typeof waterTempNow === "function" && typeof tempFit === "function") {
+      const w = waterTempNow(s.lat, s.lng); const fit = tempFit(f, w.done && w.done !== "error" ? w.done.f : null);
+      if (fit.text) bits.push(fit.text);
+    }
+    box.appendChild(el("div", "spot-meta ol-kind-note", bits.join(" · ")));
   }
   const DAYNAME = d => d.toDateString() === new Date().toDateString() ? "Today" : d.toLocaleDateString([], { weekday: "short" });
   const hourLabel = d => d.toLocaleTimeString([], { hour: "numeric" }).replace(":00", "").replace(/\s/g, "").toLowerCase();
@@ -177,7 +213,10 @@
     if (!fc.done) { box.appendChild(el("div", "spot-meta", "Loading forecast…")); return; }
     if (fc.done === "error") { box.appendChild(el("div", "spot-meta", "Forecast unavailable right now — try again in a bit.")); return; }
     if (s.water_type !== "freshwater" && !spotTides(s)) { box.appendChild(el("div", "spot-meta", "Loading tides…")); return; }
-    const hours = fc.done, H = historyFor(s);
+    olKindPicker(box, s);
+    const kind = outlookKind[s.id] || "";
+    const hours = fc.done, H = historyFor(s, kind || undefined);
+    if (kind) olKindNote(box, s, kind);
     const start = new Date(); start.setMinutes(0, 0, 0);
     const slots = [];
     for (let i = 0; i < 72; i++) {
@@ -198,8 +237,11 @@
       });
       runs.sort((a, b) => b.peak - a.peak);
       const fmt = r => `${DAYNAME(r.start)} ${hourLabel(r.start)}–${hourLabel(new Date(r.end.getTime() + 3600000))}`;
-      box.appendChild(el("div", "best-why", runs.length ? "⭐ Best windows: " + runs.slice(0, 3).map(fmt).join(" · ")
-        : "No standout window in the next 3 days for what's been caught here."));
+      box.appendChild(el("div", "best-why", runs.length ? `⭐ Best windows${kind ? " for " + kind : ""}: ` + runs.slice(0, 3).map(fmt).join(" · ")
+        : `No standout window in the next 3 days for ${kind ? kind + " " : "what's been caught "}${kind && !H.local ? "in your group" : "here"}.`));
+      if (kind) box.appendChild(el("div", "spot-meta", H.local ? `Scored from the ${kind} caught at this spot.` : `Fewer than 3 ${kind} here, so it uses every ${kind} your group has logged.`));
+    } else if (kind) {
+      box.appendChild(el("div", "spot-meta", `Not enough ${kind} logged yet to score the hours — your group needs about 3 (with tide or weather saved). Wind is shown below.`));
     } else {
       box.appendChild(el("div", "spot-meta", "Log about 3 catches here (or 5 across the group) and the bar will light up with the best windows. Wind is shown below."));
     }
@@ -246,7 +288,7 @@
     });
     if (selected) showDetail(selected); else detail.textContent = "Tap an hour for its wind and why it scores that way.";
     box.appendChild(detail);
-    if (H) box.appendChild(el("div", "spot-meta", "Green = hours that match this spot's catch history (dark green = strong). Wind from Open-Meteo; tides shifted for this spot." +
+    if (H) box.appendChild(el("div", "spot-meta", (kind ? `Green = hours that match when ${kind} were caught (dark green = strong).` : "Green = hours that match this spot's catch history (dark green = strong).") + " Wind from Open-Meteo; tides shifted for this spot." +
       (s.faces_deg == null ? " Edit the spot to say which way the water lies and wind will show onshore/offshore." : "")));
   }
 
@@ -349,6 +391,8 @@
       const sightEl = el("div", "spot-meta spot-sight", sightLine(s));
       sightEl.dataset.spot = s.id; sightEl.hidden = !sightEl.textContent;
       item.appendChild(sightEl);
+      const king = typeof spotKing === "function" ? spotKing(s) : "";
+      if (king) item.appendChild(el("div", "spot-meta spot-king", king));
 
       const chips = el("div", "chips");
       const accessText = { yes: "Public access", no: "Not public", unsure: "Access unsure" }[s.public_access];
@@ -795,6 +839,8 @@
     box.appendChild(el("div", "pop-cond", spotConditions(s)));
     const n = (catchesBySpot[s.id] || []).reduce((t, c) => t + (c.how_many || 1), 0);
     box.appendChild(el("div", "pop-meta", n ? `${n} fish logged here` : "No catches logged yet"));
+    const king = typeof spotKing === "function" ? spotKing(s) : "";
+    if (king) box.appendChild(el("div", "pop-meta spot-king", king));
     const actions = el("div", "pop-actions");
     const open = el("button", null, "Open in list"); open.type = "button";
     open.addEventListener("click", () => goToSpot(s.id, false));

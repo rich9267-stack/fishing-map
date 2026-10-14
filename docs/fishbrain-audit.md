@@ -1,6 +1,6 @@
 # Fishbrain research & audit (Oct 14, 2026)
 
-**Status:** items 1, 3 and 4 built Oct 14 (v78); item 2 built Oct 14 (v79). Next: to be picked.
+**Status:** items 1, 3 and 4 built Oct 14 (v78); item 2 built Oct 14 (v79); items 6 and 7 built Oct 14 (v80). Richard: do #5 (delete my account) last; next in order is #8.
 
 What Fishbrain does, how its screens flow, what anglers love and hate about it, and a ranked list of fixes and missing features for our Fishing Map. Everything we'd build stays **$0** and fits our friends-first, no-spot-burning approach.
 
@@ -67,8 +67,8 @@ Effort: **S** = one session, **M** = one or two sessions, **L** = bigger. All $0
 | 3 | ✅ v78 · **🎫 Fishing license** — save your license type and expiry date, phone alert 2 weeks before it runs out, link to FWC's Go Outdoors Florida | Fishbrain lists license info for 30+ states; we have nothing; very cheap | S |
 | 4 | ✅ v78 · **🐞 "Report a problem" button** — in Settings: a short note + app version + recent error messages, sent to you as a phone alert | Bugs and slow support are Fishbrain's #2 and #3 complaints; with a solo builder, fast reports matter | S |
 | 5 | **🗑 Delete my account** (after offering the CSV export) | Trust; Fishbrain users complain about support for account issues. Needs a database step you run once in the SQL Editor (the connector blocks deletes) | M |
-| 6 | **⏰ Bite time per species** — pick a fish in the 3-day outlook; hours scored from catches of that fish + its comfortable water temperature | BiteTime is a Pro headline feature; we score per spot only | M |
-| 7 | **👑 King of the spot** — biggest fish (and highest Power) logged at each spot by you and friends, crown on the map pin | "King of the Water" is a fun Fishbrain hook; we have the records, just not per spot | S |
+| 6 | ✅ v80 · **⏰ Bite time per species** — pick a fish in the 3-day outlook; hours scored from catches of that fish + its comfortable water temperature | BiteTime is a Pro headline feature; we score per spot only | M |
+| 7 | ✅ v80 · **👑 King of the spot** — biggest fish (and highest Power) logged at each spot by you and friends, crown on the map pin | "King of the Water" is a fun Fishbrain hook; we have the records, just not per spot | S |
 | 8 | **📍 Send a spot to one friend** — share a private spot in Messages, only that friend sees it | Fishbrain lets you share a private waypoint with one buddy | S–M |
 | 9 | **📸 Location check on new catches** — if the photo's GPS is over a mile from the spot you picked, ask "Was this at ___ instead?" | Wrong locations are Fishbrain's #4 complaint; we already read the photo's GPS | S |
 | 10 | **🌎 Public feed filters** — "near me" and "last 7 days" | Fishbrain's feed is noisy and can't filter to recent | S |

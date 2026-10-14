@@ -122,3 +122,21 @@
     const sync = () => btn.setAttribute("aria-pressed", String(btn.classList.contains("on")));
     sync(); if (window.MutationObserver) new MutationObserver(sync).observe(btn, { attributes: true, attributeFilter: ["class"] });
   })();
+
+  // ---- 👑 King of the spot (Fishbrain audit item 7): the longest fish and the strongest fish (Power) logged at each spot ----
+  // From the catches you can see at that spot (yours + friends'). Shown on the spot's card in the list and in its map pop-up.
+  function spotKing(s) {
+    const cs = ((catchesBySpot || {})[s.id] || []).filter(c => !c.deleted_at && c.review_state !== "blurred" && c.species);
+    if (!cs.length) return "";
+    const who = c => isMine(c) ? "you" : (typeof profName === "function" && profName(c.created_by)) || c.caught_by || "a friend";
+    const name = c => cap(c.species.trim());
+    const big = cs.filter(c => c.length_in > 0).sort((a, b) => b.length_in - a.length_in || new Date(a.caught_at) - new Date(b.caught_at))[0]
+      || cs.filter(c => c.weight_lb > 0 && !c.weight_est).sort((a, b) => b.weight_lb - a.weight_lb)[0];
+    const strong = typeof rankOf === "function" ? cs.map(c => ({ c, rk: rankOf(c) })).filter(x => x.rk).sort((a, b) => b.rk.power - a.rk.power)[0] : null;
+    const size = c => c.length_in > 0 ? +Number(c.length_in).toFixed(1) + "″" : lbText(Number(c.weight_lb));
+    if (big && strong && strong.c === big) return `👑 King of the spot: ${size(big)} ${name(big)} by ${who(big)} · ${strong.rk.icon} Power ${strong.rk.power}`;
+    const parts = [];
+    if (big) parts.push(`👑 Biggest: ${size(big)} ${name(big)} by ${who(big)}`);
+    if (strong) parts.push(`${strong.rk.icon} Strongest: ${name(strong.c)} (Power ${strong.rk.power}) by ${who(strong.c)}`);
+    return parts.join(" · ");
+  }

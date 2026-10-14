@@ -123,6 +123,20 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   // off again
   btn.click(); await wait(50);
   ok("turning it off removes the dots and chips", !ev(`map.hasLayer(biteLayer)`) && d.getElementById("bite-chips").hidden && d.getElementById("bite-key").hidden);
+  // 👑 King of the spot (Hillsboro s1: 30″ snook c1, 24″ snook c2, snook c3 no size, 28″ jack c4)
+  const king = () => ev(`spotKing(spots.find(x => x.id === "s1"))`);
+  ev(`photosBySpot = { s1: [{ catch_id: "c4" }] }; rankServer.clear(); window.__ranks = []`);
+  console.log("king (only the jack has a photo):", king());
+  ok("biggest and strongest can differ: 30″ snook is biggest, the photographed jack is strongest", /👑 Biggest: 30″ Snook by you/.test(king()) && /Strongest: Jack crevalle \(Power \d+\) by you/.test(king()));
+  ok("spot with no catches has no king", ev(`spotKing(spots.find(x => x.id === "s4"))`) === "");
+  ev(`photosBySpot = { s1: [{ catch_id: "c1" }, { catch_id: "c4" }] }; rankServer.clear()`);
+  console.log("king (snook photographed too):", king());
+  ok("when the biggest is also the strongest it's one line", /^👑 King of the spot: 30″ Snook by you · .* Power 545$/.test(king()));
+  ev(`showView("list")`); await wait(200);
+  const cardK = [...d.querySelectorAll(".spot")].find(e => /Hillsboro/.test(e.querySelector(".spot-name").textContent)).querySelector(".spot-king");
+  ok("the spot card shows the king line", !!cardK && /👑/.test(cardK.textContent));
+  const popK = ev(`popupFor(spots.find(x => x.id === "s1")).querySelector(".spot-king").textContent`);
+  ok("the map pop-up shows it too", /👑/.test(popK));
   console.log(bad ? "test94 FAILED" : "test94 OK");
   process.exit(bad ? 1 : 0);
 })();
