@@ -237,9 +237,15 @@
     const spot = (spots || []).find(x => x.id === ph.spot_id);
     const ct = ph.catch_id ? Object.values(catchesBySpot).flat().find(c => c.id === ph.catch_id) : null;
     const who = ct ? (isMine(ct) ? "you" : (typeof profName === "function" ? profName(ct.created_by) : null) || "a friend") : null;
-    $("viewer-cap").textContent = `${ct ? "🎣 " + cap(ct.species || "Fish") + (ct.how_many > 1 ? " ×" + ct.how_many : "") + (ct.length_in ? " " + +Number(ct.length_in).toFixed(1) + "″" : "") + " by " + who + " · " : "📷 "}${spot ? spot.name + " · " : ""}${new Date(ph.created_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}`;
+    const capEl = $("viewer-cap"); capEl.textContent = "";
+    capEl.appendChild(document.createTextNode(ct ? "🎣 " + cap(ct.species || "Fish") + (ct.how_many > 1 ? " ×" + ct.how_many : "") + (ct.length_in ? " " + +Number(ct.length_in).toFixed(1) + "″" : "") + " by " : "📷 "));
+    if (ct) {   // the name is tappable (opens their profile) — your own name stays plain text
+      capEl.appendChild(typeof personLink === "function" ? personLink(ct.created_by, who, null, closeViewer) : document.createTextNode(who));
+      capEl.appendChild(document.createTextNode(" · "));
+    }
+    capEl.appendChild(document.createTextNode(`${spot ? spot.name + " · " : ""}${new Date(ph.created_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}`));
     const rk = ct && typeof rankOf === "function" ? rankOf(ct, true) : null;   // 🏅 the photo proves the catch, so it can be ranked (database answer when we have it)
-    if (rk) $("viewer-cap").textContent += `  ·  ${rankLine(rk)}`;
+    if (rk) capEl.appendChild(document.createTextNode(`  ·  ${rankLine(rk)}`));
     $("viewer-del").hidden = !isMine(ph);
     $("viewer").hidden = false;
   }

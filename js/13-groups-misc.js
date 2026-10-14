@@ -453,6 +453,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14q", title: "📲 Your lists follow you, more tappable names", items: [
+      "★ Want to try and ✕ Not interested on suggested spots now sync across all your devices — set them on your phone, see them on your computer. They're private to you.",
+      "Tap a person's name on a fish's species page (longest / heaviest / strongest) or in a photo's caption to open their profile."
+    ] },
     { id: "2026-10-14p", title: "🗺 Tidier Map, tappable names, smarter suggestions", items: [
       "The Map page is tidier: one row of buttons, the colour key is folded away under “Map key”, and the doubled-up Boat mode / layer buttons are gone.",
       "Tap a person's name (comments, trip plans, contests, spot cards, what's-biting pop-ups) to open their profile.",

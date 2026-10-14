@@ -98,10 +98,20 @@
       const heaviest = all.filter(c => c.weight_lb > 0 && !c.weight_est).sort((a, b) => b.weight_lb - a.weight_lb)[0];
       const ranked = all.map(c => ({ c, rk: rankOf(c) })).filter(x => x.rk).sort((a, b) => b.rk.power - a.rk.power)[0];
       const big = [];
-      if (longest) big.push(`📏 Longest: ${+Number(longest.length_in).toFixed(1)}″ by ${spWho(longest)} (${recDate(longest)})`);
-      if (heaviest) big.push(`⚖️ Heaviest: ${lbText(Number(heaviest.weight_lb))} by ${spWho(heaviest)} (${recDate(heaviest)})`);
-      if (ranked) big.push(`${ranked.rk.icon} Strongest: Power ${ranked.rk.power} (${ranked.rk.tier}) by ${spWho(ranked.c)}`);
-      if (big.length) { const ub = el("ul", "sp-list"); big.forEach(t => ub.appendChild(el("li", null, t))); s3.appendChild(ub); }
+      // each line = [text before the name, the catch, text after] so the name can be tapped (opens their profile)
+      if (longest) big.push([`📏 Longest: ${+Number(longest.length_in).toFixed(1)}″ by `, longest, ` (${recDate(longest)})`]);
+      if (heaviest) big.push([`⚖️ Heaviest: ${lbText(Number(heaviest.weight_lb))} by `, heaviest, ` (${recDate(heaviest)})`]);
+      if (ranked) big.push([`${ranked.rk.icon} Strongest: Power ${ranked.rk.power} (${ranked.rk.tier}) by `, ranked.c, ""]);
+      if (big.length) {
+        const ub = el("ul", "sp-list");
+        big.forEach(([pre, c, post]) => {
+          const li = el("li", null, pre);
+          li.appendChild(personLink(c.created_by, spWho(c), null, spClose));
+          if (post) li.appendChild(document.createTextNode(post));
+          ub.appendChild(li);
+        });
+        s3.appendChild(ub);
+      }
       const myBest = all.filter(isMine).map(c => ({ c, rk: rankOf(c) })).filter(x => x.rk).sort((a, b) => b.rk.power - a.rk.power)[0];
       if (myBest && ranked && myBest.c !== ranked.c) s3.appendChild(el("div", "spot-meta", `Your best: Power ${myBest.rk.power} (${recSize(myBest.c)})`));
     }

@@ -449,7 +449,7 @@
       loadPhotos().then(sweepDeletedCatchPhotos);
       syncSessions().then(loadSessions).then(maybeAskSession);
       renderPins();
-      if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); loadOfficialSpots(); }
+      if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); loadOfficialSpots(); loadSuggPicks(); }
       if (typeof tankClaim === "function") tankClaim(); // centred on your spots
       if (typeof licLoad === "function") licLoad();       // 🎫 license banner on Home
       if (typeof shareLoad === "function") shareLoad();   // 📩 spots sent to / by me
@@ -1086,17 +1086,73 @@
     unclear: { badge: "⚠ Check access", note: "No name or access tag on the map — it could be private. Look before you go." }
   };
   const trustOf = g => TRUST[g.trust] || TRUST.unclear;
-  // "Not interested" and "Want to try" are remembered on this phone (nothing is sent anywhere)
-  const SUGG_HIDE_KEY = "fm-sugg-hidden", SUGG_WANT_KEY = "fm-sugg-want";
+  // "Not interested" and "Want to try" follow you to every device: they live in your private table suggestion_picks (setup/55, only you can
+  // see it). This phone keeps a copy so it works offline; a change made offline waits in a small queue until the next time we can reach the database.
+  const SUGG_HIDE_KEY = "fm-sugg-hidden", SUGG_WANT_KEY = "fm-sugg-want", SUGG_Q_KEY = "fm-sugg-queue", SUGG_OWNER_KEY = "fm-sugg-owner";
   const sgGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return Array.isArray(v) ? v : d; } catch (e) { return d; } };
   const sgSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* fine */ } };
   let suggHidden = new Set(sgGet(SUGG_HIDE_KEY, [])), suggWant = sgGet(SUGG_WANT_KEY, []), suggTab = "near", suggOpenKey = null;
   const isWanted = g => suggWant.some(w => w.key === g.key);
-  function hideSuggestion(g) { suggHidden.add(g.key); suggWant = suggWant.filter(w => w.key !== g.key); sgSet(SUGG_HIDE_KEY, [...suggHidden].slice(-500)); sgSet(SUGG_WANT_KEY, suggWant); suggOpenKey = null; renderSuggestions(); }
+  function hideSuggestion(g) { suggHidden.add(g.key); suggWant = suggWant.filter(w => w.key !== g.key); sgSet(SUGG_HIDE_KEY, [...suggHidden].slice(-500)); sgSet(SUGG_WANT_KEY, suggWant); suggOpenKey = null; queueSuggPick(g, "hidden"); renderSuggestions(); }
   function wantSuggestion(g) {
     suggWant = isWanted(g) ? suggWant.filter(w => w.key !== g.key) : [{ key: g.key, name: g.name, kind: g.kind, label: g.label, trust: g.trust, lat: g.lat, lng: g.lng }].concat(suggWant).slice(0, 50);
-    sgSet(SUGG_WANT_KEY, suggWant); renderSuggestions();
+    sgSet(SUGG_WANT_KEY, suggWant); queueSuggPick(g, isWanted(g) ? "want" : "none"); renderSuggestions();
   }
+  // ---- cross-device sync (see the comment above) ----
+  let suggQueue = sgGet(SUGG_Q_KEY, []), suggSyncing = false, suggPicksAt = 0;
+  const pickRow = r => ({ user_id: me.id, key: r.key, status: r.status, name: r.status === "want" ? (r.name || null) : null, kind: r.status === "want" ? (r.kind || null) : null,
+    label: r.status === "want" ? (r.label || null) : null, trust: r.status === "want" ? (r.trust || null) : null,
+    lat: r.status === "want" && r.lat != null ? r.lat : null, lng: r.status === "want" && r.lng != null ? r.lng : null, updated_at: new Date(r.at || Date.now()).toISOString() });
+  function queueSuggPick(g, status) {
+    suggQueue = suggQueue.filter(r => r.key !== g.key).concat([{ key: g.key, status, name: g.name, kind: g.kind, label: g.label, trust: g.trust, lat: g.lat, lng: g.lng, at: Date.now() }]).slice(-200);
+    sgSet(SUGG_Q_KEY, suggQueue); flushSuggQueue();
+  }
+  async function flushSuggQueue() {
+    if (!db || !me || !suggQueue.length || suggSyncing) return;
+    suggSyncing = true;
+    const batch = suggQueue.slice();
+    try {
+      const { error } = await db.from("suggestion_picks").upsert(batch.map(pickRow), { onConflict: "user_id,key" });
+      if (error) throw error;
+      suggQueue = suggQueue.filter(r => !batch.some(b => b.key === r.key && b.at === r.at)); sgSet(SUGG_Q_KEY, suggQueue);
+    } catch (e) { /* stays in the queue; we try again next time */ }
+    suggSyncing = false;
+  }
+  // Pull your lists from the database (and, the first time on this phone, send up what it already remembered)
+  async function loadSuggPicks() {
+    if (!db || !me || suggSyncing) return;
+    suggPicksAt = Date.now();
+    try {
+      let owner = null; try { owner = localStorage.getItem(SUGG_OWNER_KEY); } catch (e) { /* fine */ }
+      if (owner && owner !== me.id) {   // this phone's copy belongs to someone else who used it before — don't mix the lists
+        suggHidden = new Set(); suggWant = []; suggQueue = []; sgSet(SUGG_HIDE_KEY, []); sgSet(SUGG_WANT_KEY, []); sgSet(SUGG_Q_KEY, []);
+      }
+      if (owner !== me.id) {
+        // first time for this account on this phone: send up what was remembered here (never overwrites what's already saved)
+        const old = [...suggHidden].map(key => ({ key, status: "hidden" })).concat(suggWant.map(w => ({ ...w, status: "want" })));
+        if (old.length) {
+          const { error } = await db.from("suggestion_picks").upsert(old.map(pickRow), { onConflict: "user_id,key", ignoreDuplicates: true });
+          if (error) throw error;
+        }
+        try { localStorage.setItem(SUGG_OWNER_KEY, me.id); } catch (e) { /* fine */ }
+      }
+      await flushSuggQueue();
+      const { data, error } = await db.from("suggestion_picks").select("key,status,name,kind,label,trust,lat,lng,updated_at").eq("user_id", me.id).limit(1000);
+      if (error) throw error;
+      const rows = (data || []).slice().sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+      const hidden = new Set(rows.filter(r => r.status === "hidden").map(r => r.key));
+      let want = rows.filter(r => r.status === "want").map(r => ({ key: r.key, name: r.name || "Suggested spot", kind: r.kind, label: r.label, trust: r.trust, lat: r.lat, lng: r.lng }));
+      suggQueue.forEach(q => {   // changes still waiting to be sent win over what the database says
+        want = want.filter(w => w.key !== q.key);
+        if (q.status === "hidden") hidden.add(q.key);
+        else if (q.status === "want") want.unshift({ key: q.key, name: q.name, kind: q.kind, label: q.label, trust: q.trust, lat: q.lat, lng: q.lng });
+      });
+      suggHidden = hidden; suggWant = want.slice(0, 50);
+      sgSet(SUGG_HIDE_KEY, [...suggHidden].slice(-500)); sgSet(SUGG_WANT_KEY, suggWant);
+      if (typeof renderSuggestions === "function" && $("sugg-list")) renderSuggestions();
+    } catch (e) { /* offline or not ready — the copy on this phone is used */ }
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - suggPicksAt > 60000) loadSuggPicks(); });
   // Suggestions nobody has saved yet (nothing saved within ~150 m), closest to your spots first
   function openSuggestions() {
     if (!suggestions) return [];
@@ -1138,7 +1194,9 @@
       };
       const { error } = await db.from("spots").insert(row);
       if (error) throw error;
+      const wasWanted = isWanted(g);
       suggWant = suggWant.filter(w => w.key !== g.key); sgSet(SUGG_WANT_KEY, suggWant); suggOpenKey = null;
+      if (wasWanted) queueSuggPick(g, "none");
       noteBox(`Added “${row.name}” as a private spot — tap it in your list to edit.`);
       await loadSpots();
     } catch (err) {

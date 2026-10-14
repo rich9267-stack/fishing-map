@@ -59,11 +59,12 @@
     redrawFeeds();
   }
   // A person's name that opens their profile (tap). Your own name and unknown people stay plain text.
-  function personLink(id, label, cls) {
+  // `before` (optional) runs first — e.g. closes a pop-up the name sits in.
+  function personLink(id, label, cls, before) {
     if (!id || !me || id === me.id) return el("span", cls || null, label);
     const b = el("button", "linkbtn who-link" + (cls ? " " + cls : ""), label); b.type = "button";
     b.setAttribute("aria-label", "Open " + label + "'s profile");
-    b.addEventListener("click", e => { e.stopPropagation(); if (typeof showProfile === "function") showProfile(id); else openProfile(id); });
+    b.addEventListener("click", e => { e.stopPropagation(); if (before) before(); if (typeof showProfile === "function") showProfile(id); else openProfile(id); });
     return b;
   }
   // "Mike, Sam and You" as a row of tappable names
