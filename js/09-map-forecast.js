@@ -869,7 +869,7 @@
     const box = document.createElement("div");
     box.appendChild(el("div", "pop-name", visIcon(s) + s.name));
     if (s.is_private) box.appendChild(el("div", "pop-meta", "Private — only you can see this"));
-    else if (s.is_exact === false) box.appendChild(el("div", "pop-meta", "Approximate pin — within about ¼ mile"));
+    else if (s.is_exact === false) box.appendChild(el("div", "pop-meta", "Approximate pin — within about ¼ mile, so no Directions (they'd lead to the wrong place)"));
     box.appendChild(el("div", "pop-meta", `${cap(s.spot_type)} · ${WATER_LABEL[s.water_type] || s.water_type}`));
     box.appendChild(el("div", "pop-cond", spotConditions(s)));
     const n = (catchesBySpot[s.id] || []).reduce((t, c) => t + (c.how_many || 1), 0);
@@ -900,7 +900,8 @@
         actions.appendChild(use);
       }
     }
-    [open, log, fol, dir].concat(isMine(s) ? [move, edit] : []).forEach(b => actions.appendChild(b));
+    // Approximate (blurred) pins never get Directions: the blur would send people up to ¼ mile off. Public places snap to the exact official spot in the database (setup/68), so those are exact and keep Directions.
+    [open, log, fol].concat(s.is_exact === false ? [] : [dir]).concat(isMine(s) ? [move, edit] : []).forEach(b => actions.appendChild(b));
     box.appendChild(actions);
     return box;
   }

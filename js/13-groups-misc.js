@@ -456,6 +456,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15j", title: "📍 Public places show their real spot", items: [
+      "When a member's Public spot sits at a known public place — an official boat ramp, park or pier — everyone now sees that place's real location, so Directions take you to the right spot.",
+      "Other public spots are still shown only roughly (within about ¼ mile) to protect secret spots. On the map those pop-ups now say so and no longer offer Directions, because they would lead you to the wrong place.",
+      "The privacy page was rewritten to match how sharing works today."
+    ] },
     { id: "2026-10-15i", title: "🚫 No-fishing zones check", items: [
       "Spots, Quick catch and Boat mode now warn you when you are inside, or within half a mile of, an area where fishing is not allowed or the public is kept out: the Florida Keys sanctuary preservation areas, ecological reserves and research-only areas, the Dry Tortugas reserves, closed wildlife refuges and manatee no-entry zones.",
       "A spot inside one gets a red chip on its card (tap it for the rule and a link). Boat mode shows a red line while you are inside and an amber one when you are close. It works offline: the list is saved on your phone for a week.",

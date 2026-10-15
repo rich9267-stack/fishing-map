@@ -3,6 +3,35 @@
   // Arriving from a password-reset email: show "choose a new password" first
   let authMode = /type=recovery/.test(location.hash) ? "newpw" : "signin", appStarted = false;
 
+  // "I'm not a robot" check on sign-in, sign-up and password reset (Cloudflare Turnstile, free).
+  // The PUBLIC site key from Cloudflare goes between the quotes (set Oct 15). Empty = no check at all, nothing changes.
+  // Supabase → Attack Protection → "Enable CAPTCHA" (with the SECRET key) is what makes the check required; do that only after this key is live in the app, or nobody can sign in.
+  const TURNSTILE_SITE_KEY = "0x4AAAAAAFX6ndhRgtyOCpZ1";
+  let captchaToken = "", captchaWidget = null, captchaLoading = null;
+  const captchaNeeded = () => !!TURNSTILE_SITE_KEY && (authMode === "signin" || authMode === "signup" || authMode === "reset");
+  function loadTurnstile() {
+    if (window.turnstile) return Promise.resolve(window.turnstile);
+    if (!captchaLoading) captchaLoading = new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"; s.async = true;
+      s.onload = () => res(window.turnstile);
+      s.onerror = () => { captchaLoading = null; rej(new Error("captcha script blocked")); };
+      document.head.appendChild(s);
+    });
+    return captchaLoading;
+  }
+  async function captchaSetup() {
+    const row = $("auth-captcha"); if (!row) return;
+    row.hidden = !captchaNeeded();
+    if (row.hidden || captchaWidget != null) return;
+    try {
+      const t = await loadTurnstile();
+      if (captchaWidget != null) return;
+      captchaWidget = t.render("#auth-captcha-box", { sitekey: TURNSTILE_SITE_KEY, callback: tok => { captchaToken = tok; },
+        "expired-callback": () => { captchaToken = ""; }, "error-callback": () => { captchaToken = ""; } });
+    } catch (e) { authMsg("The security check couldn't load — check your connection and refresh.", true); }
+  }
+
   function showAuth(mode) {
     authMode = mode;
     $("qc-fab").hidden = true;
@@ -29,6 +58,7 @@
     $("google-row").hidden = !(mode === "signin" || mode === "signup");
     document.querySelectorAll("#auth-links [data-mode]").forEach(b => { b.hidden = b.dataset.mode === mode || (mode !== "signin" && b.dataset.mode !== "signin"); });
     $("auth-msg").textContent = ""; $("auth-msg").className = "msg";
+    captchaSetup();
   }
   document.querySelectorAll("#auth-links [data-mode]").forEach(b => b.addEventListener("click", () => showAuth(b.dataset.mode)));
 
@@ -49,19 +79,22 @@
     e.preventDefault();
     if (!db) return authMsg("Couldn't reach the database — check your connection and refresh.", true);
     const email = $("a-email").value.trim().toLowerCase(), pw = $("a-pw").value, name = $("a-name").value.trim();
+    const needCaptcha = captchaNeeded();
+    if (needCaptcha && !captchaToken) return authMsg("Please wait a moment for the security check to finish, then tap the button again.", true);
+    const captchaOpt = needCaptcha ? { captchaToken } : {};
     $("auth-submit").disabled = true;
     try {
       if (authMode === "signin") {
-        const { error } = await db.auth.signInWithPassword({ email, password: pw });
+        const { error } = await db.auth.signInWithPassword({ email, password: pw, options: captchaOpt });
         if (error) throw error;
         await gate();
       } else if (authMode === "signup") {
-        const { data, error } = await db.auth.signUp({ email, password: pw, options: { emailRedirectTo: SITE, data: { name } } });
+        const { data, error } = await db.auth.signUp({ email, password: pw, options: { emailRedirectTo: SITE, data: { name }, ...captchaOpt } });
         if (error) throw error;
         if (data.session) { await gate(); }
         else { showAuth("signin"); $("a-email").value = email; authMsg("Check your email and tap the confirmation link, then sign in here."); }
       } else if (authMode === "reset") {
-        const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: SITE });
+        const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: SITE, ...captchaOpt });
         if (error) throw error;
         authMsg("If that email is on the list, a reset link is on its way. Check your inbox (and spam).");
       } else if (authMode === "newpw") {
@@ -80,9 +113,11 @@
       const m = String(err.message || err);
       authMsg(/Invalid login credentials/i.test(m) ? "Wrong email or password." :
               /Email not confirmed/i.test(m) ? "Please tap the confirmation link we emailed you first." :
+              /captcha/i.test(m) ? "The security check didn't pass — please try again." :
               /rate limit/i.test(m) ? "Too many emails sent — wait a few minutes and try again." : m, true);
     } finally {
       $("auth-submit").disabled = false;
+      if (needCaptcha && captchaWidget != null && window.turnstile) { captchaToken = ""; try { window.turnstile.reset(captchaWidget); } catch (e2) { /* the check redraws itself */ } }   // each token works once
     }
   });
 
@@ -426,7 +461,7 @@
     const box = document.createElement("div");
     box.appendChild(el("div", "pop-name", "🌎 " + x.name));
     box.appendChild(el("div", "pop-meta", `${cap(x.spot_type)} · ${WATER_LABEL[x.water_type] || x.water_type}`));
-    box.appendChild(el("div", "pop-meta", x.is_exact === false ? "Approximate pin — within about ¼ mile" : "Exact pin (yours or a friend's)"));
+    box.appendChild(el("div", "pop-meta", x.is_exact === false ? "Approximate pin — within about ¼ mile (the exact spot is kept private)" : "Exact pin (yours, a friend's, or a public place)"));
     if (me && x.created_by !== me.id) {
       const rb = el("button", "linkbtn", "⚑ Report this spot"); rb.type = "button";
       rb.addEventListener("click", () => { map.closePopup(); openReport({ type: "spot", id: x.id, userId: x.created_by, snippet: x.name, label: `the spot "${x.name}"` }); });

@@ -15,7 +15,7 @@ ok(!!m, "index.html has a Content-Security-Policy");
 const csp = m ? m[1] : "";
 const dir = n => ((csp.split(";").map(x => x.trim()).find(x => x.startsWith(n + " "))) || "");
 ok(!/'unsafe-inline'|'unsafe-eval'/.test(dir("script-src")), "script-src allows no inline or eval scripts");
-ok(/object-src 'none'/.test(csp) && /base-uri 'self'/.test(csp) && /frame-src 'none'/.test(csp) && /form-action 'self'/.test(csp), "object/base/frame/form rules are locked down");
+ok(/object-src 'none'/.test(csp) && /base-uri 'self'/.test(csp) && /frame-src (?:'none'|https:\/\/challenges\.cloudflare\.com)(?:;|$)/.test(csp) && /form-action 'self'/.test(csp), "object/base/frame/form rules are locked down");
 ok(/<meta name="referrer"/.test(html), "referrer policy is set");
 ok(!/<script(?![^>]*\ssrc=)[^>]*>/i.test(html), "no inline <script> blocks in index.html");
 ok(!/\son[a-z]+\s*=\s*["']/i.test(html.replace(/<!--[\s\S]*?-->/g, "")), "no inline on...= handlers in index.html");
