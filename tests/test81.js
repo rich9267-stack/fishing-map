@@ -67,7 +67,7 @@ const dom = new JSDOM(html, { runScripts: "dangerously", url: "https://example.o
   const chain = (data, tn) => { const fl = []; const rows = () => Array.isArray(data) ? data.filter(r => fl.every(f => f(r))) : data;
     const p = () => Promise.resolve({ data: rows(), error: null }); const o = {
       eq: (c, v) => { fl.push(r => r[c] === v); return o; }, in: (c, vs) => { fl.push(r => vs.includes(r[c])); return o; },
-      is: () => o, or: () => o, ilike: () => o, gte: () => o, order: () => o, select: () => o, limit: () => p(),
+      is: () => o, or: () => o, ilike: () => o, gte: (c, v) => { if (tn === "official_spots") fl.push(r => r[c] >= v); return o; }, lt: (c, v) => { if (tn === "official_spots") fl.push(r => r[c] < v); return o; }, order: () => o, select: () => o, limit: () => p(),
       single: () => Promise.resolve({ data: { id: "new-" + Math.random().toString(36).slice(2) }, error: null }),
       then: (x, y) => p().then(x, y),
       maybeSingle: () => tn === "members" ? Promise.resolve(MEMBER()) : p().then(r => ({ data: (r.data || [])[0] || null, error: null })) }; return o; };

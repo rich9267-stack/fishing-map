@@ -670,23 +670,68 @@
   }
 
 
-  // ---- Official public spots: public boat ramps + parks/piers where fishing is allowed (shared table official_spots) ----
-  // Used by Quick catch to name a new spot after the official place you're standing at.
+  // ---- Official public spots by area: public boat ramps + parks/piers where fishing is allowed (shared table official_spots) ----
+  // The table covers South Florida, the Keys and the Gulf coast, so the app asks for one square at a time (about 35 miles wide, a "cell")
+  // around where you are or where Find new water is looking, keeps each cell on this phone for a week, and merges the cells it has seen
+  // into officialSpots. Used by Quick catch (names a new spot after the official place you're at) and by Find new water (✅ Official).
   let officialSpots = [];
-  const OFFICIAL_KEY = "fm-official-v1";
+  const OFFICIAL_KEY = "fm-official-v2", OFFICIAL_CELL = 0.5, OFFICIAL_AGE = 7 * 86400000, OFFICIAL_MAX_CELLS = 10;
   const OFFICIAL_KINDS = { ramp: "ramp", pier: "pier", jetty: "jetty", bridge: "bridge", park: "dock", dock: "dock" };
-  async function loadOfficialSpots() {
-    try {
-      const c = JSON.parse(localStorage.getItem(OFFICIAL_KEY) || "null");
-      if (c && Array.isArray(c.items) && Date.now() - c.t < 7 * 86400000) { officialSpots = c.items; return; }
-    } catch (e) {}
-    try {
-      const { data, error } = await db.from("official_spots").select("id,name,kind,lat,lng,water_type,county,details").limit(5000);
-      if (error) throw error;
-      officialSpots = data || [];
-      try { localStorage.setItem(OFFICIAL_KEY, JSON.stringify({ t: Date.now(), items: officialSpots })); } catch (e) {}
-    } catch (e) { /* offline or table missing: Quick catch just falls back to the map suggestions */ }
+  const OFFICIAL_LABEL = { ramp: "Boat ramp", pier: "Pier", jetty: "Jetty", bridge: "Bridge", dock: "Fishing spot", park: "Park · bank fishing" };
+  const OFFICIAL_SOURCE = { "fwc-ramp": "Florida Fish & Wildlife (FWC) boat ramp list", "fl-fori": "Florida DEP outdoor recreation list" };
+  const officialCells = {};       // "52,-163" -> { t: when it was loaded, items: [...] }
+  const officialLoading = {};     // cells being fetched right now
+  const officialCellKey = (lat, lng) => Math.floor(lat / OFFICIAL_CELL) + "," + Math.floor(lng / OFFICIAL_CELL);
+  function officialCellsAround(c, dLat, dLng) {   // the cells that cover a box of dLat x dLng degrees around a place
+    const keys = [];
+    for (let i = Math.floor((c.lat - dLat) / OFFICIAL_CELL); i <= Math.floor((c.lat + dLat) / OFFICIAL_CELL); i++)
+      for (let j = Math.floor((c.lng - dLng) / OFFICIAL_CELL); j <= Math.floor((c.lng + dLng) / OFFICIAL_CELL); j++) keys.push(i + "," + j);
+    return keys;
   }
+  function officialRebuild() {
+    const seen = new Set(), all = [];
+    Object.keys(officialCells).forEach(k => officialCells[k].items.forEach(o => { if (!seen.has(o.id)) { seen.add(o.id); all.push(o); } }));
+    officialSpots = all;
+  }
+  function officialSave(c) {   // keep the cells nearest to where you are; the rest are dropped so the phone's storage stays small
+    const keys = Object.keys(officialCells);
+    if (keys.length > OFFICIAL_MAX_CELLS) {
+      const mid = k => { const [i, j] = k.split(",").map(Number); return miles(c.lat, c.lng, (i + 0.5) * OFFICIAL_CELL, (j + 0.5) * OFFICIAL_CELL); };
+      keys.sort((a, b) => mid(a) - mid(b)).slice(OFFICIAL_MAX_CELLS).forEach(k => delete officialCells[k]);
+      officialRebuild();
+    }
+    try { localStorage.setItem(OFFICIAL_KEY, JSON.stringify({ cells: officialCells })); } catch (e) { /* storage full: fine, it is fetched again next time */ }
+  }
+  async function officialLoadCell(key) {   // true = new data arrived
+    const have = officialCells[key];
+    if (have && Date.now() - have.t < OFFICIAL_AGE) return false;
+    if (officialLoading[key]) return officialLoading[key];
+    const [i, j] = key.split(",").map(Number), C = OFFICIAL_CELL;
+    officialLoading[key] = (async () => {
+      try {
+        const { data, error } = await db.from("official_spots").select("id,source,name,kind,lat,lng,water_type,county,details")
+          .gte("lat", i * C).lt("lat", (i + 1) * C).gte("lng", j * C).lt("lng", (j + 1) * C).limit(1000);
+        if (error) throw error;
+        officialCells[key] = { t: Date.now(), items: data || [] };
+        return true;
+      } catch (e) { return false; /* offline: an older copy on this phone is still used */ }
+      finally { delete officialLoading[key]; }
+    })();
+    return officialLoading[key];
+  }
+  // Load the official spots around a place (default: where Find new water is looking). Resolves true when new spots arrived.
+  async function loadOfficialSpots(c, dLat, dLng) {
+    c = c || (typeof suggCenter === "function" ? suggCenter() : { lat: LAT, lng: LNG });
+    const res = await Promise.all(officialCellsAround(c, dLat || 0.3, dLng || 0.35).map(officialLoadCell));
+    const changed = res.some(Boolean);
+    if (changed) {
+      officialRebuild(); officialSave(c);
+      if (typeof renderSuggestions === "function" && $("sugg-list")) renderSuggestions();
+    }
+    return changed;
+  }
+  // Quick catch: make sure the square you are standing in is loaded (a tiny box, so usually one cell)
+  const officialEnsure = pos => loadOfficialSpots(pos, 0.01, 0.01);
   // The closest official spot to a place, if one is within maxMi (default ~400 ft)
   function officialNear(pos, maxMi) {
     const lim = maxMi || 0.08;
@@ -697,3 +742,31 @@
     });
     return best;
   }
+  // Official spots as Find new water suggestions (same shape as the OpenStreetMap ones, trust "official")
+  function officialSuggestions() {
+    return (officialSpots || []).map(o => {
+      const d = o.details || {};
+      return { key: "official/" + o.id, name: o.name, kind: OFFICIAL_KINDS[o.kind] || "dock",
+        label: /hand/i.test(d.type || "") ? "Hand launch (kayak)" : OFFICIAL_LABEL[o.kind] || "Fishing spot",
+        trust: "official", src: o.source, water: o.water_type || null, county: o.county || null, info: d, lat: o.lat, lng: o.lng };
+    });
+  }
+  // A short facts line for an official spot: lanes, fee, hours, water body, who runs it
+  function officialFacts(g) {
+    const d = g.info || {}, bits = [];
+    if (d.lanes) bits.push(d.lanes + (d.lanes === 1 ? " lane" : " lanes"));
+    if (d.fee) bits.push(/^y/i.test(d.fee) ? "Fee" : /^n/i.test(d.fee) ? "No fee" : "Fee: " + d.fee);
+    if (d.hours) bits.push(d.hours);
+    if (d.water) bits.push(d.water);
+    if (g.county) bits.push(g.county.charAt(0) + g.county.slice(1).toLowerCase() + " County");
+    if (d.owner) bits.push("run by " + d.owner);
+    return bits.join(" · ");
+  }
+  (function officialRestore() {   // what this phone already knows (older copies are used until fresh ones arrive)
+    try {
+      localStorage.removeItem("fm-official-v1");
+      const c = JSON.parse(localStorage.getItem(OFFICIAL_KEY) || "null");
+      if (c && c.cells) Object.keys(c.cells).forEach(k => { const v = c.cells[k]; if (v && Array.isArray(v.items) && isFinite(v.t)) officialCells[k] = v; });
+    } catch (e) {}
+    officialRebuild();
+  })();

@@ -1,0 +1,28 @@
+-- 60: official public spots for the Gulf coast and the Keys (Gulf expansion step 3). No table changes: the table from setup/39 is reused.
+-- The app now asks for one ~35-mile square ("cell") at a time (js/02 loadOfficialSpots), so the table can hold the whole coast.
+-- Data loaded Oct 15 2026 by the database itself with pg_net (the workspace can't reach these sites). Re-running is safe (on conflict do nothing).
+--   Boxes: Keys lat 24.3-25.2, lng -82.3 to -80.2 · Gulf coast + inland lat 25.1-28.6, lng -83.6 to -80.95
+--   Result: Gulf coast 987 active spots (717 ramps + 270 parks/piers), Keys 67 (51 ramps + 16 parks/piers).
+--
+-- 1) Ask the two services (timeout raised to 90 s; the default 5 s is too short for the DEP server):
+--    FWC ramps  : https://gis.myfwc.com/mapping/rest/services/Open_Data/FWC_Florida_Boat_Ramp_Inventory/MapServer/4/query
+--                 where Status='Open for Business' AND AccessType LIKE '%for General Public Use'  (same filter as the South Florida load)
+--                 outFields RampID,RampName,RampType,PrimaryAdminEntity,isFeeRequired,Hours,TotalLanes,City,County,Latitude,Longitude,WaterType,WaterBodyName
+--    FL DEP FORI: https://ags.dep.state.fl.us/arcgis/rest/services/OpenData/PARKS_FORI/MapServer/0/query
+--                 where (BANK_FISHING_AREAS>0 OR SALTWATER_PIERS>0 OR FRESHWATER_PIERS>0 OR SALTWATER_CATWALKS>0 OR FRESHWATER_CATWALKS>0
+--                        OR SALTWATER_JETTY_LENGTH>0 OR FRESHWATER_JETTY_LENGTH>0) AND INCLUDE_SITE='Y'
+--                 outFields ID,SITE_NAME,COUNTY,LOCATION_CITY,PRIMARY_AGENCY,WEBSITE,DECIMAL_DEGREES_LAT,DECIMAL_DEGREES_LONG,BANK_FISHING_AREAS,
+--                           SALTWATER_PIERS,FRESHWATER_PIERS,SALTWATER_CATWALKS,FRESHWATER_CATWALKS,SALTWATER_JETTY_LENGTH,FRESHWATER_JETTY_LENGTH,CATEGORY
+--    e.g. select net.http_get('<url>?where=...&geometry=-83.6,25.1,-80.95,28.6&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=...&returnGeometry=false&f=json', timeout_milliseconds := 90000);
+--    (each request id was also noted in official_import_jobs)
+--
+-- 2) Turn the answers into rows (x = the features of the saved responses):
+--    FWC ramps: kind 'ramp'; water_type 'freshwater' when WaterType = 'Freshwater', else null (the app guesses from the nearest tide station);
+--               county upper-case; details {fee (not 'Unknown'), city, type, hours (<= 80 chars, not 'Unknown'), lanes (TotalLanes > 0), owner, water}
+--    FORI     : kind 'pier' when any pier/catwalk count > 0, 'jetty' when only a jetty length > 0, else 'park' (bank fishing);
+--               water_type 'saltwater' / 'freshwater' only when the pier/jetty fields name just one; names tidied from ALL CAPS to Title Case;
+--               active = false for CATEGORY 'CLUB' or names that are a web address / yacht, country club, golf, museum, baseball, softball,
+--               sports complex, community center, campground, resort, condominium (none matched in this load);
+--               details {web, city, owner = PRIMARY_AGENCY, bank_areas}
+--    Both     : insert into public.official_spots (source, source_id, name, kind, lat, lng, water_type, county, details[, active])
+--               ... on conflict (source, source_id) do nothing, only rows with a name and a Florida position.

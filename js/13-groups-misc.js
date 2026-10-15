@@ -456,6 +456,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15d", title: "✅ Official public spots on the Gulf coast and in the Keys", items: [
+      "🧭 Find new water now lists official public boat ramps, fishing piers and parks for the Gulf coast (Naples up to Clearwater and Tampa Bay) and the Keys, not just South Florida. They show a ✅ Official badge, and the details tell you the number of lanes, whether there's a fee, the hours and who runs the place.",
+      "When you travel, Find new water looks around where you are instead of around your home spots. The official spots for the area you're in load as you go, so nothing is slow to start.",
+      "Quick catch names a new spot after the official ramp or pier you're standing at, anywhere on the Gulf coast or in the Keys."
+    ] },
     { id: "2026-10-15c", title: "🌊 Tides and water temperature on the Gulf coast and in the Keys", items: [
       "Tide stations are now built in from Key Largo to Key West, up the Everglades and the whole Gulf coast to Cedar Key (Naples, Fort Myers, Sarasota, Tampa Bay, Clearwater and more), so tides appear right away — no waiting, and they work with a weak signal.",
       "Real water-temperature sensors added at Fort Myers, Tampa Bay (St. Petersburg and Port Manatee), Clearwater Beach and Cedar Key. A sensor up a river or inside a bay only counts for water close to it; elsewhere you still get the ocean estimate.",
@@ -804,7 +809,11 @@
         if (ok.length) job.then(() => { if (run === waterLineRun) line.textContent += ` · ${ok.join(" · ")}`; }, () => { if (run === waterLineRun) line.textContent = "🌊 Water: " + ok.join(" · "); });
       });
   }
-  function hwAfterMove() { showAreaWater(); }
+  function hwAfterMove() {
+    showAreaWater();
+    // Find new water follows you when you're away from home: look around the new area (not before the first load of the spots)
+    if (typeof loadSpots !== "undefined" && loadSpots.suggStarted && typeof loadSuggestions === "function") loadSuggestions();
+  }
 
   // Keep a copy of the app on the phone so it opens with no signal
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

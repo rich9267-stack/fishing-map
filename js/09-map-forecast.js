@@ -449,7 +449,7 @@
       loadPhotos().then(sweepDeletedCatchPhotos);
       syncSessions().then(loadSessions).then(maybeAskSession);
       renderPins();
-      if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); loadOfficialSpots(); loadSuggPicks(); }
+      if (!loadSpots.suggStarted) { loadSpots.suggStarted = true; loadSuggestions(); loadSuggPicks(); }
       if (typeof tankClaim === "function") tankClaim(); // centred on your spots
       if (typeof licLoad === "function") licLoad();       // 🎫 license banner on Home
       if (typeof shareLoad === "function") shareLoad();   // 📩 spots sent to / by me
@@ -1012,6 +1012,7 @@
   let suggAnchor = null; // where suggestions are centred: "Near me", else the middle of your spots, else Pompano
   function suggCenter() {
     if (suggAnchor) return suggAnchor;
+    if (typeof area !== "undefined" && area && area.away) return { lat: area.lat, lng: area.lng };   // travelling: look around where you are, not around home
     const placed = (spots || []).filter(hasLoc);
     if (!placed.length) return { lat: LAT, lng: LNG };
     // the middle of your spots (median, so one far-off spot doesn't drag it into the Everglades)
@@ -1023,6 +1024,7 @@
     return [c.lat - dLat, c.lng - dLng, c.lat + dLat, c.lng + dLng].map(v => v.toFixed(3)).join(",");
   }
   const KIND_EMOJI = { pier: "🎣", ramp: "🚤", jetty: "🪨", bridge: "🌉", dock: "⚓" };
+  const SUGG_RADIUS_MI = 30;   // official spots farther than this from the centre are left for when you go there
   let suggestions = null, suggError = null, suggShowAll = false, suggLayer = null, suggOnMap = false;
 
   function osmToSpot(e) {
@@ -1048,6 +1050,7 @@
 
   async function loadSuggestions() {
     const center = suggCenter();
+    loadOfficialSpots(center);   // official public spots for this area (js/02); they show up in the list as soon as they arrive
     const area = (Math.round(center.lat * 4) / 4) + "," + (Math.round(center.lng * 4) / 4); // ~15-mile grid
     try {
       const cached = JSON.parse(localStorage.getItem(SUGG_KEY) || "null");
@@ -1075,17 +1078,20 @@
       suggError = null;
     } catch (err) {
       suggError = "Couldn't load suggestions right now — try again later.";
+      if (suggestions === null) suggestions = [];   // the official spots (if any) still show
     }
     renderSuggestions();
   }
 
   // How sure are we that you can fish here? (from what OpenStreetMap volunteers tagged)
   const TRUST = {
+    official: { badge: "✅ Official", note: "On Florida's official public boat-ramp or parks list (FWC / FL DEP), so you are allowed to use it." },
     public: { badge: "✅ Public", note: "Tagged as public or as a fishing place on OpenStreetMap." },
     likely: { badge: "🟡 Likely", note: "Has a name, but nobody tagged whether it is open to the public." },
     unclear: { badge: "⚠ Check access", note: "No name or access tag on the map — it could be private. Look before you go." }
   };
   const trustOf = g => TRUST[g.trust] || TRUST.unclear;
+  const suggSourceName = g => g.trust === "official" ? (OFFICIAL_SOURCE[g.src] || "Florida's official public spots list") : "OpenStreetMap";
   // "Not interested" and "Want to try" follow you to every device: they live in your private table suggestion_picks (setup/55, only you can
   // see it). This phone keeps a copy so it works offline; a change made offline waits in a small queue until the next time we can reach the database.
   const SUGG_HIDE_KEY = "fm-sugg-hidden", SUGG_WANT_KEY = "fm-sugg-want", SUGG_Q_KEY = "fm-sugg-queue", SUGG_OWNER_KEY = "fm-sugg-owner";
@@ -1155,10 +1161,13 @@
   document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - suggPicksAt > 60000) loadSuggPicks(); });
   // Suggestions nobody has saved yet (nothing saved within ~150 m), closest to your spots first
   function openSuggestions() {
-    if (!suggestions) return [];
+    if (!suggestions && !officialSpots.length) return [];
     const placed = (spots || []).filter(hasLoc);
     const anchor = suggCenter();
-    return suggestions
+    // official spots first; an OpenStreetMap suggestion within ~150 m of an official one is the same place, so it is dropped
+    const off = officialSuggestions().filter(g => miles(anchor.lat, anchor.lng, g.lat, g.lng) <= SUGG_RADIUS_MI);
+    const osm = (suggestions || []).filter(g => !off.some(o => miles(o.lat, o.lng, g.lat, g.lng) < 0.1));
+    return off.concat(osm)
       .filter(g => !suggHidden.has(g.key))
       .filter(g => !placed.some(s => miles(s.lat, s.lng, g.lat, g.lng) < 0.1))
       .map(g => ({ ...g, dist: miles(anchor.lat, anchor.lng, g.lat, g.lng) }))
@@ -1188,9 +1197,9 @@
       const row = {
         name: g.name.replace(/ \(unnamed\)$/, "") || g.label,
         spot_type: ({ ramp: "ramp", jetty: "jetty", bridge: "bridge", pier: "pier", dock: "dock" }[g.kind] || "pier"),
-        water_type: st && st.dist != null && st.dist < 1.5 ? "saltwater" : "brackish",
-        public_access: g.trust === "public" ? "yes" : "unsure", added_by: me.name, lat: g.lat, lng: g.lng, is_private: true, visibility: "private",
-        notes: "Added from a suggestion (OpenStreetMap). " + trustOf(g).note + " Check the water type before you rely on it."
+        water_type: g.water || (st && st.dist != null && st.dist < 1.5 ? "saltwater" : "brackish"),
+        public_access: g.trust === "public" || g.trust === "official" ? "yes" : "unsure", added_by: me.name, lat: g.lat, lng: g.lng, is_private: true, visibility: "private",
+        notes: `Added from a suggestion (${suggSourceName(g)}). ` + trustOf(g).note + " Check the water type before you rely on it."
       };
       const { error } = await db.from("spots").insert(row);
       if (error) throw error;
@@ -1208,7 +1217,9 @@
     const d = el("div", "sugg-detail");
     const tr = trustOf(g);
     d.appendChild(el("div", null, `${tr.badge} — ${tr.note}`));
-    d.appendChild(el("div", "spot-meta", `${g.label} · ${g.dist != null ? g.dist.toFixed(1) + " mi away · " : ""}source: OpenStreetMap (volunteer-edited, so check it)`));
+    const srcText = g.trust === "official" ? "source: " + suggSourceName(g) : "source: OpenStreetMap (volunteer-edited, so check it)";
+    d.appendChild(el("div", "spot-meta", `${g.label} · ${g.dist != null ? g.dist.toFixed(1) + " mi away · " : ""}${srcText}`));
+    if (g.trust === "official" && officialFacts(g)) d.appendChild(el("div", "spot-meta", officialFacts(g)));
     const a = el("div", "sugg-acts");
     const add = el("button", "btn small", "+ Add to my spots"); add.type = "button"; add.addEventListener("click", () => quickAddSuggestion(g, add));
     const edit = el("button", "btn ghost small", "Edit first"); edit.type = "button"; edit.addEventListener("click", () => addSuggestion(g));
@@ -1222,8 +1233,8 @@
   function renderSuggestions() {
     const ul = $("sugg-list");
     ul.innerHTML = "";
-    if (suggError) { ul.appendChild(el("li", "empty", suggError)); $("sugg-more").hidden = true; return; }
-    if (!suggestions || spots === null) { ul.appendChild(el("li", "empty", "Loading suggestions…")); return; }
+    if (suggError && !officialSpots.length) { ul.appendChild(el("li", "empty", suggError)); $("sugg-more").hidden = true; return; }
+    if ((!suggestions && !officialSpots.length) || spots === null) { ul.appendChild(el("li", "empty", "Loading suggestions…")); return; }
     const anchor = suggCenter(), placed = (spots || []).filter(hasLoc);
     const open = openSuggestions();
     const wanted = suggWant.filter(w => !placed.some(sp => miles(sp.lat, sp.lng, w.lat, w.lng) < 0.1)).map(w => ({ ...w, dist: miles(anchor.lat, anchor.lng, w.lat, w.lng) }));
@@ -1276,7 +1287,7 @@
         .bindPopup(() => {
           const box = document.createElement("div");
           box.appendChild(el("div", "pop-name", `${KIND_EMOJI[g.kind] || ""} ${g.name}`));
-          box.appendChild(el("div", "pop-meta", `${trustOf(g).badge} · ${g.label} · suggested from OpenStreetMap`));
+          box.appendChild(el("div", "pop-meta", `${trustOf(g).badge} · ${g.label} · ${g.trust === "official" ? "official public list" : "suggested from OpenStreetMap"}`));
           box.appendChild(el("div", "pop-meta", trustOf(g).note));
           const actions = el("div", "pop-actions");
           const add = el("button", null, "+ Add to my spots"); add.type = "button";

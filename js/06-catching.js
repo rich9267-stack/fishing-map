@@ -21,6 +21,11 @@
     const near = nearbySpots(qc.pos)[0];
     const off = !(near && near.d <= QC_NEAR_MI) && officialNear(qc.pos);
     w.textContent = near && near.d <= QC_NEAR_MI ? `📍 At ${near.s.name}` : off ? `📍 New spot here — ${off.o.name}` : "📍 New spot here";
+    // official spots are loaded one area at a time: if this area isn't loaded yet, fetch it and look again
+    if (!(near && near.d <= QC_NEAR_MI) && !off && typeof officialEnsure === "function") {
+      const at = qc.pos;
+      officialEnsure(at).then(changed => { if (changed && qc.pos === at) updateWhere(); });
+    }
   }
 
   async function startCamera() {
@@ -252,6 +257,7 @@
 
   async function createSpotHere(pos) {
     // Name it after the official public spot right here (ramp, park, pier), else a map suggestion; guess saltwater near a tide station
+    try { await officialEnsure(pos); } catch (e) { /* offline: whatever this phone already knows is used */ }
     const off = officialNear(pos);
     const sugg = (suggestions || []).map(g => ({ g, d: miles(pos.lat, pos.lng, g.lat, g.lng) })).sort((a, b) => a.d - b.d)[0];
     const osm = sugg && sugg.d < 0.08 && !/unnamed/.test(sugg.g.name) ? sugg.g : null;
