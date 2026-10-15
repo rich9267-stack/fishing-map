@@ -456,6 +456,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14t", title: "🏁 Run tournaments as your club or business", items: [
+      "If you have an approved page (Me → Clubs & businesses), open it and tap “Run tournaments as this page” — or pick it under “Hosting as” in 🏁 Compete → 🏆 Tournaments.",
+      "Then create a tournament as the page: a single one, or one that repeats every week, month or year. Players see “run by” your page, and you can see who has entered and cancel your own.",
+      "You aren't entered in your own tournament automatically — tap Join if you want to compete. Page tournaments don't pay coins or trophies and aren't in the Hall of Fame; those stay for the admin's tournaments."
+    ] },
     { id: "2026-10-14s", title: "🏷 Clubs & businesses", items: [
       "New in Me → Clubs & businesses: ask for a page for your fishing club or your shop, charter or guide service. The admin approves it, then everyone can find it in the list.",
       "You can run as many clubs as you like. Each person can have one business page to start with — if you run a second business, ask the admin.",

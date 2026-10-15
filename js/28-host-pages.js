@@ -9,6 +9,24 @@
     const STATUS = { pending: "⏳ Waiting for approval", approved: "✅ Live", declined: "Not approved" };
     const nice = e => (e && e.message) || String(e || "");
 
+    // ---- step 2: act as one of my approved pages (used by 🏁 Compete → 🏆 Tournaments, see js/12) ----
+    // "Switching into a page" only decides who a new tournament is run by; the account stays the same. The choice is remembered per account.
+    let mine = [], actingId = null, openedFrom = "me";
+    const asKey = () => "fm-host-as:" + (me ? me.id : "");
+    function savedAs() { try { return localStorage.getItem(asKey()) || null; } catch (e) { return null; } }
+    function saveAs(id) { actingId = id || null; try { if (id) localStorage.setItem(asKey(), id); else localStorage.removeItem(asKey()); } catch (e) { /* private mode: lasts until the app reloads */ } }
+    function active() { const id = actingId || savedAs(); return mine.find(p => p.id === id) || null; }
+    async function refreshMine() { // true when my list of approved pages changed
+      if (!db || !me) return false;
+      const before = mine.map(p => p.id).join();
+      try { await load(); } catch (e) { return false; }
+      return before !== mine.map(p => p.id).join();
+    }
+    window.hostMyPages = () => mine;
+    window.hostActive = active;
+    window.hostSwitch = id => saveAs(id);
+    window.hostRefreshMine = refreshMine;
+
     function syncBody() { document.body.classList.toggle("hp-open", !pg.hidden); }
     new MutationObserver(syncBody).observe(pg, { attributes: true, attributeFilter: ["hidden"] });
 
@@ -27,9 +45,12 @@
       const r = await db.rpc("host_pages_list");
       if (r.error) throw r.error;
       data = r.data || data;
+      mine = data.pages.filter(p => p.is_mine && p.status === "approved");
     }
-    async function open() {
+    async function open(startId) { // startId (optional): jump straight to that page, e.g. from "Run by" on a tournament
       if (!me) return;
+      const direct = typeof startId === "string" ? startId : null;
+      openedFrom = direct ? "outside" : "me";
       view = "list"; openId = null;
       pg.hidden = false; pg.scrollTop = 0;
       body.innerHTML = ""; body.appendChild(backBar("‹ Back", close)); body.appendChild(el("div", "spot-meta", "Loading…"));
@@ -38,9 +59,11 @@
         body.appendChild(el("div", "msg err", /function|schema cache|not find/i.test(nice(e)) ? "Clubs & businesses aren't switched on yet." : "Couldn't load right now — check your connection and try again."));
         return;
       }
+      if (direct && data.pages.some(p => p.id === direct)) { openId = direct; view = "detail"; const p = data.pages.find(x => x.id === direct); pickBlob = null; pickClear = false; pickColor = p.accent || null; }
+      else if (direct) toast("That page isn't available any more.", 4000);
       draw();
     }
-    function close() { pg.hidden = true; if (typeof window.openMe === "function") window.openMe(); }
+    function close() { pg.hidden = true; if (openedFrom === "me" && typeof window.openMe === "function") window.openMe(); }
     function draw() { if (view === "new") drawNew(); else if (view === "detail" && data.pages.some(p => p.id === openId)) drawDetail(); else { view = "list"; drawList(); } }
 
     function rowFor(p) {
@@ -127,6 +150,12 @@
       const by = el("div", "spot-meta"); by.appendChild(document.createTextNode("Run by "));
       by.appendChild(personLink(p.owner, p.owner_name || p.owner_handle || "a member", null, () => { pg.hidden = true; }));
       body.appendChild(by);
+      if (p.is_mine && p.status === "approved") {
+        const run = el("button", "btn", "🏁 Run tournaments as this page"); run.type = "button"; run.id = "hp-run-as"; run.style.marginTop = "12px";
+        run.addEventListener("click", () => { saveAs(p.id); pg.hidden = true; if (typeof openTournamentsTab === "function") openTournamentsTab(); });
+        body.appendChild(run);
+        body.appendChild(el("div", "spot-meta", "Opens 🏁 Compete → 🏆 Tournaments with this page switched on."));
+      }
       if (p.is_mine && p.status === "pending") body.appendChild(el("div", "msg", "The admin hasn't looked at this yet. Nobody else can see it until it's approved."));
       if (p.is_mine && p.status === "declined") body.appendChild(el("div", "msg err", "This request wasn't approved. You can remove it and ask again with a different name or more detail."));
       if (p.is_mine && p.status !== "declined") drawEdit(p);

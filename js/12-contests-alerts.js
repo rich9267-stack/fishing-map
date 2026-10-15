@@ -1,6 +1,6 @@
   // ---- 🏁 Contests (V4.6): official tournaments (admin only) and friend competitions ----
   const CT_BOARDS = { length: "Longest fish", weight: "Heaviest fish", fish: "Most fish", species: "Most species" };
-  let ctRows = [], ctMine = {}, ctMembers = [], ctView = "list", ctId = null, ctErr = null, ctBusy = false;
+  let ctRows = [], ctMine = {}, ctMembers = [], ctView = "list", ctId = null, ctErr = null, ctBusy = false, ctHostChecked = false;
   let ctTab = "contests"; // "contests" (anyone, with friends) or "tournaments" (official, run by admins / hosts)
   let ctPrefill = null;   // {title,start,end,invites} when a contest is started from a trip plan
   const CT_REPEAT = { weekly: "every week", monthly: "every month", yearly: "every year" };
@@ -20,6 +20,13 @@
     stopPlacing(); ctId = t.id; ctView = "detail"; ctTab = t.kind === "official" ? "tournaments" : "contests"; feedMode = "contests";
     showView("feed"); window.scrollTo({ top: 0, behavior: "smooth" });
   }
+  // open 🏁 Compete on the 🏆 Tournaments tab (used by "Run tournaments as this page")
+  function openTournamentsTab() {
+    stopPlacing(); ctId = null; ctView = "list"; ctTab = "tournaments"; feedMode = "contests";
+    showView("feed"); window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  // the page I'm currently acting as (Host pages, js/28) — null when acting as myself
+  const ctHostActive = () => (typeof window.hostActive === "function" ? window.hostActive() : null);
   // open the 📖 review of the trip a contest was made for (only people on that trip can see it)
   async function openTripFor(planId) {
     try {
@@ -128,7 +135,7 @@
       box.appendChild(d);
     });
   }
-  async function openContests() { ctView = ctId && ctView === "detail" ? "detail" : (ctPrefill && ctView === "form") ? "form" : "list"; await ctLoad(); ctRender(); }
+  async function openContests() { ctHostChecked = false; ctView =ctId && ctView === "detail" ? "detail" : (ctPrefill && ctView === "form") ? "form" : "list"; await ctLoad(); ctRender(); }
   function ctRender() {
     const box = $("ct-body"); box.innerHTML = "";
     if (ctErr) { box.appendChild(el("div", "msg err", ctErr)); }
@@ -144,7 +151,7 @@
     top.appendChild(el("span", "spot-meta", st.label));
     d.appendChild(top);
     const n = ctMembers.filter(m => m.tournament_id === t.id && m.status === "joined").length;
-    d.appendChild(el("div", "spot-meta", `${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · ${t.boards.map(b => CT_BOARDS[b]).join(", ")}${n ? " · " + n + " in" : ""}${t.geo_lat != null ? " · 📍 " + (t.geo_label || "area") : ""}${t.series_id ? " · 🔁 repeating" : ""}${t.team_mode === "teams" ? " · 👥 teams only" : t.team_mode === "both" ? " · 👥 teams welcome" : ""}`));
+    d.appendChild(el("div", "spot-meta", `${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · ${t.boards.map(b => CT_BOARDS[b]).join(", ")}${n ? " · " + n + " in" : ""}${t.geo_lat != null ? " · 📍 " + (t.geo_label || "area") : ""}${t.series_id ? " · 🔁 repeating" : ""}${t.host_page_name ? " · 🏷 " + t.host_page_name : ""}${t.team_mode === "teams" ? " · 👥 teams only" : t.team_mode === "both" ? " · 👥 teams welcome" : ""}`));
     d.addEventListener("click", () => { ctId = t.id; ctView = "detail"; ctRender(); });
     return d;
   }
@@ -164,7 +171,8 @@
       box.appendChild(el("div", "label", title)); box.lastChild.style.marginTop = "14px";
       if (!list.length) box.appendChild(el("div", "empty", empty)); else list.forEach(t => box.appendChild(ctCard(t)));
     };
-    const canMakeTournament = !!(me && me.isAdmin);
+    const hostPage = ctTab === "tournaments" ? ctHostActive() : null;
+    const canMakeTournament = !!(me && me.isAdmin) || !!hostPage;
     if (ctTab === "contests") {
       box.appendChild(el("div", "spot-meta", "Contests are friendly competitions anyone can start with friends — for a trip, a weekend, or repeating every week, month or year."));
       const nb = el("button", "btn small", "+ Start a contest"); nb.type = "button"; nb.id = "ct-new"; nb.style.marginTop = "8px";
@@ -176,15 +184,35 @@
       if (inv.length) sect("📨 Invitations", inv, "");
       sect("🎣 My contests", mine, "None yet — tap + Start a contest, or use “🏁 Start a contest” on a trip you planned.");
     } else {
-      box.appendChild(el("div", "spot-meta", "Tournaments are official events run by hosts (admins today; clubs and brands later). Anyone can join an open one — catches need a photo, a measured length and to be set to 🌎 Public."));
+      box.appendChild(el("div", "spot-meta", "Tournaments are official events run by hosts — the admin, clubs and businesses. Anyone can join an open one — catches need a photo, a measured length and to be set to 🌎 Public."));
+      // 🏷 Host pages: if I run an approved page, choose who I'm acting as (me, or one of my pages)
+      const myPages = typeof window.hostMyPages === "function" ? window.hostMyPages() : [];
+      if (myPages.length) {
+        box.appendChild(el("div", "label", "Hosting as")); box.lastChild.style.marginTop = "10px";
+        const who = el("div", "fchips"); who.id = "ct-hostas"; who.setAttribute("role", "group"); who.setAttribute("aria-label", "Hosting as");
+        [{ id: null, name: "Me" }, ...myPages].forEach(p => {
+          const on = (hostPage ? hostPage.id : null) === p.id;
+          const b = el("button", "fchip" + (on ? " on" : ""), (p.id ? "🏷 " : "") + p.name); b.type = "button"; b.setAttribute("aria-pressed", String(on)); if (p.id) b.dataset.page = p.id; else b.dataset.page = "";
+          b.addEventListener("click", () => { window.hostSwitch(p.id); ctRender(); });
+          who.appendChild(b);
+        });
+        box.appendChild(who);
+        if (hostPage) box.appendChild(el("div", "spot-meta", `Tournaments you create now are run by ${hostPage.name}. Switch back to “Me” to browse as yourself.`));
+        else if (!(me && me.isAdmin)) box.appendChild(el("div", "spot-meta", "Pick one of your pages to run a tournament."));
+      }
       if (canMakeTournament) {
-        const nb = el("button", "btn small", "+ Create a tournament"); nb.type = "button"; nb.id = "ct-new"; nb.style.marginTop = "8px";
+        const nb = el("button", "btn small", hostPage ? "+ Create a tournament as " + hostPage.name : "+ Create a tournament"); nb.type = "button"; nb.id = "ct-new"; nb.style.marginTop = "8px";
         nb.addEventListener("click", () => { ctPrefill = null; ctView = "form"; ctRender(); });
         box.appendChild(nb);
       }
       const off = ctRows.filter(t => t.kind === "official" && !t.cancelled_at);
       off.sort((a, b) => rank(a) - rank(b) || new Date(b.starts_at) - new Date(a.starts_at));
+      if (hostPage) sect("🏷 Run by " + hostPage.name, off.filter(t => t.host_page_id === hostPage.id), "Nothing yet — tap the button above.");
       sect("🏆 Tournaments", off, "No tournaments yet.");
+      if (typeof window.hostRefreshMine === "function" && !ctHostChecked) { // learn about my pages once per visit; redraw if the list changed
+        ctHostChecked = true;
+        window.hostRefreshMine().then(changed => { if (changed && ctView === "list" && ctTab === "tournaments" && $("ct-body")) ctRender(); });
+      }
       hofSection(box);
       loadHof().then(() => { if (ctView === "list" && ctTab === "tournaments" && $("ct-body") && !$("ct-body").querySelector("[id^=hof-]") && hof.length) ctRender(); });
     }
@@ -192,13 +220,15 @@
 
   function ctLocalInput(d) { const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 16); }
   async function ctForm(box) {
-    const off = ctTab === "tournaments" && !!(me && me.isAdmin);
+    const hostPage = ctTab === "tournaments" ? ctHostActive() : null; // acting as one of my pages (Host pages)
+    const off = ctTab === "tournaments" && (!!(me && me.isAdmin) || !!hostPage);
     const kindV = off ? "official" : "friends";
     const pre = ctPrefill; ctPrefill = null;
     const wrap = el("div"); box.appendChild(wrap);
     wrap.innerHTML = `
       <button class="btn ghost small" id="ctf-back" type="button">← Back</button>
       <div class="label" style="margin-top:10px">${off ? "Create a tournament" : "Start a contest"}</div>
+      ${hostPage ? `<div class="spot-meta" id="ctf-hostnote">Run by 🏷 ${hostPage.name.replace(/[<>&]/g, "")}. You aren't entered automatically — tap Join afterwards if you want to compete.</div>` : ""}
       ${pre ? `<div class="spot-meta">Pre-filled from your trip — everyone going is entered automatically, and so is anyone who taps “I'm in” later. Change anything you like.</div>` : ""}
       <label for="ctf-title">Name</label><input id="ctf-title" maxlength="60" placeholder="${off ? "October Snook Slam" : "Keys weekend showdown"}">
       <label for="ctf-desc">Details (optional)</label><input id="ctf-desc" maxlength="300" placeholder="Prize, rules, anything people should know">
@@ -242,7 +272,7 @@
       note.textContent = r === "weekly" ? "Starts now and runs to the end of this week (Sunday); a new round opens every Monday. Last round's players are asked if they want in again."
         : r === "monthly" ? "If this month is one of the months you picked, the first round runs from now to the end of the month; then a new one opens on the 1st of each picked month."
         : r === "yearly" ? "Starts now and runs to the end of this year; a new round opens every January 1." : "";
-      if (r) note.textContent += off ? " Everyone is told when a new round opens." : " Your invited friends are asked each round. You can stop it any time (up to 3 repeating contests at once).";
+      if (r) note.textContent += off ? (hostPage ? " Players find each new round under 🏆 Tournaments (up to 3 repeating tournaments per page)." : " Everyone is told when a new round opens.") : " Your invited friends are asked each round. You can stop it any time (up to 3 repeating contests at once).";
     };
     wrap.querySelectorAll("#ctf-months .fchip").forEach(b => b.addEventListener("click", () => b.classList.toggle("on")));
     rep.addEventListener("change", upd);
@@ -303,7 +333,13 @@
         p_lat: lat, p_lng: lng, p_radius: lat != null ? +wrap.querySelector("#ctf-radius").value : null, p_photo: off || wrap.querySelector("#ctf-photo").checked,
         p_length: off || wrap.querySelector("#ctf-length").checked, p_invites: off ? [] : [...wrap.querySelectorAll("#ctf-inv .fchip.on")].map(b => b.dataset.uid)
       };
-      const { data, error } = cadence ? await db.rpc("create_tournament_series", {
+      const { data, error } = hostPage ? (cadence ? await db.rpc("create_host_tournament_series", { // run as one of my pages
+        p_page: hostPage.id, p_title: title, p_desc: common.p_desc, p_boards: boards, p_species: common.p_species,
+        p_lat: lat, p_lng: lng, p_radius: common.p_radius, p_geo_label: label, p_tz: tz, p_cadence: cadence, p_months: cadence === "monthly" ? months : null
+      }) : await db.rpc("create_host_tournament", {
+        p_page: hostPage.id, p_title: title, p_desc: common.p_desc, p_starts: s.toISOString(), p_ends: e.toISOString(), p_boards: boards, p_species: common.p_species,
+        p_lat: lat, p_lng: lng, p_radius: common.p_radius, p_geo_label: label
+      })) : cadence ? await db.rpc("create_tournament_series", {
         p_kind: kindV, p_title: common.p_title, p_desc: common.p_desc, p_boards: boards, p_species: common.p_species, p_photo: common.p_photo, p_length: common.p_length,
         p_lat: lat, p_lng: lng, p_radius: common.p_radius, p_geo_label: label, p_tz: tz, p_cadence: cadence, p_months: cadence === "monthly" ? months : null, p_invites: common.p_invites
       }) : await db.rpc("create_tournament", {
@@ -347,7 +383,14 @@
     const st = ctState(t), mineSt = ctMine[t.id];
     const h = el("div", "feed-top"); h.style.marginTop = "10px";
     h.appendChild(el("div", "label", (t.kind === "official" ? "🏆 " : "🎣 ") + t.title)); h.appendChild(el("span", "spot-meta", st.label)); box.appendChild(h);
-    { const bl = el("div", "spot-meta"); bl.appendChild(document.createTextNode(`${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · by `)); bl.appendChild(personLink(t.created_by, t.created_by === me.id ? "you" : (profName(t.created_by) || "someone"))); if (t.series_id) bl.appendChild(document.createTextNode(" · 🔁 repeating")); box.appendChild(bl); }
+    { const bl = el("div", "spot-meta"); bl.appendChild(document.createTextNode(`${ctFmt(t.starts_at)} → ${ctFmt(t.ends_at)} · `));
+      if (t.host_page_id) { // run by a club / business page
+        bl.appendChild(document.createTextNode("run by "));
+        const hl = el("button", "linkbtn", "🏷 " + (t.host_page_name || "a page")); hl.type = "button"; hl.id = "ctd-runby";
+        hl.addEventListener("click", () => { if (typeof window.openHostPages === "function") window.openHostPages(t.host_page_id); });
+        bl.appendChild(hl); bl.appendChild(document.createTextNode(" (by ")); bl.appendChild(personLink(t.created_by, t.created_by === me.id ? "you" : (profName(t.created_by) || "someone"))); bl.appendChild(document.createTextNode(")"));
+      } else { bl.appendChild(document.createTextNode("by ")); bl.appendChild(personLink(t.created_by, t.created_by === me.id ? "you" : (profName(t.created_by) || "someone"))); }
+      if (t.series_id) bl.appendChild(document.createTextNode(" · 🔁 repeating")); box.appendChild(bl); }
     if (t.description) box.appendChild(el("div", null, t.description));
     if (t.plan_id) box.appendChild(el("div", "spot-meta", "🗓 Made for a planned trip — everyone going on it is entered automatically."));
     const rules = [];
@@ -368,7 +411,7 @@
     if (t.plan_id) btn("📖 See the trip", "btn ghost small", () => openTripFor(t.plan_id), "ctd-trip");
     if (open && mineSt !== "joined" && (t.kind === "official" || mineSt === "invited")) btn(mineSt === "invited" ? "Accept & join" : "Join", "btn small", () => ctAct("join_tournament", { p_id: t.id }), "ctd-join");
     if (open && mineSt === "invited") btn("Decline", "btn ghost small", () => ctAct("leave_tournament", { p_id: t.id }), "ctd-decline");
-    if (mineSt === "joined" && t.created_by !== me.id && open) btn("Leave", "btn ghost small", () => ctAct("leave_tournament", { p_id: t.id }), "ctd-leave");
+    if (mineSt === "joined" && (t.created_by !== me.id || t.host_page_id) && open) btn("Leave", "btn ghost small", () => ctAct("leave_tournament", { p_id: t.id }), "ctd-leave");
     if (t.series_id && (me.isAdmin || t.created_by === me.id)) {
       const { data: se } = await db.from("tournament_series").select("id,active,months,cadence").eq("id", t.series_id).maybeSingle();
       const rw = se ? CT_REPEAT[se.cadence] || "repeating" : "repeating";
@@ -387,6 +430,15 @@
     if (!t.cancelled_at && (t.created_by === me.id || me.isAdmin) && st.k !== "ended") btn(t.kind === "official" ? "Cancel tournament" : "Cancel contest", "btn ghost small", async () => { if (await askOk(t.kind === "official" ? "Cancel this tournament for everyone?" : "Cancel this contest for everyone?")) ctAct("cancel_tournament", { p_id: t.id }); }, "ctd-cancel");
     box.appendChild(acts);
     seriesBox.forEach(n => box.appendChild(n));
+    // 👥 who has entered — shown to the organiser (the page owner) and the admin
+    if (t.host_page_id && (t.created_by === me.id || me.isAdmin)) {
+      const ent = ctMembers.filter(m => m.tournament_id === t.id && m.status === "joined").sort((a, b) => new Date(a.joined_at || 0) - new Date(b.joined_at || 0));
+      const eb = el("div"); eb.id = "ctd-entrants"; eb.style.cssText = "margin:10px 0";
+      eb.appendChild(el("div", "label", `👥 Entrants (${ent.length})`));
+      if (!ent.length) eb.appendChild(el("div", "empty", "Nobody has joined yet."));
+      ent.forEach(m => { const r = el("div", "spot-meta"); r.appendChild(personLink(m.user_id, m.user_id === me.id ? "you" : (profName(m.user_id) || "someone"))); if (m.joined_at) r.appendChild(document.createTextNode(" · joined " + ctFmt(m.joined_at))); eb.appendChild(r); });
+      box.appendChild(eb);
+    }
     // standings
     const who = el("div"); box.appendChild(who);
     let rows = [], mineRows = [];

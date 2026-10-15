@@ -9,6 +9,9 @@ if node morning-score.test.mjs > /tmp/morning-score.out 2>&1; then echo "ok   mo
 for st in admin none pending blocked error; do
   if ST=$st timeout 90 node test34.js > "/tmp/test34-$st.out" 2>&1; then echo "ok   test34 ($st)"; else echo "FAIL test34 ($st)"; fail=1; fi
 done
+for st in admin approved; do
+  if ST=$st timeout 90 node test111.js > "/tmp/test111-$st.out" 2>&1; then echo "ok   test111 ($st)"; else echo "FAIL test111 ($st)"; fail=1; fi
+done
 if DEL_ADMIN=1 timeout 90 node test101.js > /tmp/test101-admin.out 2>&1; then echo "ok   test101 (admin)"; else echo "FAIL test101 (admin)"; fail=1; fi
 [ $fail = 0 ] && echo "ALL OK" || echo "SOME FAILED"
 exit $fail
