@@ -456,6 +456,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15h", title: "🚤 Shore, pier, flat or boat", items: [
+      "Two new spot types: Flat (shallow sand or grass) and Boat spot (reef, wreck, channel). Pick them when you add or edit a spot, and filter by them on the Spots list.",
+      "Best spot today, the 3-day outlook and trip suggestions now judge a spot the way you fish it. Boat spots use the by-boat seasons and lose points for chop (wind from about 15 mph); flats like light wind and moving tide; piers, jetties and bridges sit between shore and boat.",
+      "When wind makes a spot hard to fish you'll see a short warning line. Docks, seawalls, ramps and shore spots are scored exactly as before."
+    ] },
     { id: "2026-10-15g", title: "📏 Fishing rules for your coast", items: [
       "Florida's size, bag and season rules are different on the Atlantic, in the Keys and on the Gulf. The Seasons tab and the keeper check now use the rules for the coast you are on.",
       "🗓 Seasons tab: new row of coast buttons under the month. “📍 Where I am” follows you; tap Atlantic, Keys or a Gulf area to see its rules instead (snook, red snapper, amberjack, grouper and more).",

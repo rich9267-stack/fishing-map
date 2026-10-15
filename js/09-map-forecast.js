@@ -42,13 +42,14 @@
       const w = waterTempNow(s.lat, s.lng);
       if (w.done && w.done !== "error") water = waterBand(w.done.f);
     }
-    return { tide, trend: fh ? fh.trend : (cond.pressureTrend || null), tod: timeOfDay(t), sol, moon, wind: windBand(fh ? fh.mph : windAt(t)), water };
+    return { tide, trend: fh ? fh.trend : (cond.pressureTrend || null), tod: timeOfDay(t), sol, moon, wind: windBand(fh ? fh.mph : windAt(t)), water, mph: fh ? fh.mph : windAt(t) };
   }
 
   // Things about the spot as a whole (same all day): is it the season for what's caught here, and have
   // people photographed those kinds of fish nearby lately? Small nudges on top of the hour-by-hour match.
   function spotExtras(s, catches) {
     let bonus = 0; const notes = [];
+    const style = spotStyle(s), where = SPOT_STYLE_TEXT[style];
     // Season: what's been caught here (or by the group, for a new spot), weighted by fish
     const bySp = new Map();
     catches.forEach(c => {
@@ -59,14 +60,15 @@
     const tot = [...bySp.values()].reduce((a, b) => a + b, 0);
     if (tot) {
       // Season counts about as much as a strong tide or solunar match: peak +0.5, slow −0.5
-      const avg = [...bySp.entries()].reduce((n, [f, k]) => n + shoreLevel(f, m) * k, 0) / tot;
+      const avg = [...bySp.entries()].reduce((n, [f, k]) => n + styleLevel(f, m, style) * k, 0) / tot;
       bonus += (avg - 1) * 0.5;
       const top = [...bySp.entries()].sort((a, b) => b[1] - a[1])[0][0];
-      const lvl = shoreLevel(top, m);
-      notes.push(lvl === 2 ? `🔥 ${top.name} peak season from shore` : lvl === 1 ? `📅 ${top.name}: decent month` : `📅 ${top.name}: slow month from shore`);
+      const lvl = styleLevel(top, m, style);
+      notes.push(lvl === 2 ? `🔥 ${top.name} peak season ${where}` : lvl === 1 ? `📅 ${top.name}: decent month` : `📅 ${top.name}: slow month ${where}`);
       if (spawningIn(top, m)) {
         const sp = top.spawn;
-        notes.push(sp.away && lvl === 0 ? `🥚 spawning offshore — rarely at shore spots now`
+        notes.push(style === "boat" && sp.away ? `🥚 spawning offshore — the fish are out where you fish`
+          : sp.away && lvl === 0 ? `🥚 spawning offshore — rarely at shore spots now`
           : sp.gather ? `🥚 spawning — they bunch up within reach of shore` : sp.away && lvl === 1 ? `🥚 spawning offshore — fewer big ones inshore` : `🥚 spawning season`);
       }
       if (seasonOpen(typeof sv === "function" ? sv(top) : top, new Date()) === false) notes.push(`⛔ closed to keep`);
@@ -93,7 +95,8 @@
   // exposure: the hour-by-hour conditions of logged trips. When there are enough of them, "how often was it
   // like this while people were fishing" replaces the textbook baseline — so a tide you fish a lot doesn't
   // look magic just because most catches happened on it.
-  function scoreMoment(now, history, exposure) {
+  // style (optional): "shore" (default, unchanged) · "pier" · "flat" · "boat" — see js/32-spot-style.js
+  function scoreMoment(now, history, exposure, style) {
     let score = 0; const reasons = [];
     Object.keys(BASELINE).forEach(f => {
       const v = now[f];
@@ -111,13 +114,15 @@
       const lift = (hits + prior * base) / (total + prior) / base;
       // Moon phase changes slowly, so a few recent catches all share it — count it at half weight
       // and only call it a reason once there's more history
-      const weight = f === "moon" ? 0.5 : 1;
+      const weight = (f === "moon" ? 0.5 : 1) * (f === "tide" ? styleTideWeight(style) : 1);
       score += weight * Math.log(lift);
       if (f === "moon" && total < 8) return;
       if (lift >= 1.4 && hits >= 2) reasons.push({ text: `${FACTOR_LABEL[f](v)} — ${hits} of ${total} fish`, lift });
     });
     reasons.sort((a, b) => b.lift - a.lift);
-    return { score, reasons };
+    const w = styleWindAdj(style, now.mph);   // chop / gusts for boats, flats and piers
+    score += w.adj;
+    return { score, reasons, warn: w.warn };
   }
 
   // ---- 3-day outlook per spot (V4): hourly forecast scored with the same history as Best spot today ----
@@ -196,7 +201,7 @@
     if (!f) return;
     const m = new Date().getMonth(), bits = [];
     if (f.far) bits.push("📍 doesn't live around South Florida");
-    else bits.push(`${MONTHS[m]} is ${["a slow", "a good", "a 🔥 peak"][f.shore[m]]} month for ${kind} from shore`);
+    else bits.push(`${MONTHS[m]} is ${["a slow", "a good", "a 🔥 peak"][styleLevel(f, m, spotStyle(s))]} month for ${kind} ${SPOT_STYLE_TEXT[spotStyle(s)]}`);
     if (typeof spawnText === "function") { const sp = spawnText(f, m); if (sp) bits.push(sp.replace(/^🥚 /, "🥚 ")); }
     if (s.water_type !== "freshwater" && typeof waterTempNow === "function" && typeof tempFit === "function") {
       const w = waterTempNow(s.lat, s.lng); const fit = tempFit(f, w.done && w.done !== "error" ? w.done.f : null);
@@ -222,10 +227,10 @@
     for (let i = 0; i < 72; i++) {
       const t = new Date(start.getTime() + i * 3600000), fh = fcHour(hours, t);
       if (!fh) continue;
-      let score = null, reasons = [];
-      if (H) { const r = scoreMoment(factorsAt(s, t, fh), H.hist, H.expo); score = r.score + H.extra.bonus; reasons = r.reasons; }
+      let score = null, reasons = [], warn = "";
+      if (H) { const r = scoreMoment(factorsAt(s, t, fh), H.hist, H.expo, spotStyle(s)); score = r.score + H.extra.bonus; reasons = r.reasons; warn = r.warn; }
       const lvl = score == null ? null : score > 1.2 ? "strong" : score > 0.4 ? "good" : "";
-      slots.push({ t, fh, score, lvl, reasons });
+      slots.push({ t, fh, score, lvl, reasons, warn });
     }
     if (!slots.length) { box.appendChild(el("div", "spot-meta", "No forecast hours available.")); return; }
     if (H) {
@@ -247,11 +252,12 @@
     }
     const detail = el("div", "spot-meta");
     const showDetail = x => {
-      const kind = windKind(x.fh.deg, s.faces_deg);
+      const kind = styleShowsWindKind(s) ? windKind(x.fh.deg, s.faces_deg) : null;
       detail.textContent = `${DAYNAME(x.t)} ${hourLabel(x.t)} · 💨 ${compass(x.fh.deg)} ${x.fh.mph} mph${kind ? " (" + KIND_ICON[kind] + ")" : ""}` +
         (x.fh.trend ? ` · pressure ${x.fh.trend}` : "") +
         (x.score != null ? ` · ${x.lvl === "strong" ? "Strong match" : x.lvl === "good" ? "Good match" : "Weak match"}` : "") +
-        (x.reasons.length ? " — " + x.reasons.slice(0, 2).map(r => r.text).join(" · ") : "");
+        (x.reasons.length ? " — " + x.reasons.slice(0, 2).map(r => r.text).join(" · ") : "") +
+        (x.warn ? " · " + x.warn : "");
     };
     const days = [];
     slots.forEach(x => { const k = x.t.toDateString(); let d = days.find(y => y.k === k); if (!d) days.push(d = { k, date: x.t, slots: [] }); d.slots.push(x); });
@@ -261,7 +267,7 @@
       let sx = 0, sy = 0; // prevailing direction: average the wind's direction, weighted by speed
       d.slots.forEach(x => { const a = x.fh.deg * Math.PI / 180; sx += Math.sin(a) * (x.fh.mph + 1); sy += Math.cos(a) * (x.fh.mph + 1); });
       const dir = (Math.atan2(sx, sy) * 180 / Math.PI + 360) % 360;
-      const kind = windKind(dir, s.faces_deg);
+      const kind = styleShowsWindKind(s) ? windKind(dir, s.faces_deg) : null;
       const head = el("div", "ol-day", DAYNAME(d.date));
       head.appendChild(el("span", null, `💨 ${compass(dir)} ${Math.min(...mph)}–${Math.max(...mph)} mph${kind ? " · " + KIND_ICON[kind] : ""}`));
       box.appendChild(head);
@@ -289,7 +295,7 @@
     if (selected) showDetail(selected); else detail.textContent = "Tap an hour for its wind and why it scores that way.";
     box.appendChild(detail);
     if (H) box.appendChild(el("div", "spot-meta", (kind ? `Green = hours that match when ${kind} were caught (dark green = strong).` : "Green = hours that match this spot's catch history (dark green = strong).") + " Wind from Open-Meteo; tides shifted for this spot." +
-      (s.faces_deg == null ? " Edit the spot to say which way the water lies and wind will show onshore/offshore." : "")));
+      (s.faces_deg == null && styleShowsWindKind(s) ? " Edit the spot to say which way the water lies and wind will show onshore/offshore." : "")));
   }
 
   function renderBest() {
@@ -316,7 +322,7 @@
       const expo = (trips.length >= 3 ? trips : allTrips).flatMap(x => x.hours || []);
       let best = null;
       hours.forEach((t, i) => {
-        const r = scoreMoment(factorsAt(s, i === 0 ? new Date() : t), hist, expo);
+        const r = scoreMoment(factorsAt(s, i === 0 ? new Date() : t), hist, expo, spotStyle(s));
         if (!best || r.score > best.score + 0.01) best = { ...r, t, now: i === 0 };
       });
       const sameWater = all.filter(c => { const cs = spots.find(x => x.id === c.spot_id); return cs && cs.water_type === s.water_type; });
@@ -349,6 +355,7 @@
       row.appendChild(top);
       row.appendChild(el("div", "best-why", r.best.reasons.length ? "✓ " + r.best.reasons.slice(0, 3).map(x => x.text).join(" · ") : "No strong pattern yet for these conditions"));
       if (r.extra.notes.length) row.appendChild(el("div", "best-why", r.extra.notes.join(" · ")));
+      if (r.best.warn) row.appendChild(el("div", "best-why", r.best.warn));
       row.appendChild(el("div", "spot-meta", "Based on " + r.basis));
       box.appendChild(row);
     });
@@ -483,7 +490,7 @@
       $("f-title").textContent = "Edit spot";
       $("save-btn").textContent = "Save changes";
       $("f-name").value = existing.name || "";
-      $("f-type").value = existing.spot_type;
+      $("f-type").value = existing.spot_type; updateTypeHint();
       $("f-water").value = existing.water_type;
       $("f-access").value = existing.public_access || "unsure";
       $("f-parking").value = existing.parking || "";
@@ -501,6 +508,7 @@
       $("loc-text").textContent = pickedLoc ? "Set ✓ (keep, or pick a new one)" : "Not set";
       $("spots-card").scrollIntoView({ behavior: "smooth", block: "start" });
     } else if (!editingSpot) {
+      updateTypeHint();
       $("f-title").textContent = "New spot";
       $("save-btn").textContent = "Save spot";
       if (!$("f-by").value) $("f-by").value = (me && me.name) || "";

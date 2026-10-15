@@ -662,7 +662,7 @@
     return d <= 50 ? "onshore" : d >= 130 ? "offshore" : "cross";
   }
   const KIND_ICON = { onshore: "⬅ onshore", offshore: "➡ offshore", cross: "↔ cross" };
-  function windKindText(s, deg) { const k = windKind(deg, s.faces_deg); return k ? ` (${KIND_ICON[k]})` : ""; }
+  function windKindText(s, deg) { const k = typeof styleShowsWindKind === "function" && !styleShowsWindKind(s) ? null : windKind(deg, s.faces_deg); return k ? ` (${KIND_ICON[k]})` : ""; }
   function pressureShort() {
     if (cond.pressure == null) return null;
     const arrow = { rising: " ↗", falling: " ↘", steady: " →" }[cond.pressureTrend] || "";

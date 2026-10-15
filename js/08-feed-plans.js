@@ -360,9 +360,9 @@
       if (!H) { noData++; return; }
       const fh = fcs.get(s.id) ? fcHour(fcs.get(s.id), t) : null;
       const f = factorsAt(s, t, fh);
-      if (!fh) { f.wind = null; f.trend = null; }          // don't guess wind/pressure we have no forecast for
-      const r = scoreMoment(f, H.hist, H.expo);
-      ranked.push({ s, f, fh, reasons: r.reasons, score: r.score + H.extra.bonus, notes: H.extra.notes, hist: H.hist.reduce((n, h) => n + h.n, 0), own: (catchesBySpot[s.id] || []).reduce((n, c) => n + (c.how_many || 1), 0) });
+      if (!fh) { f.wind = null; f.trend = null; f.mph = null; }          // don't guess wind/pressure we have no forecast for
+      const r = scoreMoment(f, H.hist, H.expo, spotStyle(s));
+      ranked.push({ s, f, fh, reasons: r.reasons, warn: r.warn, score: r.score + H.extra.bonus, notes: H.extra.notes, hist: H.hist.reduce((n, h) => n + h.n, 0), own: (catchesBySpot[s.id] || []).reduce((n, c) => n + (c.how_many || 1), 0) });
     });
     ranked.sort((a, b) => b.score - a.score);
     body.innerHTML = "";
@@ -378,6 +378,7 @@
       top.appendChild(use); row.appendChild(top);
       row.appendChild(el("div", "best-why", r.reasons.length ? "✓ " + r.reasons.slice(0, 3).map(x => x.text).join(" · ") : "No strong pattern from past catches for these conditions"));
       if (r.notes.length) row.appendChild(el("div", "best-why", r.notes.join(" · ")));
+      if (r.warn) row.appendChild(el("div", "best-why", r.warn));
       // what conditions are expected then
       const bits = [];
       if (r.f.tide) bits.push("🌊 " + r.f.tide + " tide");
