@@ -375,7 +375,7 @@
   }
   async function loadPublic() {
     pubLoading = true;
-    if (typeof pubF !== "undefined" && pubF.scope === "local" && typeof pubLocate === "function") pubLocate();
+    if (typeof pubF !== "undefined" && pubF.scope === "local" && typeof hwLocate === "function") hwLocate(false);   // quietly refresh the area now (js/29)
     try {
       let q = db.from("catches").select("*").eq("visibility", "public").is("deleted_at", null);
       const since = typeof pubSinceIso === "function" ? pubSinceIso() : null;

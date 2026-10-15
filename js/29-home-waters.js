@@ -49,6 +49,7 @@
     if (area.away && !area.name) area.name = "A new area";
     LAT = lat; LNG = lng;
     hwHeader();
+    if (typeof pubAreaChanged === "function") pubAreaChanged();   // Feed: Local follows the area now; 🏠 Home appears / disappears with area.away
     const moved = hwLoaded.lat == null || miles(lat, lng, hwLoaded.lat, hwLoaded.lng) > HW_MOVE_MI;
     if (!moved) return;
     hwLoaded = { lat, lng };

@@ -456,6 +456,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15b", title: "📍 Local feed follows you — and a 🏠 Home feed when you travel", items: [
+      "Community → Feed → 🌎 Public: 📍 Local now shows public catches within 25 miles of where you actually are (the same spot the tide and weather follow). If you haven't shared your location, it uses your home waters and offers a “Use where I am now” button.",
+      "Away from your home waters? A 🏠 Home chip appears next to Local and Global. Tap it to keep up with catches back home while you're on the road. It goes away when you're home again."
+    ] },
     { id: "2026-10-15a", title: "🏠 Home waters — and the app notices when you travel", items: [
       "Me → Profile now has a Home waters picker (Pompano, Miami, the Keys, Naples, Fort Myers, Sarasota, Tampa Bay and more), or tap “Use where I am now”. It's private — only you see the exact point.",
       "Allow your location and the top of Home (tide, wind, pressure, moon) follows where you actually are. Heading to Tampa? You'll see Tampa's tide station and weather, and the title line says 📍 where you are and your home waters.",

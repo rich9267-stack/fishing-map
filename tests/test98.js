@@ -102,11 +102,12 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   chip("📍 Local").click(); await wait(300);
   console.log("local:", sum());
   // within 25 mi of Pompano: s9 (p1) and s2 (p5); Jupiter (p2), Miami (p4) too far, hidden spot (p3) left out
-  check("Local = 2 (Mike's pier + C-14)", /📍 2 public catches within 25 miles of you, all time/.test(sum()));
+  check("Local = 2 (Mike's pier + C-14)", /📍 2 public catches within 25 miles of Pompano Beach, all time/.test(sum()));
   chip("Snook").click(); await wait(200);
   check("Local + Snook = 1", /📍 1 public catch within/.test(sum()));
-  check("clear button shows", !!box.querySelector(".pub-filters .linkbtn"));
-  box.querySelector(".pub-filters .linkbtn").click(); await wait(200);
+  const clr = () => [...box.querySelectorAll(".pub-filters .linkbtn")].find(b => /Clear filters/.test(b.textContent));
+  check("clear button shows", !!clr());
+  clr().click(); await wait(200);
   chip("Fresh").click(); await wait(200);
   check("Local + Fresh = 1 (C-14)", /📍 1 public catch within/.test(sum()));
   chip("All water").click(); chip("🌎 Global").click(); await wait(200);
@@ -127,10 +128,14 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   // no match message
   ev(`pubF.kind = "Tarpon"; pubF.scope = "local"; renderPubFeed()`);
   check("no-match message", /No public catches match these filters/.test(box.textContent));
-  // location refused
-  Object.defineProperty(w.navigator, "geolocation", { value: { getCurrentPosition: (ok, no) => no({ code: 1 }) }, configurable: true });
-  ev(`showView("feed")`); await wait(200); ev(`pubPos = null; pubF.kind = ""; pubF.scope = "local"; pubLocate()`); await wait(200);
-  check("location refused message", /Couldn't get your location/.test(sum()));
+  // Local follows the area now (js/29): no phone location yet -> measured from home waters, with a "use where I am" button; with GPS -> "of you"
+  ev(`showView("feed")`); await wait(200); ev(`pubF.kind = ""; pubF.scope = "local"; renderPubFeed()`);
+  check("Local without GPS names the area", /within 25 miles of Pompano Beach/.test(sum()));
+  check("use-my-location button offered", [...box.querySelectorAll(".pub-filters .linkbtn")].some(b => /Use where I am now/.test(b.textContent)));
+  check("no Home chip while at home", !chip("🏠"));
+  ev(`hwApply(26.2572, -80.0812, true)`); await wait(200);
+  check("with GPS the summary says 'of you'", /within 25 miles of you/.test(sum()));
+  check("button gone once following the phone", ![...box.querySelectorAll(".pub-filters .linkbtn")].some(b => /Use where I am now/.test(b.textContent)));
   console.log(good ? "OK" : "FAIL");
   process.exit(good ? 0 : 1);
 })();
