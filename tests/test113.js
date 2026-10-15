@@ -142,7 +142,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
     if (d.getElementById("pf-area").value !== "Tampa Bay / St. Petersburg") bad += " pf-area not filled;";
     if (!(w.__db.updates || []).some(u => u.t === "profiles" && u.row.home_area)) bad += " profile text not updated;";
     console.log("tide stations after moving home:", [...new Set(tideUrls())].join(","));
-    if (!tideUrls().includes("8726520")) bad += " Tampa tide station not used;";
+    if (!tideUrls().includes("8726454")) bad += " Tampa tide station not used;";   // Point Pinellas: the nearest built-in Gulf station to the Tampa Bay preset (since v102 no NOAA lookup is needed)
     if (!w.__urls.some(u => u.includes("api.weather.gov/points/27.7"))) bad += " weather not asked for Tampa;";
     if (!w.__urls.some(u => u.includes("stations/KTPA/observations"))) bad += " pressure not from KTPA;";
     console.log("LAT/LNG now:", w.eval("LAT + ',' + LNG"));

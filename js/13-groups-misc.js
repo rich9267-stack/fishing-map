@@ -456,6 +456,12 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15c", title: "🌊 Tides and water temperature on the Gulf coast and in the Keys", items: [
+      "Tide stations are now built in from Key Largo to Key West, up the Everglades and the whole Gulf coast to Cedar Key (Naples, Fort Myers, Sarasota, Tampa Bay, Clearwater and more), so tides appear right away — no waiting, and they work with a weak signal.",
+      "Real water-temperature sensors added at Fort Myers, Tampa Bay (St. Petersburg and Port Manatee), Clearwater Beach and Cedar Key. A sensor up a river or inside a bay only counts for water close to it; elsewhere you still get the ocean estimate.",
+      "Where the ocean estimate has no number (shallow bays, back-country), the app now tries NOAA's satellite map. Real summer readings up to 96°F are kept — shallow Gulf and Florida Bay water does get that hot.",
+      "The 🌊 water line on Home now follows you: it shows the water where you are (or your home waters), and compares with the sensors nearest you instead of always Lake Worth and Virginia Key."
+    ] },
     { id: "2026-10-15b", title: "📍 Local feed follows you — and a 🏠 Home feed when you travel", items: [
       "Community → Feed → 🌎 Public: 📍 Local now shows public catches within 25 miles of where you actually are (the same spot the tide and weather follow). If you haven't shared your location, it uses your home waters and offers a “Use where I am now” button.",
       "Away from your home waters? A 🏠 Home chip appears next to Local and Global. Tap it to keep up with catches back home while you're on the road. It goes away when you're home again."
@@ -782,18 +788,23 @@
     if (hiddenAt && Date.now() - hiddenAt > 15 * 60000 && navigator.onLine && !busy()) refreshApp();
   });
 
-  // Home water temperature on the weather card
-  (function homeWater() {
-    const job = waterTempNow(LAT, LNG);
-    job.then(v => { $("wx-water").textContent = `🌊 Water ${Math.round(v.f)}°F (${v.label})`; }, () => {});
-    // the two nearest real sensors, for comparison
-    Promise.allSettled(WT_STATIONS.slice(0, 2).map(st => fetch("https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_temperature&application=fishing_map" +
+  // Water temperature for the "area now" on the weather card (js/99 starts it after your home waters are known;
+  // js/29 calls hwAfterMove when you travel, so the line follows you instead of staying on Pompano).
+  let waterLineRun = 0;
+  function showAreaWater() {
+    const run = ++waterLineRun, line = $("wx-water"), lat = LAT, lng = LNG;
+    line.textContent = "";
+    const job = waterTempNow(lat, lng);
+    job.then(v => { if (run === waterLineRun) line.textContent = `🌊 Water ${Math.round(v.f)}°F (${v.label})`; }, () => {});
+    // the two nearest real sensors (within 60 miles of the area now), for comparison
+    Promise.allSettled(wtNearest(lat, lng, 2, 60).map(st => fetch("https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_temperature&application=fishing_map" +
       `&date=latest&station=${st.id}&units=english&time_zone=lst_ldt&format=json`).then(r => r.json()).then(d => ({ st, v: parseFloat(d.data && d.data[0] && d.data[0].v) }))))
       .then(rs => {
         const ok = rs.filter(r => r.status === "fulfilled" && okTemp(r.value.v)).map(r => `${r.value.st.name} ${Math.round(r.value.v)}°F`);
-        if (ok.length) job.then(() => { $("wx-water").textContent += ` · ${ok.join(" · ")}`; }, () => { $("wx-water").textContent = "🌊 Water: " + ok.join(" · "); });
+        if (ok.length) job.then(() => { if (run === waterLineRun) line.textContent += ` · ${ok.join(" · ")}`; }, () => { if (run === waterLineRun) line.textContent = "🌊 Water: " + ok.join(" · "); });
       });
-  })();
+  }
+  function hwAfterMove() { showAreaWater(); }
 
   // Keep a copy of the app on the phone so it opens with no signal
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

@@ -85,7 +85,8 @@
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
   // ---- Per-spot conditions: nearest tide station or freshwater gauge ----
-  // NOAA tide-prediction stations in and around Broward County
+  // NOAA tide-prediction stations: Jupiter to Miami-Dade, the Florida Keys, and the Gulf coast up to Cedar Key.
+  // Anywhere else (or a gap between these) the app asks NOAA for the nearest stations — see lookupStationsNear below.
   const TIDE_STATIONS = [
     { id: "8722670", name: "Lake Worth Pier", lat: 26.6128, lng: -80.0342 },
     { id: "8722802", name: "Lake Wyman (Boca Raton)", lat: 26.37, lng: -80.07 },
@@ -162,7 +163,114 @@
     { id: "8723453", name: "Adams Key", lat: 25.3967, lng: -80.2333 },
     { id: "8723465", name: "East Arsenicker, Card Sound", lat: 25.3733, lng: -80.29 },
     { id: "8723491", name: "Card Sound West", lat: 25.345, lng: -80.3317 },
-    { id: "8723506", name: "Pumpkin Key, Card Sound", lat: 25.325, lng: -80.2933 }
+    { id: "8723506", name: "Pumpkin Key, Card Sound", lat: 25.325, lng: -80.2933 },
+    // Florida Keys — Atlantic (Hawk Channel) side and Florida Bay side, Key Largo to Key West (Gulf expansion, step 2)
+    { id: "8723689", name: "Point Charles, Key Largo", lat: 25.0817, lng: -80.4467 },
+    { id: "8723747", name: "Tavernier, Hawk Channel", lat: 25.005, lng: -80.5167 },
+    { id: "8723769", name: "Plantation Key, Atlantic side", lat: 24.9733, lng: -80.55 },
+    { id: "8723776", name: "Plantation Key, Florida Bay", lat: 24.965, lng: -80.5683 },
+    { id: "8723786", name: "Islamorada, Snake Creek", lat: 24.9533, lng: -80.5867 },
+    { id: "8723814", name: "Upper Matecumbe Key, Atlantic side", lat: 24.915, lng: -80.6317 },
+    { id: "8723808", name: "Upper Matecumbe Key, Florida Bay", lat: 24.925, lng: -80.6317 },
+    { id: "8723861", name: "Alligator Reef Lighthouse", lat: 24.85, lng: -80.6183 },
+    { id: "8723851", name: "Lower Matecumbe Key, Hawk Channel", lat: 24.8683, lng: -80.7033 },
+    { id: "8723873", name: "Long Key, Florida Bay", lat: 24.8383, lng: -80.7983 },
+    { id: "8723899", name: "Long Key Channel, east", lat: 24.8033, lng: -80.85 },
+    { id: "8723906", name: "Long Key Channel, west", lat: 24.7917, lng: -80.8833 },
+    { id: "8723921", name: "Grassy Key, Florida Bay", lat: 24.7717, lng: -80.94 },
+    { id: "8723933", name: "Grassy Key, Atlantic side", lat: 24.755, lng: -80.9583 },
+    { id: "8723962", name: "Key Colony Beach", lat: 24.7183, lng: -81.0167 },
+    { id: "8723950", name: "Marathon Shores, Vaca Cut", lat: 24.73, lng: -81.03 },
+    { id: "8723971", name: "Boot Key Harbor, Marathon", lat: 24.7033, lng: -81.105 },
+    { id: "8723970", name: "Vaca Key, Florida Bay", lat: 24.711, lng: -81.1065 },
+    { id: "8724008", name: "Knight Key Channel", lat: 24.7067, lng: -81.125 },
+    { id: "8723999", name: "Sombrero Key Lighthouse", lat: 24.6267, lng: -81.1117 },
+    { id: "8724032", name: "Pigeon Key, Atlantic side", lat: 24.7033, lng: -81.155 },
+    { id: "8724062", name: "Molasses Key", lat: 24.6833, lng: -81.1917 },
+    { id: "8724094", name: "East Bahia Honda Key, bay side", lat: 24.775, lng: -81.2267 },
+    { id: "8724138", name: "Bahia Honda Key", lat: 24.655, lng: -81.2817 },
+    { id: "8724178", name: "Spanish Harbor Viaduct, Big Pine Key", lat: 24.6483, lng: -81.33 },
+    { id: "8724193", name: "Bogie Channel, Big Pine Key", lat: 24.6967, lng: -81.3483 },
+    { id: "8724257", name: "Howe Key", lat: 24.7583, lng: -81.4283 },
+    { id: "8724292", name: "Kemp Channel Viaduct", lat: 24.6617, lng: -81.4683 },
+    { id: "8724328", name: "Cudjoe Key", lat: 24.7, lng: -81.505 },
+    { id: "8724373", name: "Sugarloaf Channel", lat: 24.7167, lng: -81.5617 },
+    { id: "8724367", name: "North Harris Channel", lat: 24.6533, lng: -81.5533 },
+    { id: "8724405", name: "Saddlebunch Channel", lat: 24.6233, lng: -81.6033 },
+    { id: "8724474", name: "Duck Key Point, Lower Keys", lat: 24.6233, lng: -81.685 },
+    { id: "8724493", name: "Boca Chica Marina", lat: 24.575, lng: -81.7083 },
+    { id: "8724571", name: "Fleming Key", lat: 24.5917, lng: -81.795 },
+    { id: "8724580", name: "Key West", lat: 24.5557, lng: -81.8079 },
+    { id: "8724635", name: "Sand Key Lighthouse", lat: 24.4533, lng: -81.8783 },
+    // Florida Bay / Everglades National Park
+    { id: "8723644", name: "Flamingo, Everglades National Park", lat: 25.1417, lng: -80.9233 },
+    { id: "8724769", name: "Ponce de Leon Bay", lat: 25.345, lng: -81.1267 },
+    { id: "8724842", name: "Lostmans River entrance", lat: 25.5533, lng: -81.2133 },
+    { id: "8724891", name: "Chatham River entrance", lat: 25.69, lng: -81.285 },
+    // Gulf coast — Ten Thousand Islands to Cedar Key. Gulf tides are often "mixed": only one high and one low on some days.
+    { id: "8724919", name: "Chokoloskee", lat: 25.8133, lng: -81.3633 },
+    { id: "8724948", name: "Everglades City", lat: 25.8583, lng: -81.3867 },
+    { id: "8724932", name: "Indian Key, Ten Thousand Islands", lat: 25.8, lng: -81.4667 },
+    { id: "8724963", name: "Dismal Key, Pumpkin Bay", lat: 25.895, lng: -81.5583 },
+    { id: "8724964", name: "Coon Key Pass, Gullivan Bay", lat: 25.8967, lng: -81.6367 },
+    { id: "8724947", name: "Cape Romano Island", lat: 25.8533, lng: -81.675 },
+    { id: "8724967", name: "Marco Island, Caxambas Pass", lat: 25.9083, lng: -81.7283 },
+    { id: "8724991", name: "Marco, Big Marco River", lat: 25.9717, lng: -81.7283 },
+    { id: "8725019", name: "Keewaydin Island, inside", lat: 26.025, lng: -81.7683 },
+    { id: "8725110", name: "Naples", lat: 26.1317, lng: -81.8075 },
+    { id: "8725114", name: "Naples Bay, north", lat: 26.1367, lng: -81.7883 },
+    { id: "8725235", name: "Wiggins Pass, inside", lat: 26.29, lng: -81.8183 },
+    { id: "8725319", name: "Coconut Point, Estero Bay", lat: 26.4, lng: -81.8433 },
+    { id: "8725351", name: "Estero Island, Fort Myers Beach", lat: 26.4383, lng: -81.9183 },
+    { id: "8725362", name: "Tarpon Bay, Sanibel", lat: 26.4433, lng: -82.0817 },
+    { id: "8725383", name: "Captiva Island, south end", lat: 26.4783, lng: -82.1833 },
+    { id: "8725391", name: "Punta Rassa, San Carlos Bay", lat: 26.4883, lng: -82.0133 },
+    { id: "8725393", name: "St. James City, Pine Island", lat: 26.4917, lng: -82.0817 },
+    { id: "8725441", name: "Redfish Pass, Captiva", lat: 26.55, lng: -82.1967 },
+    { id: "8725451", name: "Cape Coral Bridge, Caloosahatchee River", lat: 26.5633, lng: -81.9333 },
+    { id: "8725488", name: "North Captiva Island", lat: 26.605, lng: -82.2183 },
+    { id: "8725506", name: "Matlacha Pass", lat: 26.6317, lng: -82.0683 },
+    { id: "8725520", name: "Fort Myers", lat: 26.6478, lng: -81.8711 },
+    { id: "8725541", name: "Bokeelia, Charlotte Harbor", lat: 26.7067, lng: -82.1633 },
+    { id: "8725577", name: "Boca Grande, Charlotte Harbor", lat: 26.72, lng: -82.2583 },
+    { id: "8725649", name: "Turtle Bay, Charlotte Harbor", lat: 26.7967, lng: -82.1833 },
+    { id: "8725685", name: "Cutoff South, Charlotte Harbor", lat: 26.855, lng: -82.3033 },
+    { id: "8725791", name: "Harbour Heights, Peace River", lat: 26.9883, lng: -81.9933 },
+    { id: "8725747", name: "Englewood, Lemon Bay", lat: 26.9333, lng: -82.3533 },
+    { id: "8725809", name: "Manasota", lat: 27.0117, lng: -82.41 },
+    { id: "8725858", name: "Venice", lat: 27.0717, lng: -82.4533 },
+    { id: "8725899", name: "Nokomis, Venice Inlet", lat: 27.1233, lng: -82.47 },
+    { id: "8726034", name: "Siesta Key, Big Sarasota Pass", lat: 27.2839, lng: -82.565 },
+    { id: "8726083", name: "Sarasota", lat: 27.3317, lng: -82.545 },
+    { id: "8726282", name: "Anna Maria City Pier", lat: 27.5333, lng: -82.73 },
+    { id: "8726273", name: "DeSoto Point, Manatee River", lat: 27.5233, lng: -82.65 },
+    { id: "8726347", name: "Egmont Key, Tampa Bay", lat: 27.6017, lng: -82.76 },
+    { id: "8726364", name: "Mullet Key, Fort De Soto", lat: 27.615, lng: -82.7267 },
+    { id: "8726384", name: "Port Manatee", lat: 27.6387, lng: -82.5621 },
+    { id: "8726428", name: "Tierra Verde", lat: 27.6883, lng: -82.7183 },
+    { id: "8726454", name: "Point Pinellas, Tampa Bay", lat: 27.7017, lng: -82.64 },
+    { id: "8726486", name: "Gulfport, Boca Ciega Bay", lat: 27.7367, lng: -82.7067 },
+    { id: "8726520", name: "St. Petersburg", lat: 27.7606, lng: -82.6269 },
+    { id: "8726533", name: "Johns Pass", lat: 27.785, lng: -82.7817 },
+    { id: "8726601", name: "Indian Rocks Beach", lat: 27.8733, lng: -82.8517 },
+    { id: "8726607", name: "Old Port Tampa", lat: 27.8578, lng: -82.5528 },
+    { id: "8726639", name: "Tampa, Ballast Point", lat: 27.89, lng: -82.48 },
+    { id: "8726674", name: "East Bay, Tampa", lat: 27.9231, lng: -82.4214 },
+    { id: "8726724", name: "Clearwater Beach", lat: 27.9783, lng: -82.8317 },
+    { id: "8726738", name: "Safety Harbor, Old Tampa Bay", lat: 27.9883, lng: -82.685 },
+    { id: "8726761", name: "Dunedin City Dock", lat: 28.0133, lng: -82.7933 },
+    { id: "8726917", name: "Anclote Key Lighthouse", lat: 28.165, lng: -82.8433 },
+    { id: "8727151", name: "Bayport", lat: 28.5333, lng: -82.65 },
+    { id: "8727235", name: "Chassahowitzka Bay", lat: 28.6917, lng: -82.6383 },
+    { id: "8727274", name: "Homosassa Bay, Mason Creek", lat: 28.7617, lng: -82.6383 },
+    { id: "8727277", name: "Homosassa River, Tuckers Island", lat: 28.7717, lng: -82.695 },
+    { id: "8727333", name: "Mangrove Point, Crystal River", lat: 28.87, lng: -82.7233 },
+    { id: "8727359", name: "Shell Island, Crystal River", lat: 28.9233, lng: -82.6917 },
+    { id: "8727395", name: "Port Inglis, Withlacoochee River", lat: 29.0017, lng: -82.7583 },
+    { id: "8727520", name: "Cedar Key", lat: 29.135, lng: -83.0317 },
+    { id: "8727535", name: "Shell Mound", lat: 29.2064, lng: -83.0697 },
+    { id: "8727577", name: "Suwannee", lat: 29.3283, lng: -83.1517 },
+    { id: "8727648", name: "Horseshoe Point", lat: 29.4367, lng: -83.2933 }
   ];
 
   function miles(aLat, aLng, bLat, bLng) {
@@ -176,10 +284,12 @@
   // Stations found by asking NOAA about places outside the built-in list (remembered on this phone)
   let extraStations = [];
   try { extraStations = JSON.parse(localStorage.getItem("fm-extra-stations") || "[]"); } catch (e) {}
-  const stationLookups = {};
+  const stationLookups = {};   // "lat,lng" → true (asked / answered) or the time it failed (asked again after a minute — a weak signal in the Keys shouldn't block it all day)
+  const LOOKUP_RETRY_MS = 60000;
   function lookupStationsNear(lat, lng) {
     const key = lat.toFixed(1) + "," + lng.toFixed(1);
-    if (stationLookups[key]) return;
+    const was = stationLookups[key];
+    if (was === true || (typeof was === "number" && Date.now() - was < LOOKUP_RETRY_MS)) return;
     stationLookups[key] = true;
     fetch(`https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/tidepredstations.json?lat=${lat.toFixed(4)}&lon=${lng.toFixed(4)}&radius=25`)
       .then(r => r.json())
@@ -193,7 +303,7 @@
         try { localStorage.setItem("fm-extra-stations", JSON.stringify(extraStations)); } catch (e) {}
         refreshConditions(); renderSpots();
         if (typeof hwStationsAdded === "function") hwStationsAdded();
-      }).catch(() => {});
+      }).catch(() => { stationLookups[key] = Date.now(); });   // couldn't reach NOAA: allow another try after a minute
   }
 
   // The tide station a spot uses (Hillsboro for spots without a location)
@@ -328,21 +438,50 @@
   }
 
   // ---- Water temperature ----
-  // NOAA stations whose water-temperature sensors read believable ocean values.
-  // (Port Everglades is left out: its sensor reads 92–98°F, far above the surrounding ocean.)
+  // NOAA stations whose water-temperature sensors read believable values.
+  // (Port Everglades is left out: its sensor reads 92–98°F, far above the surrounding ocean. Naples, Old Port Tampa,
+  //  Marco Island and Venice have no water-temperature sensor at all.) KEEP the first two where they are: js/13 compares against them.
+  // `mi` = how far a station can speak for: river and bay stations only for nearby water (default WT_STATION_MI).
   const WT_STATIONS = [
     { id: "8722670", name: "Lake Worth Pier", lat: 26.6128, lng: -80.0342 },
     { id: "8723214", name: "Virginia Key", lat: 25.7314, lng: -80.1618 },
     { id: "8723970", name: "Vaca Key", lat: 24.711, lng: -81.1065 },
-    { id: "8724580", name: "Key West", lat: 24.5557, lng: -81.8079 }
+    { id: "8724580", name: "Key West", lat: 24.5557, lng: -81.8079 },
+    // Gulf coast (all read 81–85°F when checked on Oct 14, 2026)
+    { id: "8725520", name: "Fort Myers", lat: 26.6478, lng: -81.8711, mi: 8 },        // up the Caloosahatchee River
+    { id: "8726384", name: "Port Manatee", lat: 27.6387, lng: -82.5621, mi: 10 },     // inside Tampa Bay
+    { id: "8726520", name: "St. Petersburg", lat: 27.7606, lng: -82.6269, mi: 10 },   // inside Tampa Bay
+    { id: "8726724", name: "Clearwater Beach", lat: 27.9783, lng: -82.8317 },
+    { id: "8727520", name: "Cedar Key", lat: 29.135, lng: -83.0317 }
   ];
-  const WT_RANGE = [45, 93];            // anything outside this is a bad reading
+  const WT_RANGE = [45, 96];            // anything outside this is a bad reading (shallow Gulf / Florida Bay water really does reach 93–95°F in July–August)
   const WT_STATION_MI = 20;             // use a station only if it's this close
   const okTemp = v => typeof v === "number" && isFinite(v) && v >= WT_RANGE[0] && v <= WT_RANGE[1];
 
+  // The nearest station that is close enough to speak for this spot (or null → the ocean model / satellite is used)
   function wtSourceFor(lat, lng) {
-    const st = WT_STATIONS.map(t => ({ ...t, dist: miles(lat, lng, t.lat, t.lng) })).sort((a, b) => a.dist - b.dist)[0];
-    return st && st.dist <= WT_STATION_MI ? st : null;
+    const st = WT_STATIONS.map(t => ({ ...t, dist: miles(lat, lng, t.lat, t.lng) }))
+      .filter(t => t.dist <= (t.mi || WT_STATION_MI)).sort((a, b) => a.dist - b.dist)[0];
+    return st || null;
+  }
+  // The n nearest stations within maxMi (for the "comparison" readings on the weather card)
+  function wtNearest(lat, lng, n, maxMi) {
+    return WT_STATIONS.map(t => ({ ...t, dist: miles(lat, lng, t.lat, t.lng) }))
+      .filter(t => t.dist <= maxMi).sort((a, b) => a.dist - b.dist).slice(0, n);
+  }
+  // Last resort for shallow bays the ocean model leaves blank: NOAA's 1 km satellite map (MUR — the same one as the 🛰 layer).
+  // Tries the spot and four points about 1½ miles around it; returns °F or null.
+  async function satTempNow(lat, lng) {
+    for (const [dy, dx] of [[0, 0], [0.02, 0], [-0.02, 0], [0, 0.02], [0, -0.02]]) {
+      try {
+        const d = await erddapJson(`https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41.json?analysed_sst[(last)][(${(lat + dy).toFixed(3)})][(${(lng + dx).toFixed(3)})]`, 12000);
+        const row = d.table && d.table.rows && d.table.rows[0];
+        const c = row ? row[row.length - 1] : null;
+        const f = typeof c === "number" ? c * 9 / 5 + 32 : null;
+        if (okTemp(f)) return Math.round(f * 10) / 10;
+      } catch (e) { /* try the next point */ }
+    }
+    return null;
   }
 
   // Current water temperature at a place: nearby NOAA station, otherwise an ocean model for that exact spot
@@ -360,11 +499,15 @@
           if (okTemp(v)) return { f: Math.round(v * 10) / 10, source: `${st.name} station`, label: `${st.name}, ${st.dist.toFixed(0)} mi` };
         } catch (e) {}
       }
-      const d = await (await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}` +
-        "&current=sea_surface_temperature&temperature_unit=fahrenheit&timezone=America%2FNew_York")).json();
-      const v = d.current && d.current.sea_surface_temperature;
-      if (!okTemp(v)) throw new Error("No water temperature here");
-      return { f: Math.round(v * 10) / 10, source: "ocean model", label: "ocean estimate" };
+      try {
+        const d = await (await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}` +
+          "&current=sea_surface_temperature&temperature_unit=fahrenheit&timezone=America%2FNew_York")).json();
+        const v = d.current && d.current.sea_surface_temperature;
+        if (okTemp(v)) return { f: Math.round(v * 10) / 10, source: "ocean model", label: "ocean estimate" };
+      } catch (e) { /* fall through to the satellite map */ }
+      const sat = await satTempNow(lat, lng);
+      if (sat == null) throw new Error("No water temperature here");
+      return { f: sat, source: "satellite", label: "satellite estimate" };
     })();
     wtNowCache[key] = job;
     job.done = false;

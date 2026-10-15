@@ -20,6 +20,10 @@ for m in fresh home away; do
   case $m in fresh) e="X=1";; home) e="HOME_SET=1";; away) e="HOME_SET=1 GPS=tampa";; esac
   if env $e timeout 90 node test114.js > "/tmp/test114-$m.out" 2>&1; then echo "ok   test114 ($m)"; else echo "FAIL test114 ($m)"; fail=1; fi
 done
+for m in fresh away tampa fortmyers; do
+  case $m in fresh) e="X=1";; away) e="HOME_SET=1 GPS=tampa";; tampa) e="HOME_AT=tampa";; fortmyers) e="HOME_AT=fortmyers";; esac
+  if env $e timeout 90 node test115.js > "/tmp/test115-$m.out" 2>&1; then echo "ok   test115 ($m)"; else echo "FAIL test115 ($m)"; fail=1; fi
+done
 if DEL_ADMIN=1 timeout 90 node test101.js > /tmp/test101-admin.out 2>&1; then echo "ok   test101 (admin)"; else echo "FAIL test101 (admin)"; fail=1; fi
 [ $fail = 0 ] && echo "ALL OK" || echo "SOME FAILED"
 exit $fail

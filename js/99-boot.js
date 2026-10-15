@@ -6,4 +6,5 @@
   loadWeather();
   loadPressure();
   loadMoon();
+  showAreaWater();   // js/13: water temperature for the area now (home waters, or where the phone is)
   gate();
