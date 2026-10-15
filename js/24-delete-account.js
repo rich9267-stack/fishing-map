@@ -41,6 +41,8 @@
     await gone("avatars", await listed("avatars", me.id));
     const { data: gr } = await db.from("groups").select("id").eq("created_by", me.id);
     for (const g of gr || []) await gone("group-avatars", await listed("group-avatars", g.id));
+    const { data: hp } = await db.from("host_pages").select("id").eq("owner", me.id);
+    for (const h of hp || []) await gone("host-avatars", await listed("host-avatars", h.id));
   }
   async function delLocal() {
     try { Object.keys(localStorage).filter(k => /^fm-/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { /* fine */ }

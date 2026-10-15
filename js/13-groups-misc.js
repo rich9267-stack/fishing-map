@@ -456,6 +456,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14s", title: "🏷 Clubs & businesses", items: [
+      "New in Me → Clubs & businesses: ask for a page for your fishing club or your shop, charter or guide service. The admin approves it, then everyone can find it in the list.",
+      "You can run as many clubs as you like. Each person can have one business page to start with — if you run a second business, ask the admin.",
+      "You can add a picture, a colour, a short about text and your area to your page. Running tournaments as a page and following pages are coming next."
+    ] },
     { id: "2026-10-14r", title: "💬 Tap a name in Messages", items: [
       "In your Messages list, tap a friend's name to open their profile — tap anywhere else on the row to open the chat, as before."
     ] },

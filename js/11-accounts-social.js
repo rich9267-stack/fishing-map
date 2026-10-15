@@ -988,11 +988,12 @@
   });
 
   // Invite list (admins only)
-  let reqCount = 0, repCount = 0;
-  function updateRequestBadge(n, r) {
+  let reqCount = 0, repCount = 0, hpCount = 0;
+  function updateRequestBadge(n, r, h) {
     if (n != null) reqCount = n;
     if (r != null) repCount = r;
-    const t = reqCount + repCount;
+    if (h != null) hpCount = h;
+    const t = reqCount + repCount + hpCount;
     $("invite-btn").textContent = t ? `✉ Invite / requests (${t})` : "✉ Invite to app";
   }
   async function checkRequests() {
@@ -1002,6 +1003,7 @@
       const rp = await db.from("reports").select("id").eq("status", "open");
       updateRequestBadge((data || []).length, (rp.data || []).length);
     } catch (e) {}
+    try { const hp = await db.from("host_pages").select("id").eq("status", "pending"); updateRequestBadge(null, null, ((hp && hp.data) || []).length); } catch (e) {}
   }
   async function loadMembers() {
     const ul = $("member-list"); ul.innerHTML = "";
@@ -1009,7 +1011,7 @@
     if (error) { ul.appendChild(el("li", "empty", "Couldn't load the list: " + error.message)); return; }
     const pending = data.filter(m => m.status === "pending");
     updateRequestBadge(pending.length);
-    loadReports(); loadAdminDash();
+    loadReports(); loadAdminDash(); if (typeof window.hpAdminLoad === "function") window.hpAdminLoad();
     const review = async (m, ok) => {
       if (!ok && !await askOk(`Decline ${m.display_name || m.email}? They won't get in (you can approve them later).`)) return;
       const { error: e2 } = await db.rpc("review_access", { p_email: m.email, p_approve: ok });

@@ -61,6 +61,7 @@
       if (k === "inbox") { closeMe(); $("inbox-btn").click(); }
       else if (k === "invite") { closeMe(); $("invite-btn").click(); }
       else if (k === "whatsnew") $("wn-open").click();
+      else if (k === "pages") { closeMe(); if (typeof window.openHostPages === "function") window.openHostPages(); }
       else openSection(k);
     });
     $("me-close").addEventListener("click", closeMe);
