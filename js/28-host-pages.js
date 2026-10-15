@@ -71,7 +71,7 @@
       row.setAttribute("aria-label", `${p.name}, ${KIND[p.kind].label}` + (p.is_mine ? ", " + STATUS[p.status] : ""));
       row.appendChild(pageAvatar(p, 44));
       const t = el("div", "hp-row-t"); t.appendChild(el("b", null, p.name));
-      t.appendChild(el("div", "spot-meta", KIND[p.kind].icon + " " + KIND[p.kind].label + (p.area ? " · " + p.area : "") + (p.is_mine && p.status !== "approved" ? " · " + STATUS[p.status] : "")));
+      t.appendChild(el("div", "spot-meta", KIND[p.kind].icon + " " + KIND[p.kind].label + (p.area ? " · " + p.area : "") + (p.is_mine && p.status !== "approved" ? " · " + STATUS[p.status] : "") + (p.following ? " · ✓ Following" : "")));
       row.appendChild(t);
       row.addEventListener("click", () => { openId = p.id; view = "detail"; pickBlob = null; pickClear = false; pickColor = p.accent || null; draw(); pg.scrollTop = 0; });
       return row;
@@ -150,6 +150,7 @@
       const by = el("div", "spot-meta"); by.appendChild(document.createTextNode("Run by "));
       by.appendChild(personLink(p.owner, p.owner_name || p.owner_handle || "a member", null, () => { pg.hidden = true; }));
       body.appendChild(by);
+      if (p.status === "approved") drawFollow(p);
       if (p.is_mine && p.status === "approved") {
         const run = el("button", "btn", "🏁 Run tournaments as this page"); run.type = "button"; run.id = "hp-run-as"; run.style.marginTop = "12px";
         run.addEventListener("click", () => { saveAs(p.id); pg.hidden = true; if (typeof openTournamentsTab === "function") openTournamentsTab(); });
@@ -158,6 +159,7 @@
       }
       if (p.is_mine && p.status === "pending") body.appendChild(el("div", "msg", "The admin hasn't looked at this yet. Nobody else can see it until it's approved."));
       if (p.is_mine && p.status === "declined") body.appendChild(el("div", "msg err", "This request wasn't approved. You can remove it and ask again with a different name or more detail."));
+      if (p.status === "approved") drawPageTournaments(p);
       if (p.is_mine && p.status !== "declined") drawEdit(p);
       if (p.is_mine) {
         const rm = el("button", "btn ghost small", "Remove this page"); rm.type = "button"; rm.id = "hp-remove"; rm.style.cssText = "display:block;margin-top:18px;color:#c0392b";
@@ -171,6 +173,50 @@
         });
         body.appendChild(rm);
       }
+    }
+
+    // ---- step 3: follow a page (setup/58) — only followers get the page's tournament alerts ----
+    function drawFollow(p) {
+      const n = p.followers || 0;
+      const box = el("div"); box.style.cssText = "margin-top:12px";
+      box.appendChild(el("div", "spot-meta", n === 1 ? "1 follower" : n + " followers"));
+      if (p.is_mine) { body.appendChild(box); return; }
+      const b = el("button", p.following ? "btn ghost" : "btn", p.following ? "✓ Following — tap to unfollow" : "🔔 Follow this page"); b.type = "button"; b.id = "hp-follow"; b.style.marginTop = "8px";
+      b.setAttribute("aria-pressed", String(!!p.following));
+      b.addEventListener("click", async () => {
+        b.disabled = true;
+        const { error } = await db.rpc(p.following ? "unfollow_host_page" : "follow_host_page", { p_page: p.id });
+        if (error) { toast("Couldn't do that: " + nice(error), 5000); b.disabled = false; return; }
+        p.following = !p.following; p.followers = Math.max(0, (p.followers || 0) + (p.following ? 1 : -1));
+        toast(p.following ? "Following ✓ — you'll get alerts when " + p.name + " opens tournaments." : "Unfollowed.", 4500);
+        drawDetail();
+      });
+      box.appendChild(b);
+      box.appendChild(el("div", "spot-meta", p.following ? "You get a phone alert when this page opens a tournament or a new round, and before one starts. Tournaments are still listed for everyone either way." : "Get a phone alert when this page opens a tournament or a new round. You can still see and join its tournaments without following."));
+      body.appendChild(box);
+    }
+    // the page's own tournaments (newest first), tap one to open it in 🏁 Compete
+    function drawPageTournaments(p) {
+      const box = el("div"); box.id = "hp-tours"; box.style.cssText = "margin-top:16px;border-top:1px solid var(--line);padding-top:12px";
+      box.appendChild(el("div", "label", "🏁 Tournaments by this page"));
+      const list = el("div"); list.appendChild(el("div", "spot-meta", "Loading…")); box.appendChild(list);
+      body.appendChild(box);
+      db.from("tournaments").select("id,kind,title,starts_at,ends_at,cancelled_at,series_id,host_page_id").eq("host_page_id", p.id).order("starts_at", { ascending: false }).limit(20).then(r => {
+        if (!box.isConnected) return;
+        list.innerHTML = "";
+        if (r.error) { list.appendChild(el("div", "spot-meta", "Couldn't load its tournaments right now.")); return; }
+        const rows = r.data || [];
+        if (!rows.length) { list.appendChild(el("div", "empty", p.is_mine ? "No tournaments yet. Use “Run tournaments as this page” above." : "No tournaments yet.")); return; }
+        rows.forEach(t => {
+          const st = typeof ctState === "function" ? ctState(t) : { label: "" };
+          const row = el("button", "hp-row"); row.type = "button"; row.setAttribute("aria-label", `${t.title}, ${st.label}`);
+          const tx = el("div", "hp-row-t"); tx.appendChild(el("b", null, "🏆 " + t.title));
+          tx.appendChild(el("div", "spot-meta", st.label + (t.series_id ? " · 🔁 repeating" : "")));
+          row.appendChild(tx);
+          row.addEventListener("click", () => { pg.hidden = true; openedFrom = "outside"; if (typeof openContestPage === "function") openContestPage(t); });
+          list.appendChild(row);
+        });
+      });
     }
 
     function drawEdit(p) {

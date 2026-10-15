@@ -456,6 +456,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-14u", title: "🔔 Follow a club or business", items: [
+      "Open a page (Me → Clubs & businesses) and tap “Follow this page”. You then get a phone alert when it opens a tournament, when a repeating one starts a new round, and about an hour before one starts if you haven't joined yet.",
+      "Pages you don't follow stay quiet — you can still see and join their tournaments any time. The admin's own tournaments still tell everyone.",
+      "A page's screen now lists its tournaments (tap one to open it) and shows how many people follow it."
+    ] },
     { id: "2026-10-14t", title: "🏁 Run tournaments as your club or business", items: [
       "If you have an approved page (Me → Clubs & businesses), open it and tap “Run tournaments as this page” — or pick it under “Hosting as” in 🏁 Compete → 🏆 Tournaments.",
       "Then create a tournament as the page: a single one, or one that repeats every week, month or year. Players see “run by” your page, and you can see who has entered and cancel your own.",
