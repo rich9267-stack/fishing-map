@@ -69,7 +69,7 @@
         notes.push(sp.away && lvl === 0 ? `🥚 spawning offshore — rarely at shore spots now`
           : sp.gather ? `🥚 spawning — they bunch up within reach of shore` : sp.away && lvl === 1 ? `🥚 spawning offshore — fewer big ones inshore` : `🥚 spawning season`);
       }
-      if (seasonOpen(top, new Date()) === false) notes.push(`⛔ closed to keep`);
+      if (seasonOpen(typeof sv === "function" ? sv(top) : top, new Date()) === false) notes.push(`⛔ closed to keep`);
       // Water temperature vs. what these fish like (salt and brackish spots — we don't have canal water temps)
       let t = null;
       if (hasLoc(s) && s.water_type !== "freshwater") { const w = waterTempNow(s.lat, s.lng); if (w.done && w.done !== "error") t = w.done.f; }

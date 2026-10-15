@@ -50,6 +50,7 @@
     LAT = lat; LNG = lng;
     hwHeader();
     if (typeof rtRefresh === "function") rtRefresh();   // 🔴 red tide banner follows the area now (js/30; remembered per area, so cheap)
+    if (typeof rulesAreaChanged === "function") rulesAreaChanged();   // 🗺 Seasons rules follow the coast you're on (js/31)
     if (typeof pubAreaChanged === "function") pubAreaChanged();   // Feed: Local follows the area now; 🏠 Home appears / disappears with area.away
     const moved = hwLoaded.lat == null || miles(lat, lng, hwLoaded.lat, hwLoaded.lng) > HW_MOVE_MI;
     if (!moved) return;

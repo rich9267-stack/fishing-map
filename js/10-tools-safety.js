@@ -227,13 +227,37 @@
       const { data, error } = await db.from("fish_rules").select("*").eq("active", true);
       if (error) throw error;
       fishRules = data || [];
+      try { if (typeof renderSeasons === "function") renderSeasons(); } catch (e2) { /* Seasons not drawn yet */ }
     } catch (e) { /* no rules yet: the checker just stays quiet */ }
   }
-  function ruleFor(species) {
+  // Rules can differ by coast (Gulf / Atlantic / Keys…): a species may have several rows, each with `regions` tags (js/31 explains the tags).
+  // No tags = the whole state. rulesInfo() (js/31) says which tags fit the place you're looking at, best match first.
+  const RULE_TAG_NAMES = { atlantic: "Atlantic coast", keys: "the Keys", gulf: "Gulf coast", spz: "Special Permit Zone", sw: "Southwest Gulf", ch: "Charlotte Harbor", bigbend: "Big Bend" };
+  const regionsText = regions => (regions || []).map(t => RULE_TAG_NAMES[t] || t).join(", ");
+  function pickRegionRow(rows, info) {
+    const tags = (info && info.tags) || ["atlantic"];
+    for (const t of tags) { const r = rows.find(x => Array.isArray(x.regions) && x.regions.includes(t)); if (r) return r; }
+    const any = rows.find(x => !x.regions || !x.regions.length); if (any) return any;
+    return Object.assign({}, rows[0], { _otherRegion: true });   // only written for another coast: show it, but say so
+  }
+  function ruleFor(species, info) {
     const sp = String(species || "").toLowerCase().trim(); if (!sp) return null;
     let best = null, bl = 0;
     fishRules.forEach(r => (r.match || []).forEach(w => { if (w && sp.includes(w.toLowerCase()) && w.length > bl) { best = r; bl = w.length; } }));
-    return best;
+    if (!best) return null;
+    const same = fishRules.filter(r => r.species === best.species);
+    if (same.length < 2 && !(best.regions && best.regions.length)) return best;   // an ordinary one-row, whole-state rule
+    return pickRegionRow(same, info || (typeof rulesInfo === "function" ? rulesInfo() : null));
+  }
+  // Warnings that belong after a rule, depending on where it is being read
+  function ruleCaution(r, info) {
+    info = info || (typeof rulesInfo === "function" ? rulesInfo() : null) || {};
+    const out = [];
+    if (info.outside) out.push("This place is outside Florida — these are Florida's rules.");
+    else if (info.north) out.push("North of Palm Beach County some FWC rules differ (Indian River Lagoon, Northeast).");
+    if (r._otherRegion) out.push(`This rule is written for ${regionsText(r.regions)}, not for here.`);
+    else if (info.tags && info.tags[0] === "keys" && r.regions && r.regions.length && !r.regions.includes("keys") && !r.regions.includes("spz")) out.push("In the Keys, which rules apply can depend on which side you fish (Atlantic or Gulf).");
+    return out.length ? " ⚠️ " + out.join(" ") + " Confirm with FWC." : "";
   }
   const mdOf = d => String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   const inMd = (md, a, b) => a <= b ? (md >= a && md <= b) : (md >= a || md <= b); // may wrap past New Year
@@ -247,13 +271,21 @@
   const RULE_STALE_DAYS = 90;
   const ruleAge = r => r && r.verified_on ? Math.floor((Date.now() - new Date(r.verified_on + "T12:00:00").getTime()) / 86400000) : null;
   const ruleStale = r => { const a = ruleAge(r); return a == null || a > RULE_STALE_DAYS; };
-  function keeperCheck(species, len, when) {
-    const r = ruleFor(species); if (!r) return null;
+  // One-line summary of a rule: size · bag · note (used on the Seasons cards)
+  function ruleSummary(r) {
+    if (r.release_only) return "Catch-and-release only." + (r.note ? " " + r.note : "");
+    const lenName = r.measure === "fork" ? "fork length" : "total length";
+    const size = r.min_in != null && r.max_in != null ? `${inch(r.min_in)}–${inch(r.max_in)} ${lenName}` : r.min_in != null ? `${inch(r.min_in)} minimum (${lenName})` : r.max_in != null ? `${inch(r.max_in)} maximum (${lenName})` : "No size limit";
+    return [size, r.bag, r.note].filter(Boolean).join(" · ");
+  }
+  const ruleLine = r => (r.regions && r.regions.length ? regionsText(r.regions) + ": " : "") + ruleSummary(r);
+  function keeperCheck(species, len, when, info) {
+    const r = ruleFor(species, info); if (!r) return null;
     when = when || new Date();
     const lenName = r.measure === "fork" ? "fork length" : "total length";
     const size = r.min_in != null && r.max_in != null ? `${inch(r.min_in)}–${inch(r.max_in)}` : r.min_in != null ? `${inch(r.min_in)} minimum` : r.max_in != null ? `${inch(r.max_in)} maximum` : "";
-    const foot = ` Rule: ${size ? size + " " + lenName + " · " : ""}${r.bag ? r.bag + " · " : ""}${r.note ? r.note + " " : ""}${ruleStale(r) ? `⚠️ This rule was last checked ${ruleAge(r) == null ? "a while ago" : ruleAge(r) + " days ago"} — it may have changed, so confirm with FWC.` : `Always check FWC (checked ${r.verified_on}).`}`;
-    if (r.release_only) return { level: "bad", text: `🚫 ${r.species}: catch-and-release only — let it go.${r.note ? " " + r.note : ""} Always check FWC.` };
+    const foot = ` Rule${r.regions && r.regions.length ? " for " + regionsText(r.regions) : ""}: ${size ? size + " " + lenName + " · " : ""}${r.bag ? r.bag + " · " : ""}${r.note ? r.note + " " : ""}${ruleStale(r) ? `⚠️ This rule was last checked ${ruleAge(r) == null ? "a while ago" : ruleAge(r) + " days ago"} — it may have changed, so confirm with FWC.` : `Always check FWC (checked ${r.verified_on}).`}${ruleCaution(r, info)}`;
+    if (r.release_only) return { level: "bad", text: `🚫 ${r.species}: catch-and-release only — let it go.${r.note ? " " + r.note : ""} Always check FWC.${ruleCaution(r, info)}` };
     if (seasonState(r, when) === "closed") return { level: "bad", text: `🚫 ${r.species} is out of season right now — release it.${foot}` };
     if (!(len > 0)) return { level: "info", text: `📏 ${r.species} —${foot} Add a length to check this fish.` };
     const near = r.measure === "fork" ? " Measure to the fork of the tail (fork length is a bit shorter than nose-to-tip)." : "";
@@ -265,8 +297,8 @@
     if (r.measure === "fork" && r.min_in != null && len < r.min_in + 1.5) return { level: "warn", text: `⚠️ Close call — ${inch(len)} vs the ${inch(r.min_in)} fork-length minimum. Re-measure to the fork of the tail before keeping it.${foot}` };
     return { level: "ok", text: `✅ Keeper size (${inch(len)}).${foot}` };
   }
-  function keeperShow(box, species, len, when) {
-    const k = keeperCheck(species, len, when);
+  function keeperShow(box, species, len, when, info) {
+    const k = keeperCheck(species, len, when, info);
     box.hidden = !k; if (!k) return;
     box.className = "keeper " + k.level; box.textContent = k.text;
   }
@@ -289,15 +321,21 @@
     fld("Closed dates (MM-DD..MM-DD; …)", "rf-closed", "text", mdText(r.closed), "e.g., 12-15..01-31; 06-01..08-31");
     fld("Open ONLY these dates (optional)", "rf-open", "text", mdText(r.open_only), "e.g., 2026-10-09..2026-10-22");
     fld("Note", "rf-note", "text", r.note);
+    fld("Where it applies (blank = whole state)", "rf-regions", "text", (r.regions || []).join(", "), "e.g., gulf  ·  atlantic, keys  ·  bigbend");
+    f.appendChild(el("div", "spot-meta", "Places: atlantic · keys · gulf · spz (Special Permit Zone) · sw (Gulf-side Southwest) · ch (Charlotte Harbor) · bigbend. A species can have one row per place."));
     chk("Show this rule in the app", "rf-active", r.active !== false);
     return f;
   }
+  const regionList = t => { const a = [...new Set(String(t || "").split(/[,;\s]+/).map(x => x.trim().toLowerCase()).filter(x => RULE_TAG_NAMES[x]))]; return a.length ? a : null; };
   async function saveRule(r, f) {
     const g = id => f.querySelector("#" + id), num = id => { const v = parseFloat(g(id).value); return isFinite(v) ? v : null; };
     const row = { min_in: num("rf-min"), max_in: num("rf-max"), measure: g("rf-measure").value, one_over: g("rf-oneover").checked, release_only: g("rf-release").checked,
       bag: g("rf-bag").value.trim() || null, closed: mdList(g("rf-closed").value).length ? mdList(g("rf-closed").value) : null,
       open_only: mdList(g("rf-open").value).length ? mdList(g("rf-open").value) : null, note: g("rf-note").value.trim() || null, active: g("rf-active").checked,
+      regions: regionList(g("rf-regions").value),
       verified_on: new Date().toISOString().slice(0, 10), updated_at: new Date().toISOString() };
+    const badTag = String(g("rf-regions").value || "").split(/[,;\s]+/).map(x => x.trim().toLowerCase()).filter(Boolean).find(x => !RULE_TAG_NAMES[x]);
+    if (badTag) { toast(`“${badTag}” isn't a place the app knows. Use: atlantic, keys, gulf, spz, sw, ch, bigbend.`); return false; }
     let res;
     if (r.id) res = await db.from("fish_rules").update(row).eq("id", r.id);
     else {
@@ -320,7 +358,7 @@
     (rulesAll || []).slice().sort((a, b) => a.species.localeCompare(b.species)).forEach(r => {
       const row = el("div", "rule-row");
       const size = r.release_only ? "release only" : [r.min_in != null ? "min " + inch(r.min_in) : "", r.max_in != null ? "max " + inch(r.max_in) : ""].filter(Boolean).join(" · ") || "no size limit";
-      row.appendChild(el("b", null, r.species + (r.active === false ? " (hidden)" : "")));
+      row.appendChild(el("b", null, r.species + (r.regions && r.regions.length ? " — " + regionsText(r.regions) : "") + (r.active === false ? " (hidden)" : "")));
       row.appendChild(el("div", "spot-meta", `${size} · ${r.bag || "bag: —"} · checked ${r.verified_on || "never"}${ruleStale(r) ? " ⚠️ " + (ruleAge(r) == null ? "never checked" : ruleAge(r) + " days ago — re-check") : ""}`));
       if (ruleStale(r)) row.appendChild(frBtn("✓ Still correct (checked today)", async () => {
         const { error } = await db.from("fish_rules").update({ verified_on: new Date().toISOString().slice(0, 10), updated_at: new Date().toISOString() }).eq("id", r.id);
@@ -329,11 +367,17 @@
       }));
       const edit = frBtn("✏️ Edit", () => { if (row.querySelector(".rule-form")) return; const f = ruleForm(r); row.appendChild(f);
         const bar = el("div", "ci-btns"); bar.appendChild(frBtn("Save", async () => { if (await saveRule(r, f)) { await loadRulesAll(); renderRulesAdmin(); } }, "btn small")); bar.appendChild(frBtn("Close", () => { f.remove(); bar.remove(); })); row.appendChild(bar); });
-      row.appendChild(edit); box.appendChild(row);
+      row.appendChild(edit);
+      row.appendChild(frBtn("⧉ Copy for another place", () => showNewRule({ ...r, id: undefined, regions: [], verified_on: null })));
+      box.appendChild(row);
     });
-    const add = frBtn("+ Add a species", () => { if (box.querySelector(".rule-new")) return; const w = el("div", "rule-row rule-new"); const f = ruleForm({ measure: "total" }); w.appendChild(f);
-      const bar = el("div", "ci-btns"); bar.appendChild(frBtn("Save", async () => { if (await saveRule({}, f)) { await loadRulesAll(); renderRulesAdmin(); } }, "btn small")); bar.appendChild(frBtn("Close", () => w.remove())); w.appendChild(bar); box.appendChild(w); });
-    box.appendChild(add);
+    function showNewRule(pre) {
+      if (box.querySelector(".rule-new")) box.querySelector(".rule-new").remove();
+      const w = el("div", "rule-row rule-new"); const f = ruleForm(pre); w.appendChild(f);
+      const bar = el("div", "ci-btns"); bar.appendChild(frBtn("Save", async () => { if (await saveRule({}, f)) { await loadRulesAll(); renderRulesAdmin(); } }, "btn small")); bar.appendChild(frBtn("Close", () => w.remove())); w.appendChild(bar); box.appendChild(w);
+      w.scrollIntoView && w.scrollIntoView({ block: "nearest" });
+    }
+    box.appendChild(frBtn("+ Add a species", () => showNewRule({ measure: "total" })));
   }
   let rulesAll = [];
   async function loadRulesAll() { const { data } = await db.from("fish_rules").select("*"); rulesAll = data || []; }

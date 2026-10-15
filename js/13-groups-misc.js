@@ -456,6 +456,12 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15g", title: "📏 Fishing rules for your coast", items: [
+      "Florida's size, bag and season rules are different on the Atlantic, in the Keys and on the Gulf. The Seasons tab and the keeper check now use the rules for the coast you are on.",
+      "🗓 Seasons tab: new row of coast buttons under the month. “📍 Where I am” follows you; tap Atlantic, Keys or a Gulf area to see its rules instead (snook, red snapper, amberjack, grouper and more).",
+      "📏 When you log a catch, the keeper check uses the coast of the spot you picked, and says which coast the rule is for. Change the spot and the answer changes with it.",
+      "Near the Keys, or north of Palm Beach County, the app tells you some rules depend on exactly where you are. Always confirm with FWC."
+    ] },
     { id: "2026-10-15f", title: "🔴 Red tide warnings", items: [
       "🗺 New map layer: Layers → 🔴 Red tide. Every water sample from the last 8 days, from Florida's Fish and Wildlife Research Institute (FWC), as a dot: grey none · yellow very low · orange low · red-orange medium · dark red high. Tap a dot for the details.",
       "🟠 A heads-up banner at the top of Home and the Map (and a line in Boat mode) when there is a medium or high sample within 15 miles of where you are. It says how far away and how old the sample is. Tap it for details, to see it on the map, or to hide it for today.",

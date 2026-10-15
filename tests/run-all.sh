@@ -32,6 +32,7 @@ for m in pompano tampa clear down; do
   case $m in pompano) e="X=1";; tampa) e="HOME_SET=1 GPS=tampa";; clear) e="FWC_MODE=clear";; down) e="FWC_DOWN=1";; esac
   if env $e timeout 90 node test118.js > "/tmp/test118-$m.out" 2>&1; then echo "ok   test118 ($m)"; else echo "FAIL test118 ($m)"; fail=1; fi
 done
+if timeout 90 node test119.js > /tmp/test119.out 2>&1; then echo "ok   test119"; else echo "FAIL test119"; fail=1; fi
 if DEL_ADMIN=1 timeout 90 node test101.js > /tmp/test101-admin.out 2>&1; then echo "ok   test101 (admin)"; else echo "FAIL test101 (admin)"; fail=1; fi
 [ $fail = 0 ] && echo "ALL OK" || echo "SOME FAILED"
 exit $fail

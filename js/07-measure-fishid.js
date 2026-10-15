@@ -56,7 +56,8 @@
     const q = id => catchForm.querySelector(id);
     const len = parseFloat(q("#c-length").value), w = parseFloat(q("#c-weight").value), sp = q("#c-species").value;
     const note = q("#c-size-note");
-    keeperShow(q("#c-keeper"), sp, len, new Date());
+    const spt = (spots || []).find(x => x.id === openCatchSpot);   // the rule that applies where the fish was caught
+    keeperShow(q("#c-keeper"), sp, len, new Date(), typeof rulesInfoFor === "function" ? rulesInfoFor(spt && hasLoc(spt) ? spt : null) : undefined);
     if (w > 0) { note.textContent = ""; return; }
     if (!(len > 0)) { note.textContent = "Tip: lay a ruler, dollar bill or card next to the fish and shoot from straight above — then tap 📏 to measure."; return; }
     const est = estWeight(sp, len);

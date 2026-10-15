@@ -114,6 +114,7 @@
       : !qc.pos ? "No location yet — pick the spot you're at." : "";
     qcWhereCheck();
     syncQcVis(); qcContestHint();
+    if ($("qc-length").value) updateQcSize();   // the keeper rule follows the spot picked
   }
   // 📸 Location check (Fishbrain audit item 9): is the picked spot far from where the photo was taken / where you are?
   // Live GPS only counts when it's reasonably accurate (within ~800 m). Offers a one-tap fix: a nearer saved spot, or a new spot here.
@@ -160,7 +161,8 @@
     const chip = $("qc-species").querySelector(".fchip.on"), sp = ($("qc-species-other").value.trim() || (chip && chip.textContent) || "");
     const est = len > 0 && !(w > 0) ? estWeight(sp, len) : null;
     $("qc-size-note").textContent = est ? `⚖️ About ${lbText(est)} (estimated from length — type a weight if you weighed it)` : "";
-    keeperShow($("qc-keeper"), sp, len, new Date());
+    const spId = $("qc-spot").value, spt = spId && spId !== "__new" ? (spots || []).find(x => x.id === spId) : null;   // the rule that applies where the fish was caught
+    keeperShow($("qc-keeper"), sp, len, new Date(), typeof rulesInfoFor === "function" ? rulesInfoFor(spt && hasLoc(spt) ? spt : qc.pos) : undefined);
     qcContestHint();
   }
   $("qc-length").addEventListener("input", updateQcSize); $("qc-weight").addEventListener("input", updateQcSize);

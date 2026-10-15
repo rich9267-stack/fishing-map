@@ -498,6 +498,8 @@
 
   const mmdd = d => `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const inWindow = (key, [a, b]) => a <= b ? key >= a && key <= b : key >= a || key <= b;
+  // The card as it applies to the coast on screen (js/31): closed dates + the 📏 line come from the fish_rules for that coast
+  const sv = f => typeof seasonView === "function" ? seasonView(f) : f;
   // Is this fish open to keep on this date? true / false / null (rules for that year unknown)
   function seasonOpen(f, d) {
     if (f.openOnly) {
@@ -524,12 +526,13 @@
   function seasonAlerts(today) {
     const out = [];
     SEASONS.forEach(f => {
-      if (!f.closed && !f.openOnly) return;
-      let prev = seasonOpen(f, today);
+      const v = sv(f);
+      if (!v.closed && !v.openOnly) return;
+      let prev = seasonOpen(v, today);
       if (prev === null) return;
       for (let i = 1; i <= 45; i++) {
         const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
-        const now = seasonOpen(f, d);
+        const now = seasonOpen(v, d);
         if (now !== null && now !== prev) {
           out.push({ f, d, opens: now, days: i });
           break;
@@ -555,6 +558,7 @@
     const ref = thisMonth ? today : new Date(year, seaMonth, 15);
     $("sea-month").textContent = new Date(year, seaMonth, 1).toLocaleDateString([], { month: "long", year: "numeric" });
     $("sea-sub").textContent = thisMonth ? "This month" : "Rules shown for mid-month";
+    if (typeof renderRulesRegionBar === "function") renderRulesRegionBar();
     const gb = $("sea-groups"); gb.innerHTML = "";
     [["", "All"], ...SEASON_GROUPS].forEach(([k, label]) => {
       const b = document.createElement("button"); b.type = "button"; b.textContent = label;
@@ -574,11 +578,11 @@
     });
 
     const list = SEASONS.filter(f => !seaGroup || f.group === seaGroup)
-      .map((f, i) => ({ f, i, lvl: shoreLevel(f, seaMonth), open: seasonOpen(f, ref) }))
+      .map((f, i) => { const v = sv(f); return { f, v, i, lvl: shoreLevel(f, seaMonth), open: seasonOpen(v, ref) }; })
       .sort((a, b) => (!!a.f.far - !!b.f.far) || (b.lvl - a.lvl) || (a.i - b.i));   // fish that don't live here go last
     $("sea-list-title").textContent = `What's biting in ${MONTHS[seaMonth]}`;
     const box = $("sea-list"); box.innerHTML = "";
-    list.forEach(({ f, lvl, open }) => {
+    list.forEach(({ f, v, lvl, open }) => {
       const div = document.createElement("div"); div.className = "sea-fish";
       const top = document.createElement("div"); top.className = "sea-top";
       const name = document.createElement("button"); name.type = "button"; name.className = "sea-name linkbtn"; name.textContent = f.name;
@@ -596,7 +600,7 @@
         MONTHS.forEach((m, i) => {
           const sp = document.createElement("span"); sp.textContent = m[0];
           if (arr[i]) sp.classList.add("l" + arr[i]);
-          if (monthClosed(f, i, i < today.getMonth() - 1 ? today.getFullYear() + 1 : today.getFullYear())) { sp.classList.add("x"); sp.title = "Mostly closed to keep"; }
+          if (monthClosed(v, i, i < today.getMonth() - 1 ? today.getFullYear() + 1 : today.getFullYear())) { sp.classList.add("x"); sp.title = "Mostly closed to keep"; }
           if (spawningIn(f, i)) sp.classList.add("egg");
           if (i === seaMonth) sp.classList.add("cur");
           months.appendChild(sp);
@@ -606,7 +610,7 @@
       };
       const tip = document.createElement("div"); tip.className = "sea-rule"; tip.textContent = f.tip;
       const spawnNote = document.createElement("div"); spawnNote.className = "sea-rule"; spawnNote.textContent = spawnText(f, seaMonth);
-      const rule = document.createElement("div"); rule.className = "spot-meta"; rule.textContent = "📏 " + f.rule;
+      const rule = document.createElement("div"); rule.className = "spot-meta"; rule.textContent = "📏 " + v.rule;
       if (f.far) { const w = document.createElement("div"); w.className = "sea-rule"; w.textContent = "📍 Lives in: " + f.far; div.append(top, w, tip); }
       else div.append(top, strip(f.shore, "Shore"), strip(f.boat, "Boat"), tip);
       if (spawnNote.textContent) div.appendChild(spawnNote);

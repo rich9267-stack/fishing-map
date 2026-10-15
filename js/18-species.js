@@ -66,6 +66,7 @@
           s.appendChild(el("div", "keeper " + (closed ? "bad" : "ok"), `${closed ? "🚫 Out of season right now — release it." : "✅ Open to keep today."}${size ? " Size: " + size + "." : ""}${r.bag ? " Bag: " + r.bag + "." : ""}`));
           if (r.note) s.appendChild(el("div", "spot-meta", r.note));
         }
+        if (r.regions && r.regions.length) s.appendChild(el("div", "spot-meta", `📍 This rule is for ${regionsText(r.regions)}.${typeof ruleCaution === "function" ? ruleCaution(r) : ""}`));
         s.appendChild(el("div", "spot-meta", ruleStale(r) ? `⚠️ Last checked ${ruleAge(r) == null ? "a while ago" : ruleAge(r) + " days ago"} — confirm with FWC.` : `Checked ${r.verified_on}. Always confirm with FWC.`));
       } else s.appendChild(el("div", null, f.rule));
       if (f && f.tip) { const t = el("div", "sea-rule", "💡 " + f.tip); s.appendChild(t); }
