@@ -21,6 +21,7 @@
     const near = nearbySpots(qc.pos)[0];
     const off = !(near && near.d <= QC_NEAR_MI) && officialNear(qc.pos);
     w.textContent = near && near.d <= QC_NEAR_MI ? `📍 At ${near.s.name}` : off ? `📍 New spot here — ${off.o.name}` : "📍 New spot here";
+    if (typeof znQcRender === "function") znQcRender();   // 🚫 no-fishing zone line (js/33)
     // official spots are loaded one area at a time: if this area isn't loaded yet, fetch it and look again
     if (!(near && near.d <= QC_NEAR_MI) && !off && typeof officialEnsure === "function") {
       const at = qc.pos;

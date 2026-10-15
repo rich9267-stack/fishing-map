@@ -409,6 +409,7 @@
       if (s.faces_deg != null) chips.appendChild(el("span", "chip", "🧭 Water to the " + compass(s.faces_deg)));
       chips.appendChild(el("span", "chip", VIS_LABEL[s.visibility || (s.is_private ? "private" : "friends")]));
       if (s.is_exact === false) chips.appendChild(el("span", "chip", "📍 Approximate pin (within ¼ mile)"));
+      { const zc = typeof zoneChip === "function" ? zoneChip(s) : null; if (zc) chips.appendChild(zc); }   // 🚫 inside / near a no-fishing zone (js/33)
       if (s.lat != null && s.lng != null && s.is_exact !== false) {
         const a = el("a", "chip", "📍 Directions");
         a.href = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
@@ -1482,8 +1483,7 @@
             fields: "Name,MatDescrip,Depth,Relief,County,DeployDate,DDate,Tonnage", color: "#0e9aa7", label: "artificial reefs" },
     ramp: { url: "https://gis.myfwc.com/mapping/rest/services/Open_Data/FWC_Florida_Boat_Ramp_Inventory/MapServer/4/query", minZoom: 9,
             fields: "RampName,WaterBodyName,TotalLanes,isFeeRequired,FeeAmount,Hours,Status,Amenities,ContactPhone,Street1,City,DockType,RampCondition", color: "#e67e22", label: "boat ramps" },
-    zoneUrls: ["https://services1.arcgis.com/eGSDp8lpKe5izqVc/ArcGIS/rest/services/Marine_Protected_Areas__MPAIs_/FeatureServer/0/query",
-               "https://oceandata.rad.rutgers.edu/arcgis/rest/services/Administrative/NOAAMarineProtectedAreasInventory2023/MapServer/0/query"],
+    zoneUrls: ["https://services1.arcgis.com/eGSDp8lpKe5izqVc/ArcGIS/rest/services/Marine_Protected_Areas__MPAIs_/FeatureServer/0/query"],   // (the old NOAA backup server was shut down)
     zoneMinZoom: 8
   };
   const mxOn = { chart: false, reef: false, ramp: false, zone: false };
@@ -1493,7 +1493,7 @@
 
   function mxNote() {
     const parts = Object.keys(mxMsg).filter(k => mxOn[k] && mxMsg[k]).map(k => mxMsg[k]);
-    if (mxOn.zone) parts.push("Protected-zone outlines are a guide only — always check current FWC / NOAA rules before you fish.");
+    if (mxOn.zone) parts.push("Protected zones: solid red = no fishing, orange = closed to the public, dashed = other rules apply (parks, refuges…). A guide only — always check current FWC / NOAA rules before you fish.");
     if (mxOn.chart) parts.push("Chart: NOAA — not for navigation.");
     const n = $("mx-note");
     n.hidden = !parts.length; n.textContent = parts.join(" ");
@@ -1581,7 +1581,8 @@
   async function mxLoadZones() {
     const seq = ++mxSeq.zone;
     if (mxLayers.zone) { map.removeLayer(mxLayers.zone); mxLayers.zone = null; }
-    if (map.getZoom() < MX.zoneMinZoom) { mxMsg.zone = "Zoom in a little to see protected zones."; mxNote(); return; }
+    if (typeof zonesEnsure === "function") zonesEnsure();
+    if (map.getZoom() < MX.zoneMinZoom) { mxMsg.zone = "Zoom in a little to see protected zones."; mxNote(); if (typeof znDraw === "function") znDraw(); return; }
     mxMsg.zone = "Loading protected zones…"; mxNote();
     const simplify = "&maxAllowableOffset=" + (360 / (256 * Math.pow(2, map.getZoom()))).toFixed(6);
     for (const base of MX.zoneUrls) {
@@ -1594,19 +1595,25 @@
         const layer = L.geoJSON(d, { style: { color: "#c0392b", weight: 2, fillColor: "#c0392b", fillOpacity: 0.12, dashArray: "6 4" },
           onEachFeature: (f, l) => { l.options.a11y = "Protected zone: " + ((f.properties && (f.properties.NAME || f.properties.Name || f.properties.SITE_NAME)) || "details"); l.bindPopup(() => zonePopup(f.properties || {})); } });
         layer.addTo(map); mxLayers.zone = layer;
+        if (typeof znDraw === "function") znDraw();   // js/33: the closed areas in solid colour, on top
         mxMsg.zone = d.features.length ? "" : "No protected zones in this view.";
         mxNote(); return;
       } catch (e) { /* try the next source */ }
     }
-    if (seq === mxSeq.zone) mxMsg.zone = "Couldn't load protected zones right now — try again later.";
+    if (typeof znDraw === "function") znDraw();   // the saved closed areas still show
+    if (seq === mxSeq.zone) mxMsg.zone = typeof zn !== "undefined" && zn.rows.length ? "Couldn't load the state's full zone list right now — showing the main closed areas only." : "Couldn't load protected zones right now — try again later.";
     mxNote();
   }
   // The zone lists name their columns differently, so look for the usual ones.
   function zonePopup(p) {
     const find = re => { const k = Object.keys(p).find(k => re.test(k) && mxVal(p[k])); return k ? p[k] : null; };
-    return mxPopup("🚫 " + (find(/^(site_?name|name|area_?name|mpa_?name)$/i) || "Protected area"),
-      [["Fishing rules", find(/fish.*(restrict|rule|regul)|no_?take|restrict/i)], ["Level of protection", find(/protection|level/i)],
-       ["Managed by", find(/manag|agency|authority|^gov/i)], ["Type", find(/type|designation/i)]], null);
+    const pick = (...keys) => { for (const k of keys) if (mxVal(p[k])) return p[k]; return null; };
+    const rule = pick("Fish_Rstr") || find(/fish.*(restrict|rule|regul)|no_?take|restrict/i), level = pick("Prot_Lvl") || find(/protection/i);
+    const box = mxPopup("🚫 " + (pick("Site_Name", "NAME", "Name", "SITE_NAME") || find(/^(site_?name|name|area_?name|mpa_?name)$/i) || "Protected area"),
+      [["Fishing rules", rule], ["Level of protection", level], ["Managed by", pick("Mgmt_Agen") || find(/manag|agency|authority/i)], ["Type", pick("Design", "Category") || find(/type|designation/i)],
+       ["Anchoring", mxVal(p.Anchor) && p.Anchor !== "Unrestricted" ? p.Anchor : null], ["Boats", mxVal(p.Vessel) && p.Vessel !== "Unrestricted" ? p.Vessel : null]], null);
+    if (mxVal(p.URL) && /^https?:\/\//.test(String(p.URL).trim())) { const a = el("a", "pop-meta", "More about this area ↗"); a.href = String(p.URL).trim(); a.target = "_blank"; a.rel = "noopener"; box.appendChild(a); }
+    return box;
   }
 
   function mxRefresh() {
@@ -1631,6 +1638,7 @@
     if (!mxOn[kind]) {
       mxSeq[kind]++; mxMsg[kind] = "";
       if (mxLayers[kind]) { map.removeLayer(mxLayers[kind]); mxLayers[kind] = null; }
+      if (kind === "zone" && typeof znUndraw === "function") znUndraw();
       mxNote(); return;
     }
     kind === "zone" ? mxLoadZones() : mxLoadPoints(kind);

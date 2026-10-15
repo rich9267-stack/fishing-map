@@ -80,6 +80,7 @@
     $("boat-arrow").style.transform = h == null ? "none" : `rotate(${h}deg)`;
     $("boat-head").parentNode.classList.toggle("stale", !fresh || h == null);
     $("boat-catch").disabled = boat.busy; $("boat-mark").disabled = boat.busy;
+    if (typeof znBoatRender === "function") znBoatRender();   // 🚫 no-fishing zone line (js/33)
   }
 
   function boatOnFix(p) {

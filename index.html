@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=107">
+<link rel="stylesheet" href="css/app.css?v=108">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -1031,6 +1031,7 @@
       <button type="button" id="qc-close" class="qc-round" aria-label="Close">✕</button>
       <div id="qc-where" class="qc-pill">📍 Finding your location…</div>
     </div>
+    <div id="qc-zone" class="zone-warn" role="status" aria-live="polite" hidden></div>
     <div class="qc-bottom">
       <label class="qc-gallery" for="qc-file" aria-label="Choose an old photo">🖼<span>Gallery</span></label>
       <input id="qc-file" type="file" accept="image/*" hidden>
@@ -1155,6 +1156,7 @@
     <div class="boat-box"><b id="boat-head">--</b><span id="boat-card">heading</span><div id="boat-arrow" aria-hidden="true">⬆</div></div>
   </div>
   <div id="boat-info"><div id="boat-tide"></div><div id="boat-sun"></div></div>
+  <div id="boat-zone" role="status" aria-live="polite" hidden></div>
   <div id="boat-species" class="boat-chips"></div>
   <div id="boat-other" hidden><input id="boat-other-in" type="text" maxlength="40" placeholder="Type the fish…" autocomplete="off"><button type="button" id="boat-other-ok">Use</button></div>
   <button type="button" id="boat-catch">🎣 CATCH</button>
@@ -1224,38 +1226,39 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=107"></script>
-<script src="js/02-spots.js?v=107"></script>
-<script src="js/03-photos.js?v=107"></script>
-<script src="js/04-insights.js?v=107"></script>
-<script src="js/05-seasons-records.js?v=107"></script>
-<script src="js/06-catching.js?v=107"></script>
-<script src="js/07-measure-fishid.js?v=107"></script>
-<script src="js/08-feed-plans.js?v=107"></script>
-<script src="js/09-map-forecast.js?v=107"></script>
-<script src="js/10-tools-safety.js?v=107"></script>
-<script src="js/11-accounts-social.js?v=107"></script>
-<script src="js/12-contests-alerts.js?v=107"></script>
-<script src="js/13-groups-misc.js?v=107"></script>
-<script src="js/14-tank.js?v=107"></script>
-<script src="js/15-fish-rank.js?v=107"></script>
-<script src="js/16-fish-race.js?v=107"></script>
-<script src="js/17-license-help.js?v=107"></script>
-<script src="js/18-species.js?v=107"></script>
-<script src="js/19-biting.js?v=107"></script>
-<script src="js/20-spot-share.js?v=107"></script>
-<script src="js/21-pub-filters.js?v=107"></script>
-<script src="js/22-public-water.js?v=107"></script>
-<script src="js/23-depth.js?v=107"></script>
-<script src="js/24-delete-account.js?v=107"></script>
-<script src="js/25-home-map.js?v=107"></script>
-<script src="js/26-sub-tabs.js?v=107"></script>
-<script src="js/27-me-find.js?v=107"></script>
-<script src="js/28-host-pages.js?v=107"></script>
-<script src="js/29-home-waters.js?v=107"></script>
-<script src="js/30-red-tide.js?v=107"></script>
-<script src="js/31-regional-rules.js?v=107"></script>
-<script src="js/32-spot-style.js?v=107"></script>
-<script src="js/99-boot.js?v=107"></script>
+<script src="js/01-core.js?v=108"></script>
+<script src="js/02-spots.js?v=108"></script>
+<script src="js/03-photos.js?v=108"></script>
+<script src="js/04-insights.js?v=108"></script>
+<script src="js/05-seasons-records.js?v=108"></script>
+<script src="js/06-catching.js?v=108"></script>
+<script src="js/07-measure-fishid.js?v=108"></script>
+<script src="js/08-feed-plans.js?v=108"></script>
+<script src="js/09-map-forecast.js?v=108"></script>
+<script src="js/10-tools-safety.js?v=108"></script>
+<script src="js/11-accounts-social.js?v=108"></script>
+<script src="js/12-contests-alerts.js?v=108"></script>
+<script src="js/13-groups-misc.js?v=108"></script>
+<script src="js/14-tank.js?v=108"></script>
+<script src="js/15-fish-rank.js?v=108"></script>
+<script src="js/16-fish-race.js?v=108"></script>
+<script src="js/17-license-help.js?v=108"></script>
+<script src="js/18-species.js?v=108"></script>
+<script src="js/19-biting.js?v=108"></script>
+<script src="js/20-spot-share.js?v=108"></script>
+<script src="js/21-pub-filters.js?v=108"></script>
+<script src="js/22-public-water.js?v=108"></script>
+<script src="js/23-depth.js?v=108"></script>
+<script src="js/24-delete-account.js?v=108"></script>
+<script src="js/25-home-map.js?v=108"></script>
+<script src="js/26-sub-tabs.js?v=108"></script>
+<script src="js/27-me-find.js?v=108"></script>
+<script src="js/28-host-pages.js?v=108"></script>
+<script src="js/29-home-waters.js?v=108"></script>
+<script src="js/30-red-tide.js?v=108"></script>
+<script src="js/31-regional-rules.js?v=108"></script>
+<script src="js/32-spot-style.js?v=108"></script>
+<script src="js/33-zones.js?v=108"></script>
+<script src="js/99-boot.js?v=108"></script>
 </body>
 </html>

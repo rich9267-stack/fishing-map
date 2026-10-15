@@ -456,6 +456,12 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15i", title: "🚫 No-fishing zones check", items: [
+      "Spots, Quick catch and Boat mode now warn you when you are inside, or within half a mile of, an area where fishing is not allowed or the public is kept out: the Florida Keys sanctuary preservation areas, ecological reserves and research-only areas, the Dry Tortugas reserves, closed wildlife refuges and manatee no-entry zones.",
+      "A spot inside one gets a red chip on its card (tap it for the rule and a link). Boat mode shows a red line while you are inside and an amber one when you are close. It works offline: the list is saved on your phone for a week.",
+      "On the Map, 🚫 Protected zones now draws those closed areas in solid red (orange = closed to the public) above the dashed outlines of areas with other rules, and the pop-up finally shows each area's real fishing rule.",
+      "It is a heads-up, not legal advice: state parks, other refuges, seasonal closures and local rules are not all on the list, so no warning never means \"allowed\". Check FWC / NOAA before you fish."
+    ] },
     { id: "2026-10-15h", title: "🚤 Shore, pier, flat or boat", items: [
       "Two new spot types: Flat (shallow sand or grass) and Boat spot (reef, wreck, channel). Pick them when you add or edit a spot, and filter by them on the Spots list.",
       "Best spot today, the 3-day outlook and trip suggestions now judge a spot the way you fish it. Boat spots use the by-boat seasons and lose points for chop (wind from about 15 mph); flats like light wind and moving tide; piers, jetties and bridges sit between shore and boat.",
