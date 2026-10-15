@@ -9,7 +9,7 @@
   window.addEventListener("error", e => logAppError(e.message, e.filename ? e.filename.split("/").pop().split("?")[0] + ":" + e.lineno : ""));
   window.addEventListener("unhandledrejection", e => logAppError(e.reason && (e.reason.message || e.reason), "promise"));
 
-  const STATION = "8722859";
+  let STATION = "8722859";   // the tide station for the "area now" (js/29 changes it when you travel)
   // Today's conditions, shared by every spot for now (all spots are in the Hillsboro area)
   const cond = { tide: null, wind: null };
 
@@ -106,7 +106,7 @@
   }
 
   // ---- Wind & weather from the National Weather Service ----
-  const WX_POINT = "26.24,-80.10"; // Pompano Beach / Hillsboro Inlet area
+  const nowPointStr = () => `${LAT.toFixed(3)},${LNG.toFixed(3)}`; // the "area now" (js/29): home waters, or where your phone is
 
   async function getJson(url) {
     // The weather service sometimes hiccups; try twice before giving up
@@ -124,7 +124,7 @@
     const nowEl = document.getElementById("wx-now");
     const detailEl = document.getElementById("wx-detail");
     try {
-      const point = await getJson(`https://api.weather.gov/points/${WX_POINT}`);
+      const point = await getJson(`https://api.weather.gov/points/${nowPointStr()}`);
       const hourly = await getJson(point.properties.forecastHourly);
       const now = new Date();
       const periods = hourly.properties.periods.filter(p => new Date(p.endTime) > now);
@@ -167,9 +167,24 @@
   // Pompano Beach Airpark first; Fort Lauderdale airport as a backup
   const PRESSURE_STATIONS = ["KPMP", "KFLL"];
 
+  // Near Pompano the two known airports; anywhere else, the National Weather Service's own list of stations nearest the "area now"
+  const pressureStationCache = {};
+  async function pressureStationsNow() {
+    if (miles(LAT, LNG, 26.24, -80.10) < 15) return PRESSURE_STATIONS;
+    const key = LAT.toFixed(1) + "," + LNG.toFixed(1);
+    if (pressureStationCache[key]) return pressureStationCache[key];
+    try {
+      const pt = await getJson(`https://api.weather.gov/points/${LAT.toFixed(3)},${LNG.toFixed(3)}`);
+      const list = await getJson(pt.properties.observationStations);
+      const ids = (list.features || []).slice(0, 5).map(f => f.properties && f.properties.stationIdentifier).filter(Boolean);
+      if (ids.length) return (pressureStationCache[key] = ids);
+    } catch (e) { /* none found */ }
+    return [];
+  }
+
   async function loadPressure() {
     const out = $("wx-pressure");
-    for (const st of PRESSURE_STATIONS) {
+    for (const st of await pressureStationsNow()) {
       try {
         const data = await getJson(`https://api.weather.gov/stations/${st}/observations?limit=24`);
         const obs = data.features

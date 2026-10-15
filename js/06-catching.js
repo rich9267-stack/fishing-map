@@ -853,7 +853,7 @@
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
   }
   // ---- Conditions at any date & time (used by the catch log) ----
-  const LAT = 26.24, LNG = -80.10;   // Pompano Beach / Hillsboro Inlet area
+  let LAT = 26.24, LNG = -80.10;   // the "area now" (js/29): starts as Pompano Beach / Hillsboro Inlet; follows home waters / your location
   let catchCond = null;              // conditions looked up for the time in the form
   let condPromise = null;            // the lookup in progress, so Save can wait for it
   let condRequest = 0;               // ignore an old lookup if the time changes again

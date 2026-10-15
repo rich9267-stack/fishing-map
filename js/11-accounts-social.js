@@ -127,6 +127,7 @@
     $("userbar").hidden = false; $("app").hidden = false; $("qc-fab").hidden = false; meAvatarRefresh();
     $("who").textContent = `Signed in as ${me.name}`;
     ensureProfile().then(maybeWelcome).then(wnCheck);
+    hwLoadMine();
     $("invite-btn").hidden = !me.isAdmin;
     checkRequests();
     startChat();

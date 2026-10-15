@@ -456,6 +456,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15a", title: "🏠 Home waters — and the app notices when you travel", items: [
+      "Me → Profile now has a Home waters picker (Pompano, Miami, the Keys, Naples, Fort Myers, Sarasota, Tampa Bay and more), or tap “Use where I am now”. It's private — only you see the exact point.",
+      "Allow your location and the top of Home (tide, wind, pressure, moon) follows where you actually are. Heading to Tampa? You'll see Tampa's tide station and weather, and the title line says 📍 where you are and your home waters.",
+      "If NOAA has no tide station within 25 miles, the app says so instead of showing a far-away tide."
+    ] },
     { id: "2026-10-14u", title: "🔔 Follow a club or business", items: [
       "Open a page (Me → Clubs & businesses) and tap “Follow this page”. You then get a phone alert when it opens a tournament, when a repeating one starts a new round, and about an hour before one starts if you haven't joined yet.",
       "Pages you don't follow stay quiet — you can still see and join their tournaments any time. The admin's own tournaments still tell everyone.",

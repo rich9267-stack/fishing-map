@@ -192,12 +192,13 @@
         extraStations = extraStations.concat(add).slice(-300);
         try { localStorage.setItem("fm-extra-stations", JSON.stringify(extraStations)); } catch (e) {}
         refreshConditions(); renderSpots();
+        if (typeof hwStationsAdded === "function") hwStationsAdded();
       }).catch(() => {});
   }
 
   // The tide station a spot uses (Hillsboro for spots without a location)
   function stationFor(s) {
-    if (!hasLoc(s)) return { ...TIDE_STATIONS.find(t => t.id === STATION), dist: null };
+    if (!hasLoc(s)) return { ...(TIDE_STATIONS.concat(extraStations).find(t => t.id === STATION) || TIDE_STATIONS.find(t => t.id === "8722859")), dist: null };
     let best = null;
     TIDE_STATIONS.concat(extraStations).forEach(t => {
       const d = miles(s.lat, s.lng, t.lat, t.lng);

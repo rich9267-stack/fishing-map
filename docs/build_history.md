@@ -462,3 +462,5 @@ Fishbrain audit (Oct 14): docs/fishbrain-audit.md (also project doc claude/fishb
 - App: js/28 — page screen shows the follower count and 🔔 Follow this page / ✓ Following (tap to unfollow) with a plain explanation, plus "🏁 Tournaments by this page" (newest first, tap opens it in Compete); the pages list marks followed pages "✓ Following". A refusal from the database (e.g. 50 pages) is shown as a message.
 - Tests: test112 (new, 19 checks). Full suite ALL OK.
 
+
+**Gulf expansion step 1a (v100, Oct 15):** home waters picker (Profile) + private `home_waters` table (setup/59); js/29-home-waters.js keeps an "area now" (home, or the phone GPS when location is already allowed); `LAT`/`LNG`/`STATION` follow it, so Home tide, NWS weather, pressure stations and the moon follow you. NOAA lookup picks the tide station; "no station within 25 mi" is shown honestly. Header text follows home waters. Test113.
