@@ -841,3 +841,9 @@
   #qc-zone { position: absolute; top: calc(68px + env(safe-area-inset-top)); left: 12px; right: 12px; z-index: 2; }
   .zone-warn { margin-top: 6px; padding: 8px 12px; border-radius: 12px; background: #8a3b00; color: #ffe2c4; font-size: .88rem; font-weight: 700; }
   .zone-warn.in { background: #b3261e; color: #fff; }
+
+/* ⭐ admin: make a spot an official place (js/34) */
+.off-admin { margin-top: 16px; padding: 10px 12px; border: 1px dashed var(--line, #ccc); border-radius: 10px; }
+.off-admin-title { font-weight: 700; margin-bottom: 4px; }
+.off-admin .row { gap: 8px; margin-top: 8px; }
+.off-admin select { flex: 1; min-height: 44px; }

@@ -484,6 +484,7 @@
     $("add-btn").hidden = show;
     $("form-msg").textContent = "";
     $("spot-del").hidden = true;
+    if (typeof offAdminRender === "function") offAdminRender(show ? existing : null);   // ⭐ admin box, js/34
     if (!show) return;
     if (existing) {
       $("spot-del").hidden = !(isMine(existing) || (me && me.isAdmin));

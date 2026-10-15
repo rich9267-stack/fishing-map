@@ -169,8 +169,8 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
     need(names().includes("Hillsboro Inlet Park Ramp") && names().includes("Pompano Fishing Pier"), "home: Pompano's official spots are loaded at start: " + names().join(", "));
     need(!names().includes("Ballast Point Boat Ramp") && !names().includes("Founders Park Boat Ramp") && !names().includes("Naples Pier"), "home: Tampa / Keys / Naples are NOT loaded yet: " + names().join(", "));
   }
-  const stored = JSON.parse(w.localStorage.getItem("fm-official-v2") || "null");
-  need(stored && stored.cells && Object.keys(stored.cells).length >= 1, "the cells are kept on the phone (fm-official-v2)");
+  const stored = JSON.parse(w.localStorage.getItem("fm-official-v3") || "null");
+  need(stored && stored.cells && Object.keys(stored.cells).length >= 1, "the cells are kept on the phone (fm-official-v3)");
   need(Object.values(stored.cells).every(c => isFinite(c.t) && Array.isArray(c.items)), "each cell has a time and a list");
 
   // ---- B. loading more areas, and not re-loading ----

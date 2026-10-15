@@ -34,4 +34,4 @@ Last audit: Oct 15, 2026 (v109; v110 added the CAPTCHA code, public-place pins a
 - One admin account (Richard). Admins can't delete their account from the app.
 
 ## Next hardening ideas (not done)
-- Per-person caps on comments/reports. A per-person photo cap. A CSP `frame-ancestors` header (GitHub Pages can't send headers; the in-app frame guard covers it).
+- Per-person caps on comments/reports/photos: Richard decided NOT to add them (Oct 15). A CSP `frame-ancestors` header (GitHub Pages can't send headers; the in-app frame guard covers it).

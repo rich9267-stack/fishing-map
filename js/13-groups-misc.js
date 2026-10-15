@@ -456,6 +456,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15k", title: "✅ More official places", items: [
+      "Local parks and piers that the state lists missed can now be added as ✅ Official places, so Quick catch uses their name, Find new water lists them, and Directions take you to the real spot."
+    ] },
     { id: "2026-10-15j", title: "📍 Public places show their real spot", items: [
       "When a member's Public spot sits at a known public place — an official boat ramp, park or pier — everyone now sees that place's real location, so Directions take you to the right spot.",
       "Other public spots are still shown only roughly (within about ¼ mile) to protect secret spots. On the map those pop-ups now say so and no longer offer Directions, because they would lead you to the wrong place.",

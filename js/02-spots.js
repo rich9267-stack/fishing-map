@@ -677,7 +677,8 @@
   // around where you are or where Find new water is looking, keeps each cell on this phone for a week, and merges the cells it has seen
   // into officialSpots. Used by Quick catch (names a new spot after the official place you're at) and by Find new water (✅ Official).
   let officialSpots = [];
-  const OFFICIAL_KEY = "fm-official-v2", OFFICIAL_CELL = 0.5, OFFICIAL_AGE = 7 * 86400000, OFFICIAL_MAX_CELLS = 10;
+  const OFFICIAL_KEY = "fm-official-v3", OFFICIAL_CELL = 0.5, OFFICIAL_AGE = 86400000,   // 1 day: places an admin adds reach everyone within a day
+    OFFICIAL_MAX_CELLS = 10;
   const OFFICIAL_KINDS = { ramp: "ramp", pier: "pier", jetty: "jetty", bridge: "bridge", park: "dock", dock: "dock" };
   const OFFICIAL_LABEL = { ramp: "Boat ramp", pier: "Pier", jetty: "Jetty", bridge: "Bridge", dock: "Fishing spot", park: "Park · bank fishing" };
   const OFFICIAL_SOURCE = { "fwc-ramp": "Florida Fish & Wildlife (FWC) boat ramp list", "fl-fori": "Florida DEP outdoor recreation list" };
@@ -711,7 +712,7 @@
     const [i, j] = key.split(",").map(Number), C = OFFICIAL_CELL;
     officialLoading[key] = (async () => {
       try {
-        const { data, error } = await db.from("official_spots").select("id,source,name,kind,lat,lng,water_type,county,details")
+        const { data, error } = await db.from("official_spots").select("id,source,source_id,name,kind,lat,lng,water_type,county,details")
           .gte("lat", i * C).lt("lat", (i + 1) * C).gte("lng", j * C).lt("lng", (j + 1) * C).limit(1000);
         if (error) throw error;
         officialCells[key] = { t: Date.now(), items: data || [] };
@@ -766,7 +767,7 @@
   }
   (function officialRestore() {   // what this phone already knows (older copies are used until fresh ones arrive)
     try {
-      localStorage.removeItem("fm-official-v1");
+      localStorage.removeItem("fm-official-v1"); localStorage.removeItem("fm-official-v2");
       const c = JSON.parse(localStorage.getItem(OFFICIAL_KEY) || "null");
       if (c && c.cells) Object.keys(c.cells).forEach(k => { const v = c.cells[k]; if (v && Array.isArray(v.items) && isFinite(v.t)) officialCells[k] = v; });
     } catch (e) {}
