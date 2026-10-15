@@ -18,7 +18,11 @@ function names(table) {
   table.forEach(r => r[0].forEach(w => n.push(w)));
   return n.concat(["Snook (common)", "Jack crevalle", "Mangrove snapper", "Red snapper", "snapper", "Black drum", "Speckled trout",
     "Largemouth bass", "Peacock bass", "Florida gar", "Mystery fish", "", "BLACK GROUPER",
-    "Catfish", "Bullhead", "Channel catfish", "Blue catfish", "Flathead catfish", "Hardhead catfish", "Gafftopsail catfish", "Walking catfish", "Sailfin catfish (pleco)", "Brown hoplo"]);
+    "Catfish", "Bullhead", "Channel catfish", "Blue catfish", "Flathead catfish", "Hardhead catfish", "Gafftopsail catfish", "Walking catfish", "Sailfin catfish (pleco)", "Brown hoplo",
+    // Gulf + Keys names as people type them (and look-alikes that must NOT match a new row)
+    "Bonefish", "Cubera snapper", "Blackfin tuna", "Yellowfin tuna", "Yellowfin grouper", "Skipjack tuna", "Bar jack", "Horse-eye jack", "Almaco jack", "Sand seatrout",
+    "Spotted seatrout", "Lionfish", "Blacktip shark", "Bull shark", "Bull redfish", "Bonnethead shark", "Nurse shark", "Lemon shark (released)", "Lemon sole",
+    "Shark (other)", "Hammerhead shark", "Spinner shark", "Tiger shark", "Atlantic sharpnose shark"]);
 }
 function rowsFor(sp) {   // same order as the SQL: lengths, then each weight real/estimated, then no size
   const r = LENS.map(l => [l, null, false]);

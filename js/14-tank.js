@@ -5,6 +5,20 @@
   // How each species is drawn: shape (torpedo, deep, bass, long, flat), colours and a marking.
   const TANK_LOOKS = [
     // newer fish first, so specific names win over broad ones ("amberjack" before "jack")
+    // Gulf + Keys fish and sharks (Oct 15 2026): above /snapper/, /jack/, /trout/ and the general /shark/ line at the bottom
+    { m: /lionfish/, shape: "deep", body: "#a8452f", belly: "#ecd2b4", mark: "bars" },
+    { m: /bonefish/, shape: "torpedo", body: "#c3ccd1", belly: "#f4f6f7", mark: "" },
+    { m: /yellowfin tuna/, shape: "torpedo", body: "#4f7391", belly: "#e8e8d0", mark: "stripe" },
+    { m: /blackfin tuna/, shape: "torpedo", body: "#46627c", belly: "#e4e9ee", mark: "" },
+    { m: /cubera/, shape: "deep", body: "#8a4a3a", belly: "#d9b3a0", mark: "" },
+    { m: /bar jack/, shape: "deep", body: "#8fa6b0", belly: "#eef1f2", mark: "stripe" },
+    { m: /horse-eye|horse eye/, shape: "deep", body: "#9aa9a3", belly: "#ece9c2", mark: "" },
+    { m: /sand seatrout|sand trout|white trout/, shape: "torpedo", body: "#b9bfb0", belly: "#f1efe6", mark: "" },
+    { m: /blacktip/, shape: "torpedo", body: "#7d8a94", belly: "#eef1f2", mark: "" },
+    { m: /bull shark/, shape: "bass", body: "#76828b", belly: "#e9edef", mark: "" },
+    { m: /bonnethead/, shape: "torpedo", body: "#8d979c", belly: "#e7eaeb", mark: "" },
+    { m: /nurse shark/, shape: "long", body: "#8a7a62", belly: "#d9cdb4", mark: "" },
+    { m: /lemon shark/, shape: "bass", body: "#b8a466", belly: "#efe6c4", mark: "" },
     // catfish first: "walking" contains "king", which would otherwise draw it as a mackerel
     { m: /walking catfish|clarias/, shape: "long", body: "#5f5a52", belly: "#b9b2a4", mark: "dots" },
     { m: /sailfin catfish|suckermouth|pleco/, shape: "bass", body: "#4e4a3f", belly: "#a8a08a", mark: "dots" },

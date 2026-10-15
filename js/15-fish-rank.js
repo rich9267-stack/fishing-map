@@ -20,7 +20,15 @@
     [["blue catfish", "blue cat"], 46, 3, 9, 4, 8], [["flathead catfish", "flathead cat", "shovelhead"], 45, 4, 10, 3, 8], [["white catfish", "white cat"], 20, 2, 4, 3, 5],
     [["black bullhead"], 14, 1, 2, 2, 3], [["brown bullhead"], 15, 1, 3, 2, 4], [["yellow bullhead"], 13, 1, 2, 2, 3], [["flat bullhead"], 10, 3, 2, 2, 2],
     [["snail bullhead"], 10, 3, 2, 2, 2], [["spotted bullhead"], 10, 4, 2, 2, 2], [["headwater catfish"], 18, 5, 5, 4, 5], [["walking catfish", "clarias"], 15, 2, 3, 2, 5],
-    [["sailfin catfish", "suckermouth", "pleco"], 18, 1, 3, 1, 4], [["brown hoplo", "hoplo"], 9, 1, 1, 1, 3], [["gafftopsail", "gafftop"], 26, 2, 5, 4, 5]
+    [["sailfin catfish", "suckermouth", "pleco"], 18, 1, 3, 1, 4], [["brown hoplo", "hoplo"], 9, 1, 1, 1, 3], [["gafftopsail", "gafftop"], 26, 2, 5, 4, 5],
+    // Gulf coast + Keys fish and sharks (Oct 15 2026, setup/61) — same order again in WEIGHT_REF (js/07) and fish_rank_species.
+    // Sharks are ranked by total length. "bull shark" / "nurse shark" / "lemon shark" need the word "shark" so "bull redfish" never matches.
+    [["bonefish"], 30, 4, 5, 10, 6], [["blacktip"], 66, 3, 8, 9, 6], [["bull shark"], 90, 4, 10, 6, 9], [["bonnethead"], 36, 2, 4, 5, 4],
+    [["nurse shark"], 96, 2, 7, 2, 8], [["lemon shark"], 96, 4, 8, 5, 8], [["cubera"], 48, 5, 10, 6, 9], [["blackfin tuna"], 34, 3, 6, 9, 7],
+    [["yellowfin tuna"], 52, 4, 9, 10, 8], [["bar jack"], 22, 2, 4, 7, 5], [["horse-eye", "horse eye"], 28, 2, 7, 8, 7],
+    [["sand seatrout", "sand trout", "white trout"], 14, 2, 2, 4, 2], [["lionfish"], 14, 2, 2, 2, 2],
+    [["shark"], 72, 3, 7, 6, 7],   // any other shark (hammerhead, tiger, spinner, sharpnose…): the named sharks above win because their words are longer
+    [["skipjack"], 30, 2, 6, 10, 6]   // without its own row "skipjack tuna" matched "jack" (crevalle)
   ];
   const RANK_TIERS = [[900, "Legendary", "🌟"], [650, "Epic", "💜"], [400, "Rare", "💙"], [200, "Uncommon", "💚"], [0, "Common", "⚪"]];
   function rankEntry(species) {

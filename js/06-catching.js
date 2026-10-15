@@ -773,7 +773,22 @@
     "Florida gar",
     "Oscar",
     "Tilapia",
-    "Bullseye snakehead"
+    "Bullseye snakehead",
+    // Gulf coast + Keys fish and sharks
+    "Bonefish",
+    "Cubera snapper",
+    "Blackfin tuna",
+    "Yellowfin tuna",
+    "Bar jack",
+    "Horse-eye jack",
+    "Sand seatrout",
+    "Lionfish",
+    "Blacktip shark",
+    "Bull shark",
+    "Bonnethead shark",
+    "Nurse shark",
+    "Lemon shark (released)",
+    "Shark (other)"
   ];
   (function () {
     const dl = document.createElement("datalist"); dl.id = "species-list";

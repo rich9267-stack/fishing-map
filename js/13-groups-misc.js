@@ -456,6 +456,12 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15e", title: "🦈 Gulf and Keys fish, and sharks", items: [
+      "🐟 13 new fish in the Seasons tab, each with best months, water temperature, tips and the rules we could confirm: bonefish, cubera snapper, blackfin and yellowfin tuna, bar jack, horse-eye jack, lionfish, five sharks (blacktip, bull, bonnethead, nurse and lemon), and sand seatrout (a Gulf coast fish, listed with where it lives).",
+      "🦈 Shark rules in short, from FWC: 1 shark per person, shore anglers need FWC's free shark permit, circle hooks with natural bait, lemon sharks must be released, bull and nurse sharks need 54\" fork length. Always check FWC too.",
+      "🏅 Every new fish can be logged from the catch form, drawn in your tank, and ranked with a Power number and tier. Any other shark you log (hammerhead, spinner, tiger…) gets a basic rank as \"Shark\".",
+      "🏆 New fish also count in your Collections, so a group you had finished may show one or two fish still to catch."
+    ] },
     { id: "2026-10-15d", title: "✅ Official public spots on the Gulf coast and in the Keys", items: [
       "🧭 Find new water now lists official public boat ramps, fishing piers and parks for the Gulf coast (Naples up to Clearwater and Tampa Bay) and the Keys, not just South Florida. They show a ✅ Official badge, and the details tell you the number of lanes, whether there's a fee, the hours and who runs the place.",
       "When you travel, Find new water looks around where you are instead of around your home spots. The official spots for the area you're in load as you go, so nothing is slow to start.",

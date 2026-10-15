@@ -19,7 +19,13 @@
     [["blue catfish", "blue cat"], 30, 13], [["flathead catfish", "flathead cat", "shovelhead"], 30, 12.5], [["white catfish", "white cat"], 16, 1.8],
     [["black bullhead"], 12, 0.8], [["brown bullhead"], 12, 0.85], [["yellow bullhead"], 11, 0.65], [["flat bullhead"], 9, 0.35], [["snail bullhead"], 9, 0.35],
     [["spotted bullhead"], 9, 0.35], [["headwater catfish"], 15, 1.4], [["walking catfish", "clarias"], 12, 0.6], [["sailfin catfish", "suckermouth", "pleco"], 16, 1.5],
-    [["brown hoplo", "hoplo"], 8, 0.3], [["gafftopsail", "gafftop"], 20, 3]
+    [["brown hoplo", "hoplo"], 8, 0.3], [["gafftopsail", "gafftop"], 20, 3],
+    // Gulf coast + Keys fish and sharks (same order as FISH_RANK_TABLE in js/15)
+    [["bonefish"], 24, 4.5], [["blacktip"], 60, 60], [["bull shark"], 72, 110], [["bonnethead"], 30, 7],
+    [["nurse shark"], 72, 100], [["lemon shark"], 72, 85], [["cubera"], 40, 35], [["blackfin tuna"], 28, 12],
+    [["yellowfin tuna"], 40, 40], [["bar jack"], 16, 2], [["horse-eye", "horse eye"], 24, 6.5],
+    [["sand seatrout", "sand trout", "white trout"], 12, 0.5], [["lionfish"], 12, 0.8],
+    [["shark"], 60, 55], [["skipjack"], 24, 8]
   ];
   function weightRef(species) {
     const sp = (species || "").toLowerCase();
