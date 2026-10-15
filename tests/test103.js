@@ -122,7 +122,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   check("after End trip the Start button is back", !$("hq-start").hidden);
   // ---- Map: Layers sheet ----
   click($("tab-map")); await wait(300);
-  check("old row of layer buttons is gone from view (they sit in a hidden box)", $("layer-real").hidden && ["map-bite","map-pub","map-sight","mx-reef","mx-water","mx-chart","mx-depth","map-sst","map-chl","map-layer","mx-ramp","mx-zone"].every(id => $("layer-real").contains($(id))));
+  check("old row of layer buttons is gone from view (they sit in a hidden box)", $("layer-real").hidden && ["map-bite","map-pub","map-sight","mx-reef","mx-water","mx-chart","mx-depth","mx-redtide","map-sst","map-chl","map-layer","mx-ramp","mx-zone"].every(id => $("layer-real").contains($(id))));
   check("toolbar has Layers + Find new water + Add + Show me + List + Boat", ["map-layers-btn","map-find-btn","map-add","map-me","map-list","boat-open"].every(id => $("map-main-tools").contains($(id))));
   check("sheets start closed", $("layers-sheet").hidden && $("find-sheet").hidden);
   click($("map-layers-btn")); await wait(100);
@@ -131,7 +131,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   console.log("groups:", groups.join(" | "));
   check("grouped Fishing / On the water / Getting there & rules", groups[0] === "Fishing" && groups[1] === "On the water" && /Getting there/.test(groups[2]));
   const rows = [...d.querySelectorAll("#layers-body .lyr")];
-  check("every layer has a switch row (12)", rows.length === 12 && rows.every(r => r.getAttribute("role") === "switch" && r.getAttribute("aria-checked") === "false"));
+  check("every layer has a switch row (13, with 🔴 Red tide)", rows.length === 13 && rows.every(r => r.getAttribute("role") === "switch" && r.getAttribute("aria-checked") === "false"));
   // each switch works the real layer, and reflects it
   const row = id => d.querySelector(`#layers-body .lyr[data-for="${id}"]`);
   click(row("mx-chart")); await wait(250);

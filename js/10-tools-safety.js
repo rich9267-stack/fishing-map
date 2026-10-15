@@ -621,6 +621,7 @@
   async function wxRefresh(force) {
     if (!me) return;
     wx.list = await wxFetch(wxPoint(), force); wxRender();
+    if (typeof rtRefresh === "function") rtRefresh();   // 🔴 red tide banner (js/30) rides along with the weather check (it keeps its own 20-minute cache)
   }
 
   function safetyStripShow() {

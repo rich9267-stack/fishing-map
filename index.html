@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=104">
+<link rel="stylesheet" href="css/app.css?v=105">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -267,6 +267,8 @@
         </div>
         <label class="check-row" for="push-p-wx"><input id="push-p-wx" type="checkbox"><span>⛈️ Severe weather — storms, small-craft advisories, rip currents at your spots</span></label>
         <div class="spot-meta" style="margin:0 0 6px 26px">Storm <i>warnings</i> and 🛟 check-in alerts always get through, even in quiet hours.</div>
+        <label class="check-row" for="push-p-rt"><input id="push-p-rt" type="checkbox"><span>🔴 Red tide — a heads-up when FWC reports medium or high red tide within 15 miles of where you fish</span></label>
+        <div class="spot-meta" style="margin:0 0 6px 26px">Checked once a day, in the evening. Quiet hours apply.</div>
         <label class="check-row" for="push-p-weekly"><input id="push-p-weekly" type="checkbox"><span>🎣 Weekly summary — Sunday evening: your fish, species, trips and biggest catch</span></label>
         <div class="spot-meta" style="margin:0 0 6px 26px"><button class="linkbtn" id="push-weekly-preview" type="button">👀 What would mine say?</button> <span id="push-weekly-out"></span></div>
         <label class="check-row" for="push-q-on" style="margin-top:8px"><input id="push-q-on" type="checkbox"><span>🌙 Quiet hours — no buzzing during these times</span></label>
@@ -459,6 +461,7 @@
   </div>
 
   <div id="safety-strip" hidden>
+    <div id="rt-banner" hidden></div>
     <div id="wx-banner" hidden></div>
     <div id="ci-mine" hidden></div>
     <div id="ci-watch"></div>
@@ -665,6 +668,7 @@
       <button id="mx-water" type="button" aria-pressed="false">🏞 Public lakes (FWC)</button>
       <button id="mx-chart" type="button">🧭 Nautical chart</button>
       <button id="mx-depth" type="button" aria-pressed="false">〰 Depth lines</button>
+      <button id="mx-redtide" type="button" aria-pressed="false">🔴 Red tide</button>
       <button id="map-sst" type="button">🌡 Water temp</button>
       <button id="map-chl" type="button">🟢 Water clarity</button>
       <button id="map-layer" type="button">🛰 Satellite</button>
@@ -676,6 +680,7 @@
     <div class="spot-meta" id="mx-note" role="status" aria-live="polite" hidden></div>
     <div class="spot-meta" id="pw-note" role="status" aria-live="polite" hidden></div>
     <div class="spot-meta" id="dep-note" role="status" aria-live="polite" hidden></div>
+    <div class="spot-meta" id="rt-note" role="status" aria-live="polite" hidden></div>
     <details class="map-key"><summary>Map key</summary>
     <div class="legend">
       <span><span class="dot" style="background:#1d6fd6"></span>Saltwater</span>
@@ -685,6 +690,7 @@
       <span><span class="dot" style="background:#1d6fd6;box-shadow:0 0 0 2px #222"></span>Private (yours)</span>
       <span id="sight-key" hidden><span class="dot" style="background:#8e44ad"></span>Public sighting</span>
       <span id="bite-key" hidden><span class="dot" style="background:#e67e22"></span>Recent catches</span>
+      <span id="rt-key" hidden><span class="dot" style="background:#9aa5b1"></span>Red tide: none <span class="dot" style="background:#f4d03f"></span>very low <span class="dot" style="background:#f39c12"></span>low <span class="dot" style="background:#e55d2b"></span>medium <span class="dot" style="background:#b3261e"></span>high</span>
     </div>
     </details>
     <div class="sat-legend" id="sat-legend" hidden>
@@ -707,6 +713,7 @@
         <div class="lyr-group">On the water</div>
         <button type="button" class="lyr" role="switch" aria-checked="false" data-for="mx-chart"><span class="lyr-t">🧭 Nautical chart</span><span class="sw" aria-hidden="true"></span></button>
         <button type="button" class="lyr" role="switch" aria-checked="false" data-for="mx-depth"><span class="lyr-t">〰 Depth lines<small>Salt water and surveyed lakes</small></span><span class="sw" aria-hidden="true"></span></button>
+        <button type="button" class="lyr" role="switch" aria-checked="false" data-for="mx-redtide"><span class="lyr-t">🔴 Red tide<small>FWC water samples, last 8 days</small></span><span class="sw" aria-hidden="true"></span></button>
         <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-sst"><span class="lyr-t">🌡 Water temperature<small>Satellite</small></span><span class="sw" aria-hidden="true"></span></button>
         <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-chl"><span class="lyr-t">🟢 Water clarity<small>Satellite</small></span><span class="sw" aria-hidden="true"></span></button>
         <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-layer"><span class="lyr-t">🛰 Satellite photos<small>Swap the street map for aerial photos</small></span><span class="sw" aria-hidden="true"></span></button>
@@ -1148,6 +1155,7 @@
   <button type="button" id="boat-catch">🎣 CATCH</button>
   <button type="button" id="boat-mark">📍 MARK THIS SPOT</button>
   <div id="boat-wx" hidden></div>
+  <div id="boat-rt" hidden></div>
   <div id="boat-ci"><span id="boat-ci-text"></span><button type="button" id="boat-ci-btn">🛟 Check in</button></div>
   <div id="boat-msg"></div>
   <div id="boat-foot"></div>
@@ -1211,35 +1219,36 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=104"></script>
-<script src="js/02-spots.js?v=104"></script>
-<script src="js/03-photos.js?v=104"></script>
-<script src="js/04-insights.js?v=104"></script>
-<script src="js/05-seasons-records.js?v=104"></script>
-<script src="js/06-catching.js?v=104"></script>
-<script src="js/07-measure-fishid.js?v=104"></script>
-<script src="js/08-feed-plans.js?v=104"></script>
-<script src="js/09-map-forecast.js?v=104"></script>
-<script src="js/10-tools-safety.js?v=104"></script>
-<script src="js/11-accounts-social.js?v=104"></script>
-<script src="js/12-contests-alerts.js?v=104"></script>
-<script src="js/13-groups-misc.js?v=104"></script>
-<script src="js/14-tank.js?v=104"></script>
-<script src="js/15-fish-rank.js?v=104"></script>
-<script src="js/16-fish-race.js?v=104"></script>
-<script src="js/17-license-help.js?v=104"></script>
-<script src="js/18-species.js?v=104"></script>
-<script src="js/19-biting.js?v=104"></script>
-<script src="js/20-spot-share.js?v=104"></script>
-<script src="js/21-pub-filters.js?v=104"></script>
-<script src="js/22-public-water.js?v=104"></script>
-<script src="js/23-depth.js?v=104"></script>
-<script src="js/24-delete-account.js?v=104"></script>
-<script src="js/25-home-map.js?v=104"></script>
-<script src="js/26-sub-tabs.js?v=104"></script>
-<script src="js/27-me-find.js?v=104"></script>
-<script src="js/28-host-pages.js?v=104"></script>
-<script src="js/29-home-waters.js?v=104"></script>
-<script src="js/99-boot.js?v=104"></script>
+<script src="js/01-core.js?v=105"></script>
+<script src="js/02-spots.js?v=105"></script>
+<script src="js/03-photos.js?v=105"></script>
+<script src="js/04-insights.js?v=105"></script>
+<script src="js/05-seasons-records.js?v=105"></script>
+<script src="js/06-catching.js?v=105"></script>
+<script src="js/07-measure-fishid.js?v=105"></script>
+<script src="js/08-feed-plans.js?v=105"></script>
+<script src="js/09-map-forecast.js?v=105"></script>
+<script src="js/10-tools-safety.js?v=105"></script>
+<script src="js/11-accounts-social.js?v=105"></script>
+<script src="js/12-contests-alerts.js?v=105"></script>
+<script src="js/13-groups-misc.js?v=105"></script>
+<script src="js/14-tank.js?v=105"></script>
+<script src="js/15-fish-rank.js?v=105"></script>
+<script src="js/16-fish-race.js?v=105"></script>
+<script src="js/17-license-help.js?v=105"></script>
+<script src="js/18-species.js?v=105"></script>
+<script src="js/19-biting.js?v=105"></script>
+<script src="js/20-spot-share.js?v=105"></script>
+<script src="js/21-pub-filters.js?v=105"></script>
+<script src="js/22-public-water.js?v=105"></script>
+<script src="js/23-depth.js?v=105"></script>
+<script src="js/24-delete-account.js?v=105"></script>
+<script src="js/25-home-map.js?v=105"></script>
+<script src="js/26-sub-tabs.js?v=105"></script>
+<script src="js/27-me-find.js?v=105"></script>
+<script src="js/28-host-pages.js?v=105"></script>
+<script src="js/29-home-waters.js?v=105"></script>
+<script src="js/30-red-tide.js?v=105"></script>
+<script src="js/99-boot.js?v=105"></script>
 </body>
 </html>

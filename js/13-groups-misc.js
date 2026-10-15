@@ -456,6 +456,12 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15f", title: "🔴 Red tide warnings", items: [
+      "🗺 New map layer: Layers → 🔴 Red tide. Every water sample from the last 8 days, from Florida's Fish and Wildlife Research Institute (FWC), as a dot: grey none · yellow very low · orange low · red-orange medium · dark red high. Tap a dot for the details.",
+      "🟠 A heads-up banner at the top of Home and the Map (and a line in Boat mode) when there is a medium or high sample within 15 miles of where you are. It says how far away and how old the sample is. Tap it for details, to see it on the map, or to hide it for today.",
+      "🔔 Settings → Phone alerts → 🔴 Red tide: an evening alert when medium or high red tide shows up near where you fish (once every 3 days at most while it lasts). Quiet hours apply.",
+      "Samples are patchy: one dot is one spot on one day, and a clear dot doesn't mean the whole area is clear. Always check FWC's own map before you go."
+    ] },
     { id: "2026-10-15e", title: "🦈 Gulf and Keys fish, and sharks", items: [
       "🐟 13 new fish in the Seasons tab, each with best months, water temperature, tips and the rules we could confirm: bonefish, cubera snapper, blackfin and yellowfin tuna, bar jack, horse-eye jack, lionfish, five sharks (blacktip, bull, bonnethead, nurse and lemon), and sand seatrout (a Gulf coast fish, listed with where it lives).",
       "🦈 Shark rules in short, from FWC: 1 shark per person, shore anglers need FWC's free shark permit, circle hooks with natural bait, lemon sharks must be released, bull and nurse sharks need 54\" fork length. Always check FWC too.",

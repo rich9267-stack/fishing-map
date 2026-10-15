@@ -550,7 +550,7 @@
         const { data } = await db.from("notif_prefs").select("*").eq("user_id", me.id).maybeSingle();
         const p = data || { social: true, contests: true, trips: true };
         $("push-p-social").checked = p.social !== false; $("push-p-contests").checked = p.contests !== false; $("push-p-trips").checked = p.trips !== false;
-        $("push-p-wx").checked = p.weather !== false; $("push-p-weekly").checked = p.weekly !== false; $("push-p-cond").checked = !!p.conditions; $("push-c-opts").hidden = !p.conditions;
+        $("push-p-wx").checked = p.weather !== false; $("push-p-rt").checked = p.red_tide !== false; $("push-p-weekly").checked = p.weekly !== false; $("push-p-cond").checked = !!p.conditions; $("push-c-opts").hidden = !p.conditions;
         $("push-c-time").value = String(p.cond_time || "06:30").slice(0, 5); $("push-c-radius").value = String(p.cond_radius_mi || 25);
         pushCondLoc = p.cond_lat != null && p.cond_lng != null ? { lat: p.cond_lat, lng: p.cond_lng } : null;
         $("push-c-loc").textContent = pushCondLoc ? "📍 Location saved — update it" : "📍 Use my current location";
@@ -596,7 +596,7 @@
     $("push-c-opts").hidden = !$("push-p-cond").checked;
     let tz = "America/New_York"; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch (e) {}
     const { error } = await db.from("notif_prefs").upsert({ user_id: me.id, social: $("push-p-social").checked, contests: $("push-p-contests").checked, trips: $("push-p-trips").checked,
-      weather: $("push-p-wx").checked, weekly: $("push-p-weekly").checked, conditions: $("push-p-cond").checked, cond_time: $("push-c-time").value || "06:30", cond_radius_mi: +$("push-c-radius").value || 25,
+      weather: $("push-p-wx").checked, red_tide: $("push-p-rt").checked, weekly: $("push-p-weekly").checked, conditions: $("push-p-cond").checked, cond_time: $("push-c-time").value || "06:30", cond_radius_mi: +$("push-c-radius").value || 25,
       ...(pushCondLoc ? { cond_lat: pushCondLoc.lat, cond_lng: pushCondLoc.lng } : {}),
       quiet_enabled: $("push-q-on").checked, quiet_start: $("push-q-start").value || "22:00", quiet_end: $("push-q-end").value || "06:00", tz, updated_at: new Date().toISOString() });
     pushSay(error ? "Couldn't save: " + error.message : "Saved ✓", !!error);
@@ -607,7 +607,7 @@
     const { error } = await db.rpc("send_test_push");
     pushSay(error ? "Couldn't send: " + error.message : "Sent — it should buzz in a few seconds.", !!error);
   });
-  ["push-p-social", "push-p-contests", "push-p-trips", "push-p-wx", "push-p-weekly", "push-p-cond", "push-c-time", "push-c-radius", "push-q-on", "push-q-start", "push-q-end"].forEach(id => $(id).addEventListener("change", pushSavePrefs));
+  ["push-p-social", "push-p-contests", "push-p-trips", "push-p-wx", "push-p-rt", "push-p-weekly", "push-p-cond", "push-c-time", "push-c-radius", "push-q-on", "push-q-start", "push-q-end"].forEach(id => $(id).addEventListener("change", pushSavePrefs));
   $("push-weekly-preview").addEventListener("click", async () => {
     const out = $("push-weekly-out"); out.textContent = "…";
     const { data, error } = await db.rpc("weekly_preview");
@@ -654,6 +654,7 @@
     else if (go === "contest" && q.get("id")) { ctId = q.get("id"); ctView = "detail"; feedMode = "contests"; showView("feed"); window.scrollTo({ top: 0 }); }
     else if (go === "spot" && q.get("id")) { goToSpot(q.get("id"), false); }
     else if (go === "plan" || go === "weather") { showView("list"); ciLoad(); wxRefresh(true); setTimeout(() => $("safety-strip").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }
+    else if (go === "redtide" && typeof rtShowOnMap === "function") { rtRefresh(true); rtShowOnMap(); }
     else if (go === "invite" && me.isAdmin) $("invite-btn").click();
     else if (go === "insights") { if (typeof statsOpen === "function") statsOpen("insights"); else showView("insights"); window.scrollTo({ top: 0 }); }
     else if (go === "race" && typeof raceOpenRoom === "function") raceOpenRoom(q.get("room"));
