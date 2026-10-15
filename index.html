@@ -3,8 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Security: the page may only run scripts from itself and the 3 code/data hosts below, and only talk to the servers listed in connect-src. A new outside server must be added here (tests/test122.js checks this). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://coastwatch.pfeg.noaa.gov; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' data: blob: https://euxcisnyansdrzzjyvsl.supabase.co wss://euxcisnyansdrzzjyvsl.supabase.co https://api.tidesandcurrents.noaa.gov https://api.weather.gov https://api.open-meteo.com https://marine-api.open-meteo.com https://archive-api.open-meteo.com https://waterservices.usgs.gov https://api.inaturalist.org https://overpass-api.de https://gis.myfwc.com https://services1.arcgis.com https://gis.charttools.noaa.gov https://coastwatch.pfeg.noaa.gov https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tile.openstreetmap.org https://server.arcgisonline.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=108">
+<link rel="stylesheet" href="css/app.css?v=109">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -1226,39 +1229,39 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=108"></script>
-<script src="js/02-spots.js?v=108"></script>
-<script src="js/03-photos.js?v=108"></script>
-<script src="js/04-insights.js?v=108"></script>
-<script src="js/05-seasons-records.js?v=108"></script>
-<script src="js/06-catching.js?v=108"></script>
-<script src="js/07-measure-fishid.js?v=108"></script>
-<script src="js/08-feed-plans.js?v=108"></script>
-<script src="js/09-map-forecast.js?v=108"></script>
-<script src="js/10-tools-safety.js?v=108"></script>
-<script src="js/11-accounts-social.js?v=108"></script>
-<script src="js/12-contests-alerts.js?v=108"></script>
-<script src="js/13-groups-misc.js?v=108"></script>
-<script src="js/14-tank.js?v=108"></script>
-<script src="js/15-fish-rank.js?v=108"></script>
-<script src="js/16-fish-race.js?v=108"></script>
-<script src="js/17-license-help.js?v=108"></script>
-<script src="js/18-species.js?v=108"></script>
-<script src="js/19-biting.js?v=108"></script>
-<script src="js/20-spot-share.js?v=108"></script>
-<script src="js/21-pub-filters.js?v=108"></script>
-<script src="js/22-public-water.js?v=108"></script>
-<script src="js/23-depth.js?v=108"></script>
-<script src="js/24-delete-account.js?v=108"></script>
-<script src="js/25-home-map.js?v=108"></script>
-<script src="js/26-sub-tabs.js?v=108"></script>
-<script src="js/27-me-find.js?v=108"></script>
-<script src="js/28-host-pages.js?v=108"></script>
-<script src="js/29-home-waters.js?v=108"></script>
-<script src="js/30-red-tide.js?v=108"></script>
-<script src="js/31-regional-rules.js?v=108"></script>
-<script src="js/32-spot-style.js?v=108"></script>
-<script src="js/33-zones.js?v=108"></script>
-<script src="js/99-boot.js?v=108"></script>
+<script src="js/01-core.js?v=109"></script>
+<script src="js/02-spots.js?v=109"></script>
+<script src="js/03-photos.js?v=109"></script>
+<script src="js/04-insights.js?v=109"></script>
+<script src="js/05-seasons-records.js?v=109"></script>
+<script src="js/06-catching.js?v=109"></script>
+<script src="js/07-measure-fishid.js?v=109"></script>
+<script src="js/08-feed-plans.js?v=109"></script>
+<script src="js/09-map-forecast.js?v=109"></script>
+<script src="js/10-tools-safety.js?v=109"></script>
+<script src="js/11-accounts-social.js?v=109"></script>
+<script src="js/12-contests-alerts.js?v=109"></script>
+<script src="js/13-groups-misc.js?v=109"></script>
+<script src="js/14-tank.js?v=109"></script>
+<script src="js/15-fish-rank.js?v=109"></script>
+<script src="js/16-fish-race.js?v=109"></script>
+<script src="js/17-license-help.js?v=109"></script>
+<script src="js/18-species.js?v=109"></script>
+<script src="js/19-biting.js?v=109"></script>
+<script src="js/20-spot-share.js?v=109"></script>
+<script src="js/21-pub-filters.js?v=109"></script>
+<script src="js/22-public-water.js?v=109"></script>
+<script src="js/23-depth.js?v=109"></script>
+<script src="js/24-delete-account.js?v=109"></script>
+<script src="js/25-home-map.js?v=109"></script>
+<script src="js/26-sub-tabs.js?v=109"></script>
+<script src="js/27-me-find.js?v=109"></script>
+<script src="js/28-host-pages.js?v=109"></script>
+<script src="js/29-home-waters.js?v=109"></script>
+<script src="js/30-red-tide.js?v=109"></script>
+<script src="js/31-regional-rules.js?v=109"></script>
+<script src="js/32-spot-style.js?v=109"></script>
+<script src="js/33-zones.js?v=109"></script>
+<script src="js/99-boot.js?v=109"></script>
 </body>
 </html>

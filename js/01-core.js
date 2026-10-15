@@ -1,3 +1,5 @@
+  // ---- 🛡 Anti-framing: if another website puts this app inside its own page (a "clickjacking" trick), hide it ----
+  try { if (window.top !== window.self) document.documentElement.style.display = "none"; } catch (e) { document.documentElement.style.display = "none"; }
   // ---- 🐞 Error log: remember the last few errors on this phone, so "Report a problem" (js/17) can include them ----
   const appErrors = [];
   function logAppError(msg, at) {

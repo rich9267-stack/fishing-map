@@ -34,6 +34,8 @@
     if (text != null) e.textContent = text; // textContent keeps typed text safe
     return e;
   }
+  // Links and pictures that come from outside servers must be https (never javascript: or data:)
+  const safeHttps = u => /^https:\/\//i.test(String(u || "").trim()) ? String(u).trim() : "";
   // A friendly "nothing here yet" box with one button that does the obvious next thing
   function emptyBox(text, label, fn) {
     const b = el("div", "empty empty-nice"); b.appendChild(el("div", null, text));

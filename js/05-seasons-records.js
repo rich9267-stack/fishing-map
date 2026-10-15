@@ -751,11 +751,11 @@
           box.appendChild(el("div", "pop-name", "👀 " + o.name));
           box.appendChild(el("div", "pop-meta", `Seen ${shortDate(o.date)} · photo by ${o.by}`));
           if (o.photo) {
-            const img = el("img"); img.src = o.photo; img.alt = o.name; img.loading = "lazy";
+            const img = el("img"); img.src = safeHttps(o.photo); img.alt = o.name; img.loading = "lazy";
             img.style.cssText = "display:block;width:100%;max-width:220px;border-radius:8px;margin-top:6px";
             box.appendChild(img);
           }
-          const a = el("a", null, "Open on iNaturalist ↗"); a.href = o.url; a.target = "_blank"; a.rel = "noopener";
+          const a = el("a", null, "Open on iNaturalist ↗"); a.href = safeHttps(o.url); a.target = "_blank"; a.rel = "noopener";
           a.style.cssText = "display:inline-block;margin-top:6px";
           box.appendChild(a);
           return box;

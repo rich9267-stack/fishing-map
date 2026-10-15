@@ -62,7 +62,8 @@
     else if (coast && coast.length) { const s = [...new Set(coast)].sort((x, y) => x - y); text = `〰 Depth line: ≈ ${s.length > 1 ? fmt(s[0]) + " – " + fmt(s[s.length - 1]) : fmt(s[0])}`; }
     else if (lake === null || coast === null) text = "Couldn't read the depth right now — try again.";
     else return;   // no line near the tap: say nothing
-    L.popup({ autoPan: false }).setLatLng(ll).setContent(`<div class="pop-name">${text}</div><div class="pop-meta">FWC depth lines · a guide only, not for navigation</div>`).openOn(map);
+    const pop = document.createElement("div"); pop.appendChild(el("div", "pop-name", text)); pop.appendChild(el("div", "pop-meta", "FWC depth lines · a guide only, not for navigation"));
+    L.popup({ autoPan: false }).setLatLng(ll).setContent(pop).openOn(map);
   }
 
   function setDepOn(on) {

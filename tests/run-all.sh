@@ -35,6 +35,7 @@ done
 if timeout 90 node test119.js > /tmp/test119.out 2>&1; then echo "ok   test119"; else echo "FAIL test119"; fail=1; fi
 if timeout 90 node test120.js > /tmp/test120.out 2>&1; then echo "ok   test120"; else echo "FAIL test120"; fail=1; fi
 if timeout 90 node test121.js > /tmp/test121.out 2>&1; then echo "ok   test121"; else echo "FAIL test121"; fail=1; fi
+if timeout 90 node test122.js > /tmp/test122.out 2>&1; then echo "ok   test122"; else echo "FAIL test122"; fail=1; fi
 if DEL_ADMIN=1 timeout 90 node test101.js > /tmp/test101-admin.out 2>&1; then echo "ok   test101 (admin)"; else echo "FAIL test101 (admin)"; fail=1; fi
 [ $fail = 0 ] && echo "ALL OK" || echo "SOME FAILED"
 exit $fail

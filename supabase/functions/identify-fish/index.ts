@@ -1,6 +1,6 @@
 // Fishing Map — "🔍 Identify fish": sends one catch photo to Google Gemini (free tier) and returns
 // up to 3 species suggestions. The Gemini key lives only here, as the secret GEMINI_API_KEY.
-// Only signed-in members of the invite list can use it.
+// Only signed-in members of the invite list can use it, up to 30 times a day each (database function fish_id_take, setup/66).
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const CORS = {
@@ -39,6 +39,11 @@ Deno.serve(async (req) => {
     const { image, water } = await req.json();
     if (typeof image !== "string" || image.length < 1000) return reply({ error: "No photo received." }, 400);
     if (image.length > 2_000_000) return reply({ error: "Photo too large." }, 413);
+
+    // Daily cap per member (30 a day, New York time) so one account can't use up the free Gemini quota for everyone.
+    const { data: allowed, error: tErr } = await sb.rpc("fish_id_take");
+    if (tErr) return reply({ error: "Fish ID couldn't check your daily limit — try again in a minute." }, 503);
+    if (!allowed) return reply({ error: "You've used today's 30 Fish IDs. Try again tomorrow, or pick the species by hand." }, 429);
 
     const where = water === "freshwater" ? "freshwater (canal or lake)" : water === "saltwater" ? "saltwater" : water === "brackish" ? "brackish / tidal canal" : "unknown water type";
     const prompt =
