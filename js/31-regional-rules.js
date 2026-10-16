@@ -73,7 +73,7 @@
   // The chips under the month on the Seasons tab
   function rulesCautions(info) {
     const out = [];
-    if (info.outside) out.push("This place is outside Florida — these are Florida's rules.");
+    if (info.outside) out.push("This spot is outside Florida — these are Florida's rules.");
     if (info.north) out.push("North of Palm Beach County some FWC rules differ (Indian River Lagoon, Northeast); the South Florida rules are shown.");
     if (info.tags[0] === "keys") out.push("In the Keys a few rules depend on which side you fish (Atlantic or Gulf / Florida Bay).");
     return out;

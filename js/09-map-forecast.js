@@ -353,6 +353,7 @@
       top.appendChild(name);
       top.appendChild(el("span", "best-when", r.best.now ? "Best: now" : `Best around ${clock(r.best.t)}`));
       row.appendChild(top);
+      { const zr = typeof zoneRow === "function" ? zoneRow(r.s) : null; if (zr) row.appendChild(zr); }   // 🚫 flag only, the spot stays ranked (js/33)
       row.appendChild(el("div", "best-why", r.best.reasons.length ? "✓ " + r.best.reasons.slice(0, 3).map(x => x.text).join(" · ") : "No strong pattern yet for these conditions"));
       if (r.extra.notes.length) row.appendChild(el("div", "best-why", r.extra.notes.join(" · ")));
       if (r.best.warn) row.appendChild(el("div", "best-why", r.best.warn));
@@ -381,7 +382,7 @@
     if (spotsError) { list.appendChild(errBox(spotsError, () => { loadSpots(); })); return; }
     if (spots === null) { list.appendChild(el("div", "empty", "Loading spots…")); return; }
     if (!spots.length) {
-      list.appendChild(emptyBox("No spots yet — save the first place you fish.", "+ Add a spot", () => { $("add-btn").click(); }));
+      list.appendChild(emptyBox("No spots yet — save the first spot you fish.", "+ Add a spot", () => { $("add-btn").click(); }));
       return;
     }
     const shown = filteredSpots();
@@ -1097,7 +1098,7 @@
   // How sure are we that you can fish here? (from what OpenStreetMap volunteers tagged)
   const TRUST = {
     official: { badge: "✅ Official", note: "On Florida's official public boat-ramp or parks list (FWC / FL DEP), so you are allowed to use it." },
-    public: { badge: "✅ Public", note: "Tagged as public or as a fishing place on OpenStreetMap." },
+    public: { badge: "✅ Public", note: "Tagged as public or as a fishing spot on OpenStreetMap." },
     likely: { badge: "🟡 Likely", note: "Has a name, but nobody tagged whether it is open to the public." },
     unclear: { badge: "⚠ Check access", note: "No name or access tag on the map — it could be private. Look before you go." }
   };
@@ -1268,6 +1269,7 @@
       left.appendChild(txt); left.appendChild(el("span", "sugg-chev", isOpen ? "▾" : "▸"));
       left.addEventListener("click", () => { suggOpenKey = isOpen ? null : g.key; renderSuggestions(); });
       li.appendChild(left);
+      { const zr = typeof zoneRow === "function" ? zoneRow(g) : null; if (zr) li.appendChild(zr); }   // 🚫 flag only, the suggestion stays in the list (js/33)
       if (isOpen) li.appendChild(suggDetails(g));
       ul.appendChild(li);
     });

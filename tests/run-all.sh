@@ -44,5 +44,8 @@ if ST=approved timeout 90 node test124.js > /tmp/test124-member.out 2>&1; then e
 if timeout 90 node test128.js > /tmp/test128.out 2>&1; then echo "ok   test128 (Eastern phone)"; else echo "FAIL test128 (Eastern phone)"; fail=1; fi
 if TZ=America/Chicago timeout 90 node test128.js > /tmp/test128-central.out 2>&1; then echo "ok   test128 (Central phone)"; else echo "FAIL test128 (Central phone)"; fail=1; fi
 if timeout 90 node test129.js > /tmp/test129.out 2>&1; then echo "ok   test129"; else echo "FAIL test129"; fail=1; fi
+if timeout 90 node test130.js > /tmp/test130.out 2>&1; then echo "ok   test130"; else echo "FAIL test130 (see /tmp/test130.out)"; fail=1; fi
+if timeout 90 node test131.js > /tmp/test131.out 2>&1; then echo "ok   test131"; else echo "FAIL test131 (see /tmp/test131.out)"; fail=1; fi
+if timeout 90 node test132.js > /tmp/test132.out 2>&1; then echo "ok   test132"; else echo "FAIL test132 (see /tmp/test132.out)"; fail=1; fi
 [ $fail = 0 ] && echo "ALL OK" || echo "SOME FAILED"
 exit $fail

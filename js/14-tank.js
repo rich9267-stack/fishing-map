@@ -560,6 +560,19 @@
     snd("coin");
     if (typeof toast === "function") toast(`🪙 +${coins}${gems ? " · 💎 +" + gems : ""} — ${why}`, 5000);
   }
+  // After a tournament placing: say which trophy cup just landed (it is in the user's items, created in the last 2 minutes)
+  async function cupToast() {
+    try {
+      if (!me || !db || typeof toast !== "function") return;
+      const since = new Date(Date.now() - 120000).toISOString();
+      const { data, error } = await db.from("user_items").select("item_key").eq("user_id", me.id).gte("created_at", since);
+      if (error) return;
+      const cups = (data || []).map(x => x.item_key).filter(k => /^trophy_/.test(k));
+      if (!cups.length) return;
+      const nm = k => (typeof SHOP_ART !== "undefined" && SHOP_ART[k] && SHOP_ART[k].n) || "trophy cup";
+      toast("🏆 You won the " + cups.map(nm).join(" and the ") + "! Place it with 🎨 Customize on a tank.", 6000);
+    } catch (e) { /* the cup is still in the shop list; the message is only a bonus */ }
+  }
   async function tankClaim(force) {
     if (walletBusy || !me || !db || !db.rpc) return;
     if (!force && Date.now() - walletAt < 45000) return;
@@ -567,7 +580,7 @@
     try {
       const r = await db.rpc("claim_coins"); if (r.error || !r.data || typeof r.data.coins !== "number") throw (r.error || new Error("no wallet"));
       wallet = r.data; walletAt = Date.now(); walletToast(wallet.added); walletDraw();
-      if ((wallet.added || []).some(x => x.reason === "tournament")) shop.ready = false; // a trophy cup may have arrived: reload what you own
+      if ((wallet.added || []).some(x => x.reason === "tournament")) { shop.ready = false; setTimeout(cupToast, 5200); } // a trophy cup may have arrived: reload what you own + tell the winner
       // finished collection groups: ask once per group (the server checks every species has a photographed catch)
       const mine = Object.values(catchesBySpot || {}).flat().filter(c => c.created_by === me.id && !c.deleted_at);
       for (const g of tankCollection(mine)) {

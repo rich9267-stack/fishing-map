@@ -326,7 +326,16 @@
     return plans.filter(x => x.spot_id === spot && ymdDash(new Date(x.plan_at)) === day);
   }
   const similarText = list => `${list.map(x => `${x.author || "Someone"} (${clock(new Date(x.plan_at))})`).join(", ")} already planned this spot that day`;
+  // 🚫 red warning under "Where" when the chosen spot is inside / near a no-fishing zone (js/33). Flags it; the plan can still be posted.
+  function planZone() {
+    const box = $("pl-zone"); if (!box) return;
+    box.innerHTML = ""; box.hidden = true;
+    const s = (spots || []).find(x => x.id === $("pl-spot").value);
+    const zr = s && typeof zoneRow === "function" ? zoneRow(s) : null;
+    if (zr) { box.appendChild(zr); box.hidden = false; }
+  }
   function warnSimilar() {
+    planZone();
     const dup = similarPlans();
     if ($("plan-form").hidden || $("pl-msg").classList.contains("err")) return;
     $("pl-msg").className = "msg";
@@ -376,6 +385,7 @@
       const use = el("button", "btn ghost small", $("pl-spot").value === r.s.id ? "✓ Chosen" : "Use this spot"); use.type = "button";
       use.addEventListener("click", () => { $("pl-spot").value = r.s.id; warnSimilar(); planSuggest(); });
       top.appendChild(use); row.appendChild(top);
+      { const zr = typeof zoneRow === "function" ? zoneRow(r.s) : null; if (zr) row.appendChild(zr); }   // 🚫 flag only (js/33)
       row.appendChild(el("div", "best-why", r.reasons.length ? "✓ " + r.reasons.slice(0, 3).map(x => x.text).join(" · ") : "No strong pattern from past catches for these conditions"));
       if (r.notes.length) row.appendChild(el("div", "best-why", r.notes.join(" · ")));
       if (r.warn) row.appendChild(el("div", "best-why", r.warn));

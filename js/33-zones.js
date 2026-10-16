@@ -86,13 +86,13 @@
   function zonesEnsure() {
     if (!zn.read) znCacheRead();
     if (!me || zn.loading) return zn.loading;
-    if (zn.rows.length && Date.now() - zn.t < ZN.age) return null;
+    if (zn.t && Date.now() - zn.t < ZN.age) return null;   // asked recently (even if the list came back empty): don't ask again on every redraw
     if (zn.failAt && Date.now() - zn.failAt < 300000) return null;   // asked and failed (offline?): wait 5 minutes before asking again
     zn.loading = (async () => {
       try {
         const { data, error } = await db.from("protected_zones").select("id,name,level,rule,protection,agency,url,anchor,vessel,geom,min_lat,min_lng,max_lat,max_lng").limit(500);
         if (error) throw error;
-        const changed = !zn.rows.length || (data || []).length !== zn.rows.length;
+        const changed = (data || []).length !== zn.rows.length;   // redraw only when the list really changed (an empty answer must not trigger redraw → ask → redraw…)
         zn.rows = data || []; zn.t = Date.now();
         try { localStorage.setItem(ZN.key, JSON.stringify({ t: zn.t, rows: zn.rows })); } catch (e) { /* storage full: asked again next time */ }
         if (changed) znChanged();
@@ -105,6 +105,10 @@
   function znChanged() {
     if (typeof renderSpots === "function" && typeof spots !== "undefined" && spots && spots.length && $("spot-list")) renderSpots();
     znBoatRender(); znQcRender();
+    if (typeof renderBest === "function" && $("best-list") && typeof spots !== "undefined" && spots) renderBest();
+    if (typeof renderSuggestions === "function" && $("sugg-list")) renderSuggestions();
+    if (typeof warnSimilar === "function") warnSimilar();
+    if (typeof planSuggest === "function" && $("plan-form") && !$("plan-form").hidden) planSuggest();
     if (typeof mxOn !== "undefined" && mxOn.zone) znDraw();
   }
 
@@ -115,7 +119,7 @@
     zonesEnsure();
     const hit = zoneAt(+s.lat, +s.lng);
     if (!hit.inside && !hit.near) return null;
-    const row = hit.inside || hit.near.row, key = s.id + ":" + row.id;
+    const row = hit.inside || hit.near.row, key = (s.id || s.key || s.name) + ":" + row.id;
     const wrap = el("span", "zone-chip-wrap");
     const b = el("button", "chip zone-chip" + (hit.inside ? " in" : ""), znLine(hit)); b.type = "button";
     b.setAttribute("aria-expanded", String(!!zn.open[key]));
@@ -123,6 +127,12 @@
     b.addEventListener("click", () => { zn.open[key] = !zn.open[key]; more.hidden = !zn.open[key]; b.setAttribute("aria-expanded", String(!!zn.open[key])); });
     wrap.appendChild(b); wrap.appendChild(more);
     return wrap;
+  }
+  // The same chip on its own line, for lists that have no chip row (Home best spots, Find new water, Plan a trip). null = nothing to warn about.
+  // It only FLAGS the spot; the spot stays in the list.
+  function zoneRow(s) {
+    const zc = zoneChip(s); if (!zc) return null;
+    const row = el("div", "chips"); row.appendChild(zc); return row;
   }
 
   // ---- Boat mode: a line that turns red while you are inside ----

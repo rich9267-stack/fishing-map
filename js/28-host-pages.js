@@ -4,7 +4,7 @@
   // Reached from Me → "Clubs & businesses". Step 2 (run tournaments as a page) and step 3 (follow a page) build on this.
   (function hostPages() {
     const pg = $("hp-page"), body = $("hp-body");
-    let data = { pages: [], business_allowed: 1, business_used: 0 }, view = "list", openId = null, pickBlob = null, pickColor = null, pickClear = false;
+    let data = { pages: [], business_allowed: 1, business_used: 0 }, renames = [], view = "list", openId = null, pickBlob = null, pickColor = null, pickClear = false;
     const KIND = { club: { icon: "🎣", label: "Club", plural: "Clubs" }, business: { icon: "🏪", label: "Business", plural: "Businesses" } };
     const STATUS = { pending: "⏳ Waiting for approval", approved: "✅ Live", declined: "Not approved" };
     const nice = e => (e && e.message) || String(e || "");
@@ -46,6 +46,8 @@
       if (r.error) throw r.error;
       data = r.data || data;
       mine = data.pages.filter(p => p.is_mine && p.status === "approved");
+      // my rename requests (setup/74): the waiting one, or a "no" from the last 14 days. A missing function just means no requests.
+      try { const q = await db.rpc("host_page_renames_mine"); renames = q && !q.error && Array.isArray(q.data) ? q.data : []; } catch (e) { renames = []; }
     }
     async function open(startId) { // startId (optional): jump straight to that page, e.g. from "Run by" on a tournament
       if (!me) return;
@@ -222,7 +224,7 @@
     function drawEdit(p) {
       const box = el("div"); box.style.cssText = "margin-top:16px;border-top:1px solid var(--line);padding-top:12px";
       box.appendChild(el("div", "label", "Edit page"));
-      box.appendChild(el("div", "spot-meta", "The name and kind are fixed once asked for."));
+      box.appendChild(el("div", "spot-meta", "The kind is fixed. A new name needs the admin\u2019s OK: tap Request a rename below."));
       const ab = document.createElement("textarea"); ab.id = "hp-edit-about"; ab.rows = 3; ab.maxLength = 300; ab.value = p.about || ""; ab.placeholder = "About this page"; ab.setAttribute("aria-label", "About this page"); ab.style.marginTop = "8px";
       const ar = document.createElement("input"); ar.id = "hp-edit-area"; ar.maxLength = 60; ar.value = p.area || ""; ar.placeholder = "Area"; ar.setAttribute("aria-label", "Area"); ar.style.marginTop = "8px";
       const cols = el("div"); cols.style.cssText = "display:flex;gap:8px;margin:10px 0;flex-wrap:wrap";
@@ -257,7 +259,44 @@
         box.appendChild(clr);
       }
       box.appendChild(save); box.appendChild(msg);
+      if (p.status === "approved") drawRename(box, p);
       body.appendChild(box);
+    }
+
+    // ---- ✏️ Request a rename (setup/74): the owner asks, the admin says yes or no, the name only changes on yes ----
+    function drawRename(box, p) {
+      const wrap = el("div"); wrap.id = "hp-rename"; wrap.style.cssText = "margin-top:16px;border-top:1px solid var(--line);padding-top:12px";
+      wrap.appendChild(el("div", "label", "Page name"));
+      const req = renames.find(r => r.page_id === p.id);
+      if (req && req.status === "pending") {
+        wrap.appendChild(el("div", "msg", "✏️ Waiting for the admin: rename to \u201C" + req.new_name + "\u201D. The page keeps its current name until then."));
+        const cancel = el("button", "linkbtn", "Cancel this request"); cancel.type = "button"; cancel.id = "hp-rename-cancel";
+        cancel.addEventListener("click", async () => {
+          cancel.disabled = true;
+          const { error } = await db.rpc("cancel_host_page_rename", { p_id: p.id });
+          if (error) { toast("Couldn't cancel: " + nice(error), 5000); cancel.disabled = false; return; }
+          await load(); draw(); toast("Request cancelled");
+        });
+        wrap.appendChild(cancel); box.appendChild(wrap); return;
+      }
+      if (req && req.status === "declined") wrap.appendChild(el("div", "msg err", "The admin didn\u2019t approve \u201C" + req.new_name + "\u201D. You can ask for a different name."));
+      const ask = el("button", "btn ghost small", "✏️ Request a rename"); ask.type = "button"; ask.id = "hp-rename-open";
+      const form = el("div"); form.hidden = true; form.style.marginTop = "8px";
+      const nm = document.createElement("input"); nm.id = "hp-rename-name"; nm.maxLength = 40; nm.value = p.name; nm.placeholder = "New page name (3\u201340 letters)"; nm.setAttribute("aria-label", "New page name");
+      const send = el("button", "btn small", "Send request"); send.type = "button"; send.id = "hp-rename-send"; send.style.marginTop = "8px";
+      const msg = el("div", "msg"); msg.id = "hp-rename-msg";
+      send.addEventListener("click", async () => {
+        const v = nm.value.trim();
+        if (v.length < 3) { msg.className = "msg err"; msg.textContent = "The name needs at least 3 letters."; return; }
+        if (v === p.name) { msg.className = "msg err"; msg.textContent = "That is already the page name."; return; }
+        send.disabled = true; msg.className = "msg"; msg.textContent = "Sending\u2026";
+        const { error } = await db.rpc("request_host_page_rename", { p_id: p.id, p_name: v });
+        if (error) { msg.className = "msg err"; msg.textContent = nice(error); send.disabled = false; return; }
+        await load(); draw(); toast("Request sent \u2713 \u2014 the name changes once the admin approves it.", 5000);
+      });
+      ask.addEventListener("click", () => { form.hidden = !form.hidden; if (!form.hidden) nm.focus(); });
+      form.appendChild(nm); form.appendChild(el("div", "spot-meta", "The admin checks every new name. Your page keeps its current name until then.")); form.appendChild(send); form.appendChild(msg);
+      wrap.appendChild(ask); wrap.appendChild(form); box.appendChild(wrap);
     }
 
     // ---- admin: page requests + live pages + business allowance, inside the ✉ Invite / requests screen ----
@@ -265,10 +304,12 @@
       const box = $("hp-admin"); if (!box || !me || !me.isAdmin) return;
       let rows;
       try { const r = await db.rpc("host_pages_admin"); if (r.error) throw r.error; rows = r.data || []; } catch (e) { box.innerHTML = ""; return; }
+      let renameReqs = [];   // waiting rename requests (setup/74); none if the function isn't there
+      try { const q = await db.rpc("host_page_renames_admin"); renameReqs = q && !q.error && Array.isArray(q.data) ? q.data : []; } catch (e) { renameReqs = []; }
       box.innerHTML = "";
       const pending = rows.filter(r => r.status === "pending"), live = rows.filter(r => r.status === "approved");
-      updateRequestBadge(null, null, pending.length);
-      if (!rows.length) return;
+      updateRequestBadge(null, null, pending.length + renameReqs.length);
+      if (!rows.length && !renameReqs.length) return;
       const who = r => (r.owner_name || "?") + (r.owner_handle ? " (@" + r.owner_handle + ")" : "");
       const review = async (r, ok) => {
         if (!ok && !await askOk("Decline \"" + r.name + "\"? The owner can ask again with another name.")) return;
@@ -276,6 +317,24 @@
         if (error) { toast("Couldn't do that: " + nice(error), 5000); return; }
         adminLoad();
       };
+      if (renameReqs.length) {
+        box.appendChild(el("div", "label", `✏️ Rename requests (${renameReqs.length})`));
+        renameReqs.forEach(r => {
+          const row = el("div", "hp-admin-row hp-rename-row");
+          row.appendChild(el("b", null, "\u201C" + r.old_name + "\u201D \u2192 \u201C" + r.new_name + "\u201D"));
+          row.appendChild(el("div", "spot-meta", `${KIND[r.kind] ? KIND[r.kind].label : r.kind} \u00B7 from ${who(r)}`));
+          const btns = el("div", "sugg-btns");
+          const act = async ok => {
+            if (!ok && !await askOk("Decline the new name \u201C" + r.new_name + "\u201D? The page keeps \u201C" + r.old_name + "\u201D.")) return;
+            const { error } = await db.rpc("review_host_page_rename", { p_request: r.id, p_approve: ok });
+            if (error) { toast("Couldn't do that: " + nice(error), 5000); return; }
+            toast(ok ? "Renamed \u2713" : "Declined"); adminLoad();
+          };
+          const yes = el("button", "btn small", "Approve"); yes.type = "button"; yes.addEventListener("click", () => act(true));
+          const no = el("button", "linkbtn danger", "Decline"); no.type = "button"; no.addEventListener("click", () => act(false));
+          btns.appendChild(yes); btns.appendChild(no); row.appendChild(btns); box.appendChild(row);
+        });
+      }
       if (pending.length) {
         box.appendChild(el("div", "label", `🏷 Page requests (${pending.length})`));
         pending.forEach(r => {

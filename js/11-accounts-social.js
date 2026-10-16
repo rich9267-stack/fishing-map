@@ -1042,7 +1042,12 @@
       const rp = await db.from("reports").select("id").eq("status", "open");
       updateRequestBadge((data || []).length, (rp.data || []).length);
     } catch (e) {}
-    try { const hp = await db.from("host_pages").select("id").eq("status", "pending"); updateRequestBadge(null, null, ((hp && hp.data) || []).length); } catch (e) {}
+    try {
+      const hp = await db.from("host_pages").select("id").eq("status", "pending");
+      let n = ((hp && hp.data) || []).length;
+      try { const rn = await db.from("host_page_renames").select("id").eq("status", "pending"); n += ((rn && rn.data) || []).length; } catch (e) { /* rename requests not switched on yet */ }   // ✏️ waiting rename requests (setup/74)
+      updateRequestBadge(null, null, n);
+    } catch (e) {}
   }
   async function loadMembers() {
     const ul = $("member-list"); ul.innerHTML = "";

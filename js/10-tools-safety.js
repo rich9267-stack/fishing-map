@@ -254,7 +254,7 @@
   function ruleCaution(r, info) {
     info = info || (typeof rulesInfo === "function" ? rulesInfo() : null) || {};
     const out = [];
-    if (info.outside) out.push("This place is outside Florida — these are Florida's rules.");
+    if (info.outside) out.push("This spot is outside Florida — these are Florida's rules.");
     else if (info.north) out.push("North of Palm Beach County some FWC rules differ (Indian River Lagoon, Northeast).");
     if (r._otherRegion) out.push(`This rule is written for ${regionsText(r.regions)}, not for here.`);
     else if (info.tags && info.tags[0] === "keys" && r.regions && r.regions.length && !r.regions.includes("keys") && !r.regions.includes("spz")) out.push("In the Keys, which rules apply can depend on which side you fish (Atlantic or Gulf).");

@@ -456,6 +456,12 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-16c", title: "🚫 Warnings, renames and cups", items: [
+      "🚫 Spots inside a no-fishing area now show a red warning on Home (best spots), Find new water and Plan a trip. The spot stays in the list.",
+      "✏️ Club and business pages can ask for a new name. The admin approves it.",
+      "🏆 Win an official tournament and you now get a message about your trophy cup. Tournament screens list the prizes.",
+      "Small wording fixes: screens now say \"spot\" where they meant a fishing spot."
+    ] },
     { id: "2026-10-16b", title: "❓ A quick intro on every screen", items: [
       "🧭 The first time you open Home, Map, Play, Compete, Community, Stats and the Me page, a short card shows what the screen is for. Tap Got it and it won't come back by itself.",
       "❓ Want it again? Tap the ? at the top right, next to your picture, and the card for the screen you're on pops back up.",

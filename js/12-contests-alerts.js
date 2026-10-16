@@ -401,6 +401,9 @@
     if (t.species) rules.push("only " + t.species);
     if (t.geo_lat != null) rules.push(`📍 logged live within ${t.geo_radius_mi} mi of ${t.geo_label || "the center"}`);
     box.appendChild(el("div", "spot-meta", "Rules: " + (rules.length ? rules.join(" · ") : "any catch in the time window")));
+    if (t.kind === "official") box.appendChild(el("div", "spot-meta", t.host_page_id
+      ? "🎁 Prizes: this tournament is run by a page, so it pays no coins, gems or cups."
+      : "🎁 Prizes (top 3 on a board): 🪙 200 / 120 / 80 coins · 💎 3 / 2 / 1 gems · a gold / silver / bronze 🏆 cup for your tank."));
     const tmode = t.team_mode || "singles";
     if (tmode !== "singles") box.appendChild(el("div", "spot-meta", tmode === "teams" ? "👥 Teams only — scores are for teams (join the contest so your catches count for your team)." : "👥 Teams welcome — there's a team board and a separate individual board."));
     // actions
