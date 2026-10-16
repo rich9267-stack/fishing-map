@@ -5,6 +5,7 @@
 //  - POST {"preview": true} with a signed-in user's Authorization header: returns today's plan for that person only (nothing is sent).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { planDay, composeAlert, hm } from "./score.mjs";
+import { tideEventsLocal, noaaDateRange } from "./tides.mjs";
 
 const url = Deno.env.get("SUPABASE_URL")!;
 const db = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -23,7 +24,7 @@ const miles = (a: number, b: number, c: number, d: number) => {
 const getJson = async (u: string) => { const r = await fetch(u, { signal: AbortSignal.timeout(15000) }); if (!r.ok) throw new Error(u.split("?")[0] + " " + r.status); return r.json(); };
 const mins = (iso: string) => { const t = iso.split("T")[1] || "00:00"; return +t.slice(0, 2) * 60 + +t.slice(3, 5); };
 
-async function tidesFor(lat: number, lng: number, dateStr: string) { // [{m, type}] local minutes, covering yesterday..tomorrow
+async function tidesFor(lat: number, lng: number, dateStr: string, tz: string) { // [{m, type}] minutes on the angler's clock, covering yesterday..tomorrow
   try {
     const d = await getJson(`https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/tidepredstations.json?lat=${lat.toFixed(4)}&lon=${lng.toFixed(4)}&radius=25`);
     const list = (d.stationList || d.stations || []).map((x: any) => ({ id: String(x.stationId || x.id), lat: +x.lat, lng: +(x.lon ?? x.lng) }))
@@ -31,12 +32,11 @@ async function tidesFor(lat: number, lng: number, dateStr: string) { // [{m, typ
       .sort((a: any, b: any) => miles(lat, lng, a.lat, a.lng) - miles(lat, lng, b.lat, b.lng));
     for (const st of list.slice(0, 3)) {
       try {
-        const base = new Date(dateStr + "T00:00:00Z"), f = (n: number) => { const x = new Date(base.getTime() + n * 86400000); return x.toISOString().slice(0, 10).replace(/-/g, ""); };
-        const p = await getJson(`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=fishingmap&begin_date=${f(-1)}&end_date=${f(1)}&datum=MLLW&station=${st.id}&time_zone=lst_ldt&interval=hilo&units=english&format=json`);
-        const out = (p.predictions || []).map((x: any) => {
-          const [dd, tt] = x.t.split(" "); const days = Math.round((Date.parse(dd + "T00:00:00Z") - base.getTime()) / 86400000);
-          return { m: days * 1440 + mins("T" + tt), type: x.type };
-        }).sort((a: any, b: any) => a.m - b.m);
+        // Asked in UTC (time_zone=gmt) like the app, so a station in another time zone (Panhandle = Central) can't shift the times;
+        // tideEventsLocal turns each moment into the angler's own clock.
+        const { begin, end } = noaaDateRange(dateStr);
+        const p = await getJson(`https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=fishingmap&begin_date=${begin}&end_date=${end}&datum=MLLW&station=${st.id}&time_zone=gmt&interval=hilo&units=english&format=json`);
+        const out = tideEventsLocal(p.predictions, dateStr, tz);
         if (out.length >= 3) return out;
       } catch (_) { /* try the next station */ }
     }
@@ -69,7 +69,7 @@ async function planFor(userId: string) {
     if (idx >= -3 && idx < 24) pressure[idx] = wx.hourly.pressure_msl[i];
     if (d === today) wind[h] = wx.hourly.wind_speed_10m[i];
   });
-  const tides = await tidesFor(lat, lng, today);
+  const tides = await tidesFor(lat, lng, today, tz);
   const day = { sunrise: mins(wx.daily.sunrise[0]), sunset: mins(wx.daily.sunset[0]), wind, pressure, tides };
   const results = planDay(spots, inp.hist || [], day);
   return { today, tz, lat, lng, radius, spots: spots.length, hadTides: !!tides, results, alert: composeAlert(results) };
