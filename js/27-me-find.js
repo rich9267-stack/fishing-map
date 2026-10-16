@@ -5,7 +5,7 @@
   (function mePage() {
     const mc = $("me-card"), sc = $("settings-card"), fp = $("find-page");
     const TITLES = { alerts: "🔔 Phone alerts & quiet hours", license: "🎫 Fishing license", privacy: "🔒 Privacy & blocked people", offline: "🗺 Offline maps",
-      phone: "📱 Photos & Home Screen app", data: "⬇ Download or delete my data", help: "🐞 Help & report a problem" };
+      phone: "📱 Photos & Home Screen app", data: "⬇ Download or delete my data", help: "🐞 Help & report a problem", look: "🎨 Colors" };
     let fromProfile = false;
 
     function syncBody() {

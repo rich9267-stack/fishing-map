@@ -163,6 +163,7 @@
     $("who").textContent = `Signed in as ${me.name}`;
     ensureProfile().then(maybeWelcome).then(wnCheck);
     hwLoadMine();
+    if (typeof palLoadMine === "function") palLoadMine();
     $("invite-btn").hidden = !me.isAdmin;
     checkRequests();
     startChat();

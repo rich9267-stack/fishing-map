@@ -456,6 +456,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15l", title: "🎨 Pick your colors", items: [
+      "Tap your picture → Colors to choose from 16 free color palettes, like Deep Sea, Mahi, Redfish, Coral Reef or the dark Night Bite. Only the colors change; everything stays where it was.",
+      "Your choice is saved to your account, so your other phone or computer uses it too. Original brings back the usual colors."
+    ] },
     { id: "2026-10-15k", title: "✅ More official places", items: [
       "Local parks and piers that the state lists missed can now be added as ✅ Official places, so Quick catch uses their name, Find new water lists them, and Directions take you to the real spot."
     ] },

@@ -1,5 +1,7 @@
   // ---- 🛡 Anti-framing: if another website puts this app inside its own page (a "clickjacking" trick), hide it ----
   try { if (window.top !== window.self) document.documentElement.style.display = "none"; } catch (e) { document.documentElement.style.display = "none"; }
+  // ---- 🎨 Color palette: put this phone's last choice on straight away, so the page doesn't flash the old colors (js/35 does the rest) ----
+  try { const k = localStorage.getItem("fm-palette"); if (k && /^[a-z]{3,12}$/.test(k) && k !== "original") { document.documentElement.dataset.pal = k; if (k === "nightbite" || k === "midnight") document.documentElement.dataset.palDark = "1"; } } catch (e) { /* default colors */ }
   // ---- 🐞 Error log: remember the last few errors on this phone, so "Report a problem" (js/17) can include them ----
   const appErrors = [];
   function logAppError(msg, at) {
