@@ -501,7 +501,7 @@
     identifyFish(src, sp && sp.water_type, q("#c-id-msg"), q("#c-id-sugg"), name => {
       q("#c-species").value = name; updateSizeNote();
       idNext(q("#c-id-sugg"), parseFloat(q("#c-length").value) > 0, () => q("#c-measure").click());   // identify → measure → keeper verdict
-    });
+    }, sp);
   });
   catchForm.querySelector("#c-measure").addEventListener("click", () => {
     const q = id => catchForm.querySelector(id);
@@ -541,13 +541,19 @@
     const b = el("button", "btn small id-next", "📏 Next: measure it for the keeper check"); b.type = "button"; b.style.marginTop = "8px";
     b.addEventListener("click", go); suggEl.appendChild(b);
   }
-  async function identifyFish(src, water, msgEl, suggEl, onPick) {
+  // Which part of Florida to tell Fish ID: the picked spot, else the "area now" (js/29); nothing when outside Florida
+  function fishIdArea(sp) {
+    if (typeof regionInfo !== "function") return undefined;
+    const r = sp && sp.lat != null && sp.lng != null ? regionInfo(sp.lat, sp.lng) : regionInfo(LAT, LNG);
+    return r && !r.outside ? r.label : undefined;
+  }
+  async function identifyFish(src, water, msgEl, suggEl, onPick, sp) {
     suggEl.innerHTML = "";
     if (!navigator.onLine) { msgEl.textContent = "Fish ID needs a signal — you can identify it later with Edit."; return; }
     msgEl.textContent = "🔍 Looking at the photo… " + ID_NOTE;
     try {
       const image = await photoB64(src);
-      const { data, error } = await db.functions.invoke("identify-fish", { body: { image, water } });
+      const { data, error } = await db.functions.invoke("identify-fish", { body: { image, water, area: fishIdArea(sp) } });
       let out = data;
       if (error) {
         try { out = error.context && typeof error.context.json === "function" ? await error.context.json() : null; } catch (e) { out = null; }
@@ -581,7 +587,7 @@
       if (match) { match.classList.add("on"); $("qc-species-other").value = ""; } else $("qc-species-other").value = name;
       updateQcSize();
       idNext($("qc-id-sugg"), parseFloat($("qc-length").value) > 0, () => $("qc-measure").click());   // identify → measure → keeper verdict
-    });
+    }, sp);
   });
 
   let editingCatch = null;   // the catch being edited, or null when logging a new one

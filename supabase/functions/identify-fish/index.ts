@@ -17,10 +17,12 @@ const MODELS = (Deno.env.get("GEMINI_MODELS") || "gemini-3.8-flash,gemini-3.5-fl
   .split(",").map((m) => m.trim()).filter(Boolean);
 
 const NAMES = "Snook, Tarpon, Jack crevalle, Bar jack, Horse-eye jack, Blue runner, Mangrove snapper, Lane snapper, Yellowtail snapper, " +
-  "Mutton snapper, Red snapper, Schoolmaster, Sheepshead, Spanish mackerel, King mackerel, Bluefish, Florida pompano, Permit, " +
-  "Barracuda, Ladyfish, Mullet, Grunt, Porgy, Triggerfish, Redfish, Black drum, Spotted seatrout, Whiting, Gag grouper, " +
-  "Black grouper, Red grouper, Goliath grouper, Hogfish, Cobia, Mahi, Wahoo, Sailfish, Bonefish, Gulf toadfish, Catfish, " +
-  "Peacock bass, Largemouth bass, Mayan cichlid, Bluegill, Clown knifefish, Bullseye snakehead, Tilapia, Oscar, Florida gar";
+  "Mutton snapper, Red snapper, Cubera snapper, Schoolmaster, Sheepshead, Spanish mackerel, King mackerel, Bluefish, Florida pompano, Permit, " +
+  "Barracuda, Ladyfish, Mullet, Grunt, Porgy, Triggerfish, Redfish, Black drum, Spotted seatrout, Sand seatrout, Whiting, Gag grouper, " +
+  "Black grouper, Red grouper, Goliath grouper, Hogfish, Lionfish, Cobia, Mahi, Wahoo, Sailfish, Blackfin tuna, Yellowfin tuna, Skipjack tuna, " +
+  "Bonefish, Gulf toadfish, Blacktip shark, Bull shark, Bonnethead shark, Nurse shark, Lemon shark, " +
+  "Channel catfish, Brown bullhead, Walking catfish, Sailfin catfish (pleco), Brown hoplo, Blue catfish, Flathead catfish, " +
+  "Peacock bass, Largemouth bass, Black crappie, Mayan cichlid, Bluegill, Clown knifefish, Bullseye snakehead, Tilapia, Oscar, Florida gar";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -36,7 +38,9 @@ Deno.serve(async (req) => {
     const key = Deno.env.get("GEMINI_API_KEY");
     if (!key) return reply({ error: "Fish ID isn't set up yet (no Gemini key saved in Supabase)." }, 503);
 
-    const { image, water } = await req.json();
+    const { image, water, area } = await req.json();
+    // Where in Florida (sent by the app, e.g. "Florida Keys (Monroe County)"); only plain words get into the prompt
+    const place = typeof area === "string" && /^[A-Za-z ,·()\/.-]{3,60}$/.test(area) ? area : "Southeast Florida (Palm Beach to Miami)";
     if (typeof image !== "string" || image.length < 1000) return reply({ error: "No photo received." }, 400);
     if (image.length > 2_000_000) return reply({ error: "Photo too large." }, 413);
 
@@ -47,7 +51,7 @@ Deno.serve(async (req) => {
 
     const where = water === "freshwater" ? "freshwater (canal or lake)" : water === "saltwater" ? "saltwater" : water === "brackish" ? "brackish / tidal canal" : "unknown water type";
     const prompt =
-      `An angler caught this fish in Southeast Florida (Palm Beach to Miami), ${where}. ` +
+      `An angler caught this fish in Florida: ${place}, ${where}. ` +
       `Identify the fish. Give up to 3 most likely species, best first, using the names Florida anglers use. ` +
       `Prefer these names when one fits: ${NAMES}. Use another common name only if none fit. ` +
       `For each, give confidence (high, medium or low) and one short clue you used (a visible feature, under 12 words). ` +
