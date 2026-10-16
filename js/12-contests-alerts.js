@@ -663,6 +663,7 @@
     else if (go === "race" && typeof raceOpenRoom === "function") raceOpenRoom(q.get("room"));
     else if (go === "license" && typeof goLicense === "function") goLicense();
     else if (go === "problems" && me.isAdmin && typeof goProblems === "function") goProblems();
+    else if (go === "pages" && typeof window.openHostPages === "function") window.openHostPages(q.get("id") || undefined);   // ✏️ rename decision alert (setup/75): open that club / business page
     else { feedMode = "circle"; if (typeof comMark === "function") comMark("feed"); else showView("feed"); window.scrollTo({ top: 0 }); }
   }
   function runPendingGo() { if (pendingGo && me) { const g = pendingGo; pendingGo = null; try { history.replaceState(null, "", SITE); } catch (e) {} handleGo(g); } }
