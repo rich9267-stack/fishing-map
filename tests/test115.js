@@ -144,7 +144,7 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
   const T = J("TIDE_STATIONS");
   const ids = T.map(t => t.id);
   need(new Set(ids).size === ids.length, "tide station ids are unique");
-  need(T.every(t => /^\d{7}$/.test(t.id) && t.name && t.lat > 24 && t.lat < 30 && t.lng > -84 && t.lng < -79.9), "every tide station has a 7-digit id, a name and a Florida position");
+  need(T.every(t => /^\d{7}$/.test(t.id) && t.name && t.lat > 24 && t.lat < 31.1 && t.lng > -87.8 && t.lng < -79.8), "every tide station has a 7-digit id, a name and a Florida position");
   need(T.length >= 150, "150+ tide stations built in (got " + T.length + ")");
   const near = (lat, lng) => J(`stationFor({ lat: ${lat}, lng: ${lng} })`);
   const presets = J("HOME_PRESETS");

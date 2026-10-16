@@ -456,6 +456,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-15n", title: "🌊 Tides and water temperature up the Atlantic coast", items: [
+      "🌊 Spots from Stuart to Fernandina Beach now use a nearby tide station right away, including Fort Pierce, Sebastian, Cocoa Beach, Daytona, St. Augustine and Jacksonville.",
+      "🌡 Around Jacksonville the water temperature now comes from real sensors at Mayport and on the St. Johns River."
+    ] },
     { id: "2026-10-15m", title: "🔍 Fish ID knows more fish", items: [
       "🔍 Fish ID now knows the Gulf coast and Keys fish (bonefish, cubera snapper, tunas, lionfish, sand seatrout and the sharks) and the different catfish kinds.",
       "It also knows which part of Florida the spot is in, so a fish caught in the Keys or on the Gulf coast gets better guesses."
