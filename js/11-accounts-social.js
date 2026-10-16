@@ -164,6 +164,7 @@
     ensureProfile().then(maybeWelcome).then(wnCheck);
     hwLoadMine();
     if (typeof palLoadMine === "function") palLoadMine();
+    if (typeof tutLoadMine === "function") tutLoadMine();
     $("invite-btn").hidden = !me.isAdmin;
     checkRequests();
     startChat();
@@ -182,6 +183,7 @@
   async function signOut() {
     await db.auth.signOut();
     me = null; spots = null; catchesBySpot = {}; safetyStop();
+    if (typeof tutClose === "function") tutClose(false);
     $("invite-card").hidden = true;
     showAuth("signin");
   }

@@ -456,6 +456,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-16b", title: "❓ A quick intro on every screen", items: [
+      "🧭 The first time you open Home, Map, Play, Compete, Community, Stats and the Me page, a short card shows what the screen is for. Tap Got it and it won't come back by itself.",
+      "❓ Want it again? Tap the ? at the top right, next to your picture, and the card for the screen you're on pops back up.",
+      "🐟 After your first photo, a one-time tip shows how Fish ID and measuring work."
+    ] },
     { id: "2026-10-16a", title: "🌊 Tides and water temperature in the Panhandle", items: [
       "🌊 Spots from Steinhatchee and Apalachicola west through Panama City, Destin and Pensacola to the Alabama line now use a nearby tide station right away.",
       "🌡 Water temperature comes from real sensors at Apalachicola, Panama City, Panama City Beach and Pensacola.",

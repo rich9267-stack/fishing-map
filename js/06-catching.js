@@ -229,6 +229,7 @@
     fillBaitList();
     const last = Object.values(catchesBySpot).flat().filter(c => isMine(c) && c.bait).sort((a, b) => new Date(b.caught_at) - new Date(a.caught_at))[0];
     $("qc-bait").value = last ? last.bait : "";
+    if (qc.blob && typeof tutPhotoTip === "function") tutPhotoTip();   // v117: one-time tip about Fish ID + measuring
   }
   $("qc-species-other").addEventListener("input", () => { if ($("qc-species-other").value) $("qc-species").querySelectorAll(".fchip").forEach(x => x.classList.remove("on")); });
   $("qc-minus").addEventListener("click", () => { $("qc-count").value = Math.max(1, (+$("qc-count").value || 1) - 1); });
@@ -1042,6 +1043,7 @@
     const f = catchForm.querySelector("#c-photo").files[0];
     out.textContent = "";
     if (!f) return;
+    if (typeof tutPhotoTip === "function") tutPhotoTip();   // v117: one-time tip about Fish ID + measuring
     out.textContent = "Reading photo details…";
     const info = await photoInfo(f);
     const notes = [];

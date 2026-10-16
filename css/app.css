@@ -899,3 +899,18 @@
   .pal-sw i { display: block; width: 12px; height: 30px; }
   .pal-nm { font-size: .9rem; font-weight: 600; line-height: 1.2; }
   .pal-nm small { display: block; font-weight: 400; color: var(--muted); font-size: .75rem; }
+
+  /* ---- 🧭 Screen tutorials + ? help button (v117) ---- */
+  .tut-help { min-width: 44px; min-height: 44px; font-size: 1.05rem; font-weight: 700; }
+  .tut-pair { display: flex; align-items: center; gap: 8px; }
+  .me-top { justify-content: space-between; align-items: center; }
+  .tut-wrap { position: fixed; inset: 0; z-index: 1260; pointer-events: none; }
+  .tut-card { position: absolute; left: 10px; right: 10px; max-width: 440px; margin: 0 auto; box-sizing: border-box; background: var(--card); color: var(--text);
+    border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.28); pointer-events: auto; }
+  .tut-card.center { top: 50%; transform: translateY(-50%); }
+  .tut-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 4px; }
+  .tut-text { font-size: .95rem; line-height: 1.4; margin-bottom: 12px; }
+  .tut-ok { min-height: 44px; width: 100%; }
+  .tut-arrow { display: none; position: absolute; width: 14px; height: 14px; background: var(--card); border: 1px solid var(--line); transform: translateX(-50%) rotate(45deg); }
+  .tut-card.up .tut-arrow { display: block; top: -8px; border-right: 0; border-bottom: 0; }
+  .tut-card.down .tut-arrow { display: block; bottom: -8px; border-left: 0; border-top: 0; }
