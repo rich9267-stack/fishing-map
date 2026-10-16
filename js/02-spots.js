@@ -87,7 +87,7 @@
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
   // ---- Per-spot conditions: nearest tide station or freshwater gauge ----
-  // NOAA tide-prediction stations: Jupiter to Miami-Dade, the Florida Keys, the Gulf coast up to Cedar Key, and the Atlantic coast north to the Georgia line.
+  // NOAA tide-prediction stations: Jupiter to Miami-Dade, the Florida Keys, the Gulf coast up to Cedar Key, the Atlantic coast north to the Georgia line, and the Panhandle west to the Alabama line.
   // Anywhere else (or a gap between these) the app asks NOAA for the nearest stations — see lookupStationsNear below.
   const TIDE_STATIONS = [
     { id: "8722670", name: "Lake Worth Pier", lat: 26.6128, lng: -80.0342 },
@@ -380,7 +380,96 @@
     { id: "8720007", name: "Roses Bluff, Bells River", lat: 30.7033, lng: -81.5767 },
     { id: "8720011", name: "St. Marys River entrance, cut 1N", lat: 30.7083, lng: -81.4650 },
     { id: "8720004", name: "Crandall", lat: 30.7217, lng: -81.6217 },
-    { id: "8720006", name: "Little St. Marys River", lat: 30.7317, lng: -81.7267 }
+    { id: "8720006", name: "Little St. Marys River", lat: 30.7317, lng: -81.7267 },
+    // Panhandle / Big Bend: Steinhatchee to the Alabama line (from NOAA's own station list, Oct 16 2026). West of the Apalachicola River the clocks
+    // are on Central time; that is fine because tide and water-temperature times are asked for in UTC (see parseNoaa in js/01).
+    { id: "8727695", name: "Steinhatchee River ent., Deadman Bay", lat: 29.6717, lng: -83.3900 },
+    { id: "8727792", name: "Hagens Cove", lat: 29.7967, lng: -83.5838 },
+    { id: "8727843", name: "Spring Warrior Creek", lat: 29.9200, lng: -83.6717 },
+    { id: "8727956", name: "Econfina River", lat: 30.0533, lng: -83.9100 },
+    { id: "8727976", name: "Snipe Island, Econfina River State Park", lat: 30.0619, lng: -83.9527 },
+    { id: "8727989", name: "Mandalay, Aucilla River", lat: 30.1267, lng: -83.9750 },
+    { id: "8728104", name: "Port Leon", lat: 30.1244, lng: -84.1490 },
+    { id: "8728130", name: "St. Marks River Entrance", lat: 30.0783, lng: -84.1783 },
+    { id: "8728142", name: "St. Marks, St. Marks River", lat: 30.1533, lng: -84.2033 },
+    { id: "8728152", name: "St. Marks, Wakulla River", lat: 30.1589, lng: -84.2186 },
+    { id: "8728229", name: "Shell Point, Walker Creek", lat: 30.0583, lng: -84.2906 },
+    { id: "8728237", name: "Bald Point, Ochlockonee Bay", lat: 29.9483, lng: -84.3417 },
+    { id: "8728269", name: "Panacea, Dickerson Bay", lat: 30.0283, lng: -84.3867 },
+    { id: "8728262", name: "Wakulla Airport, Ochlockonee Bay", lat: 29.9802, lng: -84.3959 },
+    { id: "8728288", name: "Alligator Point, St. James Island", lat: 29.9033, lng: -84.4133 },
+    { id: "8728360", name: "Turkey Point, St. James Island", lat: 29.9150, lng: -84.5117 },
+    { id: "8728408", name: "Dog Island, East End", lat: 29.8100, lng: -84.5850 },
+    { id: "8728412", name: "Lanark, St. George Sound", lat: 29.8783, lng: -84.5950 },
+    { id: "8728464", name: "Carrabelle, Carrabelle River", lat: 29.8500, lng: -84.6650 },
+    { id: "8728465", name: "Dog Island, west end", lat: 29.7850, lng: -84.6667 },
+    { id: "8728486", name: "St. George Island, Northeast End", lat: 29.7667, lng: -84.7000 },
+    { id: "8728488", name: "South Carrabelle Beach", lat: 29.8017, lng: -84.7367 },
+    { id: "8728548", name: "St. George Island, East End", lat: 29.6867, lng: -84.7867 },
+    { id: "8728552", name: "St. George Island, Rattlesnake Cove", lat: 29.6917, lng: -84.7917 },
+    { id: "8728593", name: "East Bayou, Hwy 65 bridge, East Bay", lat: 29.8189, lng: -84.8503 },
+    { id: "8728619", name: "Cat Point, Apalachicola Bay", lat: 29.7233, lng: -84.8867 },
+    { id: "8728626", name: "St. George Island, 12th St. W (Bayside)", lat: 29.6533, lng: -84.8967 },
+    { id: "8728694", name: "White Beach, East Bay", lat: 29.7850, lng: -84.8983 },
+    { id: "8728669", name: "St. George Island, Sikes Cut", lat: 29.6133, lng: -84.9583 },
+    { id: "8728690", name: "Apalachicola", lat: 29.7244, lng: -84.9806 },
+    { id: "8728711", name: "Apalachicola River (A&N RR bridge)", lat: 29.7633, lng: -85.0333 },
+    { id: "8728728", name: "Little St. George Island, Horseshoe Cove", lat: 29.6036, lng: -85.0428 },
+    { id: "8728757", name: "Huckleberry Landing, Jackson River", lat: 29.7700, lng: -85.0850 },
+    { id: "8728766", name: "West Pass", lat: 29.6333, lng: -85.0967 },
+    { id: "8728786", name: "Eleven Mile, St. Vincent Sound", lat: 29.7067, lng: -85.1533 },
+    { id: "8728819", name: "Lake Wimico", lat: 29.8214, lng: -85.1733 },
+    { id: "8728852", name: "Indian Pass, St. Vincent Sound", lat: 29.6851, lng: -85.2213 },
+    { id: "8728853", name: "White City, ICWW", lat: 29.8807, lng: -85.2214 },
+    { id: "8728886", name: "White City, Gulf County Canal", lat: 29.8668, lng: -85.2706 },
+    { id: "8728912", name: "Port Saint Joe, St. Joseph Bay", lat: 29.8150, lng: -85.3133 },
+    { id: "8728957", name: "Overstreet", lat: 29.9967, lng: -85.3700 },
+    { id: "8728958", name: "St. Joseph Point, St. Joseph Bay", lat: 29.8733, lng: -85.3900 },
+    { id: "8728973", name: "Wetappo Creek, East Bay", lat: 30.0383, lng: -85.3933 },
+    { id: "8728978", name: "Cape San Blas, Western Cape", lat: 29.7644, lng: -85.4025 },
+    { id: "8729015", name: "Allanton, East Bay", lat: 30.0300, lng: -85.4650 },
+    { id: "8729017", name: "Farmdale, East Bay", lat: 30.0167, lng: -85.4700 },
+    { id: "8729026", name: "Goose Point, East Bay", lat: 30.0612, lng: -85.4886 },
+    { id: "8729045", name: "Laird Bayou, East Bay", lat: 30.1217, lng: -85.5283 },
+    { id: "8729082", name: "Deer Point Lake, Hwy 2321 bridge, North Bay", lat: 30.2696, lng: -85.6079 },
+    { id: "8729084", name: "Parker", lat: 30.1267, lng: -85.6117 },
+    { id: "8729102", name: "Lynn Haven, North Bay", lat: 30.2550, lng: -85.6483 },
+    { id: "8729108", name: "Panama City", lat: 30.1497, lng: -85.6644 },
+    { id: "8729132", name: "Courtney Point", lat: 30.1517, lng: -85.6667 },
+    { id: "8729136", name: "Channel entrance", lat: 30.1250, lng: -85.7300 },
+    { id: "8729142", name: "Sulphur Point, Port of Panama City", lat: 30.1830, lng: -85.7328 },
+    { id: "8729152", name: "Alligator Bayou", lat: 30.1700, lng: -85.7550 },
+    { id: "8729197", name: "West Bay Creek, West Bay", lat: 30.2933, lng: -85.8583 },
+    { id: "8729210", name: "Panama City Beach", lat: 30.2138, lng: -85.8786 },
+    { id: "8729333", name: "Lagrange Bayou", lat: 30.4683, lng: -86.1383 },
+    { id: "8729376", name: "Santa Rosa, Hogtown Bayou", lat: 30.4000, lng: -86.2283 },
+    { id: "8729425", name: "Driftwood Point, Choctawhatchee Bay", lat: 30.3894, lng: -86.3288 },
+    { id: "8729479", name: "Rocky Bayou, Choctawhatchee Bay", lat: 30.5067, lng: -86.4467 },
+    { id: "8729501", name: "Valparaiso", lat: 30.5033, lng: -86.4933 },
+    { id: "8729511", name: "East Pass (Destin)", lat: 30.3950, lng: -86.5133 },
+    { id: "8729538", name: "Shalimar, Garnier Bayou", lat: 30.4350, lng: -86.5867 },
+    { id: "8729547", name: "Okaloosa Island", lat: 30.3914, lng: -86.5932 },
+    { id: "8729572", name: "Mary Esther, Santa Rosa Sound", lat: 30.4065, lng: -86.6505 },
+    { id: "8729613", name: "Harris, The Narrows", lat: 30.4083, lng: -86.7317 },
+    { id: "8729678", name: "Navarre Beach", lat: 30.3767, lng: -86.8650 },
+    { id: "8729702", name: "Holley, East Bay", lat: 30.4500, lng: -86.9183 },
+    { id: "8729717", name: "Navarre, North Side, East Bay", lat: 30.4431, lng: -86.9514 },
+    { id: "8729736", name: "Woodlawn Beach, Santa Rosa Sound", lat: 30.3867, lng: -86.9917 },
+    { id: "8729742", name: "Bay Point, Blackwater River", lat: 30.5717, lng: -87.0050 },
+    { id: "8729747", name: "Shield Point, Blackwater River", lat: 30.5817, lng: -87.0150 },
+    { id: "8729753", name: "Hawkins Rec. Park, Blackwater River", lat: 30.6367, lng: -87.0283 },
+    { id: "8729791", name: "Hernandez Point, Escambia Bay", lat: 30.4550, lng: -87.1000 },
+    { id: "8729806", name: "Fishing Bend, Santa Rosa Sound", lat: 30.3367, lng: -87.1400 },
+    { id: "8729807", name: "Pensacola Beach Pier", lat: 30.3275, lng: -87.1419 },
+    { id: "8729816", name: "Lora Point, Escambia Bay", lat: 30.5150, lng: -87.1617 },
+    { id: "8729824", name: "Floridatown, Escambia Bay", lat: 30.5817, lng: -87.1800 },
+    { id: "8729840", name: "Pensacola", lat: 30.4044, lng: -87.2112 },
+    { id: "8729868", name: "Warrington, 2 miles south of", lat: 30.3450, lng: -87.2733 },
+    { id: "8729887", name: "Fort McRee Breakwater", lat: 30.3267, lng: -87.3117 },
+    { id: "8729909", name: "Big Lagoon", lat: 30.3267, lng: -87.3567 },
+    { id: "8729905", name: "Millview, Perdido Bay", lat: 30.4183, lng: -87.3567 },
+    { id: "8729962", name: "Nix Point, Perdido Bay", lat: 30.3933, lng: -87.4250 },
+    { id: "8729941", name: "Blue Angels Park", lat: 30.3869, lng: -87.4288 }
   ];
 
   function miles(aLat, aLng, bLat, bLng) {
@@ -434,8 +523,8 @@
     if (!tideCache[id]) {
       const start = new Date(); start.setDate(start.getDate() - 1);
       const url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter" +
-        `?product=predictions&application=fishing_map&begin_date=${ymd(start)}&range=120` +
-        `&datum=MLLW&station=${id}&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
+        `?product=predictions&application=fishing_map&begin_date=${ymdUtc(start)}&range=120` +
+        `&datum=MLLW&station=${id}&time_zone=gmt&units=english&interval=hilo&format=json`;
       tideCache[id] = fetch(url).then(r => r.json()).then(d => {
         if (!d.predictions) throw new Error("No tide data");
         return d.predictions.map(p => ({ when: parseNoaa(p.t), high: p.type === "H" }));
@@ -566,7 +655,12 @@
     // Jacksonville area (read 79–82°F on Oct 15, 2026). Trident Pier (Port Canaveral) and Fernandina Beach give no water-temperature data, so they are not here.
     { id: "8720218", name: "Mayport (Bar Pilots Dock)", lat: 30.3982, lng: -81.4279 },
     { id: "8720219", name: "Dames Point", lat: 30.3867, lng: -81.5583, mi: 8 },              // St. Johns River
-    { id: "8720245", name: "Jacksonville University", lat: 30.3541, lng: -81.6118, mi: 8 }   // St. Johns River
+    { id: "8720245", name: "Jacksonville University", lat: 30.3541, lng: -81.6118, mi: 8 },  // St. Johns River
+    // Panhandle (read 76–84°F over the last 3 days, Oct 16, 2026). Bay stations only speak for nearby water.
+    { id: "8728690", name: "Apalachicola", lat: 29.7244, lng: -84.9806, mi: 10 },              // Apalachicola Bay
+    { id: "8729108", name: "Panama City", lat: 30.1497, lng: -85.6644, mi: 10 },               // St. Andrew Bay
+    { id: "8729210", name: "Panama City Beach", lat: 30.2138, lng: -85.8786 },                 // Gulf pier
+    { id: "8729840", name: "Pensacola", lat: 30.4044, lng: -87.2112, mi: 10 }                  // Pensacola Bay
   ];
   const WT_RANGE = [45, 96];            // anything outside this is a bad reading (shallow Gulf / Florida Bay water really does reach 93–95°F in July–August)
   const WT_STATION_MI = 20;             // use a station only if it's this close
@@ -632,21 +726,22 @@
   // Water temperature at a past moment (for logging catches)
   async function waterTempAt(lat, lng, when) {
     const st = wtSourceFor(lat, lng);
-    const day = ymd(when);
+    // NOAA is asked in UTC; the window is 3 hours either side of the moment so an evening catch (already "tomorrow" in UTC) is not lost
+    const dayA = ymdUtc(new Date(when.getTime() - 3 * 3600000)), dayB = ymdUtc(new Date(when.getTime() + 3 * 3600000));
     if (st) {
       try {
         const d = await (await fetch("https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_temperature&application=fishing_map" +
-          `&begin_date=${day}&end_date=${day}&interval=h&station=${st.id}&units=english&time_zone=lst_ldt&format=json`)).json();
+          `&begin_date=${dayA}&end_date=${dayB}&interval=h&station=${st.id}&units=english&time_zone=gmt&format=json`)).json();
         const best = (d.data || []).map(r => ({ t: parseNoaa(r.t), v: parseFloat(r.v) })).filter(r => okTemp(r.v))
           .sort((a, b) => Math.abs(a.t - when) - Math.abs(b.t - when))[0];
         if (best && Math.abs(best.t - when) <= 2 * 3600000) return { f: Math.round(best.v * 10) / 10, source: `${st.name} station` };
       } catch (e) {}
     }
-    const dd = ymdDash(when);
+    const dd = ymdDashUtc(when);
     const d = await (await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}` +
-      `&hourly=sea_surface_temperature&temperature_unit=fahrenheit&timezone=America%2FNew_York&start_date=${dd}&end_date=${dd}`)).json();
+      `&hourly=sea_surface_temperature&temperature_unit=fahrenheit&timezone=GMT&start_date=${dd}&end_date=${dd}`)).json();
     const h = d.hourly || {};
-    const i = (h.time || []).indexOf(`${dd}T${pad2(when.getHours())}:00`);
+    const i = (h.time || []).indexOf(`${dd}T${pad2(when.getUTCHours())}:00`);
     const v = i >= 0 ? h.sea_surface_temperature[i] : null;
     if (okTemp(v)) return { f: Math.round(v * 10) / 10, source: "ocean model" };
     // Last resort for older dates: NOAA's daily satellite record (one value per day)

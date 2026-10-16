@@ -53,12 +53,41 @@ need(nearTide(26.257, -80.081).id === "8722859" || /Hillsboro/.test(nearTide(26.
 need(nearTide(27.77, -82.63).id === "8726520" || /Petersburg|Pinellas|Tampa/.test(nearTide(27.77, -82.63).name), "Tampa Bay unchanged: " + nearTide(27.77, -82.63).name);
 need(wt(26.24, -80.10) === null, "Pompano still has no built-in water-temperature station close enough (ocean estimate): " + JSON.stringify(wt(26.24, -80.10)));
 
+// B2. the Panhandle is filled in too (Steinhatchee to the Alabama line)
+const pan = TIDE_STATIONS.filter(t => t.lng < -83.3 && t.lat > 29.5);
+need(pan.length >= 80, "80+ Panhandle stations west of Steinhatchee: " + pan.length);
+const pcases = [
+  ["Pensacola Beach", 30.33, -87.14, /Pensacola Beach Pier/, 2],
+  ["Pensacola Bay", 30.41, -87.21, /^Pensacola$/, 2],
+  ["Perdido Key", 30.39, -87.43, /Blue Angels Park|Nix Point/, 3],
+  ["Destin", 30.39, -86.51, /East Pass/, 2],
+  ["Panama City Beach", 30.21, -85.88, /Panama City Beach/, 2],
+  ["Port St. Joe", 29.81, -85.31, /Port Saint Joe/, 2],
+  ["Apalachicola", 29.72, -84.98, /^Apalachicola$/, 2],
+  ["Carrabelle", 29.85, -84.66, /Carrabelle/, 3],
+  ["St. Marks", 30.15, -84.20, /St\. Marks/, 3],
+  ["Steinhatchee", 29.67, -83.39, /Steinhatchee/, 3]
+];
+for (const [label, lat, lng, re, max] of pcases) {
+  const s = nearTide(lat, lng);
+  need(re.test(s.name) && s.dist <= max, label + " → " + s.name + " (" + s.dist.toFixed(1) + " mi)");
+}
+need(/Horseshoe Point|Steinhatchee/.test(nearTide(29.5, -83.33).name), "the Big Bend joins up with the old Gulf list near Horseshoe Point: " + nearTide(29.5, -83.33).name);
+
 // D. water temperature near Jacksonville
 need(wt(30.39, -81.43) && wt(30.39, -81.43).id === "8720218", "Mayport spot uses the Mayport water-temperature station");
 need(wt(30.35, -81.61) && /Jacksonville University|Dames Point/.test(wt(30.35, -81.61).name), "St. Johns River spot uses a river station: " + (wt(30.35, -81.61) || {}).name);
 need(wt(30.35, -81.61) && wt(30.35, -81.61).mi === 8, "river stations only speak for 8 miles");
 need(wt(28.41, -80.59) === null, "Port Canaveral has no water-temperature station (Trident Pier gives no data), so it falls back to the ocean model");
 need(!WT_STATIONS.some(t => t.id === "8721604" || t.id === "8720030"), "Trident Pier and Fernandina Beach are not in the water-temperature list");
+
+// E. water temperature in the Panhandle
+need((wt(30.40, -87.21) || {}).id === "8729840", "Pensacola Bay spot uses the Pensacola station: " + (wt(30.40, -87.21) || {}).name);
+need((wt(30.22, -85.87) || {}).id === "8729210", "Panama City Beach spot uses the Panama City Beach pier station");
+need((wt(30.14, -85.66) || {}).id === "8729108", "St. Andrew Bay spot uses the Panama City station");
+need((wt(29.72, -84.99) || {}).id === "8728690", "Apalachicola Bay spot uses the Apalachicola station");
+need(wt(30.39, -86.51) === null, "Destin has no water-temperature station (Panama City Beach and Pensacola are too far) → ocean model");
+need(wt(30.33, -87.14) === null || wt(30.33, -87.14).id === "8729840", "Pensacola Beach (about 7 mi from the bay station): " + JSON.stringify((wt(30.33, -87.14) || {}).id));
 
 console.log(bad ? "FAIL:" + bad : "OK");
 process.exit(bad ? 1 : 0);

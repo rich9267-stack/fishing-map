@@ -456,6 +456,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-16a", title: "🌊 Tides and water temperature in the Panhandle", items: [
+      "🌊 Spots from Steinhatchee and Apalachicola west through Panama City, Destin and Pensacola to the Alabama line now use a nearby tide station right away.",
+      "🌡 Water temperature comes from real sensors at Apalachicola, Panama City, Panama City Beach and Pensacola.",
+      "🕐 Tide times are now exact on any phone, even when the spot is in a different time zone (the western Panhandle is on Central time)."
+    ] },
     { id: "2026-10-15n", title: "🌊 Tides and water temperature up the Atlantic coast", items: [
       "🌊 Spots from Stuart to Fernandina Beach now use a nearby tide station right away, including Fort Pierce, Sebastian, Cocoa Beach, Daytona, St. Augustine and Jacksonville.",
       "🌡 Around Jacksonville the water temperature now comes from real sensors at Mayport and on the St. Johns River."

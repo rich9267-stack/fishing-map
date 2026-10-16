@@ -20,12 +20,17 @@
   function ymd(d) {
     return d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
   }
+  // The date (yyyymmdd) in UTC. NOAA is always asked for time_zone=gmt, so its begin/end dates are UTC dates.
+  function ymdUtc(d) {
+    return d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, "0") + String(d.getUTCDate()).padStart(2, "0");
+  }
   function parseNoaa(t) {
-    // NOAA gives "2026-10-08 07:24" in local station time (Eastern)
+    // NOAA is asked for time_zone=gmt, so "2026-10-08 11:24" is UTC. That makes it the same real moment on every phone and for every
+    // station (the Panhandle west of the Apalachicola River is on Central time, the rest of Florida on Eastern).
     const [date, time] = t.split(" ");
     const [y, m, d] = date.split("-").map(Number);
     const [hh, mm] = time.split(":").map(Number);
-    return new Date(y, m - 1, d, hh, mm);
+    return new Date(Date.UTC(y, m - 1, d, hh, mm));
   }
   function clock(d) {
     return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -47,8 +52,8 @@
   async function load() {
     const start = new Date(); start.setDate(start.getDate() - 1);
     const url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter" +
-      `?product=predictions&application=fishing_map&begin_date=${ymd(start)}&range=96` +
-      `&datum=MLLW&station=${STATION}&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
+      `?product=predictions&application=fishing_map&begin_date=${ymdUtc(start)}&range=96` +
+      `&datum=MLLW&station=${STATION}&time_zone=gmt&units=english&interval=hilo&format=json`;
 
     const stage = document.getElementById("stage");
     try {

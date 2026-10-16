@@ -884,6 +884,7 @@
   let tideTouched = false;           // the angler picked the tide stage by hand
   const pad2 = n => String(n).padStart(2, "0");
   const ymdDash = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  const ymdDashUtc = d => `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;   // weather records are asked for in UTC, so the same hour is found on every phone
 
   function compass(deg) {
     const pts = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
@@ -895,8 +896,8 @@
     when = new Date(when.getTime() - (offsetMin || 0) * 60000); // the tide here runs late/early: look up the station's matching moment
     const start = new Date(when.getTime() - 36 * 3600000);
     const url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter" +
-      `?product=predictions&application=fishing_map&begin_date=${ymd(start)}&range=72` +
-      `&datum=MLLW&station=${stationId || STATION}&time_zone=lst_ldt&units=english&interval=hilo&format=json`;
+      `?product=predictions&application=fishing_map&begin_date=${ymdUtc(start)}&range=72` +
+      `&datum=MLLW&station=${stationId || STATION}&time_zone=gmt&units=english&interval=hilo&format=json`;
     const data = await (await fetch(url)).json();
     if (!data.predictions) throw new Error("No tide data");
     const tides = data.predictions.map(p => ({ when: parseNoaa(p.t), high: p.type === "H" }));
@@ -912,10 +913,10 @@
   // Pressure (+3-hour trend), wind and temperature for a given hour, from Open-Meteo's free weather records
   async function weatherAt(when, lat, lng) {
     if (lat == null || lng == null) { lat = LAT; lng = LNG; }
-    const day = ymdDash(when), dayBefore = ymdDash(new Date(when.getTime() - 86400000));
+    const day = ymdDashUtc(when), dayBefore = ymdDashUtc(new Date(when.getTime() - 86400000));
     const params = `latitude=${(+lat).toFixed(3)}&longitude=${(+lng).toFixed(3)}` +
       "&hourly=pressure_msl,wind_speed_10m,wind_direction_10m,temperature_2m" +
-      "&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FNew_York" +
+      "&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=GMT" +
       `&start_date=${dayBefore}&end_date=${day}`;
     const recentUrl = "https://api.open-meteo.com/v1/forecast?" + params;
     const archiveUrl = "https://archive-api.open-meteo.com/v1/archive?" + params;
@@ -925,7 +926,7 @@
         const res = await fetch(url);
         if (!res.ok) continue;
         const h = (await res.json()).hourly;
-        const i = h.time.indexOf(`${day}T${pad2(when.getHours())}:00`);
+        const i = h.time.indexOf(`${day}T${pad2(when.getUTCHours())}:00`);
         if (i < 0 || h.pressure_msl[i] == null) continue;
         const inHg = h.pressure_msl[i] / 33.8639;
         let trend = null;
