@@ -456,6 +456,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-16d", title: "🌊 Weather page fixes", items: [
+      "Scrolling back up on the Weather, tides & moon page no longer refreshes the app and throws you back to Home.",
+      "The pressure trend (rising, falling or steady) now shows up more reliably."
+    ] },
     { id: "2026-10-16c", title: "🚫 Warnings, renames and cups", items: [
       "🚫 Spots inside a no-fishing area now show a red warning on Home (best spots), Find new water and Plan a trip. The spot stays in the list.",
       "✏️ Club and business pages can ask for a new name. The admin approves it.",
@@ -829,8 +833,16 @@
   (function pullToRefresh() {
     const ptr = $("ptr"), PULL = 80;
     let startY = null, dist = 0;
+    // Full-screen pages (like Weather, tides & moon) scroll inside themselves, so the page's own scroll is always 0.
+    // A downward swipe there is just scrolling back up, never a refresh.
+    function inScrolledBox(el) {
+      for (; el && el !== document.body && el !== document.documentElement; el = el.parentElement) {
+        if (el.scrollTop > 0) return true;
+      }
+      return false;
+    }
     document.addEventListener("touchstart", e => {
-      if (window.scrollY > 0 || busy() || e.target.closest("#map, #qc, #viewer, select, input, textarea")) { startY = null; return; }
+      if (window.scrollY > 0 || busy() || e.target.closest("#map, #qc, #viewer, #cond-more.as-sheet, select, input, textarea") || inScrolledBox(e.target)) { startY = null; return; }
       startY = e.touches[0].clientY; dist = 0;
     }, { passive: true });
     document.addEventListener("touchmove", e => {

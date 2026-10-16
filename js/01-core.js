@@ -193,6 +193,14 @@
 
   async function loadPressure() {
     const out = $("wx-pressure");
+    let noTrend = null;   // a reading with no trend yet: used only if no station can give a trend
+    const showPressure = (inHg, trend) => {
+      cond.pressure = Math.round(inHg * 100) / 100;
+      cond.pressureTrend = trend;
+      const arrow = { rising: "↗ rising", falling: "↘ falling", steady: "→ steady" }[trend] || "";
+      out.textContent = `🌡 Pressure ${cond.pressure.toFixed(2)} inHg ${arrow}`.trim();
+      refreshConditions();
+    };
     for (const st of await pressureStationsNow()) {
       try {
         const data = await getJson(`https://api.weather.gov/stations/${st}/observations?limit=24`);
@@ -204,23 +212,23 @@
         const latest = obs[0];
         if (Date.now() - latest.when > 3 * 3600000) continue; // too old, try the backup station
         const inHg = latest.pa / 3386.39;
-        // Compare with the reading from about 3 hours earlier
+        // Compare with the reading from about 3 hours earlier (anything from 1.5 to 6 hours back will do,
+        // since some stations skip readings), and scale the change to a 3-hour equivalent
         const target = latest.when - 3 * 3600000;
-        const earlier = obs.filter(o => o.when <= latest.when - 2 * 3600000 && o.when >= latest.when - 4 * 3600000)
+        const earlier = obs.filter(o => o.when <= latest.when - 1.5 * 3600000 && o.when >= latest.when - 6 * 3600000)
           .sort((a, b) => Math.abs(a.when - target) - Math.abs(b.when - target))[0];
         let trend = null;
         if (earlier) {
-          const change = inHg - earlier.pa / 3386.39;
+          const hours = (latest.when - earlier.when) / 3600000;
+          const change = (inHg - earlier.pa / 3386.39) * (3 / hours);
           trend = change >= 0.03 ? "rising" : change <= -0.03 ? "falling" : "steady";
         }
-        cond.pressure = Math.round(inHg * 100) / 100;
-        cond.pressureTrend = trend;
-        const arrow = { rising: "↗ rising", falling: "↘ falling", steady: "→ steady" }[trend] || "";
-        out.textContent = `🌡 Pressure ${cond.pressure.toFixed(2)} inHg ${arrow}`.trim();
-        refreshConditions();
+        if (!trend) { if (!noTrend) noTrend = inHg; continue; }   // no trend here: try the backup station for one
+        showPressure(inHg, trend);
         return;
       } catch (e) { /* try the next station */ }
     }
+    if (noTrend != null) { showPressure(noTrend, null); return; }
     out.textContent = "Pressure not available right now";
   }
 
