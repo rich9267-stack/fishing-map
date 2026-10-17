@@ -916,5 +916,6 @@
   .tut-card.down .tut-arrow { display: block; bottom: -8px; border-left: 0; border-top: 0; }
   /* ✅ Official public spots layer (js/37): a green pin with a white ring, clearly different from the round catch pins and the blurred public pins */
   .ol-icon { background: none; border: 0; }
+  .ol-check { font-weight: 600; color: #6b4a00; }
   .ol-pin { position: relative; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #1e8e4e; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); font-size: 14px; line-height: 1; box-sizing: border-box; }
   .ol-star { position: absolute; top: -8px; right: -8px; font-size: 11px; line-height: 1; }

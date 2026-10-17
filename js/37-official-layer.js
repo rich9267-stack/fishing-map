@@ -1,9 +1,10 @@
-  // ---- ✅ Official public spots map layer (step 1: the switch + the pins) ----
+  // ---- ✅ Official public spots map layer (steps 1–2: the switch, the pins, the tap card) ----
   // One switch in Map › Layers (first in the Fishing group) that draws the official places on the map: boat ramps, piers / jetties / bridges,
   // park bank-fishing, and places an admin made official (⭐). The data is the same `officialSpots` list that Find new water and Quick catch use
   // (js/02): the app loads it one 0.5° square ("cell") at a time and keeps at most OFFICIAL_MAX_CELLS squares on the phone, so this layer only
   // asks for the squares nearest the middle of the map and draws what falls inside the view. Pins show from zoom 9; further out you get a plain line.
-  // Not built yet (later steps): the tap card, the filter buttons, "More from FWC", Directions / Save / Start a trip, retiring the old ⛵ Boat ramps layer.
+  // Tap a pin = a small card (olPopup): name, kind, county, who the information comes from, "check before you go", ramp facts, and the red 🚫 line inside a no-fishing zone.
+  // Not built yet (later steps): the filter buttons, "More from FWC", Directions / Save / Start a trip, retiring the old ⛵ Boat ramps layer.
   const OL = { minZoom: 9, max: 400, on: false, group: null, seq: 0, timer: null };
   const olKind = o => (o.kind === "ramp" ? "ramp" : (o.kind === "pier" || o.kind === "jetty" || o.kind === "bridge") ? "pier" : "park");
   const OL_SYMBOL = { ramp: "⛵", pier: "🎣", park: "🌳" };
@@ -12,6 +13,29 @@
     const k = olKind(o);
     return L.divIcon({ className: "ol-icon", iconSize: [28, 28], iconAnchor: [14, 14],
       html: `<span class="ol-pin ol-${k}" aria-hidden="true">${OL_SYMBOL[k]}${o.source === "admin" ? '<span class="ol-star">⭐</span>' : ""}</span>` });
+  }
+  const OL_CREDIT = { admin: "Added by an admin of this app" };
+  // The tap card. Built from the saved list only (no network), so it opens instantly and works offline.
+  function olPopup(o) {
+    const d = o.details || {}, box = document.createElement("div");
+    const label = /hand/i.test(d.type || "") ? "Hand launch (kayak)" : (OFFICIAL_LABEL[o.kind] || "Fishing spot");
+    box.appendChild(el("div", "pop-name", `${OL_SYMBOL[olKind(o)]} ${o.name || "Official spot"}${o.source === "admin" ? " ⭐" : ""}`));
+    const county = o.county ? o.county.charAt(0) + o.county.slice(1).toLowerCase() + " County" : "";
+    box.appendChild(el("div", "pop-meta", ["✅ " + label, county].filter(Boolean).join(" · ")));
+    const facts = officialFacts({ info: d, county: null });   // lanes, fee, hours, water, who runs it (the county is already on the line above)
+    if (facts) box.appendChild(el("div", "pop-meta", facts));
+    const zoneBox = el("div", "ol-zone"); box.appendChild(zoneBox);
+    const fillZone = () => {   // the red 🚫 line; the list of closed areas may still be arriving, so fill it again when it lands
+      zoneBox.textContent = "";
+      const zr = typeof zoneRow === "function" ? zoneRow({ id: "official/" + o.id, lat: o.lat, lng: o.lng }) : null;
+      if (zr) zoneBox.appendChild(zr);
+    };
+    fillZone();
+    const wait = typeof zonesEnsure === "function" ? zonesEnsure() : null;
+    if (wait && wait.then) wait.then(fillZone, () => {});
+    box.appendChild(el("div", "pop-meta", "Source: " + (OL_CREDIT[o.source] || OFFICIAL_SOURCE[o.source] || "Florida's official public spots list")));
+    box.appendChild(el("div", "pop-meta ol-check", "Check before you go — reference only, not for navigation."));
+    return box;
   }
   function olSay(text) { mxMsg.official = text; mxNote(); }   // the plain line under the map buttons (same place the other layers talk)
   function olClear() { if (OL.group) { map.removeLayer(OL.group); OL.group = null; } }
@@ -30,7 +54,7 @@
     const g = L.layerGroup();
     list.forEach(o => {
       const label = (OFFICIAL_LABEL[o.kind] || "Fishing spot");
-      L.marker([o.lat, o.lng], { icon: olIcon(o), keyboard: true, title: `${o.name || "Official spot"} — ${label}`, alt: `${o.name || "Official spot"}, official ${label}` }).addTo(g);
+      L.marker([o.lat, o.lng], { icon: olIcon(o), keyboard: true, title: `${o.name || "Official spot"} — ${label}`, alt: `${o.name || "Official spot"}, official ${label}` }).bindPopup(() => olPopup(o)).addTo(g);
     });
     g.addTo(map); OL.group = g;
     if (!list.length) olSay(navigator.onLine === false ? "No signal — this phone has no saved official spots for this view yet." : "No official spots in this view.");

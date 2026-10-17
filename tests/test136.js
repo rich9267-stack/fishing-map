@@ -186,7 +186,7 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
   need(pins().filter(p => p.querySelector(".ol-star")).length === 1, "exactly one pin (the admin-added place) carries a ⭐");
   need(note() === "", "no message while pins are showing: " + note());
   need(w.eval("Object.keys(officialCells).length") <= 10, "no more squares kept than the phone allows");
-  need(!d.querySelector("#map .leaflet-popup"), "step 1 has no tap card yet");
+  need(!d.querySelector("#map .leaflet-popup"), "no card open before any tap");
 
   // ---- zoom out / in ----
   await zoomTo(8);
@@ -216,6 +216,36 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
   w.eval("db.from = __from");
   need(pins().length === 0, "offline in an unloaded area: no pins, no crash");
   w.eval("map.setView([LAT, LNG], 12)"); await wait(900);
+
+  // ---- step 2: tap a pin -> the card ----
+  // a pretend no-fishing zone around the Hillsboro ramp (the saved list is marked fresh so the app does not ask the database)
+  w.eval(`zn.read = true; zn.t = Date.now(); zn.rows = [{ id: "z1", name: "Test Reserve", level: "no_take", rule: "", protection: "", agency: "", url: "", anchor: "", vessel: "", min_lat: 26.255, max_lat: 26.265, min_lng: -80.088, max_lng: -80.078,
+    geom: { type: "Polygon", coordinates: [[[-80.088, 26.255], [-80.078, 26.255], [-80.078, 26.265], [-80.088, 26.265], [-80.088, 26.255]]] } }]`);
+  const tap = async name => { w.eval(`(function(){ var m = null; OL.group.eachLayer(function(l){ if ((l.options.title || "").indexOf(${JSON.stringify(name)}) === 0) m = l; }); if (m) m.fire("click"); })()`); await wait(250); };
+  const card = () => (d.querySelector("#map .leaflet-popup-content") || { textContent: "", querySelector: () => null });
+  await tap("Hillsboro Inlet Park Ramp");
+  let t = card().textContent;
+  need(/⛵ Hillsboro Inlet Park Ramp/.test(t), "ramp card shows the name: " + t);
+  need(/Boat ramp/.test(t) && /Broward County/.test(t), "ramp card shows the kind and the county: " + t);
+  need(/2 lanes/.test(t) && /Fee/.test(t) && /24 Hours/.test(t) && /Hillsboro Inlet/.test(t) && /Broward County/.test(t), "ramp card shows lanes, fee, hours, water, owner: " + t);
+  need(/Source: Florida Fish & Wildlife \(FWC\) boat ramp list/.test(t), "ramp card credits FWC: " + t);
+  need(/Check before you go — reference only, not for navigation\./.test(t), "ramp card has the check-before-you-go line");
+  need(/🚫 Test Reserve — fishing is not allowed/.test(t), "ramp inside a no-fishing zone shows the red 🚫 line: " + t);
+  need(!/Directions/.test(t), "no Directions button yet (step 5)");
+  await tap("Pompano Fishing Pier");
+  t = card().textContent;
+  need(/🎣 Pompano Fishing Pier/.test(t) && /Pier/.test(t) && /Florida DEP outdoor recreation list/.test(t), "pier card: name, kind, DEP credit: " + t);
+  need(!/🚫/.test(t), "a pier outside any zone has no 🚫 line: " + t);
+  need(/Check before you go/.test(t), "pier card has the check-before-you-go line");
+  await tap("Admin Dock");
+  t = card().textContent;
+  need(/⭐/.test(t) && /Added by an admin of this app/.test(t), "admin-added place card says so: " + t);
+  need(/Fishing spot · Broward County/.test(t) && !/lane/.test(t), "park / dock card: right kind, no ramp facts: " + t);
+  // empty saved list of closed areas: still opens, just no 🚫
+  w.eval("zn.rows = []");
+  await tap("Hillsboro Inlet Park Ramp");
+  need(!/🚫/.test(card().textContent) && /Hillsboro Inlet Park Ramp/.test(card().textContent), "no zones saved: the card still opens without a 🚫 line");
+  w.eval("map.closePopup()"); await wait(100);
 
   // ---- switch off ----
   row.click(); await wait(300);

@@ -456,6 +456,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-17b", title: "✅ Tap an official spot", items: [
+      "On the map, tap a green official-spot pin to see its card: what it is, the county, where the information comes from, and ramp details like lanes, fee and hours.",
+      "A red 🚫 line shows if the spot is inside a no-fishing area."
+    ] },
     { id: "2026-10-17a", title: "✅ Official public spots on the map", items: [
       "Map › Layers has a new first switch: Official public spots. It shows boat ramps, piers, parks and places an admin added as green pins.",
       "Zoom in a little (about city-size) to see them. Check before you go: the lists are for reference only."
