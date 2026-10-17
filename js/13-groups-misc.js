@@ -456,6 +456,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-17a", title: "✅ Official public spots on the map", items: [
+      "Map › Layers has a new first switch: Official public spots. It shows boat ramps, piers, parks and places an admin added as green pins.",
+      "Zoom in a little (about city-size) to see them. Check before you go: the lists are for reference only."
+    ] },
     { id: "2026-10-16d", title: "🌊 Weather page fixes", items: [
       "Scrolling back up on the Weather, tides & moon page no longer refreshes the app and throws you back to Home.",
       "The pressure trend (rising, falling or steady) now shows up more reliably."

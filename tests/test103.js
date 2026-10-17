@@ -122,7 +122,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   check("after End trip the Start button is back", !$("hq-start").hidden);
   // ---- Map: Layers sheet ----
   click($("tab-map")); await wait(300);
-  check("old row of layer buttons is gone from view (they sit in a hidden box)", $("layer-real").hidden && ["map-bite","map-pub","map-sight","mx-reef","mx-water","mx-chart","mx-depth","mx-redtide","map-sst","map-chl","map-layer","mx-ramp","mx-zone"].every(id => $("layer-real").contains($(id))));
+  check("old row of layer buttons is gone from view (they sit in a hidden box)", $("layer-real").hidden && ["mx-official","map-bite","map-pub","map-sight","mx-reef","mx-water","mx-chart","mx-depth","mx-redtide","map-sst","map-chl","map-layer","mx-ramp","mx-zone"].every(id => $("layer-real").contains($(id))));
   check("toolbar has Layers + Find new water + Add + Show me + List + Boat", ["map-layers-btn","map-find-btn","map-add","map-me","map-list","boat-open"].every(id => $("map-main-tools").contains($(id))));
   check("sheets start closed", $("layers-sheet").hidden && $("find-sheet").hidden);
   click($("map-layers-btn")); await wait(100);
@@ -131,7 +131,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   console.log("groups:", groups.join(" | "));
   check("grouped Fishing / On the water / Getting there & rules", groups[0] === "Fishing" && groups[1] === "On the water" && /Getting there/.test(groups[2]));
   const rows = [...d.querySelectorAll("#layers-body .lyr")];
-  check("every layer has a switch row (13, with 🔴 Red tide)", rows.length === 13 && rows.every(r => r.getAttribute("role") === "switch" && r.getAttribute("aria-checked") === "false"));
+  check("every layer has a switch row (14, with ✅ Official public spots)", rows.length === 14 && rows.every(r => r.getAttribute("role") === "switch" && r.getAttribute("aria-checked") === "false"));
   // each switch works the real layer, and reflects it
   const row = id => d.querySelector(`#layers-body .lyr[data-for="${id}"]`);
   click(row("mx-chart")); await wait(250);
@@ -147,7 +147,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   click(row("map-chl")); await wait(300);
   check("switching to clarity turns temp switch off (one at a time, as before)", row("map-chl").getAttribute("aria-checked") === "true" && row("map-sst").getAttribute("aria-checked") === "false");
   click(row("map-chl")); await wait(100);
-  for (const id of ["mx-reef", "mx-ramp", "mx-zone", "mx-depth", "mx-water", "map-sight", "map-pub", "map-bite"]) {
+  for (const id of ["mx-official", "mx-reef", "mx-ramp", "mx-zone", "mx-depth", "mx-water", "map-sight", "map-pub", "map-bite"]) {
     click(row(id)); await wait(250);
     check(id + " switch on follows real button", row(id).getAttribute("aria-checked") === "true" && ($(id).classList.contains("on") || $(id).getAttribute("aria-pressed") === "true"));
     click(row(id)); await wait(150);
