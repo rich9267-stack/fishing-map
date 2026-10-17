@@ -638,7 +638,8 @@
   // Tapping an alert opens the right place: ?go=chat&with=ID · friends · contest&id=ID · feed · invite
   let pendingGo = /[?&]go=/.test(location.search) ? location.search : null;
   function handleGo(qs) {
-    const q = new URLSearchParams(qs || "");
+    qs = String(qs || ""); const qi = qs.indexOf("?"); if (qi > 0) qs = qs.slice(qi);   // alert links may be "./?go=…" as well as "?go=…"
+    const q = new URLSearchParams(qs);
     const go = q.get("go");
     if (!go || !me) return;
     stopPlacing();
