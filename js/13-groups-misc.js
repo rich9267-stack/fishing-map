@@ -456,6 +456,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-18c", title: "✅ Go, save or fish an official spot", items: [
+      "Tap an official spot on the map and its card now has three buttons: Directions, Save as my spot, and Start a trip here.",
+      "Saving makes a private spot of your own (you can edit it any time). If you already have a spot there, the card says ✓ Saved."
+    ] },
     { id: "2026-10-18b", title: "⛵ More about each official ramp", items: [
       "Tap an official boat ramp on the map and, a moment later, extra lines appear from FWC: whether it is open, its condition, the dock, amenities, phone and address.",
       "No signal? The card still opens, just without those extra lines."

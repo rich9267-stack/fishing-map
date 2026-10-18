@@ -1,4 +1,4 @@
-  // ---- ✅ Official public spots map layer (steps 1–4: the switch, the pins, the tap card, the filter buttons, "More from FWC") ----
+  // ---- ✅ Official public spots map layer (steps 1–5: the switch, the pins, the tap card, the filter buttons, "More from FWC", Directions / Save / Start a trip) ----
   // One switch in Map › Layers (first in the Fishing group) that draws the official places on the map: boat ramps, piers / jetties / bridges,
   // park bank-fishing, and places an admin made official (⭐). The data is the same `officialSpots` list that Find new water and Quick catch use
   // (js/02): the app loads it one 0.5° square ("cell") at a time and keeps at most OFFICIAL_MAX_CELLS squares on the phone, so this layer only
@@ -8,7 +8,9 @@
   // Every place counts in exactly ONE group: an admin-made place is "Admin-added" whatever its kind, everything else is its own kind. Turning a button off hides that group.
   // "More from FWC" (ramp cards only): the saved `source_id` of an FWC ramp IS FWC's RampID, so one live request fetches status, condition, dock, amenities,
   // phone and address. It fills in after the card opens; offline, slow, or no record = the lines quietly stay out. Answers are kept for this visit.
-  // Not built yet (later steps): Directions / Save / Start a trip, retiring the old ⛵ Boat ramps layer.
+  // Card buttons: Directions (official places are public, so the exact spot is fine) · Save as my spot (a PRIVATE spot, same fields as "+ Add to my spots" in Find new water;
+  // a place within ~150 m of one of your spots counts as already saved and shows "✓ Saved") · Start a trip here (saves it first if needed, then starts the trip like ▶ Start trip).
+  // Not built yet (later step): retiring the old ⛵ Boat ramps layer.
   const OL = { minZoom: 9, max: 400, on: false, group: null, seq: 0, timer: null, skipped: 0, show: { ramp: true, pier: true, park: true, admin: true } };
   const olKind = o => (o.kind === "ramp" ? "ramp" : (o.kind === "pier" || o.kind === "jetty" || o.kind === "bridge") ? "pier" : "park");
   const olGroup = o => (o.source === "admin" ? "admin" : olKind(o));   // which filter button a place belongs to
@@ -40,6 +42,56 @@
       ["Address", [v(a.Street1), v(a.City)].filter(Boolean).join(", ") || null]].filter(r => r[1]);
     return rows.map(r => r[0] + ": " + r[1]);
   }
+  const olSavedSpot = o => (spots || []).find(s => hasLoc(s) && miles(s.lat, s.lng, o.lat, o.lng) < 0.1) || null;   // same "already saved" rule as Find new water
+  async function olSaveAsMySpot(o) {   // resolves to the saved spot; throws a plain-words Error when it can't
+    const have = olSavedSpot(o);
+    if (have) return have;
+    if (!db || !me) throw new Error("Sign in and get a signal first.");
+    const g = { src: o.source, trust: "official" }, st = stationFor({ lat: o.lat, lng: o.lng });
+    const row = {
+      name: o.name || "Official spot",
+      spot_type: OFFICIAL_KINDS[o.kind] || "dock",
+      water_type: o.water_type || (st && st.dist != null && st.dist < 1.5 ? "saltwater" : "brackish"),
+      public_access: "yes", added_by: me.name, lat: o.lat, lng: o.lng, is_private: true, visibility: "private",
+      notes: `Added from the official spots map layer (${suggSourceName(g)}). Check the water type before you rely on it.`
+    };
+    const { data, error } = await db.from("spots").insert(row).select("*").single();
+    if (error) throw error;
+    if (!(spots || []).some(s => s.id === data.id)) spots = (spots || []).concat(data);
+    if (typeof loadSpots === "function") loadSpots();   // refresh the lists; the spot is already in `spots`
+    return data;
+  }
+  function olButtons(o) {
+    const row = el("div", "ol-acts"), msg = el("div", "pop-meta ol-msg");
+    const dir = el("a", "btn ghost small", "Directions ↗");
+    dir.href = `https://www.google.com/maps/dir/?api=1&destination=${o.lat},${o.lng}`; dir.target = "_blank"; dir.rel = "noopener";
+    const save = el("button", "btn small", "+ Save as my spot"), trip = el("button", "btn ghost small", "▶ Start a trip here");
+    save.type = "button"; trip.type = "button";
+    const refresh = () => {
+      const sp = olSavedSpot(o), a = typeof activeSession === "function" ? activeSession() : null;
+      save.textContent = sp ? "✓ Saved" : "+ Save as my spot"; save.disabled = !!sp;
+      trip.textContent = sp && a && a.spot_id === sp.id ? "⏹ End trip" : "▶ Start a trip here";
+    };
+    const busy = (b, on, text) => { b.disabled = on; if (on) b.textContent = text; };
+    save.addEventListener("click", async () => {
+      busy(save, true, "Saving…"); msg.textContent = "";
+      try { await olSaveAsMySpot(o); msg.textContent = "Saved as a private spot — find it in My spots."; }
+      catch (e) { msg.textContent = "Couldn't save it: " + (e.message || e); }
+      refresh();
+    });
+    trip.addEventListener("click", async () => {
+      busy(trip, true, "Starting…"); msg.textContent = "";
+      try {
+        const sp = await olSaveAsMySpot(o), a = activeSession();
+        if (a && a.spot_id === sp.id) await endSession(false); else await startSession(sp);
+        if (map) map.closePopup();
+      } catch (e) { msg.textContent = "Couldn't start the trip: " + (e.message || e); }
+      refresh();
+    });
+    refresh();
+    [dir, save, trip].forEach(b => row.appendChild(b)); row.appendChild(msg);
+    return row;
+  }
   const OL_CREDIT = { admin: "Added by an admin of this app" };
   // The tap card. Built from the saved list only (no network), so it opens instantly and works offline.
   function olPopup(o) {
@@ -70,6 +122,7 @@
     if (wait && wait.then) wait.then(fillZone, () => {});
     box.appendChild(el("div", "pop-meta", "Source: " + (OL_CREDIT[o.source] || OFFICIAL_SOURCE[o.source] || "Florida's official public spots list")));
     box.appendChild(el("div", "pop-meta ol-check", "Check before you go — reference only, not for navigation."));
+    box.appendChild(olButtons(o));
     return box;
   }
   function olSay(text) { mxMsg.official = text; mxNote(); }   // the plain line under the map buttons (same place the other layers talk)

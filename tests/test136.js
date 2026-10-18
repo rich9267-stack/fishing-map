@@ -231,7 +231,7 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
   need(/Source: Florida Fish & Wildlife \(FWC\) boat ramp list/.test(t), "ramp card credits FWC: " + t);
   need(/Check before you go — reference only, not for navigation\./.test(t), "ramp card has the check-before-you-go line");
   need(/🚫 Test Reserve — fishing is not allowed/.test(t), "ramp inside a no-fishing zone shows the red 🚫 line: " + t);
-  need(!/Directions/.test(t), "no Directions button yet (step 5)");
+  need(/Directions/.test(t) && /Start a trip here/.test(t), "the card has Directions and Start a trip here (step 5)");
   await tap("Pompano Fishing Pier");
   t = card().textContent;
   need(/🎣 Pompano Fishing Pier/.test(t) && /Pier/.test(t) && /Florida DEP outdoor recreation list/.test(t), "pier card: name, kind, DEP credit: " + t);
