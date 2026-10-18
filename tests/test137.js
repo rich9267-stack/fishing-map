@@ -229,7 +229,7 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
   need(!box.hidden && !chip("ramp").classList.contains("on") && !pins().some(p => p.classList.contains("ol-ramp")) && pins().length > 0, "switch on again: Ramps is still off, the rest show");
 
   // ---- the old layer is untouched ----
-  need(!!d.querySelector('#layers-body .lyr[data-for="mx-ramp"]'), "old ⛵ Boat ramps switch is still there (it goes in step 6)");
+  need(!d.querySelector('#layers-body .lyr[data-for="mx-ramp"]') && !$("mx-ramp"), "the old ⛵ Boat ramps switch is gone");
 
   console.log(bad ? "FAIL:" + bad : "OK");
   process.exit(bad ? 1 : 0);

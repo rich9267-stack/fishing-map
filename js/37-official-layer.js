@@ -10,7 +10,7 @@
   // phone and address. It fills in after the card opens; offline, slow, or no record = the lines quietly stay out. Answers are kept for this visit.
   // Card buttons: Directions (official places are public, so the exact spot is fine) · Save as my spot (a PRIVATE spot, same fields as "+ Add to my spots" in Find new water;
   // a place within ~150 m of one of your spots counts as already saved and shows "✓ Saved") · Start a trip here (saves it first if needed, then starts the trip like ▶ Start trip).
-  // Not built yet (later step): retiring the old ⛵ Boat ramps layer.
+  // The old ⛵ Boat ramps layer is gone (v127): ramps live here only, and only open public-use ones show.
   const OL = { minZoom: 9, max: 400, on: false, group: null, seq: 0, timer: null, skipped: 0, show: { ramp: true, pier: true, park: true, admin: true } };
   const olKind = o => (o.kind === "ramp" ? "ramp" : (o.kind === "pier" || o.kind === "jetty" || o.kind === "bridge") ? "pier" : "park");
   const olGroup = o => (o.source === "admin" ? "admin" : olKind(o));   // which filter button a place belongs to

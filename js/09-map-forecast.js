@@ -836,7 +836,7 @@
     }, 0));
   }
   // The map's on/off buttons show "on" with a CSS class; this mirrors it as aria-pressed so a screen reader says "pressed" / "not pressed"
-  ["map-sst", "map-chl", "map-sight", "map-pub", "mx-chart", "mx-reef", "mx-ramp", "mx-zone"].forEach(id => {
+  ["map-sst", "map-chl", "map-sight", "map-pub", "mx-chart", "mx-reef", "mx-zone"].forEach(id => {
     const b = $(id); if (!b) return;
     const sync = () => b.setAttribute("aria-pressed", String(b.classList.contains("on")));
     sync(); if (window.MutationObserver) new MutationObserver(sync).observe(b, { attributes: true, attributeFilter: ["class"] });
@@ -1478,21 +1478,19 @@
   $("map-sst").addEventListener("click", () => { initMap(); showSat(satOn === "sst" ? null : "sst"); });
   $("map-chl").addEventListener("click", () => { initMap(); showSat(satOn === "chl" ? null : "chl"); });
 
-  // ---- Map extras: nautical chart, artificial reefs, boat ramps, protected zones (free public data) ----
-  // Reefs and ramps come from Florida Fish & Wildlife (FWC); the chart from NOAA. Only the part of the map you're
+  // ---- Map extras: nautical chart, artificial reefs, protected zones (free public data) ----
+  // Reefs come from Florida Fish & Wildlife (FWC); the chart from NOAA. Only the part of the map you're
   // looking at is requested, and if a service is down you get a plain message instead of an error.
   const MX = {
     chartUrl: "https://gis.charttools.noaa.gov/arcgis/rest/services/MCS/NOAAChartDisplay/MapServer/exts/MaritimeChartService/MapServer/export",
     reef: { url: "https://gis.myfwc.com/mapping/rest/services/Open_Data/Artificial_Reef_Locations_in_Florida/MapServer/12/query", minZoom: 9,
             fields: "Name,MatDescrip,Depth,Relief,County,DeployDate,DDate,Tonnage", color: "#0e9aa7", label: "artificial reefs" },
-    ramp: { url: "https://gis.myfwc.com/mapping/rest/services/Open_Data/FWC_Florida_Boat_Ramp_Inventory/MapServer/4/query", minZoom: 9,
-            fields: "RampName,WaterBodyName,TotalLanes,isFeeRequired,FeeAmount,Hours,Status,Amenities,ContactPhone,Street1,City,DockType,RampCondition", color: "#e67e22", label: "boat ramps" },
     zoneUrls: ["https://services1.arcgis.com/eGSDp8lpKe5izqVc/ArcGIS/rest/services/Marine_Protected_Areas__MPAIs_/FeatureServer/0/query"],   // (the old NOAA backup server was shut down)
     zoneMinZoom: 8
   };
-  const mxOn = { chart: false, reef: false, ramp: false, zone: false };
-  const mxLayers = { chart: null, reef: null, ramp: null, zone: null };
-  let mxTimer = null, mxSeq = { reef: 0, ramp: 0, zone: 0 };
+  const mxOn = { chart: false, reef: false, zone: false };
+  const mxLayers = { chart: null, reef: null, zone: null };
+  let mxTimer = null, mxSeq = { reef: 0, zone: 0 };
   const mxMsg = {};
 
   function mxNote() {
@@ -1538,14 +1536,6 @@
       ["Relief", mxVal(a.Relief) && a.Relief + " ft"], ["County", a.County], ["Deployed", when && (isNaN(+when) ? when : new Date(+when).getFullYear())],
       ["Tons", a.Tonnage]], ll);
   }
-  function rampPopup(a, ll) {
-    const lanes = mxVal(a.TotalLanes);
-    const fee = a.isFeeRequired === "Yes" || a.isFeeRequired === 1 || a.isFeeRequired === "Y" ? ("Yes" + (mxVal(a.FeeAmount) ? " — " + a.FeeAmount : "")) : mxVal(a.isFeeRequired) && "No";
-    return mxPopup("⛵ " + (mxVal(a.RampName) || "Boat ramp"), [["Water", a.WaterBodyName], ["Lanes", lanes], ["Fee", fee], ["Hours", a.Hours],
-      ["Status", a.Status], ["Condition", a.RampCondition], ["Dock", a.DockType], ["Amenities", a.Amenities], ["Phone", a.ContactPhone],
-      ["Address", [a.Street1, a.City].filter(mxVal).join(", ")]], ll);
-  }
-
   function mxBounds() {
     const b = map.getBounds();
     return `${b.getWest().toFixed(4)},${b.getSouth().toFixed(4)},${b.getEast().toFixed(4)},${b.getNorth().toFixed(4)}`;
@@ -1570,8 +1560,8 @@
       d.features.forEach(f => {
         if (!f.geometry || f.geometry.y == null) return;
         const ll = [f.geometry.y, f.geometry.x], a = f.attributes || {};
-        const m = L.circleMarker(ll, { radius: kind === "reef" ? 6 : 7, color: "#fff", weight: 1.5, fillColor: def.color, fillOpacity: 0.95, a11y: (kind === "reef" ? "Artificial reef" : "Boat ramp") + ": " + (mxVal(a.RampName) || mxVal(a.Name) || "unnamed") });
-        m.bindPopup(() => kind === "reef" ? reefPopup(a, ll) : rampPopup(a, ll));
+        const m = L.circleMarker(ll, { radius: 6, color: "#fff", weight: 1.5, fillColor: def.color, fillOpacity: 0.95, a11y: "Artificial reef: " + (mxVal(a.Name) || "unnamed") });
+        m.bindPopup(() => reefPopup(a, ll));
         m.addTo(g);
       });
       g.addTo(map); mxLayers[kind] = g;
@@ -1624,7 +1614,6 @@
     clearTimeout(mxTimer);
     mxTimer = setTimeout(() => {
       if (mxOn.reef) mxLoadPoints("reef");
-      if (mxOn.ramp) mxLoadPoints("ramp");
       if (mxOn.zone) mxLoadZones();
     }, 400);
   }
@@ -1648,5 +1637,5 @@
     kind === "zone" ? mxLoadZones() : mxLoadPoints(kind);
     if (!map._mxBound) { map._mxBound = true; map.on("moveend", mxRefresh); }
   }
-  ["chart", "reef", "ramp", "zone"].forEach(k => $("mx-" + k).addEventListener("click", () => mxToggle(k)));
+  ["chart", "reef", "zone"].forEach(k => $("mx-" + k).addEventListener("click", () => mxToggle(k)));
 

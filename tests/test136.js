@@ -167,7 +167,7 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
   need(row && /Official public spots/.test(row.textContent) && /Boat ramps, piers, parks/.test(row.textContent), "switch has its name and its small line");
   need(row && row.getAttribute("role") === "switch" && row.getAttribute("aria-checked") === "false", "switch starts off");
   need($("layer-real").contains($("mx-official")), "the real button sits in the hidden box with the others");
-  need(!!d.querySelector('#layers-body .lyr[data-for="mx-ramp"]'), "the old ⛵ Boat ramps layer is still there (it goes in step 6)");
+  need(!d.querySelector('#layers-body .lyr[data-for="mx-ramp"]') && !$("mx-ramp"), "the old ⛵ Boat ramps layer is gone (v127)");
   need(pins().length === 0, "no pins before the switch is on");
 
   // ---- switch on: pins for every kind ----
