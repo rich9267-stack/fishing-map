@@ -1033,7 +1033,7 @@
     if (r != null) repCount = r;
     if (h != null) hpCount = h;
     const t = reqCount + repCount + hpCount;
-    $("invite-btn").textContent = t ? `✉ Invite / requests (${t})` : "✉ Invite to app";
+    $("invite-btn").textContent = t ? `✉ Invite / requests (${t})` : "✉ Admin";
   }
   async function checkRequests() {
     if (!me || !me.isAdmin) return;

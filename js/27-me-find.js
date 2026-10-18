@@ -33,7 +33,7 @@
       const n = +((/\((\d+)\)/.exec($("inbox-btn").textContent) || [])[1] || 0);
       $("me-inbox-n").hidden = !n; $("me-inbox-n").textContent = n; $("me-inbox-n").setAttribute("aria-label", n + " unread");
       const inv = mc.querySelector('[data-me="invite"]'); inv.hidden = !(me && me.isAdmin);
-      $("me-invite-t").textContent = /\(\d+\)/.test($("invite-btn").textContent) ? $("invite-btn").textContent.replace(/^✉\s*/, "") : "Invite to app";
+      $("me-invite-t").textContent = /\(\d+\)/.test($("invite-btn").textContent) ? $("invite-btn").textContent.replace(/^✉\s*/, "") : "Admin";
       bigAvatar();
     }
     function openMe() {
@@ -120,7 +120,7 @@
       F("Fish tank", "Play", "tank aquarium play coins gems shop", () => $("tab-tank").click()),
       F("Boat mode", "Map", "boat speed heading man overboard anchor", () => { const b = document.querySelector("#boat-open"); if (b) { $("tab-map").click(); setTimeout(() => b.click(), 300); } }),
       F("Start a trip", "Home", "trip session start fishing skunk", () => { $("tab-list").click(); setTimeout(() => { const b = $("hq-start"); if (b) b.click(); }, 200); }),
-      ...(me && me.isAdmin ? [F("Invite to app", "Me › Invite", "invite access requests members admin", () => $("invite-btn").click())] : [])
+      ...(me && me.isAdmin ? [F("Admin", "Me › Admin", "admin invite access requests members reports pages rules dashboard log problems", () => $("invite-btn").click())] : [])
     ];
     const norm = s => String(s || "").toLowerCase();
     const matches = (hay, toks) => toks.every(t => hay.includes(t));

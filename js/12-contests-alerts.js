@@ -660,6 +660,7 @@
     else if (go === "plan" || go === "weather") { showView("list"); ciLoad(); wxRefresh(true); setTimeout(() => $("safety-strip").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }
     else if (go === "redtide" && typeof rtShowOnMap === "function") { rtRefresh(true); rtShowOnMap(); }
     else if (go === "invite" && me.isAdmin) $("invite-btn").click();
+    else if (go === "admin" && me.isAdmin && typeof window.adminPageOpen === "function") window.adminPageOpen(q.get("sec") || undefined);
     else if (go === "insights") { if (typeof statsOpen === "function") statsOpen("insights"); else showView("insights"); window.scrollTo({ top: 0 }); }
     else if (go === "race" && typeof raceOpenRoom === "function") raceOpenRoom(q.get("room"));
     else if (go === "license" && typeof goLicense === "function") goLicense();
