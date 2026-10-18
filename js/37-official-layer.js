@@ -1,4 +1,4 @@
-  // ---- ✅ Official public spots map layer (steps 1–3: the switch, the pins, the tap card, the filter buttons) ----
+  // ---- ✅ Official public spots map layer (steps 1–4: the switch, the pins, the tap card, the filter buttons, "More from FWC") ----
   // One switch in Map › Layers (first in the Fishing group) that draws the official places on the map: boat ramps, piers / jetties / bridges,
   // park bank-fishing, and places an admin made official (⭐). The data is the same `officialSpots` list that Find new water and Quick catch use
   // (js/02): the app loads it one 0.5° square ("cell") at a time and keeps at most OFFICIAL_MAX_CELLS squares on the phone, so this layer only
@@ -6,7 +6,9 @@
   // Tap a pin = a small card (olPopup): name, kind, county, who the information comes from, "check before you go", ramp facts, and the red 🚫 line inside a no-fishing zone.
   // Filter buttons (#ol-filters, under the switch in the Layers sheet, only while the layer is on): Ramps · Piers & jetties · Parks · Admin-added, all on to start.
   // Every place counts in exactly ONE group: an admin-made place is "Admin-added" whatever its kind, everything else is its own kind. Turning a button off hides that group.
-  // Not built yet (later steps): "More from FWC", Directions / Save / Start a trip, retiring the old ⛵ Boat ramps layer.
+  // "More from FWC" (ramp cards only): the saved `source_id` of an FWC ramp IS FWC's RampID, so one live request fetches status, condition, dock, amenities,
+  // phone and address. It fills in after the card opens; offline, slow, or no record = the lines quietly stay out. Answers are kept for this visit.
+  // Not built yet (later steps): Directions / Save / Start a trip, retiring the old ⛵ Boat ramps layer.
   const OL = { minZoom: 9, max: 400, on: false, group: null, seq: 0, timer: null, skipped: 0, show: { ramp: true, pier: true, park: true, admin: true } };
   const olKind = o => (o.kind === "ramp" ? "ramp" : (o.kind === "pier" || o.kind === "jetty" || o.kind === "bridge") ? "pier" : "park");
   const olGroup = o => (o.source === "admin" ? "admin" : olKind(o));   // which filter button a place belongs to
@@ -16,6 +18,27 @@
     const k = olKind(o);
     return L.divIcon({ className: "ol-icon", iconSize: [28, 28], iconAnchor: [14, 14],
       html: `<span class="ol-pin ol-${k}" aria-hidden="true">${OL_SYMBOL[k]}${o.source === "admin" ? '<span class="ol-star">⭐</span>' : ""}</span>` });
+  }
+  const OL_FWC_URL = "https://gis.myfwc.com/mapping/rest/services/Open_Data/FWC_Florida_Boat_Ramp_Inventory/MapServer/4/query";
+  const olMore = {};   // RampID -> the answer (or null when FWC had nothing / could not be reached)
+  async function olFetchMore(id) {
+    if (id in olMore) return olMore[id];
+    const ctl = typeof AbortController === "function" ? new AbortController() : null, t = setTimeout(() => ctl && ctl.abort(), 8000);
+    try {
+      const qs = new URLSearchParams({ where: "RampID='" + String(id).replace(/[^A-Za-z0-9_-]/g, "") + "'", outFields: "Status,RampCondition,DockType,Amenities,ContactPhone,Street1,City",
+        returnGeometry: "false", f: "json" });
+      const r = await fetch(OL_FWC_URL + "?" + qs, ctl ? { signal: ctl.signal } : undefined);
+      if (!r.ok) throw new Error("http " + r.status);
+      const j = await r.json(), a = j && j.features && j.features[0] && j.features[0].attributes;
+      return (olMore[id] = a || null);
+    } catch (e) { return null; /* not remembered: the next tap tries again */ }
+    finally { clearTimeout(t); }
+  }
+  function olMoreLines(a) {
+    const v = x => (x == null || String(x).trim() === "" ? null : String(x).trim());
+    const rows = [["Status", v(a.Status)], ["Condition", v(a.RampCondition)], ["Dock", v(a.DockType)], ["Amenities", v(a.Amenities)], ["Phone", v(a.ContactPhone)],
+      ["Address", [v(a.Street1), v(a.City)].filter(Boolean).join(", ") || null]].filter(r => r[1]);
+    return rows.map(r => r[0] + ": " + r[1]);
   }
   const OL_CREDIT = { admin: "Added by an admin of this app" };
   // The tap card. Built from the saved list only (no network), so it opens instantly and works offline.
@@ -27,6 +50,15 @@
     box.appendChild(el("div", "pop-meta", ["✅ " + label, county].filter(Boolean).join(" · ")));
     const facts = officialFacts({ info: d, county: null });   // lanes, fee, hours, water, who runs it (the county is already on the line above)
     if (facts) box.appendChild(el("div", "pop-meta", facts));
+    if (o.source === "fwc-ramp" && o.source_id) {   // "More from FWC": filled in a moment later; stays out if there is no signal
+      const more = el("div", "ol-more"); box.appendChild(more);
+      olFetchMore(o.source_id).then(a => {
+        const lines = a ? olMoreLines(a) : [];
+        if (!lines.length) return;
+        more.appendChild(el("div", "pop-meta ol-more-h", "More from FWC"));
+        lines.forEach(t => more.appendChild(el("div", "pop-meta", t)));
+      });
+    }
     const zoneBox = el("div", "ol-zone"); box.appendChild(zoneBox);
     const fillZone = () => {   // the red 🚫 line; the list of closed areas may still be arriving, so fill it again when it lands
       zoneBox.textContent = "";
