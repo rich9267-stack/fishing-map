@@ -1056,6 +1056,7 @@
     const pending = data.filter(m => m.status === "pending");
     updateRequestBadge(pending.length);
     loadReports(); loadAdminDash(); if (typeof window.hpAdminLoad === "function") window.hpAdminLoad();
+    if (typeof window.adminLogLoad === "function") window.adminLogLoad();
     const review = async (m, ok) => {
       if (!ok && !await askOk(`Decline ${m.display_name || m.email}? They won't get in (you can approve them later).`)) return;
       const { error: e2 } = await db.rpc("review_access", { p_email: m.email, p_approve: ok });
