@@ -488,7 +488,7 @@
     if (typeof offAdminRender === "function") offAdminRender(show ? existing : null);   // ⭐ admin box, js/34
     if (!show) return;
     if (existing) {
-      $("spot-del").hidden = !(isMine(existing) || (me && me.isAdmin));
+      $("spot-del").hidden = !(isMine(existing) || (me && adminCan("delete_spot")));
       editingSpot = existing;
       $("f-title").textContent = "Edit spot";
       $("save-btn").textContent = "Save changes";

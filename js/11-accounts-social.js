@@ -156,7 +156,8 @@
       if (typed) { await db.rpc("set_my_name", { new_name: typed }); member.display_name = typed; }
       else { showAuth("name"); return; }
     }
-    me = { id: session.user.id, email, name: member.display_name, isAdmin: !!member.is_admin, isOwner: !!member.is_owner && !!member.is_admin };
+    me = { id: session.user.id, email, name: member.display_name, isAdmin: !!member.is_admin, isOwner: !!member.is_owner && !!member.is_admin, powers: null };
+    if (me.isAdmin) { try { const pw = await db.rpc("my_powers"); if (!pw.error && Array.isArray(pw.data)) me.powers = pw.data; } catch (e) { /* boxes unknown: the server still decides */ } }
     if (/access_token=|code=/.test(location.hash + location.search)) history.replaceState(null, "", SITE);
     $("auth-card").hidden = true; $("not-member").hidden = true;
     $("userbar").hidden = false; $("app").hidden = false; $("qc-fab").hidden = false; meAvatarRefresh();
@@ -165,7 +166,7 @@
     hwLoadMine();
     if (typeof palLoadMine === "function") palLoadMine();
     if (typeof tutLoadMine === "function") tutLoadMine();
-    $("invite-btn").hidden = !me.isAdmin;
+    $("invite-btn").hidden = !adminAny();
     checkRequests();
     startChat();
     loadBlocks();
@@ -815,7 +816,7 @@
   async function loadReports() {
     const box = $("report-admin"); if (!box) return;
     box.innerHTML = "";
-    if (!me || !me.isAdmin) return;
+    if (!me || !adminCan("reports")) return;
     const { data, error } = await db.from("reports").select("*").eq("status", "open").order("created_at", { ascending: false }).limit(50);
     if (error) { box.appendChild(el("div", "msg err", "Couldn't load reports.")); return; }
     updateRequestBadge(null, data.length);
@@ -1036,7 +1037,7 @@
     $("invite-btn").textContent = t ? `✉ Invite / requests (${t})` : "✉ Admin";
   }
   async function checkRequests() {
-    if (!me || !me.isAdmin) return;
+    if (!me || !adminAny()) return;
     try {
       const { data } = await db.from("members").select("email").eq("status", "pending");
       const rp = await db.from("reports").select("id").eq("status", "open");
@@ -1057,6 +1058,8 @@
     updateRequestBadge(pending.length);
     loadReports(); loadAdminDash(); if (typeof window.hpAdminLoad === "function") window.hpAdminLoad();
     if (typeof window.adminLogLoad === "function") window.adminLogLoad();
+    if (typeof window.adminsLoad === "function") window.adminsLoad();
+    $("invite-form").hidden = !adminCan("invite");
     const review = async (m, ok) => {
       if (!ok && !await askOk(`Decline ${m.display_name || m.email}? They won't get in (you can approve them later).`)) return;
       const { error: e2 } = await db.rpc("review_access", { p_email: m.email, p_approve: ok });
@@ -1095,7 +1098,7 @@
         share.addEventListener("click", () => shareInvite(m.email));
         btns.appendChild(share);
       }
-      if (m.email !== me.email) {
+      if (m.email !== me.email && adminCan("remove_from_list")) {
         const rm = el("button", "linkbtn danger", "Remove"); rm.type = "button";
         rm.addEventListener("click", async () => {
           if (!await askOk(`Remove ${m.email} from the invite list? They won't be able to see the map anymore.`)) return;

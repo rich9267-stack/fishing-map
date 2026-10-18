@@ -301,7 +301,7 @@
 
     // ---- admin: page requests + live pages + business allowance, inside the ✉ Invite / requests screen ----
     async function adminLoad() {
-      const box = $("hp-admin"); if (!box || !me || !me.isAdmin) return;
+      const box = $("hp-admin"); if (!box || !me || !adminCan("pages")) return;
       let rows;
       try { const r = await db.rpc("host_pages_admin"); if (r.error) throw r.error; rows = r.data || []; } catch (e) { box.innerHTML = ""; return; }
       let renameReqs = [];   // waiting rename requests (setup/74); none if the function isn't there

@@ -134,11 +134,11 @@
       $("bug-note").value = ""; $("bug-form").hidden = true;
       $("bug-msg").textContent = "✅ Sent — thank you! Richard gets it on his phone.";
     });
-    $("settings-btn").addEventListener("click", () => { bugFrom = appScreen(); if (me && me.isAdmin) bugAdminLoad(); });
+    $("settings-btn").addEventListener("click", () => { bugFrom = appScreen(); if (me && adminCan("problems")) bugAdminLoad(); });
   })();
   let bugFrom = null;   // the screen you were on before opening Settings
   async function bugAdminLoad() {
-    const box = $("bug-admin"), list = $("bug-admin-list"); if (!box || !me || !me.isAdmin) return;
+    const box = $("bug-admin"), list = $("bug-admin-list"); if (!box || !me || !adminCan("problems")) return;
     box.hidden = false; list.innerHTML = "";
     try {
       const { data, error } = await db.from("problem_reports").select("id,who,note,app_version,screen,device,errors,status,created_at").order("created_at", { ascending: false }).limit(30);

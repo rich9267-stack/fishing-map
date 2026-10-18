@@ -172,7 +172,7 @@
       if (!list.length) box.appendChild(el("div", "empty", empty)); else list.forEach(t => box.appendChild(ctCard(t)));
     };
     const hostPage = ctTab === "tournaments" ? ctHostActive() : null;
-    const canMakeTournament = !!(me && me.isAdmin) || !!hostPage;
+    const canMakeTournament = adminCan("tournaments") || !!hostPage;
     if (ctTab === "contests") {
       box.appendChild(el("div", "spot-meta", "Contests are friendly competitions anyone can start with friends — for a trip, a weekend, or repeating every week, month or year."));
       const nb = el("button", "btn small", "+ Start a contest"); nb.type = "button"; nb.id = "ct-new"; nb.style.marginTop = "8px";
@@ -198,7 +198,7 @@
         });
         box.appendChild(who);
         if (hostPage) box.appendChild(el("div", "spot-meta", `Tournaments you create now are run by ${hostPage.name}. Switch back to “Me” to browse as yourself.`));
-        else if (!(me && me.isAdmin)) box.appendChild(el("div", "spot-meta", "Pick one of your pages to run a tournament."));
+        else if (!adminCan("tournaments")) box.appendChild(el("div", "spot-meta", "Pick one of your pages to run a tournament."));
       }
       if (canMakeTournament) {
         const nb = el("button", "btn small", hostPage ? "+ Create a tournament as " + hostPage.name : "+ Create a tournament"); nb.type = "button"; nb.id = "ct-new"; nb.style.marginTop = "8px";
@@ -221,7 +221,7 @@
   function ctLocalInput(d) { const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 16); }
   async function ctForm(box) {
     const hostPage = ctTab === "tournaments" ? ctHostActive() : null; // acting as one of my pages (Host pages)
-    const off = ctTab === "tournaments" && (!!(me && me.isAdmin) || !!hostPage);
+    const off = ctTab === "tournaments" && (adminCan("tournaments") || !!hostPage);
     const kindV = off ? "official" : "friends";
     const pre = ctPrefill; ctPrefill = null;
     const wrap = el("div"); box.appendChild(wrap);
@@ -415,7 +415,7 @@
     if (open && mineSt !== "joined" && (t.kind === "official" || mineSt === "invited")) btn(mineSt === "invited" ? "Accept & join" : "Join", "btn small", () => ctAct("join_tournament", { p_id: t.id }), "ctd-join");
     if (open && mineSt === "invited") btn("Decline", "btn ghost small", () => ctAct("leave_tournament", { p_id: t.id }), "ctd-decline");
     if (mineSt === "joined" && (t.created_by !== me.id || t.host_page_id) && open) btn("Leave", "btn ghost small", () => ctAct("leave_tournament", { p_id: t.id }), "ctd-leave");
-    if (t.series_id && (me.isAdmin || t.created_by === me.id)) {
+    if (t.series_id && (adminCan("tournaments") || t.created_by === me.id)) {
       const { data: se } = await db.from("tournament_series").select("id,active,months,cadence").eq("id", t.series_id).maybeSingle();
       const rw = se ? CT_REPEAT[se.cadence] || "repeating" : "repeating";
       if (se && se.active) {
@@ -430,11 +430,11 @@
         } else seriesBox = [el("div", "spot-meta", "🔁 A new round opens " + rw + ".")];
       } else if (se) acts.appendChild(el("span", "spot-meta", "🔁 The repeat is stopped."));
     }
-    if (!t.cancelled_at && (t.created_by === me.id || me.isAdmin) && st.k !== "ended") btn(t.kind === "official" ? "Cancel tournament" : "Cancel contest", "btn ghost small", async () => { if (await askOk(t.kind === "official" ? "Cancel this tournament for everyone?" : "Cancel this contest for everyone?")) ctAct("cancel_tournament", { p_id: t.id }); }, "ctd-cancel");
+    if (!t.cancelled_at && (t.created_by === me.id || adminCan("tournaments")) && st.k !== "ended") btn(t.kind === "official" ? "Cancel tournament" : "Cancel contest", "btn ghost small", async () => { if (await askOk(t.kind === "official" ? "Cancel this tournament for everyone?" : "Cancel this contest for everyone?")) ctAct("cancel_tournament", { p_id: t.id }); }, "ctd-cancel");
     box.appendChild(acts);
     seriesBox.forEach(n => box.appendChild(n));
     // 👥 who has entered — shown to the organiser (the page owner) and the admin
-    if (t.host_page_id && (t.created_by === me.id || me.isAdmin)) {
+    if (t.host_page_id && (t.created_by === me.id || adminCan("tournaments"))) {
       const ent = ctMembers.filter(m => m.tournament_id === t.id && m.status === "joined").sort((a, b) => new Date(a.joined_at || 0) - new Date(b.joined_at || 0));
       const eb = el("div"); eb.id = "ctd-entrants"; eb.style.cssText = "margin:10px 0";
       eb.appendChild(el("div", "label", `👥 Entrants (${ent.length})`));
@@ -659,12 +659,12 @@
     else if (go === "spot" && q.get("id")) { goToSpot(q.get("id"), false); }
     else if (go === "plan" || go === "weather") { showView("list"); ciLoad(); wxRefresh(true); setTimeout(() => $("safety-strip").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }
     else if (go === "redtide" && typeof rtShowOnMap === "function") { rtRefresh(true); rtShowOnMap(); }
-    else if (go === "invite" && me.isAdmin) $("invite-btn").click();
-    else if (go === "admin" && me.isAdmin && typeof window.adminPageOpen === "function") window.adminPageOpen(q.get("sec") || undefined);
+    else if (go === "invite" && adminAny()) $("invite-btn").click();
+    else if (go === "admin" && adminAny() && typeof window.adminPageOpen === "function") window.adminPageOpen(q.get("sec") || undefined);
     else if (go === "insights") { if (typeof statsOpen === "function") statsOpen("insights"); else showView("insights"); window.scrollTo({ top: 0 }); }
     else if (go === "race" && typeof raceOpenRoom === "function") raceOpenRoom(q.get("room"));
     else if (go === "license" && typeof goLicense === "function") goLicense();
-    else if (go === "problems" && me.isAdmin && typeof goProblems === "function") goProblems();
+    else if (go === "problems" && adminCan("problems") && typeof goProblems === "function") goProblems();
     else if (go === "pages" && typeof window.openHostPages === "function") window.openHostPages(q.get("id") || undefined);   // ✏️ rename decision alert (setup/75): open that club / business page
     else { feedMode = "circle"; if (typeof comMark === "function") comMark("feed"); else showView("feed"); window.scrollTo({ top: 0 }); }
   }

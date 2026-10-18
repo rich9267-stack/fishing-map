@@ -7,6 +7,7 @@ const ADMIN_SECTIONS = [
   { id: "rules", label: "🐟 Rules", power: "rules" },
   { id: "problems", label: "🛠 Problems", power: "problems" },
   { id: "dashboard", label: "📊 Dashboard", power: "dashboard" },
+  { id: "admins", label: "🔑 Admins", power: "manage_admins" },
   { id: "log", label: "📜 Log", power: "read_log" }
 ];
 let adminSec = "people";
@@ -24,6 +25,7 @@ function adminPageShow(sec) {
     nav.appendChild(b);
   });
   card.querySelectorAll("div[data-asec]").forEach(d => { d.hidden = d.dataset.asec !== sec; });
+  if (sec === "admins" && typeof window.adminsLoad === "function") window.adminsLoad();
   if (sec === "log") { const det = document.querySelector("#admin-log details"); if (det && !det.open) det.open = true; }
 }
 // The Me row and the old Invite button both open the page on People; a link like ?go=admin&sec=reports opens that section.

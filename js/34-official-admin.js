@@ -21,7 +21,7 @@
   function offAdminRender(s) {
     const box = $("off-admin"); if (!box) return;
     box.innerHTML = "";
-    box.hidden = !(s && me && me.isAdmin && s.id && isFinite(s.lat) && isFinite(s.lng));
+    box.hidden = !(s && me && adminCan("official_places") && s.id && isFinite(s.lat) && isFinite(s.lng));
     if (box.hidden) return;
     box.appendChild(el("div", "off-admin-title", "⭐ Official place (admin only)"));
     if (s.visibility !== "public") {

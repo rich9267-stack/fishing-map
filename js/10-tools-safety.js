@@ -350,7 +350,7 @@
   let rulesOpen = false;
   function renderRulesAdmin() {
     const box = $("rules-admin"); box.innerHTML = "";
-    if (!me || !me.isAdmin) return;
+    if (!me || !adminCan("rules")) return;
     const staleN = (rulesOpen ? rulesAll : fishRules).filter(r => r.active !== false && ruleStale(r)).length;
     const head = frBtn((rulesOpen ? "🐟 Size & bag rules ▴" : "🐟 Size & bag rules ▾") + (staleN ? ` — ⚠️ ${staleN} need a re-check` : ""), async () => { rulesOpen = !rulesOpen; if (rulesOpen) await loadRulesAll(); renderRulesAdmin(); });
     head.style.marginTop = "10px"; box.appendChild(head);
@@ -586,7 +586,7 @@
   async function loadAdminDash() {
     const box = $("admin-dash"); if (!box) return;
     box.innerHTML = "";
-    if (!me || !me.isAdmin) return;
+    if (!me || !adminCan("dashboard")) return;
     const { data: st, error } = await db.rpc("admin_stats");
     if (error || !st) { box.appendChild(el("div", "msg err", "Couldn't load the dashboard.")); return; }
     box.appendChild(el("div", "label", "📊 Dashboard"));
