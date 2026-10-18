@@ -127,7 +127,7 @@
     if (!session) { me = null; showAuth("signin"); return; }
     if (authMode === "newpw") { showAuth("newpw"); return; } // finish choosing a new password first
     const email = (session.user.email || "").toLowerCase();
-    let { data: member, error } = await db.from("members").select("email,display_name,is_admin,status").eq("email", email).maybeSingle();
+    let { data: member, error } = await db.from("members").select("email,display_name,is_admin,is_owner,status").eq("email", email).maybeSingle();
     if (error && isNetErr(error)) {
       // No signal: trust the membership saved on this phone last time
       try { const saved = JSON.parse(localStorage.getItem("fm-member") || "null"); if (saved && saved.email === email && saved.status === "approved") { member = saved; error = null; setOffline(true); } } catch (e) {}
@@ -156,7 +156,7 @@
       if (typed) { await db.rpc("set_my_name", { new_name: typed }); member.display_name = typed; }
       else { showAuth("name"); return; }
     }
-    me = { id: session.user.id, email, name: member.display_name, isAdmin: !!member.is_admin };
+    me = { id: session.user.id, email, name: member.display_name, isAdmin: !!member.is_admin, isOwner: !!member.is_owner && !!member.is_admin };
     if (/access_token=|code=/.test(location.hash + location.search)) history.replaceState(null, "", SITE);
     $("auth-card").hidden = true; $("not-member").hidden = true;
     $("userbar").hidden = false; $("app").hidden = false; $("qc-fab").hidden = false; meAvatarRefresh();
