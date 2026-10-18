@@ -1,12 +1,15 @@
-  // ---- ✅ Official public spots map layer (steps 1–2: the switch, the pins, the tap card) ----
+  // ---- ✅ Official public spots map layer (steps 1–3: the switch, the pins, the tap card, the filter buttons) ----
   // One switch in Map › Layers (first in the Fishing group) that draws the official places on the map: boat ramps, piers / jetties / bridges,
   // park bank-fishing, and places an admin made official (⭐). The data is the same `officialSpots` list that Find new water and Quick catch use
   // (js/02): the app loads it one 0.5° square ("cell") at a time and keeps at most OFFICIAL_MAX_CELLS squares on the phone, so this layer only
   // asks for the squares nearest the middle of the map and draws what falls inside the view. Pins show from zoom 9; further out you get a plain line.
   // Tap a pin = a small card (olPopup): name, kind, county, who the information comes from, "check before you go", ramp facts, and the red 🚫 line inside a no-fishing zone.
-  // Not built yet (later steps): the filter buttons, "More from FWC", Directions / Save / Start a trip, retiring the old ⛵ Boat ramps layer.
-  const OL = { minZoom: 9, max: 400, on: false, group: null, seq: 0, timer: null };
+  // Filter buttons (#ol-filters, under the switch in the Layers sheet, only while the layer is on): Ramps · Piers & jetties · Parks · Admin-added, all on to start.
+  // Every place counts in exactly ONE group: an admin-made place is "Admin-added" whatever its kind, everything else is its own kind. Turning a button off hides that group.
+  // Not built yet (later steps): "More from FWC", Directions / Save / Start a trip, retiring the old ⛵ Boat ramps layer.
+  const OL = { minZoom: 9, max: 400, on: false, group: null, seq: 0, timer: null, skipped: 0, show: { ramp: true, pier: true, park: true, admin: true } };
   const olKind = o => (o.kind === "ramp" ? "ramp" : (o.kind === "pier" || o.kind === "jetty" || o.kind === "bridge") ? "pier" : "park");
+  const olGroup = o => (o.source === "admin" ? "admin" : olKind(o));   // which filter button a place belongs to
   const OL_SYMBOL = { ramp: "⛵", pier: "🎣", park: "🌳" };
 
   function olIcon(o) {
@@ -44,7 +47,8 @@
     if (!map || !OL.on) return;
     olClear();
     const box = map.getBounds().pad(0.1), c = map.getCenter();
-    let list = (officialSpots || []).filter(o => o.lat != null && o.lng != null && box.contains([o.lat, o.lng]));
+    const inView = (officialSpots || []).filter(o => o.lat != null && o.lng != null && box.contains([o.lat, o.lng]));
+    let list = inView.filter(o => OL.show[olGroup(o)]);   // the filter buttons
     let capped = false;
     if (list.length > OL.max) {   // a very busy view: keep the ones nearest the middle
       capped = true;
@@ -57,7 +61,8 @@
       L.marker([o.lat, o.lng], { icon: olIcon(o), keyboard: true, title: `${o.name || "Official spot"} — ${label}`, alt: `${o.name || "Official spot"}, official ${label}` }).bindPopup(() => olPopup(o)).addTo(g);
     });
     g.addTo(map); OL.group = g;
-    if (!list.length) olSay(navigator.onLine === false ? "No signal — this phone has no saved official spots for this view yet." : "No official spots in this view.");
+    if (!list.length && inView.length) olSay("Nothing to show — every kind of spot in this view is switched off. Tap the buttons under the switch to turn some back on.");
+    else if (!list.length) olSay(navigator.onLine === false ? "No signal — this phone has no saved official spots for this view yet." : "No official spots in this view.");
     else if (capped || skippedCells) olSay("Showing the official spots nearest the middle — zoom in to see them all.");
     else olSay("");
   }
@@ -78,7 +83,7 @@
       if (seq !== OL.seq || !OL.on) return;   // the map moved again, or the switch was turned off, while we waited
       if (changed) { officialRebuild(); officialSave(c); }
     }
-    olDraw(skipped);
+    OL.skipped = skipped; olDraw(skipped);
   }
 
   function olRefreshSoon() { clearTimeout(OL.timer); OL.timer = setTimeout(olRefresh, 400); }
@@ -90,8 +95,15 @@
     const b = $("mx-official");
     b.classList.toggle("on", OL.on); b.setAttribute("aria-pressed", String(OL.on));
     mxOn.official = OL.on;   // so the note line (mxNote in js/09) includes this layer's message while it is on
+    const fb = $("ol-filters"); if (fb) fb.hidden = !OL.on;   // the four buttons show only while the layer is on
     if (!OL.on) { OL.seq++; clearTimeout(OL.timer); olClear(); olSay(""); return; }
     if (!map._olBound) { map._olBound = true; map.on("moveend", olRefreshSoon); }
     olRefresh();
   }
   $("mx-official").addEventListener("click", olToggle);
+  document.querySelectorAll("#ol-filters [data-olf]").forEach(btn => btn.addEventListener("click", () => {
+    const k = btn.dataset.olf;
+    OL.show[k] = !OL.show[k];
+    btn.classList.toggle("on", OL.show[k]); btn.setAttribute("aria-pressed", String(OL.show[k]));
+    if (OL.on && map && map.getZoom() >= OL.minZoom) olDraw(OL.skipped);   // redraw from what the phone already holds: no new download
+  }));
