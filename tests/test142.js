@@ -31,11 +31,11 @@ function make(powers) {
 }
 let t = make(["people", "reports", "pages", "rules", "problems", "dashboard", "read_log"]);
 t.ctx.window.adminPageShow("reports");
-ok(t.nav.kids.length === 7, "an owner sees all 7 section buttons");
+ok(t.nav.kids.length === 8, "an admin with these boxes sees 8 section buttons");
 ok(t.secs.filter(s => !s.hidden).map(s => s.dataset.asec).join() === "reports", "only the chosen section shows");
 t.nav.kids = []; t.ctx.window.adminPageShow("problems");
 ok(t.probs() === 1, "Problems button opens the problem list");
 t = make(["reports", "read_log"]);
 t.ctx.window.adminPageShow("pages");
-ok(t.nav.kids.length === 2 && t.secs.filter(s => !s.hidden).map(s => s.dataset.asec).join() === "reports", "an admin without a box doesn't see that section (falls back to the first allowed)");
+ok(t.nav.kids.length === 3 && t.secs.filter(s => !s.hidden).map(s => s.dataset.asec).join() === "reports", "an admin without a box doesn't see that section (falls back to the first allowed)");
 console.log(bad ? "SOME FAILED" : "ALL OK"); process.exit(bad ? 1 : 0);

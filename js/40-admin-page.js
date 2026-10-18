@@ -7,13 +7,14 @@ const ADMIN_SECTIONS = [
   { id: "rules", label: "🐟 Rules", power: "rules" },
   { id: "problems", label: "🛠 Problems", power: "problems" },
   { id: "dashboard", label: "📊 Dashboard", power: "dashboard" },
+  { id: "removed", label: "↩️ Removed", any: ["reports", "delete_spot", "pages"] },
   { id: "admins", label: "🔑 Admins", power: "manage_admins" },
   { id: "log", label: "📜 Log", power: "read_log" }
 ];
 let adminSec = "people";
 function adminPageShow(sec) {
   const card = document.getElementById("invite-card"), nav = document.getElementById("admin-nav"); if (!card || !nav) return;
-  const allowed = ADMIN_SECTIONS.filter(s => adminCan(s.power));
+  const allowed = ADMIN_SECTIONS.filter(s => s.any ? s.any.some(adminCan) : adminCan(s.power));
   if (sec === "problems" && allowed.some(s => s.id === "problems")) { if (typeof goProblems === "function") goProblems(); return; }
   if (!allowed.some(s => s.id === sec)) sec = allowed.length ? allowed[0].id : "people";
   adminSec = sec;
@@ -25,6 +26,7 @@ function adminPageShow(sec) {
     nav.appendChild(b);
   });
   card.querySelectorAll("div[data-asec]").forEach(d => { d.hidden = d.dataset.asec !== sec; });
+  if (sec === "removed" && typeof window.adminUndoLoad === "function") window.adminUndoLoad();
   if (sec === "admins" && typeof window.adminsLoad === "function") window.adminsLoad();
   if (sec === "log") { const det = document.querySelector("#admin-log details"); if (det && !det.open) det.open = true; }
 }

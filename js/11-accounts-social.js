@@ -836,7 +836,7 @@
         const rm = frBtn("Remove " + r.target_type, () => act(() => db.rpc("remove_content", { p_type: r.target_type, p_id: r.target_id }), `Remove this ${r.target_type} for everyone?`));
         acts.appendChild(rm);
       }
-      if (r.target_user) acts.appendChild(frBtn("Ban user", () => act(() => db.rpc("ban_user", { p_user: r.target_user }), `Ban ${who || "this person"} from the app? They lose all access (you can approve them again later from the member list).`)));
+      if (r.target_user && adminCan("ban")) acts.appendChild(frBtn("Ban user", async () => { if (await adminBan(r.target_user, who)) loadReports(); }));
       acts.appendChild(frBtn("Resolve", () => act(() => db.rpc("resolve_report", { p_id: r.id }))));
       row.appendChild(acts);
       box.appendChild(row);
