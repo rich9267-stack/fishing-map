@@ -19,3 +19,15 @@ Other admins cannot be given the box yet (it stays owner-only until a later chan
 - **Which agencies, which format?** (FWC and others.) The Researcher should answer this. Counts by month, species and broad area only; no names, photos, exact spots or per-person numbers.
 - **"Broad area":** counties? the app's regions (Atlantic, Keys, Southwest, Panhandle)? Small groups (for example fewer than 5 catches) should be hidden so nobody can be picked out.
 - The opt-in setting ("include my catches in the monthly totals") sits in Settings, off until the person turns it on, and appears only once the privacy page and terms describe it.
+
+## Step 10 switches (v137) — same rule
+Two more switches, both closed: `coin_corrections` (Admin › 💰 Coins) and `chat_review` (Admin › 💬 Chat review). Open with the same kind of line:
+
+    update public.gate_switches set is_open = true, changed_at = now() where name = 'coin_corrections';
+    update public.gate_switches set is_open = true, changed_at = now() where name = 'chat_review';
+
+Chat review changes the "private chats are only for the two people" promise, so the privacy page and terms need a sentence too (draft for Legal): "If a message is reported, the owner or a trusted administrator may read the conversation between those two people to deal with the report. Each time, it is written to a log with who, why and when. We never browse private chats."
+Coin corrections need one line in the terms: "The owner may correct coin and gem balances when a bug or cheating is found. Corrections are shown in your coin history."
+
+## Not built: delete a person's data
+It would need a full copy of the delete-my-account routine for another person (spots handed to friends, races cancelled, etc.), plus a check that a fresh backup exists. Decide first: should it exist at all, given a person can already delete their own account?
