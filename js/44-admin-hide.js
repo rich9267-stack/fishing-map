@@ -11,3 +11,14 @@ async function adminHideSpot(spotId, name) {
   return true;
 }
 window.adminHideSpot = adminHideSpot;
+// How many photos each reported catch still shows, so "Hide photo only" appears only when it can do something. null = couldn't tell (show the button).
+window.adminPhotoShown = async ids => {
+  ids = [...new Set((ids || []).filter(Boolean))];
+  if (!ids.length) return {};
+  try {
+    const { data, error } = await db.rpc("admin_photo_state", { p_ids: ids });
+    if (error) return null;
+    const out = {}; ids.forEach(i => { out[i] = 0; }); (data || []).forEach(r => { out[r.catch_id] = Number(r.shown) || 0; });
+    return out;
+  } catch (e) { return null; }
+};

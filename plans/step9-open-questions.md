@@ -31,3 +31,9 @@ Coin corrections need one line in the terms: "The owner may correct coin and gem
 
 ## Not built: delete a person's data
 It would need a full copy of the delete-my-account routine for another person (spots handed to friends, races cancelled, etc.), plus a check that a fresh backup exists. Decide first: should it exist at all, given a person can already delete their own account?
+
+## Decisions Richard made (Oct 18) and what v138 did with them
+- Monthly totals are an **opt-in program** for reporting to state wildlife agencies (FWC in Florida; other states as the app grows). Built (locked): Settings box + Admin > Totals. Open it with: `update public.gate_switches set is_open = true, changed_at = now() where name = 'monthly_totals';`
+- **Verified** = a catch with a photo AND a GPS stamp (100 m or better, within 30 minutes of the catch). Only catches after the person opts in.
+- **Still open:** the state is found with a rough Florida box; other states show as "Other". Before sending anything to an agency, add real state boundaries (and each agency's format). Draft privacy sentence: "If you choose to, your verified catches (a photo plus a GPS location taken when you logged the catch) are counted in monthly totals by state, species and month that we share with state wildlife agencies. Totals never include your name, photos or exact spots, and we only show a total when at least 3 people are in it. You can turn this off at any time."
+- **Delete a person's data: dropped.**

@@ -828,6 +828,7 @@
     if (!data.length) return;
     try { await ensureProfiles(data.flatMap(r => [r.reporter, r.target_user])); } catch (e) { /* names optional */ }
     const warnN = typeof window.adminWarnCounts === "function" ? await window.adminWarnCounts(data.map(r => r.target_user)) : {};
+    const photoN = typeof window.adminPhotoShown === "function" ? await window.adminPhotoShown(data.filter(r => r.target_type === "catch").map(r => r.target_id)) : null;
     box.appendChild(el("div", "label", `Reports (${data.length})`));
     data.forEach(r => {
       const row = el("div", "feed-item");
@@ -843,7 +844,7 @@
         acts.appendChild(rm);
       }
       if (r.target_type === "message" && r.target_id) acts.appendChild(frBtn("Remove message", () => act(() => db.rpc("remove_content", { p_type: "message", p_id: r.target_id }), "Remove this chat message for both people? You can bring it back from the Removed section.")));
-      if (r.target_type === "catch" && r.target_id) acts.appendChild(frBtn("Hide photo only", () => act(() => db.rpc("hide_catch_photos", { p_catch: r.target_id }), "Hide this catch's photo from everyone else? The catch stays. You can bring the photo back from the Removed section.")));
+      if (r.target_type === "catch" && r.target_id && (!photoN || photoN[r.target_id] > 0)) acts.appendChild(frBtn("Hide photo only", () => act(() => db.rpc("hide_catch_photos", { p_catch: r.target_id }), "Hide this catch's photo from everyone else? The catch stays. You can bring the photo back from the Removed section.")));
       if (r.target_type === "spot" && r.target_id && adminCan("hide_spots") && typeof adminHideSpot === "function") acts.appendChild(frBtn("🙈 Hide spot", async () => { if (await adminHideSpot(r.target_id, r.snippet)) loadReports(); }));
       if (r.target_user && adminCan("warn") && typeof adminWarn === "function") acts.appendChild(frBtn("⚠️ Warn", async () => { if (await adminWarn(r.target_user, who, r.id)) loadReports(); }));
       if (r.target_user && adminCan("ban")) acts.appendChild(frBtn("Ban user", async () => { if (await adminBan(r.target_user, who)) loadReports(); }));

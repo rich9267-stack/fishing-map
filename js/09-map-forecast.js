@@ -410,6 +410,7 @@
       if (s.faces_deg != null) chips.appendChild(el("span", "chip", "🧭 Water to the " + compass(s.faces_deg)));
       chips.appendChild(el("span", "chip", VIS_LABEL[s.visibility || (s.is_private ? "private" : "friends")]));
       if (s.is_exact === false) chips.appendChild(el("span", "chip", "📍 Approximate pin (within ¼ mile)"));
+      if (s.hidden_by_team) chips.appendChild(el("span", "chip", "🙈 Hidden from others by the team"));
       { const zc = typeof zoneChip === "function" ? zoneChip(s) : null; if (zc) chips.appendChild(zc); }   // 🚫 inside / near a no-fishing zone (js/33)
       if (s.lat != null && s.lng != null && s.is_exact !== false) {
         const a = el("a", "chip", "📍 Directions");
@@ -449,6 +450,11 @@
       const { data, error } = await db.from("spots_visible").select("*").order("name");
       if (error) throw error;
       const circle = await getCircle();
+      try {   // spots the team hid from others (only their owner can see this): shown with a label on the spot card
+        const { data: hid } = await db.rpc("my_hidden_spots");
+        const hs = new Set(Array.isArray(hid) ? hid : []);
+        data.forEach(x => { x.hidden_by_team = hs.has(x.id); });
+      } catch (e) { /* the label is a nicety */ }
       spotsAll = data;
       spots = data.filter(x => inCircle(circle, x.created_by));
       spotsError = null;

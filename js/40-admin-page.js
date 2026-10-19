@@ -11,6 +11,7 @@ const ADMIN_SECTIONS = [
   { id: "private", label: "🔒 Private spots", power: "open_private_spots" },
   { id: "coins", label: "💰 Coins", power: "correct_coins" },
   { id: "chat", label: "💬 Chat review", power: "review_chat" },
+  { id: "totals", label: "📊 Totals", power: "dashboard" },
   { id: "removed", label: "↩️ Removed", any: ["reports", "delete_spot", "pages"] },
   { id: "admins", label: "🔑 Admins", power: "manage_admins" },
   { id: "log", label: "📜 Log", power: "read_log" }
@@ -35,6 +36,7 @@ function adminPageShow(sec) {
   if (sec === "private" && typeof window.adminPrivateLoad === "function") window.adminPrivateLoad();
   if (sec === "coins" && typeof window.adminCoinsLoad === "function") window.adminCoinsLoad();
   if (sec === "chat" && typeof window.adminChatLoad === "function") window.adminChatLoad();
+  if (sec === "totals" && typeof window.adminTotalsLoad === "function") window.adminTotalsLoad();
   if (sec === "admins" && typeof window.adminsLoad === "function") window.adminsLoad();
   if (sec === "log") { const det = document.querySelector("#admin-log details"); if (det && !det.open) det.open = true; }
 }
