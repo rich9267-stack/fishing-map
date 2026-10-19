@@ -23,8 +23,10 @@ Last audit: Oct 15, 2026 (v109; v110 added the CAPTCHA code, public-place pins a
    If sign-in ever breaks: Supabase → Attack Protection → turn CAPTCHA off (everything works again immediately).
 5. **Turn on 2-step sign-in** for your Supabase, GitHub and Google accounts. Your account is the admin key to everything.
 6. **GitHub → repo Settings → Code security:** turn on Secret scanning + push protection and Dependabot alerts (free on public repos).
-7. Run `setup/67-lock-down-signed-out.sql` in the SQL Editor once v109 is confirmed good on your phone (it has an UNDO block at the bottom).
+7. ✅ Done. Run `setup/67-lock-down-signed-out.sql` in the SQL Editor once v109 is confirmed good on your phone (it has an UNDO block at the bottom).
 8. Weekly while testers join: Supabase → Storage / Database usage (free limits 1 GB photos, 500 MB database).
+
+**Oct 19:** setup/90 applied: six later functions (admin_power_names + the five page-rename ones) were still open to signed-out callers; now locked. After adding any new function, check `routine_privileges` for grantee anon/PUBLIC (should be 0 rows). Items 1-3, 5, 6 and CAPTCHA confirmed done by Richard.
 
 ## Known design choices (not bugs)
 - Every approved member can see every other member's handle, display name and "home area" (needed for Find friends). The privacy page says so (v110).
