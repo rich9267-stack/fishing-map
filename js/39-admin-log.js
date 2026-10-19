@@ -4,7 +4,7 @@ const ADMIN_LOG_WORDS = {
   access_declined: "declined access", banned: "banned", status_changed: "changed status", admin_made: "made an admin",
   admin_removed: "removed as admin", person_warned: "warned", content_restored: "brought back a removed item", spot_restored: "brought back a spot", page_closed: "closed a page", spot_hidden: "hid a public spot", spot_unhidden: "showed a hidden spot again", photo_hidden: "hid a photo", photo_restored: "showed a hidden photo again", admin_boxes_changed: "changed an admin's boxes", report_resolved: "resolved a report", content_removed: "removed",
   spot_deleted: "deleted a spot", official_place_made: "made an official place", official_place_changed: "changed an official place",
-  official_place_removed: "removed an official place", page_removed: "removed a page", page_approved: "approved a page",
+  official_place_removed: "removed an official place", official_place_fixed: "fixed an official place", official_place_reverted: "put back an official place's original", page_removed: "removed a page", page_approved: "approved a page",
   page_declined: "declined a page", rename_approved: "approved a page rename", rename_declined: "declined a page rename",
   business_allowance_set: "set a business-page allowance", rule_added: "added a size & bag rule", rule_changed: "changed a size & bag rule",
   problem_done: "marked a problem done", flagged_kept: "kept a flagged item", flagged_removed: "removed a flagged item",

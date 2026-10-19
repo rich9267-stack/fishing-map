@@ -89,7 +89,13 @@
       refresh();
     });
     refresh();
-    [dir, save, trip].forEach(b => row.appendChild(b)); row.appendChild(msg);
+    [dir, save, trip].forEach(b => row.appendChild(b));
+    if (me && adminCan("official_places") && typeof adminOfficialFix === "function" && o.id != null) {
+      const fix = el("button", "btn ghost small", "🛠 Fix this place (admin)"); fix.type = "button";
+      fix.addEventListener("click", () => { if (map) map.closePopup(); adminOfficialFix(o); });
+      row.appendChild(fix);
+    }
+    row.appendChild(msg);
     return row;
   }
   const OL_CREDIT = { admin: "Added by an admin of this app" };
