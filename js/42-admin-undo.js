@@ -1,6 +1,6 @@
 // ---- Admin controls step 5: "Removed" section (bring things back) + safer bans (written reason, second confirm). Server: setup/82.
 // In-app box that asks for a typed reason. Resolves to the text, or null if cancelled.
-function askReason(title, hint, minLen) {
+function askReason(title, hint, minLen, goLabel) {
   return new Promise(done => {
     const prev = document.activeElement;
     const bg = el("div", "ask-bg"), box = el("div", "ask-box");
@@ -8,7 +8,7 @@ function askReason(title, hint, minLen) {
     const msg = el("div", "ask-text", title), ta = document.createElement("textarea");
     ta.maxLength = 150; ta.rows = 3; ta.placeholder = hint || ""; ta.setAttribute("aria-label", "Reason"); ta.style.width = "100%"; ta.style.marginTop = "8px";
     const err = el("div", "msg err");
-    const row = el("div", "ask-btns"), bNo = el("button", "btn ghost", "Cancel"), bYes = el("button", "btn danger", "Continue");
+    const row = el("div", "ask-btns"), bNo = el("button", "btn ghost", "Cancel"), bYes = el("button", "btn danger", goLabel || "Continue");
     bNo.type = bYes.type = "button";
     row.appendChild(bNo); row.appendChild(bYes);
     [msg, ta, err, row].forEach(n => box.appendChild(n)); bg.appendChild(box);
@@ -26,7 +26,8 @@ function askReason(title, hint, minLen) {
 async function adminBan(userId, who) {
   const reason = await askReason(`Ban ${who || "this person"}? Write why. This goes in the admin log.`, "For example: posting spam in comments");
   if (!reason) return false;
-  if (!await askOk(`Ban ${who || "this person"} from the app?\n\nReason: ${reason}\n\nThey lose all access. You can approve them again later from the member list.`)) return false;
+  let warned = ""; try { const wc = await adminWarnCounts([userId]); warned = adminWarnText(wc[userId]); } catch (e) { /* fine */ }
+  if (!await askOk(`Ban ${who || "this person"} from the app?\n\nReason: ${reason}${warned ? "\n" + warned : "\nNo earlier warnings. Consider a warning first."}\n\nThey lose all access. You can approve them again later from the member list.`)) return false;
   const { error } = await db.rpc("ban_user", { p_user: userId, p_reason: reason });
   if (error) { alert("Couldn't ban: " + (error.message || error)); return false; }
   return true;

@@ -822,12 +822,13 @@
     updateRequestBadge(null, data.length);
     if (!data.length) return;
     try { await ensureProfiles(data.flatMap(r => [r.reporter, r.target_user])); } catch (e) { /* names optional */ }
+    const warnN = typeof window.adminWarnCounts === "function" ? await window.adminWarnCounts(data.map(r => r.target_user)) : {};
     box.appendChild(el("div", "label", `Reports (${data.length})`));
     data.forEach(r => {
       const row = el("div", "feed-item");
       row.appendChild(el("div", null, `⚑ ${REASON_LABEL[r.reason] || r.reason} — ${r.target_type}`));
       const who = profName(r.target_user), by = profName(r.reporter);
-      row.appendChild(el("div", "spot-meta", `About: ${who || "unknown"}${profOf(r.target_user) ? " (@" + profOf(r.target_user).handle + ")" : ""} · reported by ${by || "someone"} · ${new Date(r.created_at).toLocaleDateString([], { month: "short", day: "numeric" })}`));
+      row.appendChild(el("div", "spot-meta", `About: ${who || "unknown"}${profOf(r.target_user) ? " (@" + profOf(r.target_user).handle + ")" : ""} · reported by ${by || "someone"} · ${new Date(r.created_at).toLocaleDateString([], { month: "short", day: "numeric" })}${warnN[r.target_user] ? " · " + adminWarnText(warnN[r.target_user]) : ""}`));
       if (r.snippet) row.appendChild(el("div", "spot-meta", "“" + r.snippet + "”"));
       if (r.details) row.appendChild(el("div", "spot-meta", r.details));
       const acts = el("div", "feed-actions");
@@ -836,6 +837,7 @@
         const rm = frBtn("Remove " + r.target_type, () => act(() => db.rpc("remove_content", { p_type: r.target_type, p_id: r.target_id }), `Remove this ${r.target_type} for everyone?`));
         acts.appendChild(rm);
       }
+      if (r.target_user && adminCan("warn") && typeof adminWarn === "function") acts.appendChild(frBtn("⚠️ Warn", async () => { if (await adminWarn(r.target_user, who, r.id)) loadReports(); }));
       if (r.target_user && adminCan("ban")) acts.appendChild(frBtn("Ban user", async () => { if (await adminBan(r.target_user, who)) loadReports(); }));
       acts.appendChild(frBtn("Resolve", () => act(() => db.rpc("resolve_report", { p_id: r.id }))));
       row.appendChild(acts);

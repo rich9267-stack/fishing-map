@@ -2,7 +2,7 @@
 const ADMIN_LOG_WORDS = {
   invite_added: "added to the invite list", removed_from_list: "removed from the list", access_approved: "approved access",
   access_declined: "declined access", banned: "banned", status_changed: "changed status", admin_made: "made an admin",
-  admin_removed: "removed as admin", content_restored: "brought back a removed item", spot_restored: "brought back a spot", page_closed: "closed a page", admin_boxes_changed: "changed an admin's boxes", report_resolved: "resolved a report", content_removed: "removed",
+  admin_removed: "removed as admin", person_warned: "warned", content_restored: "brought back a removed item", spot_restored: "brought back a spot", page_closed: "closed a page", admin_boxes_changed: "changed an admin's boxes", report_resolved: "resolved a report", content_removed: "removed",
   spot_deleted: "deleted a spot", official_place_made: "made an official place", official_place_changed: "changed an official place",
   official_place_removed: "removed an official place", page_removed: "removed a page", page_approved: "approved a page",
   page_declined: "declined a page", rename_approved: "approved a page rename", rename_declined: "declined a page rename",
