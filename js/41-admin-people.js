@@ -7,8 +7,7 @@ const ADMIN_BOX_WORDS = {
   manage_admins: "Manage admins"
 };
 const ADMIN_GATED_WORDS = {
-  open_private_spots: "Open private spots", review_chat: "Review a reported chat", correct_coins: "Correct coins & race results",
-  delete_person_data: "Delete a person's data"
+  correct_coins: "Correct coins & race results"
 };
 async function adminsLoad() {
   const box = document.getElementById("admins-admin"); if (!box) return;

@@ -58,7 +58,7 @@
       const joined = new Set((ms || []).filter(m => m.user_id === me.id && m.status === "joined").map(m => m.tournament_id));
       const need = (ts || []).some(t => t.geo_lat != null && !t.cancelled_at && new Date(t.ends_at) > new Date() && joined.has(t.id));
       const tripNeed = plans.some(pl => onTrip(pl) && Date.now() >= tripWindow(pl)[0] && Date.now() <= tripWindow(pl)[1]);
-      if (!need && !tripNeed && !(typeof shareTotalsOn === "function" && await shareTotalsOn())) return null;   // opted in to the monthly totals => a GPS stamp is saved too (js/48)
+      if (!need && !tripNeed) return null;
       return await new Promise(res => navigator.geolocation.getCurrentPosition(
         p => res({ lat: +p.coords.latitude.toFixed(5), lng: +p.coords.longitude.toFixed(5), acc: p.coords.accuracy, at: new Date().toISOString() }),
         () => res(null), { enableHighAccuracy: true, timeout: 8000, maximumAge: 20000 }));

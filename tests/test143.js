@@ -57,8 +57,8 @@ vm.createContext(ctx); vm.runInContext(powers + "\n" + js + "\nthis.run = admins
   await ctx.run();
   const all = []; (function walk(n) { all.push(n); (n.kids || []).forEach(walk); })(box);
   const boxes = all.filter(n => n.t === "input");
-  ok(boxes.length === 16 + 4 + 0, "one admin card shows 16 tick boxes + 4 locked ones (" + boxes.length + ")");
-  ok(all.filter(n => n.t === "input" && n.disabled).length === 4, "the 4 gated boxes are locked");
+  ok(boxes.length === 16 + 1 + 0, "one admin card shows 16 tick boxes + 1 locked one (" + boxes.length + ")");
+  ok(all.filter(n => n.t === "input" && n.disabled).length === 1, "the gated coins box is locked");
   const reportsBox = boxes.find(b => b.checked); ok(!!reportsBox, "Tess's ticked box shows ticked");
   const save = all.find(n => n.c === "btn small" && n.text === "Save boxes"); await save.click();
   ok(rpcs.some(r => r[0] === "set_admin" && r[1].p_email === "t@x.com" && r[1].p_make === true && r[1].p_powers.join() === "reports"), "Save boxes calls set_admin with the ticked boxes");

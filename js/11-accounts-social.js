@@ -1028,10 +1028,13 @@
   $("nm-check").addEventListener("click", () => gate());
   $("nm-form").addEventListener("submit", async e => {
     e.preventDefault();
-    const msg = $("nm-msg"); msg.className = "msg"; msg.textContent = "Sending…"; $("nm-send").disabled = true;
+    const msg = $("nm-msg");
+    if (!$("nm-agree").checked) { msg.className = "msg err"; msg.textContent = "Please tick the box to agree to the Terms and Privacy page (18 or older)."; return; }
+    msg.className = "msg"; msg.textContent = "Sending…"; $("nm-send").disabled = true;
     try {
       const { data, error } = await db.rpc("request_access", { p_name: $("nm-name").value.trim(), p_note: $("nm-note").value.trim() });
       if (error) throw error;
+      try { await db.rpc("accept_terms", { p_version: "2026-10-18" }); } catch (e2) { /* the date is saved once the database has accept_terms (setup/89) */ }
       msg.textContent = "";
       await gate();
     } catch (err) { msg.className = "msg err"; msg.textContent = "Couldn't send: " + (err.message || err); }

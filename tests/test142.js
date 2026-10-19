@@ -31,7 +31,7 @@ function make(powers) {
 }
 let t = make(["people", "reports", "pages", "rules", "problems", "dashboard", "read_log"]);
 t.ctx.window.adminPageShow("reports");
-ok(t.nav.kids.length === 9, "an admin with these boxes sees 9 section buttons");
+ok(t.nav.kids.length === 8, "an admin with these boxes sees 8 section buttons");
 ok(t.secs.filter(s => !s.hidden).map(s => s.dataset.asec).join() === "reports", "only the chosen section shows");
 t.nav.kids = []; t.ctx.window.adminPageShow("problems");
 ok(t.probs() === 1, "Problems button opens the problem list");

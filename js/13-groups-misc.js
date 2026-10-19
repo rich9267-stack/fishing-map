@@ -456,6 +456,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-18e", title: "📜 Terms page", items: [
+      "There is now a Terms page (a draft, in plain words) next to the Privacy page: who may join, playing fair, your content, and what the owner can do.",
+      "When you ask for access you now tick “I agree to the Terms and Privacy page, and I am 18 or older.”"
+    ] },
     { id: "2026-10-18d", title: "✅ Boat ramps now live under Official public spots", items: [
       "The old ⛵ Boat ramps switch is gone. Ramps now show under ✅ Official public spots, together with piers, parks and places added by admins.",
       "Only ramps FWC lists as open to the general public show now — closed, restricted and private ramps no longer appear."

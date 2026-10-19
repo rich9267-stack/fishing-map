@@ -59,7 +59,10 @@ A **"Full powers"** shortcut ticks everything.
 
 **Build first:** 1–4. **Later:** 5–8. **Gated:** 9–10.
 
-## Steps 9 and 10 — how to do them safely
+## UPDATE Oct 18 — what was dropped (Richard)
+**No current privacy promise is broken. All members are 18 or older.** So these were built, then DROPPED: the private-spot view, reading a reported private chat, monthly totals for agencies, and deleting another person's data. Kept from steps 9–10: correcting coins and race results (a new ledger line with a typed reason; still locked behind a closed switch). The text below is the old plan, kept for history.
+
+## Steps 9 and 10 — how to do them safely (OLD, see the update above)
 The gated boxes stay locked until the privacy page and terms say it and Legal has looked at the wording. Every use goes in the log with a short **reason typed by the person using it.**
 
 **9. Private spots and monthly totals.**
