@@ -470,6 +470,11 @@
       const rb = el("button", "linkbtn", "⚑ Report this spot"); rb.type = "button";
       rb.addEventListener("click", () => { map.closePopup(); openReport({ type: "spot", id: x.id, userId: x.created_by, snippet: x.name, label: `the spot "${x.name}"` }); });
       box.appendChild(rb);
+      if (x.visibility === "public" && adminCan("hide_spots") && typeof adminHideSpot === "function") {
+        const hb = el("button", "linkbtn", "🙈 Hide this spot (admin)"); hb.type = "button";
+        hb.addEventListener("click", () => adminHideSpot(x.id, x.name));
+        box.appendChild(hb);
+      }
     }
     const who = profName(x.created_by);
     if (who) {
@@ -837,6 +842,9 @@
         const rm = frBtn("Remove " + r.target_type, () => act(() => db.rpc("remove_content", { p_type: r.target_type, p_id: r.target_id }), `Remove this ${r.target_type} for everyone?`));
         acts.appendChild(rm);
       }
+      if (r.target_type === "message" && r.target_id) acts.appendChild(frBtn("Remove message", () => act(() => db.rpc("remove_content", { p_type: "message", p_id: r.target_id }), "Remove this chat message for both people? You can bring it back from the Removed section.")));
+      if (r.target_type === "catch" && r.target_id) acts.appendChild(frBtn("Hide photo only", () => act(() => db.rpc("hide_catch_photos", { p_catch: r.target_id }), "Hide this catch's photo from everyone else? The catch stays. You can bring the photo back from the Removed section.")));
+      if (r.target_type === "spot" && r.target_id && adminCan("hide_spots") && typeof adminHideSpot === "function") acts.appendChild(frBtn("🙈 Hide spot", async () => { if (await adminHideSpot(r.target_id, r.snippet)) loadReports(); }));
       if (r.target_user && adminCan("warn") && typeof adminWarn === "function") acts.appendChild(frBtn("⚠️ Warn", async () => { if (await adminWarn(r.target_user, who, r.id)) loadReports(); }));
       if (r.target_user && adminCan("ban")) acts.appendChild(frBtn("Ban user", async () => { if (await adminBan(r.target_user, who)) loadReports(); }));
       acts.appendChild(frBtn("Resolve", () => act(() => db.rpc("resolve_report", { p_id: r.id }))));

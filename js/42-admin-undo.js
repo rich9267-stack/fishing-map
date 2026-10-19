@@ -32,8 +32,9 @@ async function adminBan(userId, who) {
   if (error) { alert("Couldn't ban: " + (error.message || error)); return false; }
   return true;
 }
-const REMOVED_KIND = { catch: "🎣 Catch", comment: "💬 Comment", spot: "📍 Spot", page: "📄 Page" };
+const REMOVED_KIND = { catch: "🎣 Catch", comment: "💬 Comment", message: "✉️ Message", photo: "📷 Photo", spot: "📍 Spot", hidden_spot: "🙈 Hidden spot", page: "📄 Page" };
 const REMOVED_RPC = { catch: ["restore_content", id => ({ p_type: "catch", p_id: id })], comment: ["restore_content", id => ({ p_type: "comment", p_id: id })],
+  message: ["restore_content", id => ({ p_type: "message", p_id: id })], photo: ["show_catch_photos", id => ({ p_catch: id })], hidden_spot: ["unhide_spot", id => ({ p_id: id })],
   spot: ["restore_spot", id => ({ p_id: id })], page: ["restore_host_page", id => ({ p_id: id })] };
 async function adminUndoLoad() {
   const box = document.getElementById("removed-admin"); if (!box) return;
