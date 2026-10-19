@@ -15,4 +15,7 @@ ok(/href="terms\.html"/.test(priv) && (idx.match(/terms\.html/g) || []).length >
 ok(/id="nm-agree" type="checkbox" required/.test(idx) && /I am 18 or older/.test(idx), "the access request has a required agree + 18 box");
 ok(/nm-agree"\)\.checked/.test(js) && /accept_terms/.test(js), "the box is enforced and the acceptance is sent to the database (once setup/89 exists)");
 ok(/\.\/terms\.html/.test(sw), "terms.html is in the offline list");
+const s89 = read("setup/89-accept-terms.sql");
+ok(/terms_accepted_at/.test(s89) && /terms_version/.test(s89) && /function public\.accept_terms/.test(s89) && !/\bdrop\b|\bdelete\b/i.test(s89), "setup/89 adds the two columns and accept_terms, drops nothing");
+ok(/revoke all on function public\.accept_terms[^;]*anon/.test(s89) && /to authenticated/.test(s89), "accept_terms is for signed-in people only");
 console.log(bad ? "SOME FAILED" : "ALL OK"); process.exit(bad ? 1 : 0);

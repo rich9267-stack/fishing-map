@@ -166,6 +166,7 @@
     hwLoadMine();
     if (typeof palLoadMine === "function") palLoadMine();
     if (typeof tutLoadMine === "function") tutLoadMine();
+    if (typeof termsBannerCheck === "function") termsBannerCheck();
     $("invite-btn").hidden = !adminAny();
     checkRequests();
     startChat();

@@ -31,10 +31,10 @@ Checked the app text for "only you" and "Private": every one is still accurate, 
 ## Terms page and the "I agree" box (v139) — DRAFT, needs a lawyer before strangers join
 - `terms.html` is new; linked next to Privacy (sign-in screen, Settings, bottom of the privacy page).
 - The access request has a required box: "I agree to the Terms and Privacy page, and I am 18 or older." (Google sign-ins reach the same screen, so one box covers every way in.)
-- **Saving the date each member accepted needs a database change. Proposed `setup/89`, NOT applied (Richard says yes first):**
+- **Saving the date each member accepted needs a database change. `setup/89` APPLIED Oct 19 (tested with the test user; anon refused, blank refused, owner row untouched):**
   - add two columns to `members`: `terms_accepted_at timestamptz`, `terms_version text` (no new table, so the weekly backup needs nothing);
   - add function `accept_terms(p_version text)`: sets those two columns on the signed-in person's own member row (by their email), only if they are signed in; refuses nothing else; no drops;
   - the app already calls `accept_terms` right after the access request and ignores the error until the function exists.
 
-## Existing members — PLAN ONLY (not built until Richard says)
+## Existing members — PLAN ONLY (not built until Richard says) — BUILT in v140 (js/49-terms-banner.js)
 A one-time banner when an existing member opens the app after the terms go live: "We added a Terms page. Please read it. [Terms] [I understand]". Tapping "I understand" calls `accept_terms` (same function), and the banner never shows again for that terms version. It needs setup/89 first. When the Terms change in future, bump the version string and the banner returns.
