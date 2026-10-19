@@ -8,6 +8,7 @@ const ADMIN_SECTIONS = [
   { id: "problems", label: "🛠 Problems", power: "problems" },
   { id: "dashboard", label: "📊 Dashboard", power: "dashboard" },
   { id: "official", label: "📍 Places", power: "official_places" },
+  { id: "private", label: "🔒 Private spots", power: "open_private_spots" },
   { id: "removed", label: "↩️ Removed", any: ["reports", "delete_spot", "pages"] },
   { id: "admins", label: "🔑 Admins", power: "manage_admins" },
   { id: "log", label: "📜 Log", power: "read_log" }
@@ -29,6 +30,7 @@ function adminPageShow(sec) {
   card.querySelectorAll("div[data-asec]").forEach(d => { d.hidden = d.dataset.asec !== sec; });
   if (sec === "removed" && typeof window.adminUndoLoad === "function") window.adminUndoLoad();
   if (sec === "official" && typeof window.adminOfficialLoad === "function") window.adminOfficialLoad();
+  if (sec === "private" && typeof window.adminPrivateLoad === "function") window.adminPrivateLoad();
   if (sec === "admins" && typeof window.adminsLoad === "function") window.adminsLoad();
   if (sec === "log") { const det = document.querySelector("#admin-log details"); if (det && !det.open) det.open = true; }
 }
