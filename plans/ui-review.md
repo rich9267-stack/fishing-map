@@ -179,7 +179,7 @@ Suggested order: 5 → 6 → 3 → 4 → 1 → 2 (quick wins first; Map last bec
 |---|---|---|---|
 | 1 Home | **1A** short spot rows + **"Best spots today" can fold** — **built v145 (Oct 20)**, js/09 + js/25, test157 | medium | Fold = tap the card title (▾/▸). Starts open; open/closed remembered on this phone (localStorage, like other per-phone choices). Folded shows only the title + the #1 spot's name. 1B/1C not chosen. |
 | 2 Map | **2A** full-screen map, floating buttons — **built v146 (Oct 20)** with 🔍 search (Photon), js/50, test158 | medium | Build last. Notes + map key move into the Layers sheet. Test small phones and the Home Screen app. |
-| 3 Compete | **3A now; 3B after a planning pass** | small (3A) | **3A built v143 (Oct 20)**, js/12, test155. 3B is not built until a short Designer plan answers the questions below. |
+| 3 Compete | **3A now; 3B after a planning pass** | small (3A) | **3A built v143 (Oct 20)**, js/12, test155. 3B planned Oct 20: see "3B design note" below; ready to build. |
 | 4 Play | **4A, then 4B** | small → medium | Looks only. Same coins, shop, rules. **4A built v144 (Oct 20)**, js/14, test156. **4B built v147 (Oct 20)**, js/14 + css, test159. |
 | 5 Community | **5A** one "Filters (n)" button + bottom sheet | small | **Built v141 (Oct 20)**, js/21, test153. |
 | 6 Tackle | **6A + 6B + new equipment kinds** (speargun, cast net, bow) — confirmed Oct 20 | small + 1 database change | **Built v142 + setup/91 (Oct 20)**, js/13, test154. The 🏆 label says "Most fish" so it fits nets and spears too. |
@@ -191,13 +191,39 @@ Suggested order: 5 → 6 → 3 → 4 → 1 → 2 (quick wins first; Map last bec
   - **Naming a tank** needs a new saved name (one small database change). Names are seen by others who can view your profile, so they need the same bad-word check and admin hide as other text.
 - **Buy more tanks: goes to the Later list, planned after the lawyer review.** It is a new coin rule (spend coins to get a tank) and a new game piece, which task 9 keeps out until go-public review. Plan it together with tank naming as "Play: more tanks" (questions: price in coins or gems, how many max, which fish go in which tank, salt/fresh only or themed tanks).
 
-### 3B planning questions (answer before building)
-- Which tournaments show: live only, or also ended in the last 7 days?
-- Friend contests too, or official tournaments only?
-- Which board shows on each card when a tournament has several (Longest, Heaviest…)?
-- Show tournaments you haven't joined (with a "Join" button), or only ones you're in?
-- Order: ending soonest first, or the ones you're in first?
-Not in 3B: totals across tournaments, new prizes, Hall of Fame changes.
+### 3B design note — 📊 Leaderboards tab (planned Oct 20; Richard answered the questions)
+**What it is:** a third tab on Compete, after Contests and Tournaments. Each live or starting-soon tournament and friend contest gets one card with its top 3 and your place. Tap a card to open its full page (the 3A leaderboard).
+**Why:** you can see every race at a glance without opening each one.
+
+**Answers (Oct 20):** live and starting soon (not ended) · official tournaments **and** your friend contests, in two groups · the first board, with small chips to switch boards · show tournaments you haven't joined, with a Join button · your own first, then the ones ending soonest.
+
+**Rules**
+1. Tab order: Contests · Tournaments · 📊 Leaderboards. The other two tabs stay as they are.
+2. Group 1, **Tournaments**: every official/host-page tournament that is live or starting soon, whether you're in it or not. Group 2, **Your contests**: friend contests you've joined that are live or starting soon. A group with no cards is left out.
+3. Cancelled and ended ones never show here. They stay on the other tabs as today.
+4. Order inside each group: ones you're in first; then live before starting soon; then the one ending soonest (live) or starting soonest (soon) first.
+5. **Live card:** title, 🔴 LIVE, "Ends {day time} · {n} in". Then board chips (only when it has more than 1 board; the first board is picked when the card opens; a tap swaps the board on that card only and isn't remembered). Then the top 3: "1 Joe 34″ · 2 Ana 31″ · 3 Sam 29″" (same names and numbers as the 3A podium; ties share a place, same as 3A). Then your line: "You: 7th · 25″", or "You're in, no catch counted yet", or "You're not in this one" + **Join**.
+6. **Starting-soon card:** title, "Starts {day time}", "{n} joined · {board names} · no scores yet", and You're in / Join. No top 3.
+7. Teams: a teams-only tournament shows the team board (top 3 teams; your team's place). A "both" tournament shows the individual board, with a "Teams" chip next to the board chips.
+8. **Join** on a card does exactly what Join on the tournament page does: same check, same rules, same message. If joining needs anything extra there (a team pick, a host-page rule), the card's Join opens the tournament page instead.
+9. Tap anywhere else on a card → the tournament's page (openContestPage), same as from the other tabs.
+10. Empty tab: "No live tournaments or contests right now." + buttons 🏆 See tournaments and 🎣 Start a contest.
+11. Boards load when the tab opens (one request per card, at most 10 at a time; more cards show "Open to see the board" until scrolled to). No new database rules. Read the same leaderboard data the tournament page uses (no change).
+
+**Numbers**
+| What | Value |
+|---|---|
+| Top places on a card | 3 |
+| Board loads at once | 10 (tune later) |
+| Ending soon/starting soon order | by time, nearest first |
+
+**Screens:** the mockup shown in chat on Oct 20 (Leaderboards tab: Fall Snook Classic live with Longest/Heaviest chips, a not-joined card with Join, a starting-soon card with no scores, and a friend contest under Your contests).
+
+**Done when:** Richard opens Compete → 📊 Leaderboards on his phone and sees each live tournament's top 3 and his place without opening it; a chip switches Longest ↔ Heaviest; Join works on a card he's not in; a tournament that hasn't started says "no scores yet".
+
+**Tester checks:** tournament not started, live, ended (gone), and cancelled (gone); you not entered; ties; teams-only and both; 1 entrant and 50 entrants; a friend contest you weren't invited to (must not show); host-page tournament; small phone (iPhone SE).
+
+**Not included:** ended results here, totals across tournaments, prizes, Hall of Fame changes, any database change.
 
 ### 6 — new equipment kinds
 - The database only allows kinds bait / lure / rod / line / other (setup/29 check rule), so this needs one small migration (next `setup/NN`), widening that rule. The old rule has to be dropped and re-added; the connector may block that, in which case Richard runs it in the SQL Editor.
