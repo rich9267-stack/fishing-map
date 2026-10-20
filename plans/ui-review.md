@@ -180,7 +180,7 @@ Suggested order: 5 → 6 → 3 → 4 → 1 → 2 (quick wins first; Map last bec
 | 1 Home | **1A** short spot rows + **"Best spots today" can fold** — **built v145 (Oct 20)**, js/09 + js/25, test157 | medium | Fold = tap the card title (▾/▸). Starts open; open/closed remembered on this phone (localStorage, like other per-phone choices). Folded shows only the title + the #1 spot's name. 1B/1C not chosen. |
 | 2 Map | **2A** full-screen map, floating buttons — **built v146 (Oct 20)** with 🔍 search (Photon), js/50, test158 | medium | Build last. Notes + map key move into the Layers sheet. Test small phones and the Home Screen app. |
 | 3 Compete | **3A now; 3B after a planning pass** | small (3A) | **3A built v143 (Oct 20)**, js/12, test155. 3B is not built until a short Designer plan answers the questions below. |
-| 4 Play | **4A, then 4B** | small → medium | Looks only. Same coins, shop, rules. **4A built v144 (Oct 20)**, js/14, test156. |
+| 4 Play | **4A, then 4B** | small → medium | Looks only. Same coins, shop, rules. **4A built v144 (Oct 20)**, js/14, test156. **4B built v147 (Oct 20)**, js/14 + css, test159. |
 | 5 Community | **5A** one "Filters (n)" button + bottom sheet | small | **Built v141 (Oct 20)**, js/21, test153. |
 | 6 Tackle | **6A + 6B + new equipment kinds** (speargun, cast net, bow) — confirmed Oct 20 | small + 1 database change | **Built v142 + setup/91 (Oct 20)**, js/13, test154. The 🏆 label says "Most fish" so it fits nets and spears too. |
 

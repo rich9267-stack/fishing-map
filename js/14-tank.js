@@ -394,13 +394,15 @@
     opts = opts || {};
     const salt = kind === "salt", fish = data.fish;
     const card = el("div", "tank-card");
-    card.appendChild(el("div", "label", salt ? "🌊 Saltwater tank" : "🌿 Freshwater tank"));
     if (!fish.length) {
+      card.appendChild(el("div", "label", salt ? "🌊 Saltwater tank" : "🌿 Freshwater tank"));
       card.appendChild(emptyBox(salt ? "No saltwater fish yet. Your best catch of each saltwater species will swim here." : "No freshwater fish yet. Your best catch of each freshwater species will swim here.", "📸 Log a catch", () => { $("qc-fab").click(); }));
       box.appendChild(card); return;
     }
     const tank = el("div", "tank " + (salt ? "tank-salt" : "tank-fresh"));
     tank.style.height = Math.min(620, 440 + Math.ceil(fish.length / 2) * 20) + "px";   // about twice the old size (plans/ui-review.md 4A)
+    // Nicer finish (plans/ui-review.md 4B): an air stone in the corner sends up a column of bubbles; glass shine and the cabinet are CSS
+    for (let i = 0; i < 5; i++) { const b = el("span", "bubble stone"); b.style.left = (salt ? 90 : 7) + (i % 2) + "%"; b.style.animationDelay = (i * 0.9) + "s"; b.style.animationDuration = (4 + (i % 3)) + "s"; b.setAttribute("aria-hidden", "true"); tank.appendChild(b); }
     for (let i = 0; i < 6; i++) { const b = el("span", "bubble"); b.style.left = (8 + i * 16) + "%"; b.style.animationDelay = (i * 1.3) + "s"; b.style.animationDuration = (7 + (i % 3) * 2) + "s"; b.setAttribute("aria-hidden", "true"); tank.appendChild(b); }
     const items = [];
     fish.forEach((f, i) => {
@@ -418,7 +420,10 @@
     got.forEach((d, i) => { const e = el("span", "decor", d.e); e.style.left = (5 + i * (76 / Math.max(deco.length - 1, 1))) + "%"; e.style.fontSize = d.sz + "px"; e.title = d.n; e.setAttribute("aria-hidden", "true"); tank.appendChild(e); });
     // Spoken description: the tank is a labelled group; its fish are buttons; the decorations are read out in the label (they are only pictures)
     tank.setAttribute("role", "group"); tank.dataset.a11y = `${salt ? "Saltwater" : "Freshwater"} tank with ${fish.length} species. Tab to a fish and press Enter for its details.`; tank.dataset.decor = got.map(d => d.n).join(", ");
-    card.appendChild(tank);
+    // The cabinet: the tank sits in a dark frame with a name plaque under the glass ("Saltwater tank · 6 fish"; tanks have no names yet)
+    const cab = el("div", "tank-cab"); cab.appendChild(tank);
+    cab.appendChild(el("div", "tank-plaque", `${salt ? "Saltwater" : "Freshwater"} tank · ${fish.length} fish`));
+    card.appendChild(cab);
     tankApplySetup(tank, opts.setup);
     tankSwim(tank, items, { seed: salt ? 1 : 2, chase: true });
     const nxt = deco.find(d => fish.length < d.at);
@@ -754,6 +759,7 @@
         cell.appendChild(art); cell.appendChild(el("div", "shop-name", i.name));
         cell.appendChild(el("div", "spot-meta", i.water === "salt" ? "🌊 saltwater tank" : i.water === "fresh" ? "🌿 freshwater tank" : "any tank"));
         const owned = shop.owned.has(i.key);
+        if (!owned && i.how !== "tournament" && (i.coins || i.gems)) { const pt = el("span", "shop-price", [i.coins ? i.coins + " 🪙" : "", i.gems ? i.gems + " 💎" : ""].filter(Boolean).join(" + ")); pt.setAttribute("aria-hidden", "true"); cell.appendChild(pt); }   // price tag on the picture tile (4B); the Buy button says it out loud
         if (owned) cell.appendChild(el("div", "shop-own", "✓ Owned"));
         else if (i.how === "tournament") cell.appendChild(el("div", "spot-meta", "🏆 Won in official tournaments"));
         else {

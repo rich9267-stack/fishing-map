@@ -503,6 +503,12 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-20g", title: "🐠 Tanks with a nicer finish", items: [
+      "Each tank now sits in a cabinet with glass shine, an air stone sending up bubbles, and a name plaque, for example \"Saltwater tank · 6 fish\".",
+      "Shop items show their price on the picture.",
+      "My fish cards have a colored rim for their rank: gray Common, green Uncommon, blue Rare, purple Epic, gold Legendary.",
+      "Only the looks changed: same coins, same shop, same rules."
+    ] },
     { id: "2026-10-20f", title: "🗺 A full-screen map with search", items: [
       "The Map now fills the whole screen, so the page never scrolls while you pan and pinch.",
       "New 🔍 Search the map box at the top: type one of your spot names and tap it, or press Search to find towns, parks, piers and ramps. Tap a place to fly there; its pop-up has + Add a spot here.",
