@@ -503,6 +503,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-20h", title: "📊 Leaderboards on Compete", items: [
+      "New third tab on 🏁 Compete: 📊 Leaderboards. Every live or starting-soon tournament gets one card with its top 3 and your place, so you can see every race without opening each one.",
+      "Your friend contests have their own group underneath. The ones you're in come first, then the ones ending soonest.",
+      "Tap Longest / Heaviest on a card to switch its board. Not in a tournament yet? Tap Join right on the card. Tap anywhere else on a card to open its full page."
+    ] },
     { id: "2026-10-20g", title: "🐠 Tanks with a nicer finish", items: [
       "Each tank now sits in a cabinet with glass shine, an air stone sending up bubbles, and a name plaque, for example \"Saltwater tank · 6 fish\".",
       "Shop items show their price on the picture.",

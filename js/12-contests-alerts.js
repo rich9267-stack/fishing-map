@@ -1,7 +1,7 @@
   // ---- 🏁 Contests (V4.6): official tournaments (admin only) and friend competitions ----
   const CT_BOARDS = { length: "Longest fish", weight: "Heaviest fish", fish: "Most fish", species: "Most species" };
   let ctRows = [], ctMine = {}, ctMembers = [], ctView = "list", ctId = null, ctErr = null, ctBusy = false, ctHostChecked = false;
-  let ctTab = "contests"; // "contests" (anyone, with friends) or "tournaments" (official, run by admins / hosts)
+  let ctTab = "contests"; // "contests" (anyone, with friends), "tournaments" (official, run by admins / hosts) or "boards" (📊 Leaderboards, plans/ui-review.md 3B)
   let ctPrefill = null;   // {title,start,end,invites} when a contest is started from a trip plan
   const CT_REPEAT = { weekly: "every week", monthly: "every month", yearly: "every year" };
   const ctFmt = d => new Date(d).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -101,6 +101,7 @@
       if (b.error) throw b.error;
       ctRows = a.data || []; ctMembers = b.data || [];
       ctMine = {}; ctMembers.forEach(m => { if (m.user_id === me.id) ctMine[m.tournament_id] = m.status; });
+      lbReset();   // 📊 Leaderboards: boards are read again after every load
       ctBannerRender();
       await ensureProfiles([...ctRows.map(t => t.created_by), ...ctMembers.map(m => m.user_id)]);
     } catch (e) { ctErr = "Couldn't load contests: " + (e.message || e); }
@@ -160,12 +161,13 @@
     top.appendChild(el("div", "label", "🏁 Compete"));
     box.appendChild(top);
     const tabs = el("div", "fchips"); tabs.style.margin = "6px 0";
-    [["contests", "🎣 Contests"], ["tournaments", "🏆 Tournaments"]].forEach(([k, txt]) => {
+    [["contests", "🎣 Contests"], ["tournaments", "🏆 Tournaments"], ["boards", "📊 Leaderboards"]].forEach(([k, txt]) => {
       const b = el("button", "fchip" + (ctTab === k ? " on" : ""), txt); b.type = "button"; b.id = "ct-tab-" + k;
       b.addEventListener("click", () => { ctTab = k; ctRender(); });
       tabs.appendChild(b);
     });
     box.appendChild(tabs);
+    if (ctTab === "boards") return lbList(box);
     const rank = t => ({ live: 0, soon: 1, ended: 2 })[ctState(t).k];
     const sect = (title, list, empty) => {
       box.appendChild(el("div", "label", title)); box.lastChild.style.marginTop = "14px";
@@ -580,6 +582,157 @@
     }
   }
 
+  // ---- 📊 Leaderboards tab (plans/ui-review.md 3B): one card per live or starting-soon tournament / friend contest — top 3 and your place ----
+  // Reads the same leaderboard data as the tournament page (tournament_standings / tournament_team_board). No new database rules.
+  const LB_TOP = 3, LB_AT_ONCE = 10;   // places on a card · board loads running at the same time (tune later)
+  let lbData = {}, lbQueue = [], lbRunning = 0, lbSeen = null, lbGroups = null, lbGroupsNow = null;
+  function lbReset() { lbData = {}; lbQueue = []; lbGroups = null; lbGroupsNow = null; if (lbSeen) { lbSeen.disconnect(); lbSeen = null; } }
+  // ties share a place (two 34″ fish are both 1st; the next one is 3rd)
+  const lbPlace = (list, i) => 1 + list.filter(r => Number(r.value) > Number(list[i].value)).length;
+  const lbSort = rows => rows.slice().sort((x, y) => y.value - x.value || new Date(x.caught_at || 0) - new Date(y.caught_at || 0));
+  // the order inside a group: ones I'm in → live before starting soon → nearest end (live) or start (soon) first
+  function lbOrder(a, b) {
+    const ia = ctMine[a.id] === "joined" ? 0 : 1, ib = ctMine[b.id] === "joined" ? 0 : 1;
+    const sa = ctState(a).k === "live" ? 0 : 1, sb = ctState(b).k === "live" ? 0 : 1;
+    const ta = new Date(sa ? a.starts_at : a.ends_at), tb = new Date(sb ? b.starts_at : b.ends_at);
+    return ia - ib || sa - sb || ta - tb;
+  }
+  function lbList(box) {
+    box.appendChild(el("div", "spot-meta", "Every live race at a glance — the top 3 and your place. Tap a card to open the full board."));
+    const tours = ctRows.filter(t => t.kind === "official" && ctOpen(t)).sort(lbOrder);
+    const mine = ctRows.filter(t => t.kind === "friends" && ctMine[t.id] === "joined" && ctOpen(t)).sort(lbOrder);
+    if (!tours.length && !mine.length) {
+      box.appendChild(el("div", "empty", "No live tournaments or contests right now."));
+      const row = el("div"); row.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-top:8px";
+      const go = (txt, id, fn) => { const b = el("button", "btn small", txt); b.type = "button"; b.id = id; b.addEventListener("click", fn); row.appendChild(b); };
+      go("🏆 See tournaments", "lb-see", () => { ctTab = "tournaments"; ctRender(); });
+      go("🎣 Start a contest", "lb-start", () => { ctTab = "contests"; ctPrefill = null; ctView = "form"; ctRender(); });
+      box.appendChild(row);
+      return;
+    }
+    const cards = [];
+    [["🏆 Tournaments", tours], ["🎣 Your contests", mine]].forEach(([title, list]) => {
+      if (!list.length) return;
+      box.appendChild(el("div", "label", title)); box.lastChild.style.marginTop = "14px";
+      list.forEach(t => { const c = lbCard(t); box.appendChild(c.node); cards.push(c); });
+    });
+    // boards: the first 10 cards load now; the rest when scrolled to (no IntersectionObserver → all of them, still 10 at a time)
+    const live = cards.filter(c => c.live);
+    const IO = window.IntersectionObserver;
+    if (IO && live.length > LB_AT_ONCE) lbSeen = new IO(es => es.forEach(e => { if (e.isIntersecting) { lbSeen.unobserve(e.target); lbWant(e.target._lb); } }), { rootMargin: "200px" });
+    live.forEach((c, i) => { if (i < LB_AT_ONCE || !lbSeen) lbWant(c); else { c.node._lb = c; lbSeen.observe(c.node); } });
+  }
+  // queue a board read for a card (one request per card; at most LB_AT_ONCE running)
+  function lbWant(c) {
+    const key = c.t.id + (c.teams ? ":teams" : "");
+    c.asked = true;
+    if (lbData[key]) { c.draw(); return; }
+    if (!lbQueue.some(q => q.key === key)) lbQueue.push({ key, c });
+    lbPump();
+  }
+  function lbPump() {
+    while (lbRunning < LB_AT_ONCE && lbQueue.length) {
+      const { key, c } = lbQueue.shift(); lbRunning++;
+      const teams = key.endsWith(":teams");
+      (async () => {
+        try {
+          const { data, error } = await db.rpc(teams ? "tournament_team_board" : "tournament_standings", { p_id: c.t.id });
+          if (error) throw error;
+          if (teams && !lbGroups) lbGroups = db.from("group_members").select("group_id,status").eq("user_id", me.id).then(r => new Set(((r && r.data) || []).filter(m => m.status === "joined").map(m => m.group_id)), () => new Set());
+          if (teams) lbGroupsNow = await lbGroups; else await ensureProfiles((data || []).map(r => r.user_id));
+          lbData[key] = { rows: data || [] };
+        } catch (e) { lbData[key] = { err: true }; }
+        lbRunning--;
+        if (c.node.isConnected) c.draw();
+        lbPump();
+      })();
+    }
+  }
+  function lbCard(t) {
+    const st = ctState(t), mineSt = ctMine[t.id], inIt = mineSt === "joined", live = st.k === "live";
+    const tmode = t.team_mode || "singles", boards = t.boards || [];
+    const n = ctMembers.filter(m => m.tournament_id === t.id && m.status === "joined").length;
+    const node = el("div", "feed-item lb-card"); node.id = "lb-" + t.id; node.style.cursor = "pointer";
+    const open = () => { stopPlacing(); ctId = t.id; ctView = "detail"; ctRender(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+    node.addEventListener("click", e => { if (!e.target.closest("button")) open(); });
+    const c = { t, node, live, board: boards[0], teams: tmode === "teams", draw };
+    const top = el("div", "feed-top");
+    const name = el("button", "linkbtn lb-title", (t.kind === "official" ? "🏆 " : "🎣 ") + t.title); name.type = "button";
+    name.setAttribute("aria-label", t.title + " — open its page"); name.addEventListener("click", open);
+    top.appendChild(name); top.appendChild(el("span", "spot-meta", live ? "🔴 LIVE" : st.label)); node.appendChild(top);
+    node.appendChild(el("div", "spot-meta", live ? `Ends ${ctFmt(t.ends_at)} · ${n} in`
+      : `${n} joined · ${boards.map(b => CT_BOARDS[b]).join(", ")} · no scores yet`));
+    const body = el("div"); node.appendChild(body);
+    const youRow = el("div", "lb-you"); node.appendChild(youRow);
+    if (!live) { you(null); return c; }
+    // board chips (only when there's a choice); "both" adds a 👥 Teams switch. A tap changes this card only and isn't remembered.
+    if (boards.length > 1 || tmode === "both") {
+      const ch = el("div", "fchips lb-chips");
+      if (boards.length > 1) {
+        const rg = el("span", "lb-rg"); rg.setAttribute("role", "radiogroup"); rg.setAttribute("aria-label", "Which board");
+        boards.forEach(b => {
+          const x = el("button", "fchip", CT_BOARDS[b]); x.type = "button"; x.dataset.board = b; x.setAttribute("role", "radio");
+          x.addEventListener("click", () => { c.board = b; lbWant(c); x.focus(); });
+          rg.appendChild(x);
+        });
+        ch.appendChild(rg);
+      }
+      if (tmode === "both") {
+        const x = el("button", "fchip", "👥 Teams"); x.type = "button"; x.dataset.teams = "1";
+        x.addEventListener("click", () => { c.teams = !c.teams; lbWant(c); x.focus(); });
+        ch.appendChild(x);
+      }
+      node.insertBefore(ch, body);
+    }
+    draw();
+    return c;
+    function draw() {
+      node.querySelectorAll("[data-board]").forEach(x => { const on = x.dataset.board === c.board; x.classList.toggle("on", on); x.setAttribute("aria-checked", String(on)); });
+      node.querySelectorAll("[data-teams]").forEach(x => { x.classList.toggle("on", c.teams); x.setAttribute("aria-pressed", String(c.teams)); });
+      body.innerHTML = "";
+      const got = lbData[c.t.id + (c.teams ? ":teams" : "")];
+      if (!got) { body.appendChild(el("div", "spot-meta lb-wait", c.asked ?"Loading the board…" : "Open to see the board")); you(null); return; }
+      if (got.err) { body.appendChild(el("div", "spot-meta", "Couldn't load the board — tap to open it.")); you(null); return; }
+      const bd = c.board;
+      if (c.teams) {
+        const list = lbSort(got.rows.filter(r => r.board === bd));
+        body.appendChild(el("div", "spot-meta", "👥 Teams · " + CT_BOARDS[bd]));
+        if (!list.length) { body.appendChild(el("div", "empty", "No teams entered yet.")); you(null); return; }
+        topLine(list, r => r.name);
+        const i = list.findIndex(r => lbGroupsNow && lbGroupsNow.has(r.group_id));
+        you(i >= 0 ? `Your team ${list[i].name}: ${ctOrd(lbPlace(list, i))} · ${ctVal(bd, list[i].value)}` : null, "▶ You're in — your team isn't on this board");
+        return;
+      }
+      const list = lbSort(got.rows.filter(r => r.board === bd));
+      if (boards.length === 1 && tmode !== "both") body.appendChild(el("div", "spot-meta", CT_BOARDS[bd]));
+      if (!list.length) { body.appendChild(el("div", "empty", "No qualifying catches yet.")); you(null); return; }
+      topLine(list, r => ctWho(r.user_id));
+      const i = list.findIndex(r => r.user_id === me.id);
+      you(i >= 0 ? `You: ${ctOrd(lbPlace(list, i))} · ${ctVal(bd, list[i].value)}` : null);
+    }
+    function topLine(list, who) {
+      const ul = el("ol", "lb-top"); ul.setAttribute("aria-label", "Top " + LB_TOP);
+      list.slice(0, LB_TOP).forEach((r, i) => {
+        const p = lbPlace(list, i), li = el("li", p === 1 ? "p1" : null); li.appendChild(el("b", null, String(p)));
+        li.appendChild(document.createTextNode(` ${who(r)} ${ctVal(c.board, r.value)}`));
+        if (r.group_id ? lbGroupsNow && lbGroupsNow.has(r.group_id) : r.user_id === me.id) li.classList.add("me");
+        ul.appendChild(li);
+      });
+      body.appendChild(ul);
+    }
+    // your line: your place, or You're in / You're not in this one + Join
+    function you(text, inText) {
+      youRow.innerHTML = "";
+      if (text) { youRow.appendChild(el("span", "lb-you-me", "▶ " + text)); return; }
+      if (inIt) { youRow.appendChild(el("span", null, inText || (live ? "▶ You're in, no catch counted yet" : "✓ You're in"))); return; }
+      youRow.appendChild(el("span", "spot-meta", "You're not in this one"));
+      if (t.kind === "official" && !t.cancelled_at) {   // same Join as on the tournament page (same rpc, same message)
+        const j = el("button", "btn small lb-join", "Join"); j.type = "button"; j.setAttribute("aria-label", "Join " + t.title);
+        j.addEventListener("click", () => ctAct("join_tournament", { p_id: t.id }));
+        youRow.appendChild(j);
+      }
+    }
+  }
 
   // ---- 🔔 Phone alerts (V4.7): web push — turn on in Settings, pick what you want, tap an alert to jump to it ----
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);

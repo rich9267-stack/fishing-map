@@ -708,6 +708,18 @@
   .ct-details[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 8px; }
   .ct-details-body { padding-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
   .ct-details > summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  /* 📊 Leaderboards tab (plans/ui-review.md 3B): one small card per live / starting-soon race */
+  .lb-card .lb-title { font-weight: 700; font-size: 1rem; text-align: left; overflow-wrap: anywhere; min-width: 0; }
+  .lb-chips { margin: 8px 0 2px; }
+  .lb-rg { display: contents; }
+  .lb-top { list-style: none; margin: 8px 0 4px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .lb-top li { display: block; min-width: 0; overflow-wrap: anywhere; border: 0; padding: 0; }
+  .lb-top li b { display: inline-block; min-width: 1.4em; height: 1.4em; line-height: 1.4em; border-radius: 50%; text-align: center; background: var(--line); font-size: .85rem; margin-right: 2px; }
+  .lb-top li.p1 b { background: #f6d77a; color: #5a4100; }
+  .lb-top li.me { font-weight: 700; color: var(--accent); }
+  .lb-you { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .lb-you-me { font-weight: 700; }
+  .lb-join { margin-left: auto; }
 
   /* ---- UX v2: 6-tab bar, floating ＋ Log button, page titles, sub-tabs (Play) ---- */
   .bnav-in button { font-size: .66rem; letter-spacing: -.01em; min-height: 56px; }
