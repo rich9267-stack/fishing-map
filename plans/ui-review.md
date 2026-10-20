@@ -182,7 +182,7 @@ Suggested order: 5 → 6 → 3 → 4 → 1 → 2 (quick wins first; Map last bec
 | 3 Compete | **3A now; 3B after a planning pass** | small (3A) | 3B is not built until a short Designer plan answers the questions below. |
 | 4 Play | **4A, then 4B** | small → medium | Looks only. Same coins, shop, rules. |
 | 5 Community | **5A** one "Filters (n)" button + bottom sheet | small | **Built v141 (Oct 20)**, js/21, test153. |
-| 6 Tackle | **6A + 6B + new equipment kinds** (speargun, cast net, bow) — confirmed Oct 20 | small + 1 database change | See below. Names, "counts fish" and grouping all confirmed. |
+| 6 Tackle | **6A + 6B + new equipment kinds** (speargun, cast net, bow) — confirmed Oct 20 | small + 1 database change | **Built v142 + setup/91 (Oct 20)**, js/13, test154. The 🏆 label says "Most fish" so it fits nets and spears too. |
 
 ### Added Oct 20 after the picture mockups (claude.ai/artifact/Y92Y2xopsy3pt2zrZgTjXC)
 - **Map search box: yes.** Part of 2A: "🔍 Search the map" floating top-left; type a place or one of your spot names, the map flies there. Needs a free place-lookup service (Researcher to pick one that is free and allowed for app use; OpenStreetMap's Nominatim has strict use limits). Your own spot names are searched on the phone first.

@@ -388,8 +388,12 @@
   $("trip-review-back").addEventListener("click", closeTripReview);
 
   // ---- 🎒 Tackle box: your own gear list (private), with stats worked out from the Bait / lure on your catches ----
+  // plans/ui-review.md item 6: grouped like a shelf, stat badges, 🏆 on the item with the most fish, remove tucked inside ⋯,
+  // "+ Add tackle" opens a short form with the kind as picture buttons. spear / net / bow (setup/91) count fish like baits do.
   let tackle = [];
-  const TK_KIND = { bait: "🦐 Bait", lure: "🎣 Lure", rod: "🪝 Rod", line: "🧵 Line", other: "📦 Other" };
+  const TK_KIND = { bait: "🦐 Bait", lure: "🎣 Lure", spear: "🔱 Spear", net: "🕸 Cast net", bow: "🏹 Bow", rod: "🪝 Rod", line: "🧵 Line", other: "📦 Other" };
+  const TK_GROUPS = [["Baits", ["bait"]], ["Lures", ["lure"]], ["Spear, net and bow", ["spear", "net", "bow"]], ["Rods and line", ["rod", "line"]], ["Other", ["other"]]];
+  const tkCounts = t => t.kind !== "rod" && t.kind !== "line";   // rods and line are gear only; everything else counts the fish it caught
   async function loadTackle() {
     if (!me) return;
     try {
@@ -399,63 +403,111 @@
     } catch (e) { /* keep the last list */ }
     fillBaitList(); renderTackle();
   }
-  // Bait suggestions while logging: tackle box first, then what you used recently
+  // Bait suggestions while logging: tackle box first (anything that counts fish), then what you used recently
   function fillBaitList() {
     const recent = Object.values(catchesBySpot).flat().filter(c => isMine(c) && c.bait).sort((a, b) => new Date(b.caught_at) - new Date(a.caught_at)).map(c => c.bait);
-    const seen = new Set(), names = tackle.filter(t => t.kind === "bait" || t.kind === "lure" || t.kind === "other").map(t => t.name).concat(recent)
+    const seen = new Set(), names = tackle.filter(tkCounts).map(t => t.name).concat(recent)
       .filter(n => { const k = n.trim().toLowerCase(); if (!k || seen.has(k)) return false; seen.add(k); return true; }).slice(0, 24);
     const dl = $("bait-list"); dl.innerHTML = "";
     names.forEach(b => { const o = document.createElement("option"); o.value = b; dl.appendChild(o); });
   }
   const tkUses = t => { const nm = t.name.toLowerCase(); return myCatches().filter(c => c.bait && c.bait.toLowerCase().includes(nm)); };
+  const tkFish = cs => cs.reduce((n, c) => n + (c.how_many || 1), 0);
+  function tkRow(t, cs, top) {
+    const row = el("div", "feed-item tk-item");
+    const head = el("div", "row");
+    const nm = el("span", "tk-name", `${(TK_KIND[t.kind] || "📦").split(" ")[0]} ${t.name}`);
+    if (top) nm.appendChild(el("span", "tk-top", "🏆 Most fish"));
+    head.appendChild(nm);
+    const more = el("button", "linkbtn tk-more", "⋯"); more.type = "button"; more.setAttribute("aria-label", "More for " + t.name); more.setAttribute("aria-expanded", "false");
+    head.appendChild(more); row.appendChild(head);
+    const stat = el("div", "tk-stat");
+    if (!tkCounts(t)) stat.appendChild(el("span", null, "Gear"));
+    else if (!cs.length) stat.appendChild(el("span", null, "Not used on a logged catch yet"));
+    else {
+      const lens = cs.filter(c => c.length_in != null).map(c => +c.length_in);
+      const bySp = {}; cs.forEach(c => { const k = cap((c.species || "").trim()); if (k) bySp[k] = (bySp[k] || 0) + (c.how_many || 1); });
+      const topSp = Object.entries(bySp).sort((a, b) => b[1] - a[1])[0];
+      stat.appendChild(el("span", "tk-badge", `🐟 ${tkFish(cs)} fish`));
+      if (lens.length) stat.appendChild(el("span", "tk-badge", `📏 ${(lens.reduce((a, b) => a + b, 0) / lens.length).toFixed(1)}″ avg`));
+      if (topSp) stat.appendChild(el("span", null, "mostly " + topSp[0].toLowerCase()));
+    }
+    row.appendChild(stat);
+    const acts = el("div", "tk-acts"); acts.hidden = true;
+    const x = el("button", "linkbtn danger", "🗑 Remove from box"); x.type = "button"; x.setAttribute("aria-label", "Remove " + t.name);
+    x.addEventListener("click", async () => {
+      const { error } = await db.from("tackle").update({ deleted_at: new Date().toISOString() }).eq("id", t.id);
+      if (error) { toast("Couldn't remove that."); return; } await loadTackle();
+    });
+    acts.appendChild(x); row.appendChild(acts);
+    more.addEventListener("click", () => { acts.hidden = !acts.hidden; more.setAttribute("aria-expanded", String(!acts.hidden)); });
+    return row;
+  }
   function renderTackle() {
     const list = $("tk-list"), sug = $("tk-sugg"); if (!list) return;
     list.innerHTML = ""; sug.innerHTML = "";
-    if (!tackle.length) list.appendChild(el("div", "empty", "Nothing here yet — add your usual baits and lures above."));
-    const rows = tackle.map(t => ({ t, cs: tkUses(t) })).sort((a, b) => b.cs.length - a.cs.length || a.t.name.localeCompare(b.t.name));
-    rows.forEach(({ t, cs }) => {
-      const row = el("div", "feed-item");
-      const top = el("div", "row"); top.appendChild(el("span", null, `${TK_KIND[t.kind] || ""} ${t.name}`));
-      const x = el("button", "linkbtn danger", "✕"); x.type = "button"; x.setAttribute("aria-label", "Remove " + t.name);
-      x.addEventListener("click", async () => {
-        const { error } = await db.from("tackle").update({ deleted_at: new Date().toISOString() }).eq("id", t.id);
-        if (error) { toast("Couldn't remove that."); return; } await loadTackle();
-      });
-      top.appendChild(x); row.appendChild(top);
-      let meta;
-      if (t.kind === "rod" || t.kind === "line") meta = "Gear — not counted per catch";
-      else if (!cs.length) meta = "Not used on a logged catch yet";
-      else {
-        const fish = cs.reduce((n, c) => n + (c.how_many || 1), 0), lens = cs.filter(c => c.length_in != null).map(c => +c.length_in);
-        const bySp = {}; cs.forEach(c => { const k = cap((c.species || "").trim()); bySp[k] = (bySp[k] || 0) + (c.how_many || 1); });
-        const topSp = Object.entries(bySp).sort((a, b) => b[1] - a[1])[0];
-        meta = `${fish} fish${lens.length ? " · avg " + (lens.reduce((a, b) => a + b, 0) / lens.length).toFixed(1) + "″" : ""}${topSp ? " · mostly " + topSp[0].toLowerCase() : ""}`;
-      }
-      row.appendChild(el("div", "spot-meta", meta)); list.appendChild(row);
+    if (!tackle.length) list.appendChild(el("div", "empty", "Nothing here yet. Tap + Add tackle to add your usual baits, lures and gear."));
+    const rows = tackle.map(t => ({ t, cs: tkUses(t) }));
+    // 🏆 only when one item clearly has the most fish
+    const counted = rows.filter(r => tkCounts(r.t)).map(r => ({ r, n: tkFish(r.cs) })).sort((a, b) => b.n - a.n);
+    const top = counted.length && counted[0].n > 0 && !(counted[1] && counted[1].n === counted[0].n) ? counted[0].r.t.id : null;
+    TK_GROUPS.forEach(([title, kinds]) => {
+      const g = rows.filter(r => kinds.includes(r.t.kind) || (title === "Other" && !TK_KIND[r.t.kind]));
+      if (!g.length) return;
+      g.sort((a, b) => tkFish(b.cs) - tkFish(a.cs) || a.t.name.localeCompare(b.t.name));
+      list.appendChild(el("div", "lyr-group", title));
+      g.forEach(({ t, cs }) => list.appendChild(tkRow(t, cs, t.id === top)));
     });
     // baits you've used on catches that aren't in the box yet
     const have = tackle.map(t => t.name.toLowerCase());
     const used = {}; myCatches().forEach(c => { const b = (c.bait || "").trim(); if (b && !have.some(h => b.toLowerCase().includes(h) || h.includes(b.toLowerCase()))) used[b.toLowerCase()] = used[b.toLowerCase()] || b; });
     const extra = Object.values(used).slice(0, 8);
     if (extra.length) {
-      sug.appendChild(el("div", "spot-meta", "Used on your catches — tap to add to the box:"));
+      sug.appendChild(el("div", "spot-meta", "Used on your catches. Tap one to add it:"));
       const chips = el("div", "fchips");
-      extra.forEach(b => { const c = el("button", "fchip", "+ " + b); c.type = "button"; c.addEventListener("click", () => tkAdd(b, /jig|spoon|plug|fly|popper|bucktail|swim|crank|lure|spinner|topwater|soft/i.test(b) ? "lure" : "bait")); chips.appendChild(c); });
+      extra.forEach(b => { const c = el("button", "fchip", "+ " + b); c.type = "button"; c.addEventListener("click", () => tkAdd(b, tkGuess(b))); chips.appendChild(c); });
       sug.appendChild(chips);
     }
   }
+  const tkGuess = b => /spear|hawaiian sling/i.test(b) ? "spear" : /\bnet\b/i.test(b) ? "net" : /\bbow\b|bowfish|arrow/i.test(b) ? "bow"
+    : /jig|spoon|plug|fly|popper|bucktail|swim|crank|lure|spinner|topwater|soft/i.test(b) ? "lure" : "bait";
   async function tkAdd(name, kind) {
     name = String(name || "").trim(); if (!name) return;
     if (tackle.some(t => t.name.toLowerCase() === name.toLowerCase())) { toast("Already in your tackle box"); return; }
     const { error } = await db.from("tackle").insert({ name: name.slice(0, 60), kind });
     if (error) { toast("Couldn't add that: " + error.message); return; }
+    toast("✓ Added " + name.slice(0, 60));
     await loadTackle();
   }
-  $("tk-form").addEventListener("submit", async e => { e.preventDefault(); const n = $("tk-name").value; $("tk-name").value = ""; await tkAdd(n, $("tk-kind").value); });
+  // "+ Add tackle" form: the kind is picked with picture buttons that fill the hidden #tk-kind
+  (function tkForm() {
+    const form = $("tk-form"), open = $("tk-open"), kinds = $("tk-kinds"), kind = $("tk-kind"), keys = Object.keys(TK_KIND);
+    const setKind = k => { kind.value = k; [...kinds.children].forEach(b => { const on = b.dataset.kind === k; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); b.tabIndex = on ? 0 : -1; }); };
+    keys.forEach((k, i) => {
+      const [ic, ...rest] = TK_KIND[k].split(" "), b = el("button", "tk-kind"); b.type = "button"; b.dataset.kind = k; b.setAttribute("role", "radio");
+      b.appendChild(el("span", "tk-kind-i", ic)); b.appendChild(el("span", null, rest.join(" ")));
+      b.addEventListener("click", () => setKind(k));
+      b.addEventListener("keydown", e => {   // arrow keys move between kinds, like any radio group
+        const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key]; if (!d) return;
+        e.preventDefault(); const nk = keys[(i + d + keys.length) % keys.length]; setKind(nk); kinds.querySelector(`[data-kind="${nk}"]`).focus();
+      });
+      kinds.appendChild(b);
+    });
+    setKind(kind.value || "bait");
+    const show = on => { form.hidden = !on; open.setAttribute("aria-expanded", String(on)); if (on) $("tk-name").focus(); };
+    open.addEventListener("click", () => show(form.hidden));
+    $("tk-cancel").addEventListener("click", () => { show(false); open.focus(); });
+    form.addEventListener("submit", async e => { e.preventDefault(); const n = $("tk-name").value; $("tk-name").value = ""; await tkAdd(n, kind.value); $("tk-name").focus(); });
+  })();
 
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-20b", title: "🎒 A tidier tackle box", items: [
+      "Stats › Tackle now groups your gear: Baits, Lures, Spear, net and bow, Rods and line. Each item shows how many fish it caught, the average length and the fish it catches most.",
+      "New kinds: 🔱 Spear (speargun or pole spear), 🕸 Cast net and 🏹 Bow. They count fish like baits do: write the same name in “Bait / lure” when you log a catch.",
+      "Tap + Add tackle to add gear and pick its kind with a picture. Remove is now inside ⋯ so it can't be tapped by accident."
+    ] },
     { id: "2026-10-20a", title: "⚙ Tidier public feed filters", items: [
       "Community › Public now shows only 📍 Local / 🌎 Global and one ⚙ Filters button above the catches, so the catches start higher up.",
       "Tap ⚙ Filters for time, fish, water, photos and ranked. The number on the button shows how many filters are on."

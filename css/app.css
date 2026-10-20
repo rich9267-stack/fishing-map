@@ -673,6 +673,22 @@
   .pub-sheet .fchip { min-height: 40px; }
   .pub-sheet .lyr-group:first-child { margin-top: 4px; }
   .pub-summary { margin: 0 0 8px; }
+  /* 🎒 Tackle box (js/13; plans/ui-review.md item 6) */
+  .tk-form { margin-top: 10px; padding: 10px 0 4px; border-top: 1px solid var(--line); }
+  .tk-kinds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .tk-kind { appearance: none; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 12px; min-height: 58px; padding: 6px 2px; font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .tk-kind-i { font-size: 1.3rem; line-height: 1.1; }
+  .tk-kind.on { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
+  .tk-kind:focus-visible, .tk-more:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  #tk-list .lyr-group { margin-top: 14px; }
+  .tk-item { padding: 9px 0; }
+  .tk-name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+  .tk-top { display: inline-block; margin-left: 6px; font-size: .72rem; font-weight: 700; border-radius: 6px; padding: 1px 6px; background: #f6d77a; color: #5a4100; vertical-align: 1px; }
+  .tk-more { min-width: 44px; min-height: 36px; font-size: 1.2rem; line-height: 1; }
+  .tk-stat { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--muted); font-size: .85rem; margin-top: 2px; }
+  .tk-badge { font-weight: 600; }
+  .tk-acts { margin-top: 6px; }
+  .tk-acts[hidden], .tk-form[hidden] { display: none; }
 
   /* ---- UX v2: 6-tab bar, floating ＋ Log button, page titles, sub-tabs (Play) ---- */
   .bnav-in button { font-size: .66rem; letter-spacing: -.01em; min-height: 56px; }

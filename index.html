@@ -7,7 +7,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://coastwatch.pfeg.noaa.gov; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' data: blob: https://challenges.cloudflare.com https://euxcisnyansdrzzjyvsl.supabase.co wss://euxcisnyansdrzzjyvsl.supabase.co https://api.tidesandcurrents.noaa.gov https://api.weather.gov https://api.open-meteo.com https://marine-api.open-meteo.com https://archive-api.open-meteo.com https://waterservices.usgs.gov https://api.inaturalist.org https://overpass-api.de https://gis.myfwc.com https://services1.arcgis.com https://gis.charttools.noaa.gov https://coastwatch.pfeg.noaa.gov https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tile.openstreetmap.org https://server.arcgisonline.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=141">
+<link rel="stylesheet" href="css/app.css?v=142">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -820,12 +820,18 @@
       <p class="spot-meta" id="rec-note" style="margin:8px 0 0"></p>
     </div>
     <div class="card" id="tackle-card" data-pane="tackle" style="margin-bottom:14px">
-      <div class="label">🎒 My tackle box</div>
-      <p class="spot-meta" style="margin:4px 0 0">Private — only you see this. Add what you fish with; the stats come from the “Bait / lure” you write on catches, and the names pop up as suggestions when you log.</p>
-      <form id="tk-form" class="row" style="gap:6px;margin-top:8px">
-        <input id="tk-name" maxlength="60" placeholder="e.g., Live shrimp, ¼ oz white jig…" style="flex:1" required>
-        <select id="tk-kind" aria-label="Kind of tackle" style="width:auto"><option value="bait">Bait</option><option value="lure">Lure</option><option value="rod">Rod</option><option value="line">Line</option><option value="other">Other</option></select>
-        <button class="btn small" type="submit">Add</button>
+      <div class="row"><div class="label">🎒 My tackle box</div><button class="btn small" id="tk-open" type="button" aria-expanded="false" aria-controls="tk-form">+ Add tackle</button></div>
+      <p class="spot-meta" style="margin:4px 0 0">Private — only you see this. The fish counts come from the “Bait / lure” you write on catches, and the names pop up as suggestions when you log.</p>
+      <form id="tk-form" class="tk-form" hidden>
+        <label for="tk-name">Name</label>
+        <input id="tk-name" maxlength="60" placeholder="e.g., Live shrimp, 8 ft cast net…" autocomplete="off" required>
+        <div class="lyr-group" id="tk-kind-l">Kind</div>
+        <div class="tk-kinds" id="tk-kinds" role="radiogroup" aria-labelledby="tk-kind-l"></div>
+        <input type="hidden" id="tk-kind" value="bait">
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn" type="submit">Add to my box</button>
+          <button class="btn ghost" id="tk-cancel" type="button">Cancel</button>
+        </div>
       </form>
       <div id="tk-list"></div>
       <div id="tk-sugg"></div>
@@ -1263,53 +1269,53 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=141"></script>
-<script src="js/02-spots.js?v=141"></script>
-<script src="js/03-photos.js?v=141"></script>
-<script src="js/04-insights.js?v=141"></script>
-<script src="js/05-seasons-records.js?v=141"></script>
-<script src="js/06-catching.js?v=141"></script>
-<script src="js/07-measure-fishid.js?v=141"></script>
-<script src="js/08-feed-plans.js?v=141"></script>
-<script src="js/09-map-forecast.js?v=141"></script>
-<script src="js/10-tools-safety.js?v=141"></script>
-<script src="js/11-accounts-social.js?v=141"></script>
-<script src="js/12-contests-alerts.js?v=141"></script>
-<script src="js/13-groups-misc.js?v=141"></script>
-<script src="js/14-tank.js?v=141"></script>
-<script src="js/15-fish-rank.js?v=141"></script>
-<script src="js/16-fish-race.js?v=141"></script>
-<script src="js/17-license-help.js?v=141"></script>
-<script src="js/18-species.js?v=141"></script>
-<script src="js/19-biting.js?v=141"></script>
-<script src="js/20-spot-share.js?v=141"></script>
-<script src="js/21-pub-filters.js?v=141"></script>
-<script src="js/22-public-water.js?v=141"></script>
-<script src="js/23-depth.js?v=141"></script>
-<script src="js/24-delete-account.js?v=141"></script>
-<script src="js/25-home-map.js?v=141"></script>
-<script src="js/26-sub-tabs.js?v=141"></script>
-<script src="js/27-me-find.js?v=141"></script>
-<script src="js/28-host-pages.js?v=141"></script>
-<script src="js/29-home-waters.js?v=141"></script>
-<script src="js/30-red-tide.js?v=141"></script>
-<script src="js/31-regional-rules.js?v=141"></script>
-<script src="js/32-spot-style.js?v=141"></script>
-<script src="js/33-zones.js?v=141"></script>
-<script src="js/34-official-admin.js?v=141"></script>
-<script src="js/35-palettes.js?v=141"></script>
-<script src="js/36-tutorials.js?v=141"></script>
-<script src="js/37-official-layer.js?v=141"></script>
-<script src="js/38-admin-powers.js?v=141"></script>
-<script src="js/39-admin-log.js?v=141"></script>
-<script src="js/40-admin-page.js?v=141"></script>
-<script src="js/41-admin-people.js?v=141"></script>
-<script src="js/42-admin-undo.js?v=141"></script>
-<script src="js/43-admin-warn.js?v=141"></script>
-<script src="js/44-admin-hide.js?v=141"></script>
-<script src="js/45-admin-official.js?v=141"></script>
-<script src="js/47-admin-gated.js?v=141"></script>
-<script src="js/49-terms-banner.js?v=141"></script>
-<script src="js/99-boot.js?v=141"></script>
+<script src="js/01-core.js?v=142"></script>
+<script src="js/02-spots.js?v=142"></script>
+<script src="js/03-photos.js?v=142"></script>
+<script src="js/04-insights.js?v=142"></script>
+<script src="js/05-seasons-records.js?v=142"></script>
+<script src="js/06-catching.js?v=142"></script>
+<script src="js/07-measure-fishid.js?v=142"></script>
+<script src="js/08-feed-plans.js?v=142"></script>
+<script src="js/09-map-forecast.js?v=142"></script>
+<script src="js/10-tools-safety.js?v=142"></script>
+<script src="js/11-accounts-social.js?v=142"></script>
+<script src="js/12-contests-alerts.js?v=142"></script>
+<script src="js/13-groups-misc.js?v=142"></script>
+<script src="js/14-tank.js?v=142"></script>
+<script src="js/15-fish-rank.js?v=142"></script>
+<script src="js/16-fish-race.js?v=142"></script>
+<script src="js/17-license-help.js?v=142"></script>
+<script src="js/18-species.js?v=142"></script>
+<script src="js/19-biting.js?v=142"></script>
+<script src="js/20-spot-share.js?v=142"></script>
+<script src="js/21-pub-filters.js?v=142"></script>
+<script src="js/22-public-water.js?v=142"></script>
+<script src="js/23-depth.js?v=142"></script>
+<script src="js/24-delete-account.js?v=142"></script>
+<script src="js/25-home-map.js?v=142"></script>
+<script src="js/26-sub-tabs.js?v=142"></script>
+<script src="js/27-me-find.js?v=142"></script>
+<script src="js/28-host-pages.js?v=142"></script>
+<script src="js/29-home-waters.js?v=142"></script>
+<script src="js/30-red-tide.js?v=142"></script>
+<script src="js/31-regional-rules.js?v=142"></script>
+<script src="js/32-spot-style.js?v=142"></script>
+<script src="js/33-zones.js?v=142"></script>
+<script src="js/34-official-admin.js?v=142"></script>
+<script src="js/35-palettes.js?v=142"></script>
+<script src="js/36-tutorials.js?v=142"></script>
+<script src="js/37-official-layer.js?v=142"></script>
+<script src="js/38-admin-powers.js?v=142"></script>
+<script src="js/39-admin-log.js?v=142"></script>
+<script src="js/40-admin-page.js?v=142"></script>
+<script src="js/41-admin-people.js?v=142"></script>
+<script src="js/42-admin-undo.js?v=142"></script>
+<script src="js/43-admin-warn.js?v=142"></script>
+<script src="js/44-admin-hide.js?v=142"></script>
+<script src="js/45-admin-official.js?v=142"></script>
+<script src="js/47-admin-gated.js?v=142"></script>
+<script src="js/49-terms-banner.js?v=142"></script>
+<script src="js/99-boot.js?v=142"></script>
 </body>
 </html>
