@@ -503,6 +503,12 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-20f", title: "🗺 A full-screen map with search", items: [
+      "The Map now fills the whole screen, so the page never scrolls while you pan and pinch.",
+      "New 🔍 Search the map box at the top: type one of your spot names and tap it, or press Search to find towns, parks, piers and ramps. Tap a place to fly there; its pop-up has + Add a spot here.",
+      "🗂 Layers, ◎ Show me and ⋯ More float on the right. More holds Find new water, List of spots, Boat mode, Map key and Save map for offline.",
+      "Layer notes and the map key are now inside 🗂 Layers. An orange dot on Layers means there is a note to read."
+    ] },
     { id: "2026-10-20e", title: "🏠 A tidier Home", items: [
       "Your spots are now one short line each: a colored dot for the water, the name, and when you last caught a fish there (or the distance when you sort by Nearest).",
       "Tap a spot to open its full card with everything as before: conditions, directions, notes, Edit, 3-day outlook, photos and catches. Tap again to close it.",

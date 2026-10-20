@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Security: the page may only run scripts from itself and the 3 code/data hosts below, and only talk to the servers listed in connect-src. A new outside server must be added here (tests/test122.js checks this). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://coastwatch.pfeg.noaa.gov; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' data: blob: https://challenges.cloudflare.com https://euxcisnyansdrzzjyvsl.supabase.co wss://euxcisnyansdrzzjyvsl.supabase.co https://api.tidesandcurrents.noaa.gov https://api.weather.gov https://api.open-meteo.com https://marine-api.open-meteo.com https://archive-api.open-meteo.com https://waterservices.usgs.gov https://api.inaturalist.org https://overpass-api.de https://gis.myfwc.com https://services1.arcgis.com https://gis.charttools.noaa.gov https://coastwatch.pfeg.noaa.gov https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tile.openstreetmap.org https://server.arcgisonline.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://coastwatch.pfeg.noaa.gov; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' data: blob: https://challenges.cloudflare.com https://euxcisnyansdrzzjyvsl.supabase.co wss://euxcisnyansdrzzjyvsl.supabase.co https://api.tidesandcurrents.noaa.gov https://api.weather.gov https://api.open-meteo.com https://marine-api.open-meteo.com https://archive-api.open-meteo.com https://waterservices.usgs.gov https://api.inaturalist.org https://overpass-api.de https://gis.myfwc.com https://services1.arcgis.com https://gis.charttools.noaa.gov https://coastwatch.pfeg.noaa.gov https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tile.openstreetmap.org https://server.arcgisonline.com https://photon.komoot.io; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=145">
+<link rel="stylesheet" href="css/app.css?v=146">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -685,15 +685,32 @@
       <button type="button" id="place-center">Use map center</button>
       <button type="button" id="place-cancel">Cancel</button>
     </div>
-    <div class="filter-status" id="map-filter-note" role="status" aria-live="polite" style="margin:0 0 8px" hidden></div>
     <div id="map"></div>
-    <div class="map-tools map-primary" id="map-main-tools">
-      <button class="btn small" id="map-add" type="button">+ Add spot</button>
-      <button class="btn small" id="map-layers-btn" type="button" aria-haspopup="dialog" aria-expanded="false">🗂 Layers</button>
-      <button class="btn small" id="map-find-btn" type="button" aria-haspopup="dialog" aria-expanded="false">🧭 Find new water</button>
-      <button class="btn ghost small" id="map-me" type="button">◎ Show me</button>
-      <button class="btn ghost small" id="map-list" type="button">📋 List</button>
-      <button class="btn ghost small" id="boat-open" type="button">🚤 Boat mode</button>
+    <!-- Full-screen map (plans/ui-review.md 2A): these float on the map; js/50-map-full.js runs the search and the ⋯ More menu -->
+    <div class="map-float" id="map-main-tools">
+      <form class="ms" id="map-search" role="search" autocomplete="off">
+        <label class="sr-only" for="ms-q">Search the map</label>
+        <input id="ms-q" type="search" placeholder="🔍 Search the map" enterkeyhint="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ms-results" autocomplete="off" spellcheck="false">
+        <ul id="ms-results" role="listbox" aria-label="Search results" hidden></ul>
+      </form>
+      <div class="mf-right">
+        <button class="mf-btn" id="map-layers-btn" type="button" aria-haspopup="dialog" aria-expanded="false"><span class="mf-i" aria-hidden="true">🗂</span><span>Layers</span><span class="mf-dot" id="map-notes-dot" hidden></span></button>
+        <button class="mf-btn" id="map-me" type="button"><span class="mf-i" aria-hidden="true">◎</span><span>Show me</span></button>
+        <button class="mf-btn" id="map-more-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="map-more"><span class="mf-i" aria-hidden="true">⋯</span><span>More</span></button>
+        <div class="mf-menu" id="map-more" role="menu" aria-label="More map tools" hidden>
+          <button type="button" role="menuitem" id="map-find-btn" aria-haspopup="dialog" aria-expanded="false">🧭 Find new water</button>
+          <button type="button" role="menuitem" id="map-list">📋 List of spots</button>
+          <button type="button" role="menuitem" id="boat-open">🚤 Boat mode</button>
+          <button type="button" role="menuitem" id="map-key-btn">🔑 Map key</button>
+          <button type="button" role="menuitem" id="map-offline">⬇ Save map for offline</button>
+        </div>
+      </div>
+      <button class="btn mf-add" id="map-add" type="button">+ Add spot</button>
+      <div class="sat-legend" id="sat-legend" hidden>
+        <div class="sat-title" id="sat-title"></div>
+        <div class="sat-bar" id="sat-bar"></div>
+        <div class="sat-scale"><span id="sat-min"></span><span id="sat-max"></span></div>
+      </div>
     </div>
     <div id="layer-real" hidden>
       <button id="mx-official" type="button" aria-pressed="false">✅ Official public spots</button>
@@ -710,35 +727,19 @@
       <button id="map-layer" type="button">🛰 Satellite</button>
       <button id="mx-zone" type="button">🚫 Protected zones</button>
     </div>
-    <div id="bite-chips" hidden style="margin:0 0 8px"></div>
-    <div class="spot-meta" id="bite-note" role="status" aria-live="polite" hidden style="margin:0 0 8px"></div>
-    <div class="spot-meta" id="mx-note" role="status" aria-live="polite" hidden></div>
-    <div class="spot-meta" id="pw-note" role="status" aria-live="polite" hidden></div>
-    <div class="spot-meta" id="dep-note" role="status" aria-live="polite" hidden></div>
-    <div class="spot-meta" id="rt-note" role="status" aria-live="polite" hidden></div>
-    <details class="map-key"><summary>Map key</summary>
-    <div class="legend">
-      <span><span class="dot" style="background:#1d6fd6"></span>Saltwater</span>
-      <span><span class="dot" style="background:#16a085"></span>Brackish / tidal canal</span>
-      <span><span class="dot" style="background:#b7791f"></span>Freshwater</span>
-      <span><span class="dot" style="background:#fff;border-color:#888"></span>Suggested</span>
-      <span><span class="dot" style="background:#1d6fd6;box-shadow:0 0 0 2px #222"></span>Private (yours)</span>
-      <span id="sight-key" hidden><span class="dot" style="background:#8e44ad"></span>Public sighting</span>
-      <span id="bite-key" hidden><span class="dot" style="background:#e67e22"></span>Recent catches</span>
-      <span id="rt-key" hidden><span class="dot" style="background:#9aa5b1"></span>Red tide: none <span class="dot" style="background:#f4d03f"></span>very low <span class="dot" style="background:#f39c12"></span>low <span class="dot" style="background:#e55d2b"></span>medium <span class="dot" style="background:#b3261e"></span>high</span>
-    </div>
-    </details>
-    <div class="sat-legend" id="sat-legend" hidden>
-      <div class="sat-title" id="sat-title"></div>
-      <div class="sat-bar" id="sat-bar"></div>
-      <div class="sat-scale"><span id="sat-min"></span><span id="sat-max"></span></div>
-      <div class="spot-meta" id="sat-note"></div>
-    </div>
 
     <div class="msheet" id="layers-sheet" role="dialog" aria-modal="false" aria-labelledby="layers-title" hidden>
       <div class="msheet-grip" aria-hidden="true"></div>
       <div class="msheet-head"><h2 id="layers-title">Layers</h2><button class="linkbtn" id="layers-done" type="button">Done</button></div>
       <div class="msheet-body" id="layers-body">
+        <div class="map-notes" id="map-notes">
+          <div class="filter-status" id="map-filter-note" role="status" aria-live="polite" style="margin:0 0 8px" hidden></div>
+          <div class="spot-meta" id="mx-note" role="status" aria-live="polite" hidden></div>
+          <div class="spot-meta" id="pw-note" role="status" aria-live="polite" hidden></div>
+          <div class="spot-meta" id="dep-note" role="status" aria-live="polite" hidden></div>
+          <div class="spot-meta" id="rt-note" role="status" aria-live="polite" hidden></div>
+          <div class="spot-meta" id="sat-note"></div>
+        </div>
         <div class="lyr-group">Fishing</div>
         <button type="button" class="lyr" role="switch" aria-checked="false" data-for="mx-official"><span class="lyr-t">✅ Official public spots<small>Boat ramps, piers, parks and places an admin added</small></span><span class="sw" aria-hidden="true"></span></button>
         <div id="ol-filters" class="ol-filters" role="group" aria-label="Which official spots to show" hidden>
@@ -750,6 +751,8 @@
           </div>
         </div>
         <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-bite"><span class="lyr-t">🎣 What's biting<small>Catches from the last 14 days</small></span><span class="sw" aria-hidden="true"></span></button>
+        <div id="bite-chips" hidden style="margin:0 0 8px"></div>
+        <div class="spot-meta" id="bite-note" role="status" aria-live="polite" hidden style="margin:0 0 8px"></div>
         <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-pub"><span class="lyr-t">🌎 Public spots<small>Shared by people in the app (blurred pins)</small></span><span class="sw" aria-hidden="true"></span></button>
         <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-sight"><span class="lyr-t">👀 Sightings<small>Fish seen by iNaturalist users</small></span><span class="sw" aria-hidden="true"></span></button>
         <button type="button" class="lyr" role="switch" aria-checked="false" data-for="mx-reef"><span class="lyr-t">🪸 Artificial reefs<small>FWC reef sites</small></span><span class="sw" aria-hidden="true"></span></button>
@@ -763,8 +766,22 @@
         <button type="button" class="lyr" role="switch" aria-checked="false" data-for="map-layer"><span class="lyr-t">🛰 Satellite photos<small>Swap the street map for aerial photos</small></span><span class="sw" aria-hidden="true"></span></button>
         <div class="lyr-group">Getting there &amp; rules</div>
         <button type="button" class="lyr" role="switch" aria-checked="false" data-for="mx-zone"><span class="lyr-t">🚫 Protected &amp; no-fishing zones</span><span class="sw" aria-hidden="true"></span></button>
-        <div class="lyr-group">Offline</div>
-        <div style="padding:6px 0 10px"><button class="btn ghost small" id="map-offline" type="button">⬇ Save map for offline</button></div>
+        <details class="map-key" id="map-key"><summary>🔑 Map key</summary>
+        <div class="legend">
+          <span><span class="dot" style="background:#1d6fd6"></span>Saltwater</span>
+          <span><span class="dot" style="background:#16a085"></span>Brackish / tidal canal</span>
+          <span><span class="dot" style="background:#b7791f"></span>Freshwater</span>
+          <span><span class="dot" style="background:#fff;border-color:#888"></span>Suggested</span>
+          <span><span class="dot" style="background:#1d6fd6;box-shadow:0 0 0 2px #222"></span>Private (yours)</span>
+          <span id="sight-key" hidden><span class="dot" style="background:#8e44ad"></span>Public sighting</span>
+          <span id="bite-key" hidden><span class="dot" style="background:#e67e22"></span>Recent catches</span>
+          <span id="rt-key" hidden><span class="dot" style="background:#9aa5b1"></span>Red tide: none <span class="dot" style="background:#f4d03f"></span>very low <span class="dot" style="background:#f39c12"></span>low <span class="dot" style="background:#e55d2b"></span>medium <span class="dot" style="background:#b3261e"></span>high</span>
+        </div>
+        </details>
+        <div class="card" id="unplaced-card" style="margin-top:12px" hidden>
+          <div class="label">Spots without a location</div>
+          <ul id="unplaced-list"></ul>
+        </div>
       </div>
     </div>
 
@@ -794,10 +811,6 @@
   </div>
 
       </div>
-    </div>
-    <div class="card" id="unplaced-card" style="margin-top:14px" hidden>
-      <div class="label">Spots without a location</div>
-      <ul id="unplaced-list"></ul>
     </div>
   </div>
 
@@ -1276,53 +1289,54 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/01-core.js?v=145"></script>
-<script src="js/02-spots.js?v=145"></script>
-<script src="js/03-photos.js?v=145"></script>
-<script src="js/04-insights.js?v=145"></script>
-<script src="js/05-seasons-records.js?v=145"></script>
-<script src="js/06-catching.js?v=145"></script>
-<script src="js/07-measure-fishid.js?v=145"></script>
-<script src="js/08-feed-plans.js?v=145"></script>
-<script src="js/09-map-forecast.js?v=145"></script>
-<script src="js/10-tools-safety.js?v=145"></script>
-<script src="js/11-accounts-social.js?v=145"></script>
-<script src="js/12-contests-alerts.js?v=145"></script>
-<script src="js/13-groups-misc.js?v=145"></script>
-<script src="js/14-tank.js?v=145"></script>
-<script src="js/15-fish-rank.js?v=145"></script>
-<script src="js/16-fish-race.js?v=145"></script>
-<script src="js/17-license-help.js?v=145"></script>
-<script src="js/18-species.js?v=145"></script>
-<script src="js/19-biting.js?v=145"></script>
-<script src="js/20-spot-share.js?v=145"></script>
-<script src="js/21-pub-filters.js?v=145"></script>
-<script src="js/22-public-water.js?v=145"></script>
-<script src="js/23-depth.js?v=145"></script>
-<script src="js/24-delete-account.js?v=145"></script>
-<script src="js/25-home-map.js?v=145"></script>
-<script src="js/26-sub-tabs.js?v=145"></script>
-<script src="js/27-me-find.js?v=145"></script>
-<script src="js/28-host-pages.js?v=145"></script>
-<script src="js/29-home-waters.js?v=145"></script>
-<script src="js/30-red-tide.js?v=145"></script>
-<script src="js/31-regional-rules.js?v=145"></script>
-<script src="js/32-spot-style.js?v=145"></script>
-<script src="js/33-zones.js?v=145"></script>
-<script src="js/34-official-admin.js?v=145"></script>
-<script src="js/35-palettes.js?v=145"></script>
-<script src="js/36-tutorials.js?v=145"></script>
-<script src="js/37-official-layer.js?v=145"></script>
-<script src="js/38-admin-powers.js?v=145"></script>
-<script src="js/39-admin-log.js?v=145"></script>
-<script src="js/40-admin-page.js?v=145"></script>
-<script src="js/41-admin-people.js?v=145"></script>
-<script src="js/42-admin-undo.js?v=145"></script>
-<script src="js/43-admin-warn.js?v=145"></script>
-<script src="js/44-admin-hide.js?v=145"></script>
-<script src="js/45-admin-official.js?v=145"></script>
-<script src="js/47-admin-gated.js?v=145"></script>
-<script src="js/49-terms-banner.js?v=145"></script>
-<script src="js/99-boot.js?v=145"></script>
+<script src="js/01-core.js?v=146"></script>
+<script src="js/02-spots.js?v=146"></script>
+<script src="js/03-photos.js?v=146"></script>
+<script src="js/04-insights.js?v=146"></script>
+<script src="js/05-seasons-records.js?v=146"></script>
+<script src="js/06-catching.js?v=146"></script>
+<script src="js/07-measure-fishid.js?v=146"></script>
+<script src="js/08-feed-plans.js?v=146"></script>
+<script src="js/09-map-forecast.js?v=146"></script>
+<script src="js/10-tools-safety.js?v=146"></script>
+<script src="js/11-accounts-social.js?v=146"></script>
+<script src="js/12-contests-alerts.js?v=146"></script>
+<script src="js/13-groups-misc.js?v=146"></script>
+<script src="js/14-tank.js?v=146"></script>
+<script src="js/15-fish-rank.js?v=146"></script>
+<script src="js/16-fish-race.js?v=146"></script>
+<script src="js/17-license-help.js?v=146"></script>
+<script src="js/18-species.js?v=146"></script>
+<script src="js/19-biting.js?v=146"></script>
+<script src="js/20-spot-share.js?v=146"></script>
+<script src="js/21-pub-filters.js?v=146"></script>
+<script src="js/22-public-water.js?v=146"></script>
+<script src="js/23-depth.js?v=146"></script>
+<script src="js/24-delete-account.js?v=146"></script>
+<script src="js/25-home-map.js?v=146"></script>
+<script src="js/26-sub-tabs.js?v=146"></script>
+<script src="js/27-me-find.js?v=146"></script>
+<script src="js/28-host-pages.js?v=146"></script>
+<script src="js/29-home-waters.js?v=146"></script>
+<script src="js/30-red-tide.js?v=146"></script>
+<script src="js/31-regional-rules.js?v=146"></script>
+<script src="js/32-spot-style.js?v=146"></script>
+<script src="js/33-zones.js?v=146"></script>
+<script src="js/34-official-admin.js?v=146"></script>
+<script src="js/35-palettes.js?v=146"></script>
+<script src="js/36-tutorials.js?v=146"></script>
+<script src="js/37-official-layer.js?v=146"></script>
+<script src="js/38-admin-powers.js?v=146"></script>
+<script src="js/39-admin-log.js?v=146"></script>
+<script src="js/40-admin-page.js?v=146"></script>
+<script src="js/41-admin-people.js?v=146"></script>
+<script src="js/42-admin-undo.js?v=146"></script>
+<script src="js/43-admin-warn.js?v=146"></script>
+<script src="js/44-admin-hide.js?v=146"></script>
+<script src="js/45-admin-official.js?v=146"></script>
+<script src="js/47-admin-gated.js?v=146"></script>
+<script src="js/49-terms-banner.js?v=146"></script>
+<script src="js/50-map-full.js?v=146"></script>
+<script src="js/99-boot.js?v=146"></script>
 </body>
 </html>

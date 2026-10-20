@@ -155,7 +155,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   // a real button changed by other code (e.g. "Show on map" from a profile) moves the switch too
   $("map-pub").classList.add("on"); await wait(30);
   check("switch follows changes made elsewhere", row("map-pub").getAttribute("aria-checked") === "true"); $("map-pub").classList.remove("on"); await wait(30);
-  check("Save map for offline stays reachable in the sheet", $("layers-sheet").contains($("map-offline")));
+  check("Save map for offline stays reachable (⋯ More menu since v146)", $("map-more").contains($("map-offline")));
   click($("layers-done")); await wait(50);
   check("Done closes it", $("layers-sheet").hidden && !d.body.classList.contains("sheet-open"));
   // ---- Find new water ----

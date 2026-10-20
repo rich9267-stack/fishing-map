@@ -160,7 +160,7 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
   const zoomTo = async z => { w.eval(`map.setZoom(${z})`); await wait(700); };
 
   // ---- the switch ----
-  const fishing = [...d.querySelectorAll("#layers-body > *")];
+  const fishing = [...d.querySelectorAll("#layers-body > *")].filter(x => x.id !== "map-notes");   // v146: layer notes sit above the groups
   const firstSwitch = fishing.find(x => x.classList.contains("lyr"));
   need(fishing[0] && fishing[0].classList.contains("lyr-group") && fishing[0].textContent === "Fishing", "first group is Fishing");
   need(firstSwitch === row, "the ✅ Official public spots switch is the first one in the Fishing group");

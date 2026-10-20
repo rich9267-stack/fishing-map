@@ -880,9 +880,11 @@
   function initMap() {
     if (map || !window.L) return;
     mapHookInstall();
-    map = L.map("map", { zoomControl: true }).setView([LAT, LNG], 12);
+    map = L.map("map", { zoomControl: false }).setView([LAT, LNG], 12);
+    L.control.zoom({ position: "bottomright" }).addTo(map);   // the search box sits top-left (js/50)
+    map.attributionControl.addAttribution("Search: Photon · &copy; OpenStreetMap contributors");   // always shown: map and search data are OpenStreetMap
     streetTiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19, attribution: "&copy; OpenStreetMap contributors"
+      maxZoom: 19
     }).addTo(map);
     satTiles = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
       maxZoom: 19, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics"
@@ -947,7 +949,7 @@
     filteredSpots().filter(s => s.lat != null && s.lng != null).forEach(s => {
       L.circleMarker([s.lat, s.lng], {
         radius: 9, weight: 3, color: s.is_private ? "#222222" : "#ffffff", dashArray: s.is_private ? "3 3" : null,
-        fillColor: WATER_COLOR[s.water_type] || "#555", fillOpacity: 1,
+        fillColor: WATER_COLOR[s.water_type] || "#555", fillOpacity: 1, spotId: s.id,
         a11y: `${s.name}, ${cap(s.spot_type || "spot")}, ${WATER_LABEL[s.water_type] || s.water_type || "water"}${s.is_private ? ", private" : ""}${s.is_exact === false ? ", approximate location" : ""}`
       }).bindPopup(() => popupFor(s)).addTo(pinLayer);
     });
