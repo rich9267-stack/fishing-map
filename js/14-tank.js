@@ -400,7 +400,7 @@
       box.appendChild(card); return;
     }
     const tank = el("div", "tank " + (salt ? "tank-salt" : "tank-fresh"));
-    tank.style.height = Math.min(440, 230 + Math.ceil(fish.length / 2) * 26) + "px";
+    tank.style.height = Math.min(620, 440 + Math.ceil(fish.length / 2) * 20) + "px";   // about twice the old size (plans/ui-review.md 4A)
     for (let i = 0; i < 6; i++) { const b = el("span", "bubble"); b.style.left = (8 + i * 16) + "%"; b.style.animationDelay = (i * 1.3) + "s"; b.style.animationDuration = (7 + (i % 3) * 2) + "s"; b.setAttribute("aria-hidden", "true"); tank.appendChild(b); }
     const items = [];
     fish.forEach((f, i) => {
@@ -474,8 +474,8 @@
   let tankMode = "tanks";
   function renderTank() {
     const box = $("tank-body"), pbox = $("pond-body"), lbox = $("lagoon-body"), sbox = $("shop-body"); if (!box) return; box.innerHTML = ""; pbox.innerHTML = ""; lbox.innerHTML = ""; if (sbox) sbox.innerHTML = "";
-    { const sr = $("tank-snd-row"); if (sr && !sr.firstChild) sr.appendChild(sndButton()); }
-    document.querySelectorAll("#tank-sw button").forEach(b => { b.classList.toggle("ghost", b.dataset.mode !== tankMode); b.setAttribute("aria-pressed", String(b.dataset.mode === tankMode)); });
+    { const sr = $("tank-snd-row"); if (sr && !sr.firstChild) { const sb = sndButton(); sb.classList.add("snd-icon"); sr.appendChild(sb); sndButtons(); } }
+    document.querySelectorAll("#tank-sw button").forEach(b => { b.classList.toggle("on", b.dataset.mode === tankMode); b.setAttribute("aria-pressed", String(b.dataset.mode === tankMode)); });
     box.hidden = tankMode !== "tanks"; pbox.hidden = tankMode !== "pond"; lbox.hidden = tankMode !== "lagoon"; if (sbox) sbox.hidden = tankMode !== "shop";
     if (me && !shop.ready && !shop.loading) shopLoad().then(() => renderTank());
     if (!me || spots === null) { box.appendChild(el("div", "empty", "Loading your catches…")); return; }
@@ -488,6 +488,8 @@
     if (sbox && tankMode === "shop") shopDraw(sbox);
   }
   document.querySelectorAll("#tank-sw button").forEach(b => b.addEventListener("click", () => { tankMode = b.dataset.mode; renderTank(); }));
+  // ⓘ: the tank explanation, your counts, today's coins and how to earn them (folded so the tank starts near the top)
+  { const hb = $("tank-help-btn"), hp = $("tank-help"); if (hb && hp) hb.addEventListener("click", () => { hp.hidden = !hp.hidden; hb.setAttribute("aria-expanded", String(!hp.hidden)); hb.classList.toggle("on", !hp.hidden); }); }
 
   // ---- 🔊 Tank sound: tiny sounds made in the browser (no files). OFF until the person taps 🔊, remembered on this phone, mute button always visible ----
   const tankSnd = { on: false, ctx: null, amb: null, last: {}, timer: 0 };
@@ -541,7 +543,7 @@
     else { sndAmbience(false); if (tankSnd.timer) { clearInterval(tankSnd.timer); tankSnd.timer = 0; } }
     sndButtons();
   }
-  function sndButtons() { document.querySelectorAll(".snd-btn").forEach(b => { b.textContent = tankSnd.on ? "🔊 Sound on" : "🔇 Sound off"; b.setAttribute("aria-pressed", String(tankSnd.on)); }); }
+  function sndButtons() { document.querySelectorAll(".snd-btn").forEach(b => { const ic = b.classList.contains("snd-icon"); b.textContent = ic ? (tankSnd.on ? "🔊" : "🔇") : tankSnd.on ? "🔊 Sound on" : "🔇 Sound off"; if (ic) b.setAttribute("aria-label", "Tank sound"); b.setAttribute("aria-pressed", String(tankSnd.on)); }); }
   function sndButton() { // a mute button (also used inside full screen)
     const b = el("button", "btn small ghost snd-btn"); b.type = "button"; b.addEventListener("click", () => sndSet(!tankSnd.on)); b.textContent = tankSnd.on ? "🔊 Sound on" : "🔇 Sound off"; b.setAttribute("aria-pressed", String(tankSnd.on)); return b;
   }
@@ -594,12 +596,13 @@
   }
   function walletDraw() {
     const box = $("wallet-box"); if (!box) return; box.innerHTML = "";
+    const more = $("wallet-more") || box; if (more !== box) more.innerHTML = "";   // Play: the pills sit in the title line, the rest inside ⓘ
     if (!wallet) return;
     const row = el("div", "wallet-row");
     const chip = (e, n, t) => { const c = el("span", "coin-chip"); c.title = t; c.setAttribute("role", "img"); c.setAttribute("aria-label", `${n} ${e === "💎" ? "gems" : "coins"}`); c.appendChild(el("span", "", e)); c.appendChild(el("b", "", String(n))); return c; };
     row.appendChild(chip("🪙", wallet.coins, "Coins")); row.appendChild(chip("💎", wallet.gems, "Gems — earned only, never sold"));
     box.appendChild(row);
-    box.appendChild(el("div", "spot-meta", `Today: ${wallet.today} of ${wallet.cap} catch coins`));
+    more.appendChild(el("div", "spot-meta", `Today: ${wallet.today} of ${wallet.cap} catch coins`));
     const det = el("details", "wallet-more"); det.appendChild(el("summary", "", "How do I earn coins and gems?"));
     ["🪙 2 for every catch you log with a photo (+1 if you measure it) — up to 50 a day.",
       "🪙 40 the first time you catch a species · 🪙 25 for a new personal best (3 a day at most).",
@@ -610,7 +613,7 @@
       det.appendChild(el("div", "label wallet-h", "Recent"));
       wallet.recent.forEach(r => det.appendChild(el("div", "spot-meta", `${r.currency === "gems" ? "💎" : "🪙"} ${r.amount > 0 ? "+" : "−"}${Math.abs(r.amount)} — ${r.reason === "collection" || r.reason === "tournament" ? (COIN_WHY[r.reason] + (r.note ? ": " + (COIN_GROUPS[r.note] || r.note) : "")) : (COIN_WHY[r.reason] || r.reason) + (r.note ? " · " + r.note : "")}`)));
     }
-    box.appendChild(det);
+    more.appendChild(det);
   }
   // ---- 🛍 Shop & 🎨 Customize: gravel colors and pieces you buy (coins/gems) or win, placed in your tanks and saved to your account (setup/42) ----
   // Prices and what you own live in the database; this is only the pictures (emoji for now — artist art can replace SHOP_ART entry by entry).

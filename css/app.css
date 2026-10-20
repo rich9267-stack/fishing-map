@@ -721,6 +721,19 @@
   .sub-tabs button { flex: none; min-height: 40px; border-radius: 20px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: .9rem; font-weight: 600; padding: 0 14px; cursor: pointer; white-space: nowrap; }
   .sub-tabs button.on { background: var(--text); color: var(--bg); border-color: var(--text); }
   #wallet-box:empty { display: none; }
+  /* 🐠 Play: tank first (plans/ui-review.md item 4A) — coin pills in the title line, one chip row, ⓘ panel */
+  .play-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .play-head #wallet-box .wallet-row { margin: 0 0 6px; gap: 6px; }
+  .play-head .coin-chip { padding: 3px 10px; font-size: .9rem; border-width: 1.5px; gap: 4px; }
+  .play-bar { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin: 0 0 10px; }
+  .play-bar #tank-sw { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 2px 0; }
+  .play-bar #tank-sw::-webkit-scrollbar { display: none; }
+  .play-bar #tank-sw .fchip { flex: none; }
+  .play-bar .fchip { min-height: 40px; }
+  .play-tools { display: flex; align-items: center; gap: 6px; flex: none; }
+  #tank-help-btn { min-width: 40px; font-weight: 700; }
+  .play-tools .snd-btn.snd-icon { min-height: 40px; min-width: 40px; padding: 4px 8px; border-radius: 999px; }
+  #tank-help .wallet-more { margin-bottom: 0; }
 
   /* ---- UX v2 step 2: short Home + Map sheets ---- */
   .hq-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
