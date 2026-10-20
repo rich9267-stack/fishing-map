@@ -734,6 +734,25 @@
   #tank-help-btn { min-width: 40px; font-weight: 700; }
   .play-tools .snd-btn.snd-icon { min-height: 40px; min-width: 40px; padding: 4px 8px; border-radius: 999px; }
   #tank-help .wallet-more { margin-bottom: 0; }
+  /* 🏠 Home: short spot lines that open in place, Best spots fold (plans/ui-review.md item 1) */
+  #spot-list .spot { padding: 0; }
+  .spot-head { appearance: none; width: 100%; display: flex; align-items: center; gap: 9px; background: transparent; border: 0; padding: 10px 0; min-height: 48px; font: inherit; color: var(--text); text-align: left; cursor: pointer; }
+  .spot-head .spot-name { flex: 1; min-width: 0; margin: 0; overflow-wrap: anywhere; }
+  .spot-dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+  .spot-fact { color: var(--muted); font-size: .85rem; white-space: nowrap; flex: none; }
+  .spot-chev { color: var(--muted); flex: none; min-width: 12px; text-align: center; }
+  .spot.open { --open-bg: color-mix(in srgb, var(--accent) 6%, var(--card)); background: var(--open-bg); box-shadow: 0 0 0 8px var(--open-bg); border-radius: 2px; margin: 8px 0; }
+  .spot-body { padding: 0 0 12px 20px; }
+  .spot-head:focus-visible, .best-toggle:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+  .best-toggle { appearance: none; width: 100%; display: flex; align-items: center; gap: 8px; background: transparent; border: 0; padding: 0; min-height: 40px; font: inherit; color: var(--text); text-align: left; cursor: pointer; }
+  .best-toggle .label { flex: none; }
+  .best-peek { display: none; flex: 1; min-width: 0; color: var(--muted); font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .best-peek:not(:empty)::before { content: "· "; }
+  #best-card.folded .best-peek { display: block; }
+  .best-toggle .spot-chev { margin-left: auto; }
+  .best-toggle .spot-chev::after { content: "▾"; }
+  #best-card.folded .best-toggle .spot-chev::after { content: "▸"; }
+  #best-body[hidden] { display: none; }
 
   /* ---- UX v2 step 2: short Home + Map sheets ---- */
   .hq-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }

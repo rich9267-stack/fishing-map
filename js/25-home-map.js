@@ -58,6 +58,14 @@
     document.addEventListener("keydown", e => { if (e.key === "Escape" && d.classList.contains("as-sheet")) setOpen(false); });
   })();
 
+  // ---- 🏆 Best spots today folds (plans/ui-review.md 1B): tap the title; starts open; open/closed remembered on this phone ----
+  (function bestFold() {
+    const t = $("best-toggle"), body = $("best-body"), card = $("best-card"); if (!t || !body) return;
+    let folded = false; try { folded = localStorage.getItem("fm-best-folded") === "1"; } catch (e) { /* fine */ }
+    const set = f => { folded = f; body.hidden = f; card.classList.toggle("folded", f); t.setAttribute("aria-expanded", String(!f)); try { localStorage.setItem("fm-best-folded", f ? "1" : "0"); } catch (e) { /* fine */ } };
+    set(folded);
+    t.addEventListener("click", () => set(!folded));
+  })();
   // ---- ▶ Start trip (Home quick button): pick the spot, then it works like the ▶ Start trip on a spot ----
   (function startTrip() {
     const sheet = $("trip-sheet"), sel = $("tr-spot"), note = $("tr-note");

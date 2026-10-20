@@ -127,6 +127,7 @@
 
   // ---- 3-day outlook per spot (V4): hourly forecast scored with the same history as Best spot today ----
   const outlookOpen = new Set();   // spot ids whose outlook is showing
+  const spotOpen = new Set();      // spot ids opened on Home (plans/ui-review.md 1A; a spot with its catch form open is open too)
   const outlookSel = {};           // spot id -> selected hour (ms)
   const fcCache = {};
   function spotForecast(s) {
@@ -338,6 +339,7 @@
       ranked.push({ s, best, basis, own: ownFish >= 3, extra });
     });
     ranked.sort((a, b) => (b.own - a.own) || (b.best.score - a.best.score));
+    { const pk = $("best-peek"); if (pk) pk.textContent = ranked.length ? ranked[0].s.name : ""; }   // shown next to the title while the card is folded (js/25)
     if (!ranked.length) {
       box.appendChild(el("div", "empty", "Not enough catches yet. Once a spot has about 3 fish logged (or the group has 5), it'll be ranked here."));
       return;
@@ -389,19 +391,35 @@
     updateFilterStatus(shown.length);
     if (!shown.length) list.appendChild(emptyBox("No spots match these filters.", "Clear filters", clearFilters));
     shown.forEach(s => {
+      // plans/ui-review.md item 1A: one short line per spot; tap it to open the full card (built as before, just folded)
       const item = el("div", "spot");
-      item.appendChild(el("div", "spot-name", visIcon(s) + s.name + (spotSort === "near" && sortPos && s.lat != null && s.lng != null ? ` · ${miles(sortPos.lat, sortPos.lng, s.lat, s.lng).toFixed(1)} mi` : "")));
+      const open = spotOpen.has(s.id) || openCatchSpot === s.id;
+      item.classList.toggle("open", open);
+      const head = el("button", "spot-head"); head.type = "button";
+      head.setAttribute("aria-expanded", String(open)); head.setAttribute("aria-controls", "spot-body-" + s.id);
+      const dot = el("span", "spot-dot"); dot.style.background = WATER_COLOR[s.water_type] || "#888"; dot.setAttribute("aria-hidden", "true"); head.appendChild(dot);
+      head.appendChild(el("span", "spot-name", visIcon(s) + s.name));
+      const fact = spotFact(s); if (fact) head.appendChild(el("span", "spot-fact", fact));
+      head.appendChild(el("span", "spot-chev", open ? "▴" : "›")); head.lastChild.setAttribute("aria-hidden", "true");
+      head.addEventListener("click", () => {
+        if (spotOpen.has(s.id)) { spotOpen.delete(s.id); if (openCatchSpot === s.id && typeof closeCatchForm === "function") { closeCatchForm(); return; } }
+        else spotOpen.add(s.id);
+        renderSpots();
+        const h = document.querySelector(`.spot-head[aria-controls="spot-body-${s.id}"]`); if (h) h.focus();
+      });
+      item.appendChild(head);
+      const body = el("div", "spot-body"); body.id = "spot-body-" + s.id; body.hidden = !open; item.appendChild(body);
       { const sm = el("div", "spot-meta"); sm.appendChild(document.createTextNode(`${cap(s.spot_type)} · ${WATER_LABEL[s.water_type] || s.water_type}`));
         if (s.added_by) { sm.appendChild(document.createTextNode(" · added by ")); sm.appendChild(personLink(isMine(s) ? null : s.created_by, s.added_by)); }
-        item.appendChild(sm); }
+        body.appendChild(sm); }
       const condEl = el("div", "spot-cond", spotConditions(s));
       condEl.dataset.spot = s.id;
-      item.appendChild(condEl);
+      body.appendChild(condEl);
       const sightEl = el("div", "spot-meta spot-sight", sightLine(s));
       sightEl.dataset.spot = s.id; sightEl.hidden = !sightEl.textContent;
-      item.appendChild(sightEl);
+      body.appendChild(sightEl);
       const king = typeof spotKing === "function" ? spotKing(s) : "";
-      if (king) item.appendChild(el("div", "spot-meta spot-king", king));
+      if (king) body.appendChild(el("div", "spot-meta spot-king", king));
 
       const chips = el("div", "chips");
       const accessText = { yes: "Public access", no: "Not public", unsure: "Access unsure" }[s.public_access];
@@ -418,30 +436,38 @@
         a.target = "_blank"; a.rel = "noopener";
         chips.appendChild(a);
       }
-      item.appendChild(chips);
+      body.appendChild(chips);
 
-      if (s.access_notes) item.appendChild(el("div", "spot-notes", "🚗 " + s.access_notes));
-      if (s.notes) item.appendChild(el("div", "spot-notes", s.notes));
+      if (s.access_notes) body.appendChild(el("div", "spot-notes", "🚗 " + s.access_notes));
+      if (s.notes) body.appendChild(el("div", "spot-notes", s.notes));
       if (isMine(s)) {
         const editSpot = el("button", "linkbtn", "✎ Edit spot");
         editSpot.type = "button";
         editSpot.addEventListener("click", () => openForm(true, s));
-        item.appendChild(editSpot);
+        body.appendChild(editSpot);
       }
-      if (typeof spotShareUi === "function") spotShareUi(item, s);   // 📩 send to a friend / shared with you (js/20)
+      if (typeof spotShareUi === "function") spotShareUi(body, s);   // 📩 send to a friend / shared with you (js/20)
       const olBtn = el("button", "linkbtn", outlookOpen.has(s.id) ? "▴ Hide 3-day outlook" : "📅 3-day outlook");
       olBtn.type = "button";
       olBtn.addEventListener("click", () => { outlookOpen.has(s.id) ? outlookOpen.delete(s.id) : outlookOpen.add(s.id); renderSpots(); });
-      item.appendChild(olBtn);
+      body.appendChild(olBtn);
       if (outlookOpen.has(s.id)) {
         const box = el("div", "outlook"); box.dataset.spot = s.id;
         fillOutlook(box, s);
-        item.appendChild(box);
+        body.appendChild(box);
       }
-      item.appendChild(spotPhotoSection(s));
-      item.appendChild(catchSection(s));
+      body.appendChild(spotPhotoSection(s));
+      body.appendChild(catchSection(s));
       list.appendChild(item);
     });
+  }
+  // The small fact on a closed spot line: distance when sorted by Nearest, otherwise how long since the last catch there
+  function spotFact(s) {
+    if (spotSort === "near" && sortPos && s.lat != null && s.lng != null) return miles(sortPos.lat, sortPos.lng, s.lat, s.lng).toFixed(1) + " mi";
+    const last = (catchesBySpot[s.id] || []).reduce((m, c) => (c.caught_at && (!m || c.caught_at > m) ? c.caught_at : m), null);
+    if (!last) return "";
+    const days = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(last).setHours(0, 0, 0, 0)) / 86400000);
+    return "🎣 " + (days <= 0 ? "today" : days === 1 ? "yesterday" : days < 14 ? days + " days" : days < 60 ? Math.round(days / 7) + " wk" : new Date(last).toLocaleDateString([], { month: "short", year: "2-digit" }));
   }
 
   async function loadSpots() {
@@ -948,7 +974,8 @@
   function goToSpot(id, logCatch) {
     map && map.closePopup();
     showView("list");
-    if (logCatch) openCatchForm(id);
+    spotOpen.add(id);   // open its card so the map link lands on the details
+    if (logCatch) openCatchForm(id); else renderSpots();
     const node = document.querySelector(`.spot-cond[data-spot="${id}"]`);
     const item = node && node.closest(".spot");
     if (item) {

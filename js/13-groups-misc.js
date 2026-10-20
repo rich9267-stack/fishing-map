@@ -503,6 +503,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-20e", title: "🏠 A tidier Home", items: [
+      "Your spots are now one short line each: a colored dot for the water, the name, and when you last caught a fish there (or the distance when you sort by Nearest).",
+      "Tap a spot to open its full card with everything as before: conditions, directions, notes, Edit, 3-day outlook, photos and catches. Tap again to close it.",
+      "Tap the 🏆 Best spots today title to fold it away. Folded, it still shows today's #1 spot. Your phone remembers your choice."
+    ] },
     { id: "2026-10-20d", title: "🐠 Your tank comes first", items: [
       "Play now opens straight onto your fish: the tank is bigger and starts near the top.",
       "Your coins and gems are small pills next to the Play title. Tanks, Lagoon, Pond and Shop are one row of buttons, with 🔇 sound at the end.",
