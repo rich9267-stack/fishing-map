@@ -374,10 +374,70 @@
     if (error) { toast("Couldn't do that: " + error.message, 5000); return; }
     await ctLoad(); ctRender();
   }
+  // One tournament / contest. plans/ui-review.md item 3A: header + Join/Leave, then the leaderboard (podium, 4–6, your place),
+  // then everything else folded under "Details, rules and entrants". Chat stays below the fold.
+  const ctBoardSel = {};   // which board (length / weight / …) is showing, per tournament, while the app is open
+  let ctBoardAll = false;   // "Show the whole board" pressed
+  const ctOrd = n => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
+  const ctVal = (bd, v) => bd === "length" ? `${+Number(v).toFixed(2)}″` : bd === "weight" ? lbText(Number(v)) : bd === "fish" ? `${v} fish` : `${v} species`;
+  const ctWho = uid => uid === me.id ? "You" : (profName(uid) || "Someone");
+  function ctBoard(lb, t, rows, st, tmode, mineSt) {
+    const boards = tmode === "teams" ? [] : t.boards;
+    if (!boards.length) return;
+    const wrap = el("div"); wrap.id = "ctd-lb-ind"; lb.appendChild(wrap);
+    draw();
+    function draw() {
+      wrap.innerHTML = "";
+      const bd = boards.includes(ctBoardSel[t.id]) ? ctBoardSel[t.id] : boards[0];
+      if (boards.length > 1) {
+        const ch = el("div", "fchips"); ch.id = "ctd-boards"; ch.setAttribute("role", "radiogroup"); ch.setAttribute("aria-label", "Which board"); ch.style.margin = "8px 0 2px";
+        boards.forEach(b => {
+          const on = b === bd, c = el("button", "fchip" + (on ? " on" : ""), CT_BOARDS[b]); c.type = "button"; c.dataset.board = b;
+          c.setAttribute("role", "radio"); c.setAttribute("aria-checked", String(on));
+          c.addEventListener("click", () => { ctBoardSel[t.id] = b; ctBoardAll = false; draw(); const f = wrap.querySelector(`[data-board="${b}"]`); if (f) f.focus(); });
+          ch.appendChild(c);
+        });
+        wrap.appendChild(ch);
+      }
+      const lab = el("div", "label", (tmode === "both" ? "Individual · " : "") + CT_BOARDS[bd]); lab.style.marginTop = "10px"; wrap.appendChild(lab);
+      const list = rows.filter(r => r.board === bd).sort((x, y) => y.value - x.value || new Date(x.caught_at) - new Date(y.caught_at));
+      if (!list.length) { wrap.appendChild(el("div", "empty", st.k === "soon" ? "Starts " + ctFmt(t.starts_at) : "No qualifying catches yet.")); }
+      else {
+        // 🥇🥈🥉 podium: 2nd · 1st · 3rd, the winner's block tallest
+        const pod = el("div", "ct-pod"); pod.setAttribute("role", "list"); pod.setAttribute("aria-label", "Top three");
+        [1, 0, 2].forEach(i => {
+          const r = list[i]; if (!r) return;
+          const col = el("div", "ct-pod-col p" + (i + 1)); col.setAttribute("role", "listitem");
+          col.appendChild(el("div", "ct-pod-medal", ["🥇", "🥈", "🥉"][i]));
+          const nm = el("div", "ct-pod-name"); nm.appendChild(personLink(r.user_id === me.id ? null : r.user_id, ctWho(r.user_id))); col.appendChild(nm);
+          const blk = el("div", "ct-pod-blk"); blk.appendChild(el("b", null, String(i + 1))); blk.appendChild(el("span", null, ctVal(bd, r.value))); col.appendChild(blk);
+          if (r.user_id === me.id) col.classList.add("me");
+          pod.appendChild(col);
+        });
+        wrap.appendChild(pod);
+        const det = r => r.species ? `${cap(r.species)} · ${new Date(r.caught_at).toLocaleDateString([], { month: "short", day: "numeric" })}` : "";
+        const upto = ctBoardAll ? list.length : 6;
+        list.slice(3, upto).forEach((r, k) => wrap.appendChild(boardRow(k + 3, { uid: r.user_id, c: {}, label: ctVal(bd, r.value), detail: det(r) })));
+        if (list.length > 6) {
+          const more = el("button", "linkbtn", ctBoardAll ? "Show top 6 only" : `Show the whole board (${list.length})`); more.type = "button"; more.id = "ctd-board-all";
+          more.addEventListener("click", () => { ctBoardAll = !ctBoardAll; draw(); });
+          wrap.appendChild(more);
+        }
+      }
+      // ▶ your own place, with what you need to beat
+      const idx = list.findIndex(r => r.user_id === me.id);
+      let you = null;
+      if (idx >= 0) {
+        const r = list[idx], ahead = list[idx - 1];
+        you = `▶ You: ${ctOrd(idx + 1)} · ${ctVal(bd, r.value)}` + (idx === 0 ? " · in the lead" : Number(ahead.value) === Number(r.value) ? ` · tied with ${ctWho(ahead.user_id)}` : ` · ${ctVal(bd, Number(ahead.value) - Number(r.value))} behind ${ctWho(ahead.user_id)}`);
+      } else if (mineSt === "joined" && st.k !== "soon" && !t.cancelled_at) you = "▶ You: no qualifying catch yet";
+      if (you) { const y = el("div", "ct-you", you); y.id = "ctd-you"; wrap.appendChild(y); }
+    }
+  }
   async function ctDetail(box) {
     const t = ctRows.find(x => x.id === ctId);
     const back = el("button", "btn ghost small", "← Back"); back.type = "button"; back.id = "ctd-back";
-    back.addEventListener("click", () => { ctView = "list"; ctId = null; ctRender(); });
+    back.addEventListener("click", () => { ctView = "list"; ctId = null; ctBoardAll = false; ctRender(); });
     box.appendChild(back);
     if (!t) { box.appendChild(el("div", "empty", "That contest or tournament isn't available.")); return; }
     const st = ctState(t), mineSt = ctMine[t.id];
@@ -391,22 +451,7 @@
         bl.appendChild(hl); bl.appendChild(document.createTextNode(" (by ")); bl.appendChild(personLink(t.created_by, t.created_by === me.id ? "you" : (profName(t.created_by) || "someone"))); bl.appendChild(document.createTextNode(")"));
       } else { bl.appendChild(document.createTextNode("by ")); bl.appendChild(personLink(t.created_by, t.created_by === me.id ? "you" : (profName(t.created_by) || "someone"))); }
       if (t.series_id) bl.appendChild(document.createTextNode(" · 🔁 repeating")); box.appendChild(bl); }
-    if (t.description) box.appendChild(el("div", null, t.description));
-    if (t.plan_id) box.appendChild(el("div", "spot-meta", "🗓 Made for a planned trip — everyone going on it is entered automatically."));
-    const rules = [];
-    if (t.plan_id) rules.push("📍 only catches at the trip spot (within 1 mile)");
-    if (t.kind === "official") rules.push("Catch must be set to 🌎 Public");
-    if (t.require_photo) rules.push("📷 photo on every catch");
-    if (t.require_length) rules.push("📏 measured length");
-    if (t.species) rules.push("only " + t.species);
-    if (t.geo_lat != null) rules.push(`📍 logged live within ${t.geo_radius_mi} mi of ${t.geo_label || "the center"}`);
-    box.appendChild(el("div", "spot-meta", "Rules: " + (rules.length ? rules.join(" · ") : "any catch in the time window")));
-    if (t.kind === "official") box.appendChild(el("div", "spot-meta", t.host_page_id
-      ? "🎁 Prizes: this tournament is run by a page, so it pays no coins, gems or cups."
-      : "🎁 Prizes (top 3 on a board): 🪙 200 / 120 / 80 coins · 💎 3 / 2 / 1 gems · a gold / silver / bronze 🏆 cup for your tank."));
-    const tmode = t.team_mode || "singles";
-    if (tmode !== "singles") box.appendChild(el("div", "spot-meta", tmode === "teams" ? "👥 Teams only — scores are for teams (join the contest so your catches count for your team)." : "👥 Teams welcome — there's a team board and a separate individual board."));
-    // actions
+    // actions (Join / Leave … stay on top so joining is one tap)
     let seriesBox = [];
     const acts = el("div"); acts.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin:10px 0";
     const btn = (txt, cls, fn, id) => { const b = el("button", cls, txt); b.type = "button"; if (id) b.id = id; b.addEventListener("click", fn); acts.appendChild(b); };
@@ -431,8 +476,30 @@
       } else if (se) acts.appendChild(el("span", "spot-meta", "🔁 The repeat is stopped."));
     }
     if (!t.cancelled_at && (t.created_by === me.id || adminCan("tournaments")) && st.k !== "ended") btn(t.kind === "official" ? "Cancel tournament" : "Cancel contest", "btn ghost small", async () => { if (await askOk(t.kind === "official" ? "Cancel this tournament for everyone?" : "Cancel this contest for everyone?")) ctAct("cancel_tournament", { p_id: t.id }); }, "ctd-cancel");
-    box.appendChild(acts);
-    seriesBox.forEach(n => box.appendChild(n));
+    if (acts.childNodes.length) box.appendChild(acts);
+    // 🏆 leaderboard first
+    const lb = el("div", "ct-lb"); lb.id = "ctd-board"; box.appendChild(lb);
+    // everything else, folded
+    const fold = el("details", "ct-details"); fold.id = "ctd-details";
+    fold.appendChild(el("summary", null, "Details, rules and entrants"));
+    const det = el("div", "ct-details-body"); fold.appendChild(det); box.appendChild(fold);
+    if (t.description) det.appendChild(el("div", null, t.description));
+    if (t.plan_id) det.appendChild(el("div", "spot-meta", "🗓 Made for a planned trip — everyone going on it is entered automatically."));
+    const rules = [];
+    if (t.plan_id) rules.push("📍 only catches at the trip spot (within 1 mile)");
+    if (t.kind === "official") rules.push("Catch must be set to 🌎 Public");
+    if (t.require_photo) rules.push("📷 photo on every catch");
+    if (t.require_length) rules.push("📏 measured length");
+    if (t.species) rules.push("only " + t.species);
+    if (t.geo_lat != null) rules.push(`📍 logged live within ${t.geo_radius_mi} mi of ${t.geo_label || "the center"}`);
+    det.appendChild(el("div", "spot-meta", "Rules: " + (rules.length ? rules.join(" · ") : "any catch in the time window")));
+    if (t.kind === "official") det.appendChild(el("div", "spot-meta", t.host_page_id
+      ? "🎁 Prizes: this tournament is run by a page, so it pays no coins, gems or cups."
+      : "🎁 Prizes (top 3 on a board): 🪙 200 / 120 / 80 coins · 💎 3 / 2 / 1 gems · a gold / silver / bronze 🏆 cup for your tank."));
+    const tmode = t.team_mode || "singles";
+    if (tmode !== "singles") det.appendChild(el("div", "spot-meta", tmode === "teams" ? "👥 Teams only — scores are for teams (join the contest so your catches count for your team)." : "👥 Teams welcome — there's a team board and a separate individual board."));
+    if (t.geo_lat != null) det.appendChild(el("div", "spot-meta", "📍 Location is checked from the GPS stamp saved when you log a catch live. Catches added later from the photo or by hand can't count here."));
+    seriesBox.forEach(n => det.appendChild(n));
     // 👥 who has entered — shown to the organiser (the page owner) and the admin
     if (t.host_page_id && (t.created_by === me.id || adminCan("tournaments"))) {
       const ent = ctMembers.filter(m => m.tournament_id === t.id && m.status === "joined").sort((a, b) => new Date(a.joined_at || 0) - new Date(b.joined_at || 0));
@@ -440,88 +507,77 @@
       eb.appendChild(el("div", "label", `👥 Entrants (${ent.length})`));
       if (!ent.length) eb.appendChild(el("div", "empty", "Nobody has joined yet."));
       ent.forEach(m => { const r = el("div", "spot-meta"); r.appendChild(personLink(m.user_id, m.user_id === me.id ? "you" : (profName(m.user_id) || "someone"))); if (m.joined_at) r.appendChild(document.createTextNode(" · joined " + ctFmt(m.joined_at))); eb.appendChild(r); });
-      box.appendChild(eb);
+      det.appendChild(eb);
     }
     // standings
-    const who = el("div"); box.appendChild(who);
     let rows = [], mineRows = [];
     if (!t.cancelled_at && st.k !== "soon") {
       const [a, b] = await Promise.all([db.rpc("tournament_standings", { p_id: t.id }), mineSt === "joined" ? db.rpc("tournament_my_catches", { p_id: t.id }) : Promise.resolve({ data: [] })]);
       rows = a.data || []; mineRows = b.data || [];
       await ensureProfiles(rows.map(r => r.user_id));
     }
-    (tmode === "teams" ? [] : t.boards).forEach(bd => {
-      box.appendChild(el("div", "label", (tmode === "both" ? "Individual · " : "") + CT_BOARDS[bd])); box.lastChild.style.marginTop = "12px";
-      const list = rows.filter(r => r.board === bd).sort((x, y) => y.value - x.value || new Date(x.caught_at) - new Date(y.caught_at));
-      if (!list.length) { box.appendChild(el("div", "empty", st.k === "soon" ? "Starts " + ctFmt(t.starts_at) : "No qualifying catches yet.")); return; }
-      list.slice(0, 10).forEach((r, i) => {
-        const label = bd === "length" ? `${+Number(r.value).toFixed(2)}″` : bd === "weight" ? lbText(Number(r.value)) : bd === "fish" ? `${r.value} fish` : `${r.value} species`;
-        const det = r.species ? `${cap(r.species)} · ${new Date(r.caught_at).toLocaleDateString([], { month: "short", day: "numeric" })}` : "";
-        box.appendChild(boardRow(i, { uid: r.user_id, c: {}, label, detail: det }));
-      });
-    });
-    // teams (setup/37)
+    ctBoard(lb, t, rows, st, tmode, mineSt);
+    // teams (setup/37) — part of the leaderboard
     if (tmode !== "singles") try {
       const tb = await db.rpc("tournament_team_board", { p_id: t.id });
       const trows = (tb && tb.data) || [];
       const ownG = open && !t.cancelled_at ? (((await db.from("groups").select("id,name,created_by").eq("created_by", me.id)).data) || []) : [];
       const entered = new Set(trows.map(r => r.group_id));
       if (trows.length || ownG.length) {
-        const th = el("div", "label", "👥 Teams"); th.style.marginTop = "14px"; box.appendChild(th);
+        const th = el("div", "label", "👥 Teams"); th.style.marginTop = "14px"; lb.appendChild(th);
         const teams = {}; trows.forEach(r => { teams[r.group_id] = { name: r.name, j: Number(r.joined_n), n: Number(r.total_n) }; });
         Object.values(teams).length && t.boards.forEach(bd => {
-          box.appendChild(el("div", "spot-meta", CT_BOARDS[bd]));
+          lb.appendChild(el("div", "spot-meta", CT_BOARDS[bd]));
           trows.filter(r => r.board === bd).sort((x, y) => y.value - x.value).forEach((r, i) => {
-            const label = bd === "length" ? `${+Number(r.value).toFixed(2)}″` : bd === "weight" ? lbText(Number(r.value)) : bd === "fish" ? `${r.value} fish` : `${r.value} species`;
             const row = el("div", "team-row"); row.style.cssText = "display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--line)";
             row.appendChild(el("span", null, ["🥇", "🥈", "🥉"][i] || (i + 1) + "."));
             const nm = el("span", null, r.name); nm.style.flex = "1"; row.appendChild(nm);
-            row.appendChild(el("span", "spot-meta", `${label} · ${r.joined_n} of ${r.total_n} joined`));
-            box.appendChild(row);
+            row.appendChild(el("span", "spot-meta", `${ctVal(bd, r.value)} · ${r.joined_n} of ${r.total_n} joined`));
+            lb.appendChild(row);
           });
         });
-        if (Object.values(teams).length) box.appendChild(el("div", "spot-meta", "A team counts the members who have joined this contest: best catch for length and weight, totals for fish and species."));
+        if (Object.values(teams).length) lb.appendChild(el("div", "spot-meta", "A team counts the members who have joined this contest: best catch for length and weight, totals for fish and species."));
         ownG.forEach(g => {
           const b = el("button", "btn " + (entered.has(g.id) ? "ghost " : "") + "small", entered.has(g.id) ? "Withdraw " + g.name : "👥 Enter " + g.name + " as a team"); b.type = "button"; b.style.cssText = "margin:8px 8px 0 0";
           b.dataset.gid = g.id; b.className += " ctd-team-btn";
           b.addEventListener("click", () => ctAct(entered.has(g.id) ? "withdraw_team" : "enter_team", { p_tid: t.id, p_gid: g.id }));
-          box.appendChild(b);
+          lb.appendChild(b);
         });
       }
     } catch (e) { /* teams are optional */ }
     if (mineSt === "joined") {
-      box.appendChild(el("div", "label", "My catches in this contest")); box.lastChild.style.marginTop = "14px";
-      if (!mineRows.length) box.appendChild(el("div", "empty", "None in the time window yet."));
+      det.appendChild(el("div", "label", "My catches in this contest")); det.lastChild.style.marginTop = "14px";
+      if (!mineRows.length) det.appendChild(el("div", "empty", "None in the time window yet."));
       mineRows.forEach(r => {
         const d = el("div", "feed-item"); const tp = el("div", "feed-top");
         tp.appendChild(el("b", null, `${r.ok ? "✅" : "⚠️"} ${cap(r.species || "Fish")}${r.how_many > 1 ? " ×" + r.how_many : ""}${r.length_in ? " · " + +Number(r.length_in).toFixed(2) + "″" : ""}`));
         tp.appendChild(el("span", "spot-meta", ctFmt(r.caught_at))); d.appendChild(tp);
         if (!r.ok) d.appendChild(el("div", "spot-meta", "Doesn't count: " + r.reason));
-        box.appendChild(d);
+        det.appendChild(d);
       });
+      if (mineRows.some(r => !r.ok)) fold.open = true;   // a catch that doesn't count: show why straight away
     }
     // people
     const joined = ctMembers.filter(m => m.tournament_id === t.id && m.status === "joined");
     const invited = ctMembers.filter(m => m.tournament_id === t.id && m.status === "invited");
-    box.appendChild(el("div", "label", `People (${joined.length} in)`)); box.lastChild.style.marginTop = "14px";
+    det.appendChild(el("div", "label", `People (${joined.length} in)`)); det.lastChild.style.marginTop = "14px";
     const pl2 = ms => ms.map(m => ({ id: m.user_id, label: m.user_id === me.id ? "You" : (profName(m.user_id) || "Someone") }));
-    { const jb = el("div", "spot-meta"); if (joined.length) jb.appendChild(personList(pl2(joined))); else jb.textContent = "Nobody yet"; box.appendChild(jb); }
-    if (invited.length) { const ib = el("div", "spot-meta"); ib.appendChild(document.createTextNode("Invited: ")); ib.appendChild(personList(pl2(invited))); box.appendChild(ib); }
+    { const jb = el("div", "spot-meta"); if (joined.length) jb.appendChild(personList(pl2(joined))); else jb.textContent = "Nobody yet"; det.appendChild(jb); }
+    if (invited.length) { const ib = el("div", "spot-meta"); ib.appendChild(document.createTextNode("Invited: ")); ib.appendChild(personList(pl2(invited))); det.appendChild(ib); }
     if (t.kind === "friends" && t.created_by === me.id && open) {
       const circle = await getCircle(); const have = new Set(ctMembers.filter(m => m.tournament_id === t.id && m.status !== "left").map(m => m.user_id));
       const cand = circle ? [...circle].filter(id => !have.has(id)) : [];
       if (cand.length) {
         await ensureProfiles(cand);
-        box.appendChild(el("div", "spot-meta", "Invite another friend:"));
+        det.appendChild(el("div", "spot-meta", "Invite another friend:"));
         const ch = el("div", "fchips"); cand.forEach(id => { const b = el("button", "fchip", "+ " + (profName(id) || "Friend")); b.type = "button"; b.addEventListener("click", () => ctAct("invite_to_tournament", { p_id: t.id, p_user: id })); ch.appendChild(b); });
-        box.appendChild(ch);
+        det.appendChild(ch);
       }
     }
     if ((mineSt === "joined" || t.created_by === me.id) && !t.cancelled_at) {
       box.appendChild(groupChatPanel("contest", t.id));
       if (t.kind === "official") box.appendChild(el("div", "spot-meta", "This chat is open to everyone in the tournament. It doesn't send phone alerts."));
     }
-    if (t.geo_lat != null) box.appendChild(el("div", "spot-meta", "📍 Location is checked from the GPS stamp saved when you log a catch live. Catches added later from the photo or by hand can't count here."));
   }
 
 

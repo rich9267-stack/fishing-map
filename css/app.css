@@ -689,6 +689,25 @@
   .tk-badge { font-weight: 600; }
   .tk-acts { margin-top: 6px; }
   .tk-acts[hidden], .tk-form[hidden] { display: none; }
+  /* 🏆 Tournament leaderboard first (js/12 ctDetail; plans/ui-review.md item 3A) */
+  .ct-pod { display: flex; justify-content: center; align-items: flex-end; gap: 8px; margin: 12px 0 6px; }
+  .ct-pod-col { flex: 1 1 0; max-width: 112px; min-width: 0; text-align: center; }
+  .ct-pod-medal { font-size: 1.5rem; line-height: 1.2; }
+  .ct-pod-name { font-weight: 600; font-size: .9rem; overflow-wrap: anywhere; margin-bottom: 4px; }
+  .ct-pod-name .linkbtn { font-weight: 600; }
+  .ct-pod-blk { border-radius: 10px 10px 0 0; background: var(--line); padding: 6px 2px; display: flex; flex-direction: column; justify-content: flex-start; }
+  .ct-pod-blk b { font-size: 1.2rem; line-height: 1.2; }
+  .ct-pod-blk span { font-size: .85rem; font-weight: 600; }
+  .ct-pod-col.p1 .ct-pod-blk { min-height: 92px; background: #f6d77a; color: #5a4100; }
+  .ct-pod-col.p2 .ct-pod-blk { min-height: 70px; }
+  .ct-pod-col.p3 .ct-pod-blk { min-height: 54px; }
+  .ct-pod-col.me .ct-pod-blk { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ct-you { margin: 10px 0 4px; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--card)); font-weight: 700; }
+  .ct-details { margin: 14px 0 6px; border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; }
+  .ct-details > summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+  .ct-details[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+  .ct-details-body { padding-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .ct-details > summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
   /* ---- UX v2: 6-tab bar, floating ＋ Log button, page titles, sub-tabs (Play) ---- */
   .bnav-in button { font-size: .66rem; letter-spacing: -.01em; min-height: 56px; }

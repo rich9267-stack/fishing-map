@@ -503,6 +503,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-20c", title: "🏆 Leaderboard first in tournaments", items: [
+      "Open a tournament or contest and the leaderboard is at the top: a 🥇🥈🥉 podium, places 4 to 6, and your own place with how far behind the next person you are.",
+      "Switch between boards (Longest, Heaviest, Most fish…) with the chips. Tap “Show the whole board” to see everyone.",
+      "Rules, prizes, entrants and your catches are folded under “Details, rules and entrants”. Tap it to open."
+    ] },
     { id: "2026-10-20b", title: "🎒 A tidier tackle box", items: [
       "Stats › Tackle now groups your gear: Baits, Lures, Spear, net and bow, Rods and line. Each item shows how many fish it caught, the average length and the fish it catches most.",
       "New kinds: 🔱 Spear (speargun or pole spear), 🕸 Cast net and 🏹 Bow. They count fish like baits do: write the same name in “Bait / lure” when you log a catch.",
