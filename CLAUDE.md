@@ -12,7 +12,7 @@ Owner: Richard (Pompano Beach, no programming experience). Plain language, small
 - Token saving: keep replies short (what changed + how to check on the phone). After every finished feature, end with a ready-to-paste prompt for a NEW session for the next item.
 - Keep this file and README.md short.
 
-## Now (Oct 19, v140 live; details of every version in docs/feature_notes.md and docs/build_history.md)
+## Now (Oct 20, v141 live; details of every version in docs/feature_notes.md and docs/build_history.md)
 **State:** the app is invite-only. Everything planned so far is built: UX v2, host pages, Gulf + Keys + Atlantic + Panhandle data, red tide, regional rules, protected zones, official public spots layer, tutorials, color palettes, delete my account (setup/54 applied), admin controls (plans/admin-controls-plan.md; powers, log, undo, warnings, hide, fix official places, locked coin corrections), draft terms.html + required 'I agree / 18+' box + one-time Terms banner (setup/89), security hardening (docs/security.md; setup/67 and 90 applied; CAPTCHA, Confirm email, 2-step all done).
 **Dropped on purpose (Oct 18):** private-spot view, reported-chat review, monthly totals, delete-a-person's-data (would break privacy promises). Unused database pieces were left in place (plans/step9-open-questions.md; safest = change nothing).
 **POSTPONED until Richard is paid (~late Nov 2026):** lawyer/accountant review of terms.html and privacy.html. Keep the app invite-only (no strangers) until then. After review: update the texts, bump TERMS_VERSION in js/49 so members re-agree.

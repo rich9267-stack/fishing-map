@@ -41,26 +41,52 @@
       return true;
     });
   }
+  // Item 5 of plans/ui-review.md: only the feed switch (📍 Local / 🌎 Global) and a "⚙ Filters (n)" button sit above the catches;
+  // the other chips live in a bottom sheet like Map › Layers. The sheet is rebuilt with the list, so pubSheetOpen keeps it open between taps.
+  let pubSheetOpen = false, pubRefocus = null;
+  function pubSheetBody() { document.body.classList.toggle("sheet-open", pubSheetOpen || ["layers-sheet", "find-sheet"].some(id => $(id) && !$(id).hidden)); }
+  function closePubSheet() { if (!pubSheetOpen) return; pubSheetOpen = false; const s = $("pub-sheet"); if (s) s.hidden = true; const b = $("pub-filter-btn"); if (b) b.setAttribute("aria-expanded", "false"); pubSheetBody(); }
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && pubSheetOpen) { closePubSheet(); const b = $("pub-filter-btn"); if (b) b.focus(); } });
   function pubFilterBar(all) {
-    const bar = el("div", "pub-filters");
-    const chips = (label, opts, cur, set) => {
+    const wrap = el("div", "pub-fwrap");
+    const top = el("div", "pub-filters pub-top"), bar = el("div", "pub-filters");
+    const chips = (label, opts, cur, set, into) => {
+      const box = into || bar;
+      if (!into) box.appendChild(el("div", "lyr-group", label));
       const g = el("div", "fchips"); g.setAttribute("role", "radiogroup"); g.setAttribute("aria-label", label);
       opts.forEach(([v, t]) => {
         const on = cur === v, b = el("button", "fchip" + (on ? " on" : ""), t); b.type = "button";
         b.setAttribute("role", "radio"); b.setAttribute("aria-checked", on ? "true" : "false");
-        b.addEventListener("click", () => { set(v); pubSave(); pubShown = 30; if (label === "How far back") loadPublic(); else renderPublic(); });
+        if (pubRefocus === label + "|" + t) { pubRefocus = null; setTimeout(() => { try { b.focus({ preventScroll: true }); } catch (e) { /* fine */ } }, 0); }
+        b.addEventListener("click", () => { pubRefocus = label + "|" + t; set(v); pubSave(); pubShown = 30; if (label === "How far back") loadPublic(); else renderPublic(); });
         g.appendChild(b);
       });
-      bar.appendChild(g);
+      box.appendChild(g);
+      return g;
     };
-    // 📍 Local · 🏠 Home (only while you are away from home waters) · 🌎 Global
+    // 📍 Local · 🏠 Home (only while you are away from home waters) · 🌎 Global — stays on the page
     const feeds = [["local", "📍 Local"]]; if (pubAway()) feeds.push(["home", "🏠 Home"]); feeds.push(["global", "🌎 Global"]);
-    chips("Which feed", feeds, pubScope(), v => { pubF.scope = v; if (v === "local" && typeof hwLocate === "function") hwLocate(false); });
+    const row = el("div", "pub-top-row"); top.appendChild(row);
+    chips("Which feed", feeds, pubScope(), v => { pubF.scope = v; if (v === "local" && typeof hwLocate === "function") hwLocate(false); }, row);
+    const on = (pubF.kind ? 1 : 0) + (pubF.water ? 1 : 0) + (pubF.photo ? 1 : 0) + (pubF.ranked ? 1 : 0);
+    const fb = el("button", "btn ghost small pub-filter-btn", "⚙ Filters"); fb.type = "button"; fb.id = "pub-filter-btn";
+    if (on) fb.appendChild(el("span", "pub-fcount", String(on)));
+    fb.setAttribute("aria-label", on ? `Filters, ${on} on` : "Filters");
+    fb.setAttribute("aria-haspopup", "dialog"); fb.setAttribute("aria-controls", "pub-sheet"); fb.setAttribute("aria-expanded", String(pubSheetOpen));
+    row.appendChild(fb);
     if (pubScope() === "local" && !area.fromGps && navigator.geolocation && typeof hwLocate === "function") {   // not following your phone yet: offer it
       const gps = el("button", "linkbtn", "📍 Use where I am now"); gps.type = "button";
       gps.addEventListener("click", () => hwLocate(true));
-      bar.appendChild(gps);
+      top.appendChild(gps);
     }
+    wrap.appendChild(top);
+    // the sheet: same chips as before
+    const sh = el("div", "msheet pub-sheet"); sh.id = "pub-sheet"; sh.setAttribute("role", "dialog"); sh.setAttribute("aria-modal", "false"); sh.setAttribute("aria-labelledby", "pub-sheet-title");
+    sh.hidden = !pubSheetOpen;
+    sh.appendChild(el("div", "msheet-grip")); sh.lastChild.setAttribute("aria-hidden", "true");
+    const head = el("div", "msheet-head"); const h = el("h2", null, "Filters"); h.id = "pub-sheet-title"; h.tabIndex = -1; head.appendChild(h);
+    const done = el("button", "linkbtn", "Done"); done.type = "button"; head.appendChild(done); sh.appendChild(head);
+    const body = el("div", "msheet-body"); body.appendChild(bar); sh.appendChild(body);
     chips("How far back", [[1, "24 h"], [7, "7 days"], [30, "30 days"], [0, "All"]], pubF.days, v => { pubF.days = v; });
     // fish: the kinds in what's loaded (most common first), plus the one picked
     const counts = new Map(); all.forEach(c => { const k = pubKind(c); counts.set(k, (counts.get(k) || 0) + 1); });
@@ -68,20 +94,28 @@
     if (pubF.kind && !kinds.includes(pubF.kind)) kinds.push(pubF.kind);
     chips("Which fish", [["", "All fish"], ...kinds.map(k => [k, k])], pubF.kind, v => { pubF.kind = v; });
     chips("Water", [["", "All water"], ["saltwater", "Salt"], ["brackish", "Brackish"], ["freshwater", "Fresh"]], pubF.water, v => { pubF.water = v; });
+    bar.appendChild(el("div", "lyr-group", "Only show"));
     const tog = el("div", "fchips");
     [["photo", "📷 Photos only"], ["ranked", "🏅 Ranked only"]].forEach(([k, t]) => {
       const on = !!pubF[k], b = el("button", "fchip" + (on ? " on" : ""), t); b.type = "button"; b.setAttribute("aria-pressed", on ? "true" : "false");
-      b.addEventListener("click", () => { pubF[k] = !pubF[k]; pubSave(); pubShown = 30; renderPublic(); });
+      if (pubRefocus === "tog|" + k) { pubRefocus = null; setTimeout(() => { try { b.focus({ preventScroll: true }); } catch (e) { /* fine */ } }, 0); }
+      b.addEventListener("click", () => { pubRefocus = "tog|" + k; pubF[k] = !pubF[k]; pubSave(); pubShown = 30; renderPublic(); });
       tog.appendChild(b);
     });
     bar.appendChild(tog);
-    const on = (pubF.kind ? 1 : 0) + (pubF.water ? 1 : 0) + (pubF.photo ? 1 : 0) + (pubF.ranked ? 1 : 0);
     if (on) {
       const clr = el("button", "linkbtn", "✕ Clear filters"); clr.type = "button";
       clr.addEventListener("click", () => { pubF.kind = ""; pubF.water = ""; pubF.photo = false; pubF.ranked = false; pubSave(); renderPublic(); });
       bar.appendChild(clr);
     }
-    return bar;
+    wrap.appendChild(sh);
+    fb.addEventListener("click", () => {
+      if (pubSheetOpen) { closePubSheet(); return; }
+      pubSheetOpen = true; sh.hidden = false; fb.setAttribute("aria-expanded", "true"); pubSheetBody();
+      try { h.focus({ preventScroll: true }); } catch (e) { /* fine */ }
+    });
+    done.addEventListener("click", () => { closePubSheet(); const b = $("pub-filter-btn"); if (b) b.focus(); });
+    return wrap;
   }
   // a line under the filters: how many, where from
   function pubSummary(n) {

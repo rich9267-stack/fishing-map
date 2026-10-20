@@ -666,6 +666,7 @@
     try { localStorage.setItem("fm-last-tab", which); } catch (e) { /* fine */ }
     const isMap = which === "map";
     if (!isMap && typeof closeMapSheets === "function") closeMapSheets();
+    if (typeof closePubSheet === "function") closePubSheet();   // Community › Public filters sheet (js/21)
     $("view-map").hidden = !isMap;
     $("view-list").hidden = which !== "list";
     $("view-insights").hidden = which !== "insights";

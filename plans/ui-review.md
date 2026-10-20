@@ -181,7 +181,7 @@ Suggested order: 5 → 6 → 3 → 4 → 1 → 2 (quick wins first; Map last bec
 | 2 Map | **2A** full-screen map, floating buttons | medium | Build last. Notes + map key move into the Layers sheet. Test small phones and the Home Screen app. |
 | 3 Compete | **3A now; 3B after a planning pass** | small (3A) | 3B is not built until a short Designer plan answers the questions below. |
 | 4 Play | **4A, then 4B** | small → medium | Looks only. Same coins, shop, rules. |
-| 5 Community | **5A** one "Filters (n)" button + bottom sheet | small | Reuse the Map Layers sheet style. |
+| 5 Community | **5A** one "Filters (n)" button + bottom sheet | small | **Built v141 (Oct 20)**, js/21, test153. |
 | 6 Tackle | **6A + 6B + new equipment kinds** (speargun, cast net, bow) — confirmed Oct 20 | small + 1 database change | See below. Names, "counts fish" and grouping all confirmed. |
 
 ### Added Oct 20 after the picture mockups (claude.ai/artifact/Y92Y2xopsy3pt2zrZgTjXC)

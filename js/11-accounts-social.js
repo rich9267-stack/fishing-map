@@ -372,6 +372,7 @@
   try { mapPublic = localStorage.getItem("fm-map-public") === "1"; } catch (e) {}
   function pubOpen() { return !!$("view-feed") && !$("view-feed").hidden && feedMode === "public"; }
   function setFeedMode(m) {
+    if (typeof closePubSheet === "function") closePubSheet();
     if (m === "contests") { feedMode = "circle"; showView("compete"); return; }   // contests moved to the 🏆 Compete tab
     feedMode = m;
     if (m === "groups") comSub = "groups"; else if (comSub === "groups") comSub = "feed";

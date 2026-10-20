@@ -666,6 +666,12 @@
   /* 🌎 Public feed filters (js/21) */
   .pub-filters { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
   .pub-filters .fchips:first-child .fchip { font-weight: 700; }
+  .pub-top-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .pub-filter-btn { display: inline-flex; align-items: center; gap: 6px; }
+  .pub-fcount { background: var(--accent); color: var(--on-accent); border-radius: 999px; min-width: 20px; padding: 0 6px; line-height: 20px; font-size: .78rem; text-align: center; }
+  .pub-sheet .pub-filters { margin: 0; gap: 4px; }
+  .pub-sheet .fchip { min-height: 40px; }
+  .pub-sheet .lyr-group:first-child { margin-top: 4px; }
   .pub-summary { margin: 0 0 8px; }
 
   /* ---- UX v2: 6-tab bar, floating ＋ Log button, page titles, sub-tabs (Play) ---- */
