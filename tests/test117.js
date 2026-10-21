@@ -24,10 +24,13 @@ const rows = [];
   while ((m = re.exec(s))) rows.push({ words: m[1].split(",").map(w => w.trim().replace(/^'|'$/g, "")), big: +m[2], rar: +m[3], p: +m[4], s: +m[5], st: +m[6], rl: +m[7], rw: +m[8] });
 });
 const hh = rows.find(r => r.words.join() === "hardhead,gafftopsail"); if (hh) hh.words = ["hardhead"];   // setup/45 narrows this row
+// setup/93 sets new reference weights + growth numbers (ref_b) on some rows
+{ const re = /^update public\.fish_rank_species set ref_wt = ([\d.]+), ref_b = ([\d.]+|null) where words\[1\] = '([^']+)'/gm; let m;
+  while ((m = re.exec(read("setup/93-better-weight-guesses.sql")))) { const r = rows.find(x => x.words[0] === m[3]); if (r) { r.rw = +m[1]; r.rb = m[2] === "null" ? undefined : +m[2]; } } }
 ok(`${rows.length} database rows in the setup files`, rows.length === T.length);
 ok("database words, sizes, traits and weight references match the app tables", rows.every((r, i) =>
   JSON.stringify(r.words) === JSON.stringify(T[i][0]) && r.big === T[i][1] && r.rar === T[i][2] && r.p === T[i][3] && r.s === T[i][4] && r.st === T[i][5] &&
-  r.rl === W[i][1] && r.rw === W[i][2]));
+  r.rl === W[i][1] && r.rw === W[i][2] && r.rb === W[i][3]));
 
 // ---- 2. names resolve to the right row ----
 const row = sp => { const e = R.rankEntry(sp); return e ? e[0][0] : null; };

@@ -1,42 +1,73 @@
   // ---- Length and weight ----
-  // Weight from length: weight grows with the cube of length, so each fish has one reference point
-  // ("a typical 30-inch snook weighs about 8.7 lb") and weight = ref lb × (length ÷ ref length)³.
-  // Rough averages for Florida fish — a fat or skinny fish can be 20% off either way.
+  // Weight from length: each fish has one reference point ("a typical 30-inch snook weighs about 8.1 lb") and a growth number b:
+  // weight = ref lb × (length ÷ ref length)^b. b is about 3 (twice as long ≈ 8× as heavy); a long thin fish like a ladyfish is lower,
+  // a deep fish like a blue catfish higher. No b = 3. Numbers from FishBase studies and the US standard-weight equations (docs/weight-data.md).
+  // A fat or skinny fish can still be 20% off either way.
+  // WEIGHT_REF rows are also the fish rank rows: same order as FISH_RANK_TABLE (js/15) and the database table fish_rank_species.
   const WEIGHT_REF = [
-    [["snook"], 30, 8.7], [["tarpon"], 60, 85], [["redfish", "red drum"], 27, 7.5], [["seatrout", "speckled trout", "trout"], 20, 3],
-    [["crevalle", "jack"], 30, 16], [["mangrove", "gray snapper"], 16, 2.4], [["mutton"], 24, 7.8], [["yellowtail"], 16, 1.7],
-    [["lane snapper"], 12, 1], [["red snapper"], 24, 8], [["pompano"], 15, 2.1], [["permit"], 30, 20], [["spanish"], 20, 2.2],
-    [["bluefish"], 20, 2.7], [["sheepshead"], 16, 3.2], [["whiting", "kingcroaker"], 14, 0.95], [["kingfish", "king mackerel"], 40, 15.7],
-    [["mahi", "dolphin"], 40, 19.6], [["wahoo"], 60, 48], [["black grouper"], 36, 25], [["red grouper"], 24, 7], [["gag"], 30, 12],
-    [["goliath"], 60, 120], [["barracuda"], 40, 14.5], [["cobia"], 40, 19], [["ladyfish"], 20, 1.5], [["black drum"], 30, 15],
-    [["largemouth"], 20, 5], [["peacock"], 18, 4], [["snakehead"], 30, 10], [["bluegill", "panfish", "shellcracker"], 8, 0.5],
-    [["mayan", "cichlid"], 10, 0.9], [["mullet"], 16, 1.6],
-    [["tripletail"], 24, 7], [["flounder"], 16, 1.8], [["hogfish"], 20, 5.5], [["amberjack"], 36, 22], [["spadefish"], 14, 2.4],
-    [["blue runner", "hardtail"], 14, 1.3], [["little tunny", "bonito", "false albacore"], 28, 9], [["pinfish"], 6, 0.1],
-    [["hardhead"], 12, 0.9], [["crappie", "speckled perch"], 11, 0.8], [["channel catfish"], 20, 3.2],
-    [["florida gar", "longnose gar", "spotted gar"], 24, 2.5], [["oscar"], 10, 1.1], [["tilapia"], 12, 1.6],
+    [["snook"], 30, 8.1, 3.03], [["tarpon"], 60, 85], [["redfish", "red drum"], 27, 7.6, 3.03], [["seatrout", "speckled trout", "trout"], 20, 3],
+    [["crevalle", "jack"], 30, 13.6, 2.97], [["mangrove", "gray snapper"], 16, 2, 3.08], [["mutton"], 24, 6.9, 3.05], [["yellowtail"], 16, 1.3, 2.76],
+    [["lane snapper"], 12, 0.83, 2.96], [["red snapper"], 24, 7.2, 3.16], [["pompano"], 15, 2.1], [["permit"], 30, 20], [["spanish"], 20, 2.4],
+    [["bluefish"], 20, 2.7], [["sheepshead"], 16, 3.2], [["whiting", "kingcroaker"], 14, 1.2, 3.26], [["kingfish", "king mackerel"], 40, 15.7],
+    [["mahi", "dolphin"], 40, 19.6], [["wahoo"], 60, 48], [["black grouper"], 36, 24, 3.09], [["red grouper"], 24, 7], [["gag"], 30, 12.7, 2.96],
+    [["goliath"], 60, 120], [["barracuda"], 40, 14.5, 2.88], [["cobia"], 40, 15.9, 3.09], [["ladyfish"], 20, 1.24, 2.56], [["black drum"], 30, 11.7, 2.93],
+    [["largemouth"], 20, 4.4, 3.16], [["peacock"], 18, 4], [["snakehead"], 30, 8.6, 3.07], [["bluegill", "panfish", "shellcracker"], 8, 0.38, 3.11],
+    [["mayan", "cichlid"], 10, 0.9], [["mullet"], 16, 1.5, 2.9],
+    [["tripletail"], 24, 7], [["flounder"], 16, 1.9, 3.3], [["hogfish"], 20, 5.6, 2.95], [["amberjack"], 36, 20.4, 2.84], [["spadefish"], 14, 3.2, 2.95],
+    [["blue runner", "hardtail"], 14, 1.2, 3.01], [["little tunny", "bonito", "false albacore"], 28, 9], [["pinfish"], 6, 0.1],
+    [["hardhead"], 12, 0.9], [["crappie", "speckled perch"], 11, 0.7, 3.07], [["channel catfish"], 20, 2.7, 3.28],
+    [["florida gar", "longnose gar", "spotted gar"], 24, 2.5], [["oscar"], 10, 1.1], [["tilapia"], 12, 1.24, 3.06],
     // US anglers' catfish (same order as FISH_RANK_TABLE in js/15)
-    [["blue catfish", "blue cat"], 30, 13], [["flathead catfish", "flathead cat", "shovelhead"], 30, 12.5], [["white catfish", "white cat"], 16, 1.8],
-    [["black bullhead"], 12, 0.8], [["brown bullhead"], 12, 0.85], [["yellow bullhead"], 11, 0.65], [["flat bullhead"], 9, 0.35], [["snail bullhead"], 9, 0.35],
-    [["spotted bullhead"], 9, 0.35], [["headwater catfish"], 15, 1.4], [["walking catfish", "clarias"], 12, 0.6], [["sailfin catfish", "suckermouth", "pleco"], 16, 1.5],
-    [["brown hoplo", "hoplo"], 8, 0.3], [["gafftopsail", "gafftop"], 20, 3],
+    [["blue catfish", "blue cat"], 30, 11.5, 3.41], [["flathead catfish", "flathead cat", "shovelhead"], 30, 11.7, 3.21], [["white catfish", "white cat"], 16, 1.8],
+    [["black bullhead"], 12, 0.88, 3.02], [["brown bullhead"], 12, 0.79, 3.07], [["yellow bullhead"], 11, 0.67, 2.92], [["flat bullhead"], 9, 0.35], [["snail bullhead"], 9, 0.35],
+    [["spotted bullhead"], 9, 0.35], [["headwater catfish"], 15, 1.4], [["walking catfish", "clarias"], 12, 0.46, 2.7], [["sailfin catfish", "suckermouth", "pleco"], 16, 1.5],
+    [["brown hoplo", "hoplo"], 8, 0.34, 3.02], [["gafftopsail", "gafftop"], 20, 3],
     // Gulf coast + Keys fish and sharks (same order as FISH_RANK_TABLE in js/15)
-    [["bonefish"], 24, 4.5], [["blacktip"], 60, 60], [["bull shark"], 72, 110], [["bonnethead"], 30, 7],
+    [["bonefish"], 24, 4.5], [["blacktip"], 60, 49, 2.91], [["bull shark"], 72, 110], [["bonnethead"], 30, 7],
     [["nurse shark"], 72, 100], [["lemon shark"], 72, 85], [["cubera"], 40, 35], [["blackfin tuna"], 28, 12],
-    [["yellowfin tuna"], 40, 40], [["bar jack"], 16, 2], [["horse-eye", "horse eye"], 24, 6.5],
-    [["sand seatrout", "sand trout", "white trout"], 12, 0.5], [["lionfish"], 12, 0.8],
-    [["shark"], 60, 55], [["skipjack"], 24, 8]
+    [["yellowfin tuna"], 40, 40], [["bar jack"], 16, 2], [["horse-eye", "horse eye"], 24, 5.1, 2.86],
+    [["sand seatrout", "sand trout", "white trout"], 12, 0.5], [["lionfish"], 12, 0.63, 3.26],
+    [["shark"], 60, 55], [["skipjack"], 24, 9.6, 3.02]
   ];
+  // Weight only (no fish rank row yet): more Florida fish and fish from the rest of the US. "=spot" = only the exact name "spot".
+  const WEIGHT_MORE = [
+    [["gulf toadfish", "toadfish"], 10, 0.56, 3.28], [["grunt"], 12, 1, 3], [["porkfish"], 10, 0.6], [["porgy"], 14, 1.44, 3.07],
+    [["triggerfish"], 16, 2.55, 3], [["clown knifefish", "knifefish"], 24, 3.6], [["puffer"], 8, 0.4, 3.01], [["mojarra"], 8, 0.24, 2.82],
+    [["silver jenny"], 6, 0.1, 3.04],
+    [["smallmouth"], 16, 2, 3.02], [["spotted bass"], 14, 1.2, 3.06], [["striped bass", "striper"], 28, 9.7, 3.14], [["white bass"], 12, 0.8, 3.08],
+    [["white perch"], 9, 0.37, 3.14], [["walleye"], 18, 2.1, 3.17], [["sauger"], 14, 0.9, 3.19], [["yellow perch"], 9, 0.34, 3.08],
+    [["northern pike"], 26, 4, 3.06], [["muskellunge", "muskie", "musky"], 40, 18, 3.4], [["pickerel"], 18, 1.25, 3.1],
+    [["rainbow trout", "steelhead"], 14, 1.1], [["brown trout"], 14, 1, 3.05], [["brook trout"], 10, 0.43, 3.1], [["lake trout"], 26, 5.6, 3.14],
+    [["cutthroat"], 14, 1], [["chinook", "king salmon"], 32, 13.5], [["coho", "silver salmon"], 26, 7.1], [["sockeye"], 24, 6],
+    [["redear"], 9, 0.51, 3.1], [["pumpkinseed"], 7, 0.25, 3.24], [["rock bass"], 8, 0.36, 3.12], [["warmouth"], 7, 0.27, 3.2],
+    [["carp"], 24, 6.3, 2.79], [["freshwater drum"], 16, 1.75, 3.04], [["burbot"], 20, 1.9, 2.95], [["bowfin", "mudfish"], 22, 5.5],
+    [["alligator gar"], 60, 75], [["sturgeon"], 60, 95], [["american shad"], 20, 2.6, 3.09],
+    [["summer flounder", "fluke"], 20, 3, 3.23], [["gulf flounder"], 14, 1.1], [["weakfish"], 18, 2, 2.98], [["tautog"], 16, 3.4, 2.96],
+    [["sea bass"], 14, 1.4, 2.97], [["scup"], 10, 0.82, 3.14], [["croaker"], 10, 0.43, 3.13], [["=spot", "spot croaker"], 8, 0.26, 3.07],
+    [["atlantic cod"], 26, 6.3, 3.06], [["haddock"], 20, 2.8, 3.17], [["pollock"], 24, 4.4, 3.08], [["bluefin tuna"], 80, 290, 2.93],
+    [["albacore"], 36, 27.6, 2.8], [["halibut"], 40, 27, 3.18], [["california halibut"], 26, 6.8, 3.08], [["lingcod"], 28, 10.5],
+    [["calico bass", "kelp bass"], 14, 0.7, 3.27], [["california yellowtail"], 32, 8.4, 2.58], [["white seabass"], 36, 16, 2.94]
+  ];
+  // Fish rank only (js/15): the WEIGHT_REF row the database would pick (fish_rank_calc), so the app and the server always agree.
   function weightRef(species) {
     const sp = (species || "").toLowerCase();
     // more specific names first ("red snapper" before "snapper", "black drum" before "drum")
     return WEIGHT_REF.slice().sort((a, b) => Math.max(...b[0].map(w => w.length)) - Math.max(...a[0].map(w => w.length)))
       .find(r => r[0].some(w => sp.includes(w)));
   }
+  // Weight guesses: the row whose matching name is longest wins, across both lists ("lake trout" beats "trout", "black sea bass" finds "sea bass").
+  const wtHit = (w, sp) => w[0] === "=" ? sp.trim() === w.slice(1) : sp.includes(w);
+  function weightRow(species) {
+    const sp = (species || "").toLowerCase();
+    let best = null, bl = 0;
+    WEIGHT_REF.concat(WEIGHT_MORE).forEach(r => r[0].forEach(w => { if (w.length > bl && wtHit(w, sp)) { best = r; bl = w.length; } }));
+    return best;
+  }
+  const wtName = r => r[0][0].replace(/^=/, "");
   function estWeight(species, lengthIn) {
-    const r = weightRef(species);
+    const r = weightRow(species);
     if (!r || !(lengthIn > 0)) return null;
-    return r[2] * Math.pow(lengthIn / r[1], 3);
+    return r[2] * Math.pow(lengthIn / r[1], r[3] || 3);
   }
   const lbText = lb => lb >= 10 ? `${Math.round(lb)} lb` : lb >= 1 ? `${lb.toFixed(1)} lb` : `${Math.round(lb * 16)} oz`;
   function sizeFields(species, lenStr, wStr) {
@@ -61,7 +92,7 @@
     if (w > 0) { note.textContent = ""; return; }
     if (!(len > 0)) { note.textContent = "Tip: lay a ruler, dollar bill or card next to the fish and shoot from straight above — then tap 📏 to measure."; return; }
     const est = estWeight(sp, len);
-    note.textContent = est ? `⚖️ About ${lbText(est)} for a ${len}″ ${weightRef(sp)[0][0]} (estimated from length — type a weight if you weighed it)`
+    note.textContent = est ? `⚖️ About ${lbText(est)} for a ${len}″ ${wtName(weightRow(sp))} (estimated from length — type a weight if you weighed it)`
       : (sp ? "No weight estimate for this species yet — type a weight if you weighed it." : "Pick the species to get a weight estimate.");
   }
   ["#c-length", "#c-weight", "#c-species"].forEach(id => catchForm.querySelector(id).addEventListener("input", updateSizeNote));

@@ -10,6 +10,8 @@ The organization / QOL plan (docs/ux_cleanup_plan.md) is finished: bottom bar, H
 - **Tank step 9 (artist pictures)** — brief is a doc in Richard's artifacts ("Fishing Map — Tank Artist Brief"). Plan: each candidate artist draws one trial fish (the snook), Richard picks one, then test batch (sheepshead, barracuda, chest, plant, gravel), then rounds. Richard fills in budget, payment, rights and contact before sending. Rough cost estimate (Claude's, not a quote): $3,000–8,500 for everything; Richard wants to keep the unique look of every fish (no shared base shapes).
 
 ## Still on the list, no order
+- **Games: compare with the Project games plan** (Oct 21) — Richard pastes `claude/games-plan.md` into a session; the Engineer lists differences from what v151–153 built, smallest fix first, changes nothing until Richard picks.
+- **Continental US map** (Oct 21) — draft plan in plans/us-expansion-plan.md; US weight data collected in docs/weight-data.md. Approved Oct 21 (decisions in the plan); next = step 1 (which state a spot is in).
 - **Host pages leftovers** — owner can't rename a page after asking (admin only); should page tournaments ever pay prizes / Hall of Fame (e.g. verified businesses)?
 - **No-fishing zone warnings elsewhere** — the red protected-zone warning isn't yet shown in Find new water, Plan a trip or Home.
 - **Official spots beyond the Keys + Gulf coast** — refresh the data now and then; OSM piers not loaded.

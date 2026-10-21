@@ -43,7 +43,7 @@
     if (c.length_in > 0) return +c.length_in;
     if (c.weight_lb > 0 && !c.weight_est) {
       const w = weightRef(c.species);
-      if (w) return w[1] * Math.pow(c.weight_lb / w[2], 1 / 3);
+      if (w) return w[1] * Math.pow(c.weight_lb / w[2], 1 / (w[3] || 3));
     }
     return null;
   }
