@@ -17,7 +17,7 @@ ok(names.includes("skipjack tuna"), "…and skipjack tuna");
 ["channel catfish", "brown bullhead", "walking catfish", "blue catfish", "flathead catfish"].forEach(n => ok(names.includes(n), "…and " + n));
 ok(!names.includes("catfish"), "no plain 'Catfish' (the catch form uses the real kinds)");
 ok(new Set(names).size === names.length, "no name twice");
-ok(!/Southeast Florida \(Palm Beach to Miami\), \$\{where\}/.test(fn) && /in Florida: \$\{place\}, \$\{where\}/.test(fn), "prompt says where in Florida");
+ok(!/Southeast Florida \(Palm Beach to Miami\), \$\{where\}/.test(fn) && /"Florida: " \+ place\}, \$\{where\}/.test(fn), "prompt says where in Florida");
 
 // 2. The server only lets plain area text into the prompt
 const line = fn.split("\n").find(l => /const place = /.test(l));
@@ -37,7 +37,7 @@ ok(ctx.fishIdArea({ lat: null, lng: null }) === "Atlantic coast (Southeast Flori
 ctx.LAT = 26.14; ctx.LNG = -81.79;
 ok(/Southwest/.test(ctx.fishIdArea(null)), "away in Naples → Gulf coast · Southwest");
 ok(ctx.fishIdArea({ lat: 40.7, lng: -74 }) === undefined, "outside Florida → nothing sent");
-ok(/invoke\("identify-fish", \{ body: \{ image, water, area: fishIdArea\(sp\) \} \}\)/.test(c07), "the area travels with the photo");
+ok(/invoke\("identify-fish", \{ body: \{ image, water, area: fishIdArea\(sp\)/.test(c07), "the area travels with the photo");
 ok((c07.match(/\}, sp\);/g) || []).length === 2, "both 🔍 buttons (catch form + Quick catch) pass the spot");
 
 console.log(bad ? `test126: ${bad} FAILED` : "test126: ALL OK");

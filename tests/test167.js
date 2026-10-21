@@ -33,7 +33,7 @@ ok("no position → home (Florida)", !S.regionInfo(NaN, NaN).outside);
 
 // 4. wired in: every screen asks before showing a Florida rule
 const t10 = read("js/10-tools-safety.js"), t18 = read("js/18-species.js"), t17 = read("js/17-license-help.js"), t29 = read("js/29-home-waters.js"), t09 = read("js/09-map-forecast.js");
-ok("keeper check uses the gate", /here\.outside && typeof stateRulesGate/.test(t10) && /gateLinks\(box, k\.gate\)/.test(t10));
+ok("keeper check uses the gate", /here\.outside && !outsideRule && typeof stateRulesGate/.test(t10) && /gateLinks\(box, k\.gate\)/.test(t10));
 ok("Seasons cards use the gate", /seasonView[\s\S]{0,200}here\.outside/.test(s31) && /gateLinks\(note, gate\)/.test(s31));
 ok("species page uses the gate", /outside = !!\(inf && inf\.outside/.test(t18));
 ok("licence card + renew button use the state agency", /function licHelp/.test(t17) && /ag\.license/.test(t17));

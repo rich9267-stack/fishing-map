@@ -578,13 +578,19 @@
     const r = sp && sp.lat != null && sp.lng != null ? regionInfo(sp.lat, sp.lng) : regionInfo(LAT, LNG);
     return r && !r.outside ? r.label : undefined;
   }
+  // US plan step 4: outside Florida, tell Fish ID the state name so it uses the right fish list (plain words only)
+  function fishIdState(sp) {
+    if (typeof regionInfo !== "function" || typeof STATE_NAMES === "undefined") return undefined;
+    const r = sp && sp.lat != null && sp.lng != null ? regionInfo(sp.lat, sp.lng) : regionInfo(LAT, LNG);
+    return r && r.outside && r.state ? STATE_NAMES[r.state] : undefined;
+  }
   async function identifyFish(src, water, msgEl, suggEl, onPick, sp) {
     suggEl.innerHTML = "";
     if (!navigator.onLine) { msgEl.textContent = "Fish ID needs a signal — you can identify it later with Edit."; return; }
     msgEl.textContent = "🔍 Looking at the photo… " + ID_NOTE;
     try {
       const image = await photoB64(src);
-      const { data, error } = await db.functions.invoke("identify-fish", { body: { image, water, area: fishIdArea(sp) } });
+      const { data, error } = await db.functions.invoke("identify-fish", { body: { image, water, area: fishIdArea(sp), state: fishIdState(sp) } });
       let out = data;
       if (error) {
         try { out = error.context && typeof error.context.json === "function" ? await error.context.json() : null; } catch (e) { out = null; }

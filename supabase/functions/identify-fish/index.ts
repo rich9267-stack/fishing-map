@@ -24,6 +24,12 @@ const NAMES = "Snook, Tarpon, Jack crevalle, Bar jack, Horse-eye jack, Blue runn
   "Channel catfish, Brown bullhead, Walking catfish, Sailfin catfish (pleco), Brown hoplo, Blue catfish, Flathead catfish, " +
   "Peacock bass, Largemouth bass, Black crappie, Mayan cichlid, Bluegill, Clown knifefish, Bullseye snakehead, Tilapia, Oscar, Florida gar";
 
+// Added when someone fishes outside Florida (the app sends the state's name); Southeast US fish (US plan step 4)
+const NAMES_US = "Red drum, Spotted seatrout (speckled trout), Southern flounder, Striped bass, Hybrid striped bass, White bass, Smallmouth bass, " +
+  "Spotted bass, White crappie, Redear sunfish (shellcracker), Warmouth, Atlantic croaker, Spot, Weakfish, Rainbow trout, Brown trout, Brook trout, " +
+  "Chain pickerel, Bowfin, Longnose gar, American shad";
+const US_STATE = /^[A-Za-z ]{3,20}$/;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return reply({ error: "POST only" }, 405);
@@ -38,9 +44,10 @@ Deno.serve(async (req) => {
     const key = Deno.env.get("GEMINI_API_KEY");
     if (!key) return reply({ error: "Fish ID isn't set up yet (no Gemini key saved in Supabase)." }, 503);
 
-    const { image, water, area } = await req.json();
+    const { image, water, area, state } = await req.json();
+    const otherState = typeof state === "string" && US_STATE.test(state) && !/^florida$/i.test(state.trim()) ? state.trim() : null;
     // Where in Florida (sent by the app, e.g. "Florida Keys (Monroe County)"); only plain words get into the prompt
-    const place = typeof area === "string" && /^[A-Za-z ,·()\/.-]{3,60}$/.test(area) ? area : "Southeast Florida (Palm Beach to Miami)";
+    const place = otherState || (typeof area === "string" && /^[A-Za-z ,·()\/.-]{3,60}$/.test(area) ? area : "Southeast Florida (Palm Beach to Miami)");
     if (typeof image !== "string" || image.length < 1000) return reply({ error: "No photo received." }, 400);
     if (image.length > 2_000_000) return reply({ error: "Photo too large." }, 413);
 
@@ -51,9 +58,9 @@ Deno.serve(async (req) => {
 
     const where = water === "freshwater" ? "freshwater (canal or lake)" : water === "saltwater" ? "saltwater" : water === "brackish" ? "brackish / tidal canal" : "unknown water type";
     const prompt =
-      `An angler caught this fish in Florida: ${place}, ${where}. ` +
-      `Identify the fish. Give up to 3 most likely species, best first, using the names Florida anglers use. ` +
-      `Prefer these names when one fits: ${NAMES}. Use another common name only if none fit. ` +
+      `An angler caught this fish in ${otherState ? "the US state of " + place : "Florida: " + place}, ${where}. ` +
+      `Identify the fish. Give up to 3 most likely species, best first, using the names ${otherState ? "anglers there" : "Florida anglers"} use. ` +
+      `Prefer these names when one fits: ${otherState ? NAMES_US + ", " : ""}${NAMES}. Use another common name only if none fit. ` +
       `For each, give confidence (high, medium or low) and one short clue you used (a visible feature, under 12 words). ` +
       `If there is no fish clearly visible, set fish_visible to false and give no suggestions.`;
 

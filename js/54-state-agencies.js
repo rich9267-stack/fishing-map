@@ -56,11 +56,14 @@
   function stateAgency(st) { const a = STATE_AGENCIES[st]; return a ? { name: a[0], short: a[1], rules: a[2], license: a[3] } : null; }
   // Who to tell people to check with: "FWC" in Florida (or no state given), else the state agency
   function agencyShort(st) { const a = stateAgency(st || "FL"); return a ? a.short : "your state's fish & wildlife agency"; }
+  // How many fish we have a rule for in this state (rows loaded from fish_rules, js/10)
+  function stateRulesCount(st) { return typeof stateRules !== "undefined" ? stateRules.filter(r => r.regions.includes(st)).length : 0; }
   // The honest message for a place outside Florida (info comes from regionInfo, js/31): { text, links: [{label, url}] }
   function stateRulesGate(info) {
     const st = info && info.state, nm = st && typeof STATE_NAMES !== "undefined" ? STATE_NAMES[st] : null, a = stateAgency(st);
     if (!st || !a) return { text: "This spot is outside the United States — we don't have fishing rules for here. Check the local fishing authority before keeping a fish.", links: [] };
-    return { text: `We don't have ${nm || st} rules yet. Check ${a.short} before keeping a fish.`,
+    const some = stateRulesCount(st) > 0;   // US plan step 4: a state with some fish done says "for this fish" instead of "yet"
+    return { text: some ? `We don't have a ${nm || st} rule for this fish yet. Check ${a.short} before keeping a fish.` : `We don't have ${nm || st} rules yet. Check ${a.short} before keeping a fish.`,
       links: [{ label: `${a.short} rules ↗`, url: a.rules }, { label: "Fishing licence ↗", url: a.license }] };
   }
   // Add the agency buttons from stateRulesGate() to a box

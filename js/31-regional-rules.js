@@ -57,8 +57,15 @@
   }
   function seasonView(f) {
     const here = rulesInfo();
-    if (here.outside && typeof stateRulesGate === "function")   // not Florida: no Florida closed dates or rule line (US plan step 2)
-      return Object.assign({}, f, { rule: stateRulesGate(here).text, closed: undefined, openOnly: undefined, ruleRow: null });
+    if (here.outside && typeof stateRulesGate === "function") {   // not Florida: no Florida closed dates or rule line (US plan step 2)
+      const rows = here.state && typeof stateRulesForCard === "function" ? stateRulesForCard(f, here.state) : [];   // …unless we have that state's rule (step 4)
+      if (!rows.length) return Object.assign({}, f, { rule: stateRulesGate(here).text, closed: undefined, openOnly: undefined, ruleRow: null });
+      const same = rows.every(r => JSON.stringify([r.closed || null, r.open_only || null]) === JSON.stringify([rows[0].closed || null, rows[0].open_only || null]));
+      const sum = rows.length === 1 ? ruleLine(rows[0]) : rows.map(r => `${r.species}: ${ruleSummaryShort(r)}`).join(" — ");
+      return Object.assign({}, f, { rule: `${sum} — checked ${rows[0].verified_on}; confirm with ${agencyShort(here.state)}.`,
+        closed: same && Array.isArray(rows[0].closed) && rows[0].closed.length ? rows[0].closed : undefined,
+        openOnly: same && Array.isArray(rows[0].open_only) && rows[0].open_only.length ? rows[0].open_only : undefined, ruleRow: rows.length === 1 ? rows[0] : null });
+    }
     const picks = ruleForCard(f);
     if (!picks || !picks.length) return f;
     const sig = r => JSON.stringify([r.closed || null, r.open_only || null]);
@@ -96,7 +103,9 @@
     const info = rulesInfo();
     if (note) {
       const gate = info.outside && typeof stateRulesGate === "function" ? stateRulesGate(info) : null;
-      note.textContent = `${rgPick === "auto" ? "Following where you are: " : "Showing: "}${info.label}. ${gate ? gate.text : rulesCautions(info).join(" ") + " Always confirm with FWC."}`.replace(/\s+/g, " ");
+      const have = gate && info.state && typeof stateRulesCount === "function" ? stateRulesCount(info.state) : 0;   // step 4: some fish have rules here
+      const gtext = have ? `We have ${info.label} size and bag rules for ${have} fish (each shows the date we checked it). For any other fish, check ${agencyShort(info.state)} before keeping it.` : gate && gate.text;
+      note.textContent = `${rgPick === "auto" ? "Following where you are: " : "Showing: "}${info.label}. ${gate ? gtext : rulesCautions(info).join(" ") + " Always confirm with FWC."}`.replace(/\s+/g, " ");
       if (gate && typeof gateLinks === "function") gateLinks(note, gate);
     }
   }

@@ -221,20 +221,23 @@
 
   // ---- 📏 Keeper checker: size / season rules from the fish_rules table (admin-editable), shown while logging a catch ----
   // Always a guide only — the message always says to check FWC.
-  let fishRules = [];
+  let fishRules = [];     // Florida's rows (no state code in `regions`)
+  let stateRules = [];    // other states' rows: `regions` holds the 2-letter code, e.g. {GA} (US plan step 4)
+  const isStateTag = t => /^[A-Z]{2}$/.test(t);
   async function loadRules() {
     if (!me) return;
     try {
       const { data, error } = await db.from("fish_rules").select("*").eq("active", true);
       if (error) throw error;
-      fishRules = data || [];
+      const all = data || [], isSt = r => Array.isArray(r.regions) && r.regions.some(isStateTag);
+      fishRules = all.filter(r => !isSt(r)); stateRules = all.filter(isSt);
       try { if (typeof renderSeasons === "function") renderSeasons(); } catch (e2) { /* Seasons not drawn yet */ }
     } catch (e) { /* no rules yet: the checker just stays quiet */ }
   }
   // Rules can differ by coast (Gulf / Atlantic / Keys…): a species may have several rows, each with `regions` tags (js/31 explains the tags).
   // No tags = the whole state. rulesInfo() (js/31) says which tags fit the place you're looking at, best match first.
   const RULE_TAG_NAMES = { atlantic: "Atlantic coast", keys: "the Keys", gulf: "Gulf coast", spz: "Special Permit Zone", sw: "Southwest Gulf", ch: "Charlotte Harbor", bigbend: "Big Bend" };
-  const regionsText = regions => (regions || []).map(t => RULE_TAG_NAMES[t] || t).join(", ");
+  const regionsText = regions => (regions || []).map(t => RULE_TAG_NAMES[t] || (isStateTag(t) && typeof STATE_NAMES !== "undefined" && STATE_NAMES[t]) || t).join(", ");
   function pickRegionRow(rows, info) {
     const tags = (info && info.tags) || ["atlantic"];
     for (const t of tags) { const r = rows.find(x => Array.isArray(x.regions) && x.regions.includes(t)); if (r) return r; }
@@ -250,11 +253,24 @@
     if (same.length < 2 && !(best.regions && best.regions.length)) return best;   // an ordinary one-row, whole-state rule
     return pickRegionRow(same, info || (typeof rulesInfo === "function" ? rulesInfo() : null));
   }
+  // A rule written for one state (not Florida): the best row for a fish name, or null → the caller says "We don't have <State> rules yet"
+  function stateRuleFor(species, st) {
+    const sp = String(species || "").toLowerCase().trim(); if (!sp || !st) return null;
+    let best = null, bl = 0;
+    stateRules.filter(r => r.regions.includes(st)).forEach(r => (r.match || []).forEach(w => { if (w && sp.includes(w.toLowerCase()) && w.length > bl) { best = r; bl = w.length; } }));
+    return best;
+  }
+  // The state's rows for a Seasons card (any shared match word); one row per species
+  function stateRulesForCard(f, st) {
+    const words = (f.match || []).map(w => String(w).toLowerCase());
+    return stateRules.filter(r => r.regions.includes(st) && (r.match || []).some(w => words.includes(String(w).toLowerCase())));
+  }
   // Warnings that belong after a rule, depending on where it is being read
   function ruleCaution(r, info) {
     info = info || (typeof rulesInfo === "function" ? rulesInfo() : null) || {};
     const out = [];
-    if (info.outside) out.push("This spot is outside Florida — these are Florida's rules.");
+    const stateRow = r && Array.isArray(r.regions) && r.regions.some(isStateTag);
+    if (info.outside && !stateRow) out.push("This spot is outside Florida — these are Florida's rules.");
     else if (info.north) out.push("North of Palm Beach County some FWC rules differ (Indian River Lagoon, Northeast).");
     if (r._otherRegion) out.push(`This rule is written for ${regionsText(r.regions)}, not for here.`);
     else if (info.tags && info.tags[0] === "keys" && r.regions && r.regions.length && !r.regions.includes("keys") && !r.regions.includes("spz")) out.push("In the Keys, which rules apply can depend on which side you fish (Atlantic or Gulf).");
@@ -282,16 +298,18 @@
   const ruleLine = r => (r.regions && r.regions.length ? regionsText(r.regions) + ": " : "") + ruleSummary(r);
   function keeperCheck(species, len, when, info) {
     const here = info || (typeof rulesInfo === "function" ? rulesInfo() : null);
-    if (here && here.outside && typeof stateRulesGate === "function") {   // not Florida: never show a Florida rule (US plan step 2)
+    const outsideRule = here && here.outside ? stateRuleFor(species, here.state) : null;   // a state we have rules for (US plan step 4)
+    if (here && here.outside && !outsideRule && typeof stateRulesGate === "function") {   // not Florida: never show a Florida rule (US plan step 2)
       if (!String(species || "").trim()) return null;
       const g = stateRulesGate(here); return { level: "info", text: "📏 " + g.text, gate: g };
     }
-    const r = ruleFor(species, info); if (!r) return null;
+    const r = outsideRule || ruleFor(species, info); if (!r) return null;
+    const agency = typeof agencyShort === "function" ? agencyShort(here && here.outside ? here.state : null) : "FWC";
     when = when || new Date();
     const lenName = r.measure === "fork" ? "fork length" : "total length";
     const size = r.min_in != null && r.max_in != null ? `${inch(r.min_in)}–${inch(r.max_in)}` : r.min_in != null ? `${inch(r.min_in)} minimum` : r.max_in != null ? `${inch(r.max_in)} maximum` : "";
-    const foot = ` Rule${r.regions && r.regions.length ? " for " + regionsText(r.regions) : ""}: ${size ? size + " " + lenName + " · " : ""}${r.bag ? r.bag + " · " : ""}${r.note ? r.note + " " : ""}${ruleStale(r) ? `⚠️ This rule was last checked ${ruleAge(r) == null ? "a while ago" : ruleAge(r) + " days ago"} — it may have changed, so confirm with FWC.` : `Always check FWC (checked ${r.verified_on}).`}${ruleCaution(r, info)}`;
-    if (r.release_only) return { level: "bad", text: `🚫 ${r.species}: catch-and-release only — let it go.${r.note ? " " + r.note : ""} Always check FWC.${ruleCaution(r, info)}` };
+    const foot = ` Rule${r.regions && r.regions.length ? " for " + regionsText(r.regions) : ""}: ${size ? size + " " + lenName + " · " : ""}${r.bag ? r.bag + " · " : ""}${r.note ? r.note + " " : ""}${ruleStale(r) ? `⚠️ This rule was last checked ${ruleAge(r) == null ? "a while ago" : ruleAge(r) + " days ago"} — it may have changed, so confirm with ${agency}.` : `Always check ${agency} (checked ${r.verified_on}).`}${ruleCaution(r, info)}`;
+    if (r.release_only) return { level: "bad", text: `🚫 ${r.species}: catch-and-release only — let it go.${r.note ? " " + r.note : ""} Always check ${agency}.${ruleCaution(r, info)}` };
     if (seasonState(r, when) === "closed") return { level: "bad", text: `🚫 ${r.species} is out of season right now — release it.${foot}` };
     if (!(len > 0)) return { level: "info", text: `📏 ${r.species} —${foot} Add a length to check this fish.` };
     const near = r.measure === "fork" ? " Measure to the fork of the tail (fork length is a bit shorter than nose-to-tip)." : "";

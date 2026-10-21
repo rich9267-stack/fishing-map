@@ -794,6 +794,10 @@
     "Lemon shark (released)",
     "Shark (other)"
   ];
+  // US plan step 4: more fish names, offered only while the place on screen is outside Florida (Florida's list stays as it was)
+  const SPECIES_SUGGEST_US = ["Red drum", "Southern flounder", "Striped bass", "Hybrid striped bass", "White bass", "Smallmouth bass", "Spotted bass", "White crappie",
+    "Redear sunfish", "Warmouth", "Atlantic croaker", "Spot", "Weakfish", "Rainbow trout", "Brown trout", "Brook trout", "Chain pickerel", "Flathead catfish", "Blue catfish"];
+  const speciesPool = () => typeof rulesInfo === "function" && rulesInfo().outside ? SPECIES_SUGGEST.concat(SPECIES_SUGGEST_US.filter(n => !SPECIES_SUGGEST.includes(n))) : SPECIES_SUGGEST;
   (function () {
     const dl = document.createElement("datalist"); dl.id = "species-list";
     SPECIES_SUGGEST.forEach(n => { const o = document.createElement("option"); o.value = n; dl.appendChild(o); });
@@ -806,7 +810,7 @@
     function refresh() {
       const q = input.value.trim().toLowerCase(); box.innerHTML = "";
       if (q.length < 2) return;
-      const hits = SPECIES_SUGGEST.filter(n => n.toLowerCase().includes(q) && n.toLowerCase() !== q)
+      const hits = (typeof speciesPool === "function" ? speciesPool() : SPECIES_SUGGEST).filter(n => n.toLowerCase().includes(q) && n.toLowerCase() !== q)
         .sort((a, b) => (a.toLowerCase().startsWith(q) ? 0 : 1) - (b.toLowerCase().startsWith(q) ? 0 : 1)).slice(0, 6);
       hits.forEach(n => {
         const b = el("button", "fchip", n); b.type = "button"; b.setAttribute("role", "option");

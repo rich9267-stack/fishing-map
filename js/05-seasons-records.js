@@ -480,7 +480,7 @@
   // Which Seasons fish a logged species is — the most specific name wins ("peacock bass" → Peacock bass, not Largemouth)
   function seasonFor(species) {
     let best = null, bestLen = 0;
-    SEASONS.forEach(f => f.match.forEach(w => {
+    (typeof seasonList === "function" ? seasonList() : SEASONS).forEach(f => f.match.forEach(w => {
       if (w.length > bestLen && new RegExp(`\\b${w}(s|es)?\\b`, "i").test(species || "")) { best = f; bestLen = w.length; }
     }));
     return best;
@@ -495,6 +495,11 @@
     return { pen: 0, text: "" };
   }
   let seaMonth = new Date().getMonth(), seaGroup = "";
+  // US plan step 4: the Seasons list for the place on screen: the Southeast cards (js/55) in GA / AL / SC / NC / MS, else the Florida cards
+  function seasonList() {
+    const i = typeof rulesInfo === "function" ? rulesInfo() : null;
+    return i && i.outside && typeof SEASONS_SE !== "undefined" && SE_STATES.includes(i.state) ? SEASONS_SE : SEASONS;
+  }
 
   const mmdd = d => `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const inWindow = (key, [a, b]) => a <= b ? key >= a && key <= b : key >= a || key <= b;
@@ -525,7 +530,7 @@
   // Openings and closings in the next 45 days
   function seasonAlerts(today) {
     const out = [];
-    SEASONS.forEach(f => {
+    seasonList().forEach(f => {
       const v = sv(f);
       if (!v.closed && !v.openOnly) return;
       let prev = seasonOpen(v, today);
@@ -577,7 +582,7 @@
       al.appendChild(div);
     });
 
-    const list = SEASONS.filter(f => !seaGroup || f.group === seaGroup)
+    const list = seasonList().filter(f => !seaGroup || f.group === seaGroup)
       .map((f, i) => { const v = sv(f); return { f, v, i, lvl: shoreLevel(f, seaMonth), open: seasonOpen(v, ref) }; })
       .sort((a, b) => (!!a.f.far - !!b.f.far) || (b.lvl - a.lvl) || (a.i - b.i));   // fish that don't live here go last
     $("sea-list-title").textContent = `What's biting in ${MONTHS[seaMonth]}`;
@@ -590,7 +595,7 @@
       const badges = document.createElement("span"); badges.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end";
       const badge = (cls, text) => { const b = document.createElement("span"); b.className = "sea-badge " + cls; b.textContent = text; badges.appendChild(b); };
       if (open === false) badge("closed", "⛔ Closed to keep");
-      if (f.far) badge("slow", "📍 Not in S. Florida");
+      if (f.far) badge("slow", rulesInfo().outside ? "📍 Not in your area" : "📍 Not in S. Florida");
       else badge(["slow", "good", "peak"][lvl], (["Slow", "Good", "🔥 Peak"][lvl]) + " from shore");
       top.append(name, badges);
       const strip = (arr, label) => {
@@ -614,7 +619,7 @@
       if (f.far) { const w = document.createElement("div"); w.className = "sea-rule"; w.textContent = "📍 Lives in: " + f.far; div.append(top, w, tip); }
       else div.append(top, strip(f.shore, "Shore"), strip(f.boat, "Boat"), tip);
       if (spawnNote.textContent) div.appendChild(spawnNote);
-      if (thisMonth && f.group !== "fresh") {
+      if (thisMonth && f.group !== "fresh" && !rulesInfo().outside) {   // the temp read-out is Pompano's
         const w = waterTempNow(LAT, LNG);
         const fit = tempFit(f, w.done && w.done !== "error" ? w.done.f : null);
         if (fit.text) { const tn = document.createElement("div"); tn.className = "sea-rule"; tn.textContent = fit.text + " (Pompano area today)"; div.appendChild(tn); }
