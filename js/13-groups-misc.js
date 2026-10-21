@@ -503,6 +503,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-20l", title: "🎮 Games", items: [
+      "🎮 Play › Races is now Games, with a new daily quiz: Keeper or release?"
+    ] },
     { id: "2026-10-20k", title: "🧹 Tidier Me page", items: [
       "The small grey line under Clubs & businesses and Colors now sits on its own line under the name, instead of running into it."
     ] },

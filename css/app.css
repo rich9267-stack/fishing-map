@@ -1079,3 +1079,45 @@
 .fk-card.t-uncommon { --rim: #3fa66b; --rim-bg: rgba(63,166,107,.12); } .fk-card.t-rare { --rim: #3b82d6; --rim-bg: rgba(59,130,214,.12); }
 .fk-card.t-epic { --rim: #8e5bd6; --rim-bg: rgba(142,91,214,.13); } .fk-card.t-legendary { --rim: #f2b134; --rim-bg: rgba(242,177,52,.16); box-shadow: 0 0 10px rgba(242,177,52,.45); }
 .fk-card .fk-pic { border-radius: 10px; background: radial-gradient(circle at 50% 60%, var(--rim-bg), transparent 70%); }
+/* 🎮 Games (js/51): the list of game cards + the Keeper or release? quiz */
+.games-head { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.games-title { margin: 0; font-size: 1.35rem; font-weight: 800; flex: 1; min-width: 0; }
+.games-help { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: 1.1rem; font-weight: 800; cursor: pointer; }
+.games-back { appearance: none; border: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 700; min-height: 44px; padding: 0 8px 0 0; cursor: pointer; flex: none; }
+#race-back { display: block; margin: -6px 0 2px; }
+.games-sub { margin: 2px 0 12px; }
+.games-list { display: flex; flex-direction: column; gap: 10px; }
+.game-card { appearance: none; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 72px; box-sizing: border-box; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.game-card:not(:disabled):active { transform: scale(.99); }
+.game-card.soon { cursor: default; opacity: .6; }
+.game-ic { flex: none; width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.game-card.race .game-ic { background: color-mix(in srgb, #3b5bd6 16%, transparent); }
+.game-txt { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.game-name { font-size: 1.05rem; font-weight: 800; }
+.game-line { font-size: .88rem; color: var(--muted); }
+.game-st { flex: none; white-space: nowrap; font-size: .78rem; font-weight: 700; padding: 6px 9px; border-radius: 10px; color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); text-align: center; }
+@media (max-width: 440px) { .game-card { display: grid; grid-template-columns: 46px minmax(0, 1fr); row-gap: 6px; } .game-ic { grid-row: span 2; align-self: center; } .game-st { grid-column: 2; justify-self: start; padding: 4px 9px; } }
+.game-card.soon .game-st, .game-card.done .game-st { color: var(--muted); background: color-mix(in srgb, var(--muted) 14%, transparent); }
+.kr-bar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 4px 0 10px; }
+.kr-bar span { height: 6px; border-radius: 3px; background: var(--line); }
+.kr-bar span.right { background: var(--rising); } .kr-bar span.wrong { background: var(--falling); }
+.kr-count { color: var(--muted); font-weight: 800; font-size: .9rem; margin-bottom: 6px; }
+.kr-q { border-radius: 18px; padding: 18px 14px; background: color-mix(in srgb, var(--accent) 10%, var(--card)); display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.kr-sp { font-size: 1.35rem; font-weight: 800; }
+.kr-facts { font-size: 1rem; font-weight: 600; color: var(--muted); }
+.kr-ask { margin: 14px 0 10px; font-size: 1.1rem; font-weight: 800; }
+.kr-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.kr-btn { appearance: none; min-height: 60px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: 1.05rem; font-weight: 800; cursor: pointer; }
+.kr-btn:disabled { cursor: default; opacity: .55; }
+.kr-btn.right { opacity: 1; border-color: var(--rising); color: var(--rising); border-width: 2.5px; }
+.kr-btn.wrong { opacity: 1; border-color: var(--falling); color: var(--falling); border-width: 2.5px; }
+.kr-why { margin: 12px 0 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); line-height: 1.4; }
+.kr-why.right { border-color: var(--rising); } .kr-why.wrong { border-color: var(--falling); }
+.kr-next { width: 100%; min-height: 48px; }
+.kr-fresh { margin-top: 12px; }
+.kr-end { text-align: center; padding: 8px 0 4px; }
+.kr-score { font-size: 3rem; font-weight: 800; color: var(--accent); line-height: 1.1; }
+.kr-msg { font-weight: 700; margin: 4px 0 6px; }
+ol.kr-review { margin: 12px 0 0; padding: 0; list-style: none; }
+ol.kr-review li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { color: var(--falling); }

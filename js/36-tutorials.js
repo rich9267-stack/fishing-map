@@ -7,6 +7,7 @@
     home:      { title: "Your spot for today 🏠",       text: "Check tide, wind, and the best spot before you go. Tap the **+** any time you land one.", target: "#bn-log" },
     map:       { title: "Find water 🗺",                text: "Spots, ramps, and parks are all here. Tap the layers button to turn things on and off.", target: "#map-layers-btn" },
     play:      { title: "Your fish, swimming 🐠",       text: "Your tank, your best catches, and fish races — all in one place.", target: "#play-sw" },
+    games:     { title: "Quick games 🎮",               text: "Play a round while you wait for the tide.", target: "#games-card .games-list", local: true },
     compete:   { title: "Contests and tournaments 🏆",  text: "Join one, track how you're doing, and see who's winning.", target: "#ct-body" },
     community: { title: "Friends and the feed 👥",      text: "Catches, trips, friends, messages, and groups — tap a tab to switch.", target: "#com-sw" },
     stats:     { title: "See how you're doing 📊",      text: "Your top catches, records, and the year so far — all in one place.", target: "#view-insights:not([hidden]) .sub-tabs, #view-seasons:not([hidden]) .sub-tabs" },
@@ -17,6 +18,7 @@
   const tutLocalKey = () => "fm-tut-" + (me ? me.id : "");
   function tutSaveLocal() { try { localStorage.setItem(tutLocalKey(), JSON.stringify([...tutSeen])); } catch (e) { /* this phone only forgets */ } }
   async function tutSend(k) {   // add the row once; if it's already there nothing changes (needs only the "add" permission)
+    if (TUTS[k] && TUTS[k].local) return;   // 🎮 Games: remembered on this phone only (the account list allows the 8 keys of setup/73)
     try { await db.from("tutorials_seen").upsert({ user_id: me.id, screen_key: k }, { onConflict: "user_id,screen_key", ignoreDuplicates: true }); } catch (e) { /* this phone remembers; it syncs at the next sign-in */ }
   }
   async function tutLoadMine() {
@@ -40,7 +42,7 @@
     const on = id => { const e = $(id); return !!e && e.classList.contains("on"); };
     if (!$("me-card").hidden || !$("settings-card").hidden) return "settings";
     if (on("tab-map")) return "map";
-    if (on("tab-tank")) return "play";
+    if (on("tab-tank")) return $("games-card") && !$("games-card").hidden ? "games" : "play";
     if (on("tab-compete")) return "compete";
     if (on("tab-feed")) return "community";
     if (on("tab-insights") || on("tab-seasons")) return "stats";

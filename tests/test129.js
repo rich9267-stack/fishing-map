@@ -10,6 +10,7 @@ const APPROVED = {
   home: ["Your spot for today 🏠", "Check tide, wind, and the best spot before you go. Tap the + any time you land one."],
   map: ["Find water 🗺", "Spots, ramps, and parks are all here. Tap the layers button to turn things on and off."],
   play: ["Your fish, swimming 🐠", "Your tank, your best catches, and fish races — all in one place."],
+  games: ["Quick games 🎮", "Play a round while you wait for the tide."],   // Games step 1 (v151): on this phone only
   compete: ["Contests and tournaments 🏆", "Join one, track how you're doing, and see who's winning."],
   community: ["Friends and the feed 👥", "Catches, trips, friends, messages, and groups — tap a tab to switch."],
   stats: ["See how you're doing 📊", "Your top catches, records, and the year so far — all in one place."],
@@ -41,7 +42,7 @@ function boot(o) {
   // 1. the words are exactly what Richard approved
   let t = boot();
   const keys = Object.keys(APPROVED);
-  ok(Object.keys(t.w.T.TUTS).join() === keys.join(), "8 cards: Home, Map, Play, Compete, Community, Stats, Settings + the photo tip");
+  ok(Object.keys(t.w.T.TUTS).join() === keys.join(), "9 cards: Home, Map, Play, Games, Compete, Community, Stats, Settings + the photo tip");
   ok(keys.every(k => t.w.T.TUTS[k].title === APPROVED[k][0] && t.w.T.TUTS[k].text.replace(/\*\*/g, "") === APPROVED[k][1]), "every title and line is the approved wording");
   t.w.close();
 
@@ -170,7 +171,7 @@ function boot(o) {
   ok((read("js/06-catching.js").match(/tutPhotoTip\(\)/g) || []).length === 2, "photo tip hooked into Quick catch and the full catch form");
   ok(runall.includes("test129.js"), "this test is in run-all.sh");
   const dbKeys = (/screen_key in \(([^)]*)\)/.exec(sql)[1].match(/'[a-z-]+'/g) || []).map(s => s.slice(1, -1));
-  ok(dbKeys.join() === keys.join(), "the database accepts exactly these 8 keys");
+  ok(dbKeys.join() === keys.filter(k => k !== "games").join(), "the database accepts exactly these 8 keys (🎮 Games is remembered on the phone only)");
   ok(/references auth\.users\(id\) on delete cascade/.test(sql) && /for select using \(public\.is_member\(\) and user_id = auth\.uid\(\)\)/.test(sql) && !/for update|for delete/.test(sql), "own rows only; deleted with the account; no update/delete rights");
   const targets = keys.map(k => t.w.T.TUTS[k].target); // (read before close) selectors name real ids
   const live = [...html.matchAll(/id="([^"]+)"/g)].map(m => m[1]).concat([...read("js/26-sub-tabs.js").matchAll(/"sub-tabs/g)].length ? ["__sub"] : []);

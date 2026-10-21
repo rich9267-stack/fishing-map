@@ -724,21 +724,23 @@
       if (mapPublic && !focusing) setMapPublic(true);
     }
   }
-  // ---- 🎮 Play (UX v2): one page for the games — 🐠 Tank · 🐟 My fish · 🏁 Fish race (coins on top). The page is view-tank. ----
+  // ---- 🎮 Play (UX v2): one page for the games — 🐠 Tank · 🐟 My fish · 🎮 Games (coins on top). The page is view-tank. ----
+  // 🎮 Games (js/51) is a list of game cards; "race" is the Fish race screen opened from it (old links and alerts still use showPlay("race")).
   let playSub = "tank";
-  try { const v = localStorage.getItem("fm-play-sub"); if (["tank", "fish", "race"].includes(v)) playSub = v; } catch (e) { /* fine */ }
+  try { const v = localStorage.getItem("fm-play-sub"); if (["tank", "fish", "games", "race"].includes(v)) playSub = v; } catch (e) { /* fine */ }
   function renderPlay() {
-    document.querySelectorAll("#play-sw button").forEach(b => { const on = b.dataset.sub === playSub; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); });
-    $("play-tank").hidden = playSub !== "tank"; $("fk-card").hidden = playSub !== "fish"; $("race-card").hidden = playSub !== "race";
+    document.querySelectorAll("#play-sw button").forEach(b => { const on = b.dataset.sub === playSub || (b.dataset.sub === "games" && playSub === "race"); b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); });
+    $("play-tank").hidden = playSub !== "tank"; $("fk-card").hidden = playSub !== "fish"; $("race-card").hidden = playSub !== "race"; $("games-card").hidden = playSub !== "games";
     if (playSub === "tank") renderTank();
     else if (playSub === "fish" && typeof renderMyFish === "function") renderMyFish();
     else if (playSub === "race" && typeof renderRace === "function") renderRace();
+    else if (playSub === "games" && typeof renderGames === "function") renderGames();
   }
   function showPlay(sub) {
     if (sub) { playSub = sub; try { localStorage.setItem("fm-play-sub", sub); } catch (e) { /* fine */ } }
     if ($("view-tank").hidden) showView("tank"); else renderPlay();
   }
-  $("play-sw").addEventListener("click", e => { const b = e.target.closest("[data-sub]"); if (b) showPlay(b.dataset.sub); });
+  $("play-sw").addEventListener("click", e => { const b = e.target.closest("[data-sub]"); if (b) { if (b.dataset.sub === "games" && typeof gamesScreen !== "undefined") gamesScreen = "list"; showPlay(b.dataset.sub); } });
   // ---- 🧭 Navigation shell (UX step 1): bottom bar, Me menu, Stats switch. The old tab buttons stay (hidden) and do the real work. ----
   (function navShell() {
     const bn = $("bnav"), TABS = ["tab-list", "tab-map", "tab-insights", "tab-seasons", "tab-tank", "tab-feed", "tab-compete"];

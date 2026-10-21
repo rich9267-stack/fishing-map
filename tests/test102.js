@@ -52,7 +52,8 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   check("Play: Tank sub-tab first, coins box on the page", !$("play-tank").hidden && $("fk-card").hidden && $("race-card").hidden && $("view-tank").contains($("wallet-box")));
   d.querySelector('#play-sw [data-sub="fish"]').click(); await wait(50);
   check("My fish sub-tab shows only My fish", !$("fk-card").hidden && $("play-tank").hidden && $("race-card").hidden && $("fk-body").childNodes.length > 0);
-  d.querySelector('#play-sw [data-sub="race"]').click(); await wait(50);
+  d.querySelector('#play-sw [data-sub="games"]').click(); await wait(50);   // 🎮 Games (Games step 1): the race opens from its card
+  d.querySelector('#games-body .game-card[data-game="race"]').click(); await wait(50);
   check("Fish race sub-tab shows only the race", !$("race-card").hidden && $("fk-card").hidden && $("race-body").childNodes.length > 0);
   check("sub-tab remembered", w.localStorage.getItem("fm-play-sub") === "race");
   // Stats no longer holds the games
