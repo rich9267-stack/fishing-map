@@ -213,7 +213,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
 
   k = K("Flounder", 16, D(2026, 11, 1), TAMPA); need(k.level === "bad" && !/Rule for/.test(k.text), "a whole-state rule (flounder) is the same everywhere and doesn't name a coast");
   need(/North of Palm Beach County/.test(K("Snook", 30, D(2026, 10, 15), [27.2, -80.2]).text), "north of Palm Beach: warns the rules differ there");
-  need(/outside Florida/.test(K("Snook", 30, D(2026, 10, 15), [33, -84]).text), "outside Florida: says so");
+  need(/We don't have Georgia rules yet/.test(K("Snook", 30, D(2026, 10, 15), [33, -84]).text) && !/Florida/.test(K("Snook", 30, D(2026, 10, 15), [33, -84]).text), "outside Florida: says we don't have Georgia rules");
   ev(`fishRules.push({ species: "Zzz fish", match: ["zzz"], regions: ["gulf"], min_in: 10, measure: "total", active: true, verified_on: "2026-10-15" })`);
   need(/not for here/.test(K("zzz", 12, D(2026, 10, 15), POMPANO).text), "a rule written only for another coast says so");
   ev(`fishRules.pop()`);

@@ -37,7 +37,7 @@
     if (area.away) sub.textContent = `📍 ${area.name || "Away from home"} · home waters: ${h.name}`;
     else if (homeWaters) sub.textContent = `Home waters: ${h.name}`;
     else if (area.fromGps && area.name) sub.textContent = `📍 ${area.name}`;
-    else sub.textContent = "South Florida · home waters: Pompano Beach";
+    else sub.textContent = typeof regionInfo === "function" && regionInfo(area.lat, area.lng).outside ? "Your area · home waters: Pompano Beach" : "South Florida · home waters: Pompano Beach";
   }
 
   // Make (lat, lng) the area now. Reloads tide / wind / pressure / moon when you've moved more than ~10 miles.

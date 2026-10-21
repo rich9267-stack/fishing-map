@@ -22,9 +22,10 @@ ok(!/\son[a-z]+\s*=\s*["']/i.test(html.replace(/<!--[\s\S]*?-->/g, "")), "no inl
 
 // 2) every outside server the code fetches / loads scripts from is listed in the policy
 // (hosts that are only opened as links the person taps are listed here and need no policy entry)
+// js/54-state-agencies.js is skipped: it only holds links to state agency pages that open in a new tab
 const LINK_ONLY = ["myfwc.com", "www.google.com", "maps.google.com", "www.w3.org", "www.weather.gov", "www.inaturalist.org", "tidesandcurrents.noaa.gov", "coastwatch.noaa.gov"];
 const hosts = new Set();
-for (const [f, src] of Object.entries(js)) for (const h of src.match(/https?:\/\/[a-zA-Z0-9.-]+/g) || []) hosts.add(h.replace(/^https?:\/\//, ""));
+for (const [f, src] of Object.entries(js)) if (f !== "js/54-state-agencies.js") for (const h of src.match(/https?:\/\/[a-zA-Z0-9.-]+/g) || []) hosts.add(h.replace(/^https?:\/\//, ""));
 for (const h of html.match(/https?:\/\/[a-zA-Z0-9.-]+/g) || []) hosts.add(h.replace(/^https?:\/\//, ""));
 const missing = [...hosts].filter(h => !LINK_ONLY.includes(h) && !csp.includes(h) && !/^(www\.w3\.org|rich9267-stack\.github\.io|localhost)$/.test(h));
 ok(missing.length === 0, "every outside server in the code is in the Content-Security-Policy" + (missing.length ? " — missing: " + missing.join(", ") : ""));

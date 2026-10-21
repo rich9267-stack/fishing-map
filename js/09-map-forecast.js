@@ -201,7 +201,7 @@
     const f = typeof SEASONS !== "undefined" ? SEASONS.find(x => x.name === kind) : null;
     if (!f) return;
     const m = new Date().getMonth(), bits = [];
-    if (f.far) bits.push("📍 doesn't live around South Florida");
+    if (f.far) bits.push(typeof rulesInfo === "function" && rulesInfo().outside ? "📍 doesn't live around your area" : "📍 doesn't live around South Florida");
     else bits.push(`${MONTHS[m]} is ${["a slow", "a good", "a 🔥 peak"][styleLevel(f, m, spotStyle(s))]} month for ${kind} ${SPOT_STYLE_TEXT[spotStyle(s)]}`);
     if (typeof spawnText === "function") { const sp = spawnText(f, m); if (sp) bits.push(sp.replace(/^🥚 /, "🥚 ")); }
     if (s.water_type !== "freshwater" && typeof waterTempNow === "function" && typeof tempFit === "function") {
@@ -1365,7 +1365,14 @@
   // Images are requested in thin north–south strips so they line up with the map's projection,
   // and colors are stretched across today's actual range so a 2-degree temperature break shows up.
   const ERDDAP = "https://coastwatch.pfeg.noaa.gov/erddap/griddap/";
-  const SAT_BOX = { s: 24.3, n: 31.0, w: -87.7, e: -79.6 }; // all of Florida: Keys to Jacksonville, Panhandle to the Gulf Stream
+  const SAT_BOX_FL = { s: 24.3, n: 31.0, w: -87.7, e: -79.6 }; // all of Florida: Keys to Jacksonville, Panhandle to the Gulf Stream
+  let SAT_BOX = SAT_BOX_FL;
+  // US plan step 2: when the map is looking at another US coast, ask for a box of the same size around it (same download size as Florida's)
+  function satBoxFor(c) {
+    if (!c || (c.lat >= 24 && c.lat <= 31.2 && c.lng >= -87.8 && c.lng <= -79.5)) return SAT_BOX_FL;
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), s = clamp(c.lat - 3.35, 24, 42.4), w = clamp(c.lng - 4, -125, -66 - 8);
+    return { s, n: s + 6.7, w, e: w + 8.1 };
+  }
   const SAT_LAYERS = {
     sst: {
       title: "Water temperature (satellite, daily)",
@@ -1479,6 +1486,7 @@
     satOn = kind;
     if (!kind) { $("sat-legend").hidden = true; return; }
     const def = SAT_LAYERS[kind];
+    try { SAT_BOX = satBoxFor(map.getCenter()); } catch (e) { SAT_BOX = SAT_BOX_FL; }
     $("sat-legend").hidden = false;
     $("sat-title").textContent = def.title;
     $("sat-bar").style.background = def.gradient;

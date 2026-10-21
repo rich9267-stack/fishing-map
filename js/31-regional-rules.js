@@ -20,7 +20,11 @@
   function regionInfo(lat, lng) {
     lat = +lat; lng = +lng;
     if (!isFinite(lat) || !isFinite(lng)) { lat = 26.24; lng = -80.10; }
-    if (lat < 24.3 || lat > 31.1 || lng < -87.7 || lng > -79.8) return { tags: ["atlantic"], label: "Outside Florida", outside: true };
+    // US plan step 2: ask the state outlines (js/53) first; anything that isn't Florida gets no Florida rules
+    const st = typeof stateOf === "function" ? stateOf(lat, lng) : null;
+    if (st && st !== "FL") return { tags: ["atlantic"], label: (typeof STATE_NAMES !== "undefined" && STATE_NAMES[st]) || st, outside: true, state: st };
+    if (!st && typeof stateOf === "function") return { tags: ["atlantic"], label: "Outside the United States", outside: true, state: null };
+    if (lat < 24.3 || lat > 31.1 || lng < -87.7 || lng > -79.8) return { tags: ["atlantic"], label: "Outside Florida", outside: true, state: null };
     const keys = (lat < 25.32 && lng < -80.1) || (lat < 25.75 && lng < -80.75 && lng > -81.4);   // Monroe County: the Keys, Florida Bay, Cape Sable
     if (keys) return { tags: ["keys", "spz", "atlantic"], label: "Florida Keys (Monroe County)" };
     if (lng <= -81.2) {                                                                          // Gulf coast
@@ -52,6 +56,9 @@
     return [...new Set(rows.map(r => r.species))].map(sp => pickRegionRow(rows.filter(r => r.species === sp), info));
   }
   function seasonView(f) {
+    const here = rulesInfo();
+    if (here.outside && typeof stateRulesGate === "function")   // not Florida: no Florida closed dates or rule line (US plan step 2)
+      return Object.assign({}, f, { rule: stateRulesGate(here).text, closed: undefined, openOnly: undefined, ruleRow: null });
     const picks = ruleForCard(f);
     if (!picks || !picks.length) return f;
     const sig = r => JSON.stringify([r.closed || null, r.open_only || null]);
@@ -73,7 +80,6 @@
   // The chips under the month on the Seasons tab
   function rulesCautions(info) {
     const out = [];
-    if (info.outside) out.push("This spot is outside Florida — these are Florida's rules.");
     if (info.north) out.push("North of Palm Beach County some FWC rules differ (Indian River Lagoon, Northeast); the South Florida rules are shown.");
     if (info.tags[0] === "keys") out.push("In the Keys a few rules depend on which side you fish (Atlantic or Gulf / Florida Bay).");
     return out;
@@ -88,7 +94,11 @@
       bar.appendChild(b);
     });
     const info = rulesInfo();
-    if (note) note.textContent = `${rgPick === "auto" ? "Following where you are: " : "Showing: "}${info.label}. ${rulesCautions(info).join(" ")} Always confirm with FWC.`.replace(/\s+/g, " ");
+    if (note) {
+      const gate = info.outside && typeof stateRulesGate === "function" ? stateRulesGate(info) : null;
+      note.textContent = `${rgPick === "auto" ? "Following where you are: " : "Showing: "}${info.label}. ${gate ? gate.text : rulesCautions(info).join(" ") + " Always confirm with FWC."}`.replace(/\s+/g, " ");
+      if (gate && typeof gateLinks === "function") gateLinks(note, gate);
+    }
   }
   function setRulesPick(k) {
     if (!RG_PICKS.some(p => p.k === k)) return;
@@ -97,4 +107,8 @@
     if (typeof renderSeasons === "function") renderSeasons();
   }
   // js/29 calls this when the area now changes; only matters while "Where I am" is selected
-  function rulesAreaChanged() { if (rgPick === "auto" && typeof renderSeasons === "function") renderSeasons(); }
+  function rulesAreaChanged() {
+    if (typeof licHelp === "function") { licHelp(); if (typeof licWarn === "function") licWarn(); }
+    if (typeof hwHeader === "function") hwHeader();
+    if (rgPick === "auto" && typeof renderSeasons === "function") renderSeasons();
+  }

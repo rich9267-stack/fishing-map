@@ -33,7 +33,7 @@ Richard updates `claude/fishing-map-plan.md` when he approves.
 file, public domain, simplified to ~100 KB, kept on the phone). `stateOf(lat, lng)` → "GA". Nothing visible changes yet.
 *Everything after this depends on it.*
 
-**Step 2 — Honest everywhere ("We don't have Georgia rules yet").** Outside Florida: the rules box, keeper check and
+**Step 2 — Honest everywhere ("We don't have Georgia rules yet"). ✅ built v156 (js/54 STATE_AGENCIES; js/31 regionInfo uses stateOf).** Outside Florida: the rules box, keeper check and
 licence card say "We don't have <State> rules yet" with a button to that state's fish & wildlife agency and its licence
 page (one researched table of 48 agencies). "Check FWC" wording changes to "check <agency>". "South Florida" wording
 becomes "your area". Satellite water temp box widened to the US coasts. *No wrong Florida rule is ever shown in another state.*

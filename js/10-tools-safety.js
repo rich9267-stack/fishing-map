@@ -258,7 +258,7 @@
     else if (info.north) out.push("North of Palm Beach County some FWC rules differ (Indian River Lagoon, Northeast).");
     if (r._otherRegion) out.push(`This rule is written for ${regionsText(r.regions)}, not for here.`);
     else if (info.tags && info.tags[0] === "keys" && r.regions && r.regions.length && !r.regions.includes("keys") && !r.regions.includes("spz")) out.push("In the Keys, which rules apply can depend on which side you fish (Atlantic or Gulf).");
-    return out.length ? " ⚠️ " + out.join(" ") + " Confirm with FWC." : "";
+    return out.length ? " ⚠️ " + out.join(" ") + " Confirm with " + (typeof agencyShort === "function" ? agencyShort(info.state) : "FWC") + "." : "";
   }
   const mdOf = d => String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   const inMd = (md, a, b) => a <= b ? (md >= a && md <= b) : (md >= a || md <= b); // may wrap past New Year
@@ -281,6 +281,11 @@
   }
   const ruleLine = r => (r.regions && r.regions.length ? regionsText(r.regions) + ": " : "") + ruleSummary(r);
   function keeperCheck(species, len, when, info) {
+    const here = info || (typeof rulesInfo === "function" ? rulesInfo() : null);
+    if (here && here.outside && typeof stateRulesGate === "function") {   // not Florida: never show a Florida rule (US plan step 2)
+      if (!String(species || "").trim()) return null;
+      const g = stateRulesGate(here); return { level: "info", text: "📏 " + g.text, gate: g };
+    }
     const r = ruleFor(species, info); if (!r) return null;
     when = when || new Date();
     const lenName = r.measure === "fork" ? "fork length" : "total length";
@@ -302,6 +307,7 @@
     const k = keeperCheck(species, len, when, info);
     box.hidden = !k; if (!k) return;
     box.className = "keeper " + k.level; box.textContent = k.text;
+    if (k.gate && typeof gateLinks === "function") gateLinks(box, k.gate);
   }
 
   // Admin: edit the rules table (Invite card → 🐟 Size & bag rules)

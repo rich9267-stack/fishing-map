@@ -26,7 +26,7 @@
       licRows = data || [];
     } catch (e) { if (!licRows) licRows = null; }
     licBusy = false;
-    licDraw(); licWarn();
+    licDraw(); licWarn(); licHelp();
   }
   function licDraw() {
     const box = $("lic-list"); if (!box) return;
@@ -66,6 +66,17 @@
     row.appendChild(f); d.focus();
   }
   // Home banner: one ends within 14 days, or ran out in the last 30 days
+  // US plan step 2: outside Florida the card points to that state's licence page instead of FWC's
+  function licHere() { const a = typeof area !== "undefined" ? area : null; return typeof regionInfo === "function" ? regionInfo(a ? a.lat : LAT, a ? a.lng : LNG) : { outside: false }; }
+  function licHelp() {
+    const p = $("lic-help"); if (!p) return;
+    if (p.dataset.fl === undefined) p.dataset.fl = p.innerHTML;
+    const info = licHere();
+    if (!info.outside || typeof stateRulesGate !== "function") { p.innerHTML = p.dataset.fl; return; }
+    const g = stateRulesGate(info);
+    p.textContent = g.text.replace(" before keeping a fish.", " for the licence you need.") + " Add yours above to get the alerts.";
+    gateLinks(p, g);
+  }
   function licWarn() {
     const box = $("lic-warn"); if (!box) return;
     const due = (licRows || []).map(r => ({ r, n: licDaysLeft(r) })).filter(x => x.n !== null && x.n <= 14 && x.n >= -30).sort((a, b) => a.n - b.n)[0];
@@ -75,7 +86,8 @@
     box.appendChild(el("b", null, due.n < 0 ? "🎫 Your fishing license has run out" : due.n === 0 ? "🎫 Your fishing license runs out today" : `🎫 Your fishing license runs out in ${due.n} day${due.n === 1 ? "" : "s"}`));
     box.appendChild(el("div", "spot-meta", `${due.r.kind} · ${licNice(due.r.expires_on)}`));
     const bar = el("div", "lic-acts");
-    const a = el("a", "btn small", "Renew (FWC) ↗"); a.href = "https://myfwc.com/license/recreational/"; a.target = "_blank"; a.rel = "noopener"; a.style.textDecoration = "none";
+    const ag = licHere().outside ? stateAgency(licHere().state) : null;
+    const a = el("a", "btn small", ag ? `Renew (${ag.short}) ↗` : "Renew (FWC) ↗"); a.href = ag ? ag.license : "https://myfwc.com/license/recreational/"; a.target = "_blank"; a.rel = "noopener"; a.style.textDecoration = "none";
     const up = el("button", "btn ghost small", "I renewed — update date"); up.type = "button"; up.addEventListener("click", licOpen);
     bar.append(a, up); box.appendChild(bar);
   }

@@ -54,10 +54,12 @@
     }
 
     // 📏 rules
-    const r = typeof ruleFor === "function" ? ruleFor(title) : null;
+    const inf = typeof rulesInfo === "function" ? rulesInfo() : null, outside = !!(inf && inf.outside && typeof stateRulesGate === "function");
+    const r = !outside && typeof ruleFor === "function" ? ruleFor(title) : null;
     if (f || r) {
       const s = section("📏 Rules");
-      if (r) {
+      if (outside) { const g = stateRulesGate(inf); s.appendChild(el("div", "keeper info", g.text)); gateLinks(s, g); }
+      else if (r) {
         if (r.release_only) s.appendChild(el("div", "keeper bad", "🚫 Catch-and-release only."));
         else {
           const lenName = r.measure === "fork" ? "fork length" : "total length";
