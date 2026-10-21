@@ -29,7 +29,7 @@ Richard updates `claude/fishing-map-plan.md` when he approves.
 
 ## Steps (smallest and most useful first; each one = one session, tests ALL OK, Richard checks on his phone)
 
-**Step 1 — Know which state a spot is in.** Add a small built-in outline of the 48 states (US Census "cartographic boundary"
+**Step 1 — Know which state a spot is in. ✅ built v155 (js/53 stateOf; offshore = nearest state within 200 km; Canada/Mexico/Bahamas/Cuba = null).** Add a small built-in outline of the 48 states (US Census "cartographic boundary"
 file, public domain, simplified to ~100 KB, kept on the phone). `stateOf(lat, lng)` → "GA". Nothing visible changes yet.
 *Everything after this depends on it.*
 
