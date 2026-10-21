@@ -4,7 +4,12 @@ _The full plan is the Project doc `claude/games-plan.md`. Claude Code can't open
 
 ## Progress
 - **Step 1 ✅ (v151, Oct 20):** Play › Races is now 🎮 Games + the first game, Keeper or release?. Built in `js/51-games.js`; test `tests/test163.js`.
-- Step 2: next (see the Project doc).
+- **The rest ✅ (v152, Oct 21):** Guess the fish, How long is it?, Fishing bingo and the daily streak, built in one go (Richard: "build the rest in one shot"). The Project doc wasn't available, so these follow the step 1 limits (no coins, no database, no members' photos) and may differ from it. Built in `js/52-games-more.js`; test `tests/test164.js`.
+  - **Guess the fish:** 5 photos a day from iNaturalist (research-grade Florida sightings; only photos licensed CC0 / CC BY / CC BY-SA, so they stay usable if the app ever charges; photographer credit + link under each photo). 4 names to pick from. Needs internet.
+  - **How long is it?:** 5 fish a day (same for everyone), the app's fish drawing beside a dollar bill at the same scale; slider and − / + in half inches; 3 points within 1″, 2 within 3″, 1 within 6″ (out of 15).
+  - **Fishing bingo:** a 3×3 card each month (same for everyone): 3 fish in season from shore + 5 tasks (trip, before 8 am, after dark, 3 fish in a day, 2 kinds in a day, over 20″, 2 spots, weekend, measured, 5 fish) + FREE. Fills in from your own catches and trips that month.
+  - **🔥 Streak:** days in a row you finished any daily game; kept on the phone only.
+- Still open (needs the Project doc or Richard): coins/rewards for games (after the lawyer review), streaks or scores saved to the account, comparing with friends.
 
 ## Step 1 as built
 1. **Games screen.** Play's third tab is now "🎮 Games". It opens a list of game cards (icon, name, one line, small status), in this order:

@@ -2,7 +2,7 @@
   // Fish race lives here too (its card opens the race screen, which is unchanged: showPlay("race") and ?go=race links still go straight to it).
   // Keeper or release? = the same 5 questions for everyone each day (picked from the New York date), built ONLY from the app's own
   // size & season rules (fishRules, js/10). Never anyone's catches or photos. Nothing is saved to the database: today's answers stay on this phone.
-  let gamesScreen = "list";            // "list" | "keeper"
+  let gamesScreen = "list";            // "list" | "keeper" | "guess" | "length" | "bingo" (the last three are in js/52)
   let gamesRaceLeft = null;            // paid race wins left today (null = not loaded yet)
   const GAMES_RACE_CAP = 3;
   const KR_N = 5;
@@ -78,7 +78,7 @@
   // Today's answers on this phone only: { day, picks: [true/false…] } (true = said Keep)
   const krKey = () => "fm-keeper-" + (me ? me.id : "");
   function krLoad(day) { try { const s = JSON.parse(localStorage.getItem(krKey()) || "null"); if (s && s.day === day && Array.isArray(s.picks)) return s; } catch (e) { /* none */ } return { day, picks: [] }; }
-  function krSave(s) { try { localStorage.setItem(krKey(), JSON.stringify(s)); } catch (e) { /* private mode: just this visit */ } }
+  function krSave(s) { try { localStorage.setItem(krKey(), JSON.stringify(s)); } catch (e) { /* private mode: just this visit */ } if (s.picks.length >= KR_N && typeof gamesMarkDone === "function") gamesMarkDone(s.day); }
   const krScore = (qs, s) => s.picks.filter((p, i) => qs[i] && p === qs[i].keep).length;
   // The rule's freshness line: the same wording as the keeper checker
   const krFresh = r => ruleStale(r) ? `⚠️ This rule was last checked ${ruleAge(r) == null ? "a while ago" : ruleAge(r) + " days ago"} — it may have changed, so confirm with FWC.` : `Always check the current FWC rules (checked ${r.verified_on}).`;
@@ -97,6 +97,9 @@
     const box = $("games-body"); if (!box || !me) return;
     box.innerHTML = "";
     if (gamesScreen === "keeper") return krDraw(box);
+    if (gamesScreen === "guess") return gfDraw(box);
+    if (gamesScreen === "length") return glDraw(box);
+    if (gamesScreen === "bingo") return bgDraw(box);
     delete box.dataset.justAnswered;
     const head = el("div", "games-head");
     head.appendChild(el("h2", "games-title", "🎮 Games"));
@@ -104,14 +107,18 @@
     help.addEventListener("click", () => { if (typeof tutShow === "function") { if (tutShowing) tutDone(); else tutShow("games", help); } });
     head.appendChild(help); box.appendChild(head);
     box.appendChild(el("div", "spot-meta games-sub", "Play a quick round while you wait for the tide."));
+    box.appendChild(gamesStreakBox());
     const day = gamesDay(), qs = krPick(day, fishRules), s = krLoad(day);
     const krStatus = !qs.length ? "Loading…" : s.picks.length >= qs.length ? `Done · ${krScore(qs, s)}/${qs.length}` : s.picks.length ? `${s.picks.length} of ${qs.length} done` : `Today's ${qs.length} ready`;
     const raceStatus = gamesRaceLeft == null ? "" : gamesRaceLeft ? `${gamesRaceLeft} win${gamesRaceLeft === 1 ? "" : "s"} left today` : "No paid wins left today";
+    const open = k => () => { gamesScreen = k; renderGames(); window.scrollTo({ top: 0 }); };
+    if (!gfPhotos && !gfErr) gfLoad();
+    const gfS = gfStatus(), glS = glStatus(), bgS = bgStatus();
     const list = el("div", "games-list"); list.setAttribute("role", "list");
     [
-      { key: "bingo", icon: "🎲", name: "Fishing bingo", line: "Fills in by itself from your trips", status: "Coming soon", soon: true },
-      { key: "guess", icon: "🔍", name: "Guess the fish", line: "Name the species from a photo", status: "Coming soon", soon: true },
-      { key: "length", icon: "📏", name: "How long is it?", line: "Guess the length, closest wins", status: "Coming soon", soon: true },
+      { key: "bingo", icon: "🎲", name: "Fishing bingo", line: "Fills in by itself from your trips", status: bgS, done: /Full card/.test(bgS), go: open("bingo") },
+      { key: "guess", icon: "🔍", name: "Guess the fish", line: "Name the species from a photo", status: gfS, done: /^Done/.test(gfS), go: open("guess") },
+      { key: "length", icon: "📏", name: "How long is it?", line: "Guess the length — the closer, the more points", status: glS, done: /^Done/.test(glS), go: open("length") },
       { key: "keeper", icon: "⚖️", name: "Keeper or release?", line: "Know the Florida size rules", status: krStatus, done: s.picks.length >= qs.length && qs.length > 0, go: () => { gamesScreen = "keeper"; renderGames(); window.scrollTo({ top: 0 }); } },
       { key: "race", icon: "🏁", name: "Fish race", line: "Solo, Open and races with friends", status: raceStatus, race: true, go: () => { showPlay("race"); window.scrollTo({ top: 0 }); } }
     ].forEach(g => {

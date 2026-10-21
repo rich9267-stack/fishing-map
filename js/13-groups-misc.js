@@ -503,6 +503,12 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-21a", title: "🎮 Three new games", items: [
+      "🔍 Guess the fish: name 5 fish from real Florida photos each day.",
+      "📏 How long is it?: guess a fish's length next to a dollar bill. The closer you get, the more points.",
+      "🎲 Fishing bingo: a new card every month that fills in by itself from your catches and trips.",
+      "🔥 Finish any daily game to start a streak."
+    ] },
     { id: "2026-10-20l", title: "🎮 Games", items: [
       "🎮 Play › Races is now Games, with a new daily quiz: Keeper or release?"
     ] },

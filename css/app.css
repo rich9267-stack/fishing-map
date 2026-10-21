@@ -1121,3 +1121,32 @@
 ol.kr-review { margin: 12px 0 0; padding: 0; list-style: none; }
 ol.kr-review li { padding: 8px 0; border-bottom: 1px solid var(--line); }
 ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { color: var(--falling); }
+/* 🎮 More games (js/52): daily streak, Guess the fish, How long is it?, Fishing bingo */
+.games-streak { display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin: 0 0 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); }
+.games-streak.on { border-color: color-mix(in srgb, #f08a24 55%, var(--line)); background: color-mix(in srgb, #f08a24 10%, var(--card)); }
+.games-streak-ic { font-size: 1.5rem; flex: none; }
+.games-streak-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; font-size: .9rem; color: var(--muted); }
+.games-streak-txt b { font-size: 1rem; color: var(--text); }
+.gf-pic { margin: 0; border-radius: 16px; overflow: hidden; background: var(--line); }
+.gf-pic img { display: block; width: 100%; height: min(38vh, 280px); min-height: 180px; object-fit: contain; background: #0d1a20; }
+.gf-credit { font-size: .75rem; padding: 6px 10px; color: var(--muted); background: var(--card); overflow-wrap: anywhere; }
+.gf-credit a { color: inherit; }
+.gf-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.gf-btn { font-size: .95rem; padding: 6px 8px; overflow-wrap: anywhere; }
+.gl-scene { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 300px; padding: 8px 0 2px; box-sizing: border-box; }
+.gl-fish { display: block; height: auto; align-self: flex-start; margin-left: 4px; }
+.gl-bill { display: flex; align-items: center; justify-content: center; border-radius: 3px; background: #9fbf8f; border: 2px solid #5f7f52; color: #2f4a27; font-weight: 800; font-size: .8rem; box-sizing: border-box; align-self: flex-start; margin-left: 4px; aspect-ratio: 6.14 / 2.61; }
+.gl-hint { margin: 0; }
+.gl-val { text-align: center; font-size: 2.2rem; font-weight: 800; color: var(--accent); line-height: 1.1; margin-bottom: 6px; }
+.gl-row { display: flex; align-items: center; gap: 10px; }
+.gl-step { flex: none; width: 48px; height: 48px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: 1.5rem; font-weight: 800; cursor: pointer; }
+.gl-step:disabled, .gl-slider:disabled { opacity: .5; cursor: default; }
+.gl-slider { flex: 1; min-width: 0; height: 44px; accent-color: var(--accent); }
+.gl-lock { margin-top: 12px; }
+.bg-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 4px 0 12px; }
+.bg-sq { aspect-ratio: 1; min-height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px; box-sizing: border-box; border-radius: 14px; border: 1.5px solid var(--line); background: var(--card); text-align: center; }
+.bg-sq.on { border-color: var(--rising); background: color-mix(in srgb, var(--rising) 12%, var(--card)); }
+.bg-sq.line { border-width: 2.5px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--rising) 30%, transparent); }
+.bg-sq.free { border-style: dashed; }
+.bg-ic { font-size: 1.5rem; line-height: 1; }
+.bg-lbl { font-size: .78rem; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }

@@ -63,7 +63,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   ok(!$("games-card").hidden && $("race-card").hidden && $("play-tank").hidden && $("fk-card").hidden, "Games tab shows only the Games list");
   ok(cardsTxt().join(",") === "bingo,guess,length,keeper,race", "cards in order: bingo, guess, length, keeper, race: " + cardsTxt());
   const gc = k => d.querySelector(`#games-body .game-card[data-game="${k}"]`);
-  ok(["bingo", "guess", "length"].every(k => gc(k).disabled && /Coming soon/.test(tx(gc(k)))), "bingo / guess / length are greyed 'Coming soon'");
+  ok(["bingo", "guess", "length"].every(k => !gc(k).disabled), "bingo / guess / length can be opened now (built after step 1, see test164)");
   ok(/Keeper or release\?/.test(tx(gc("keeper"))) && /Today's 5 ready/.test(tx(gc("keeper"))), "Keeper card: Today's 5 ready: " + tx(gc("keeper")));
   ok(/Fish race/.test(tx(gc("race"))) && /2 wins left today/.test(tx(gc("race"))), "Fish race card: wins left today (1 paid win so far): " + tx(gc("race")));
   ok(w.localStorage.getItem("fm-play-sub") === "games", "Games tab remembered");
