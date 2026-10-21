@@ -189,7 +189,7 @@ Suggested order: 5 → 6 → 3 → 4 → 1 → 2 (quick wins first; Map last bec
 - **Tank name plaque: yes.** Today there are exactly two tanks per person (salt, fresh; `tank_setups`, setup/42) and they have **no name**. So:
   - 4B ships the plaque showing the tank type: "Saltwater tank · 6 fish" (no database change).
   - **Naming a tank** needs a new saved name (one small database change). Names are seen by others who can view your profile, so they need the same bad-word check and admin hide as other text.
-- **Buy more tanks: goes to the Later list, planned after the lawyer review.** It is a new coin rule (spend coins to get a tank) and a new game piece, which task 9 keeps out until go-public review. Plan it together with tank naming as "Play: more tanks" (questions: price in coins or gems, how many max, which fish go in which tank, salt/fresh only or themed tanks).
+- **Buy more tanks:** **built v150 (Oct 20)** as up to 5 tanks with names and chosen fish; getting one stays locked ("🏴‍☠️ Coming soon") until doubloons are sold, after the lawyer review. Was: goes to the Later list, planned after the lawyer review. It is a new coin rule (spend coins to get a tank) and a new game piece, which task 9 keeps out until go-public review. Plan it together with tank naming as "Play: more tanks" (questions: price in coins or gems, how many max, which fish go in which tank, salt/fresh only or themed tanks).
 
 ### 3B design note — 📊 Leaderboards tab (planned Oct 20; Richard answered the questions)
 **What it is:** a third tab on Compete, after Contests and Tournaments. Each live or starting-soon tournament and friend contest gets one card with its top 3 and your place. Tap a card to open its full page (the 3A leaderboard).

@@ -392,11 +392,15 @@
   function tankMoodLine() { const m = tankMood(); const d = el("div", "spot-meta tank-mood", m.emoji + " " + m.label + " Tap the water to make them dart."); d.dataset.mood = m.key; return d; }
   function tankDraw(kind, data, box, opts) {
     opts = opts || {};
-    const salt = kind === "salt", fish = data.fish;
-    const card = el("div", "tank-card");
+    const salt = kind === "salt", fish = data.fish, view = opts.view || { id: kind, kind, base: true, title: salt ? "Saltwater tank" : "Freshwater tank" };
+    const card = el("div", "tank-card"); card.dataset.tank = view.id;
+    const icon = salt ? "🌊" : "🌿", mineOwn = opts.own && !opts.other;
     if (!fish.length) {
-      card.appendChild(el("div", "label", salt ? "🌊 Saltwater tank" : "🌿 Freshwater tank"));
-      card.appendChild(emptyBox(salt ? "No saltwater fish yet. Your best catch of each saltwater species will swim here." : "No freshwater fish yet. Your best catch of each freshwater species will swim here.", "📸 Log a catch", () => { $("qc-fab").click(); }));
+      card.appendChild(el("div", "label", icon + " " + view.title));
+      if (!view.base) card.appendChild(el("div", "spot-meta", "No fish in this tank yet. Tap 🐟 Choose fish to move some of your best " + (salt ? "saltwater" : "freshwater") + " catches here."));
+      else if (opts.movedAll) card.appendChild(el("div", "spot-meta", "All your " + (salt ? "saltwater" : "freshwater") + " fish are swimming in your other tanks."));
+      else card.appendChild(emptyBox(salt ? "No saltwater fish yet. Your best catch of each saltwater species will swim here." : "No freshwater fish yet. Your best catch of each freshwater species will swim here.", "📸 Log a catch", () => { $("qc-fab").click(); }));
+      if (mineOwn) tankNameTools(card, view, opts);
       box.appendChild(card); return;
     }
     const tank = el("div", "tank " + (salt ? "tank-salt" : "tank-fresh"));
@@ -419,10 +423,10 @@
     const deco = TANK_DECOR[salt ? "salt" : "fresh"], got = deco.filter(d => fish.length >= d.at);
     got.forEach((d, i) => { const e = el("span", "decor", d.e); e.style.left = (5 + i * (76 / Math.max(deco.length - 1, 1))) + "%"; e.style.fontSize = d.sz + "px"; e.title = d.n; e.setAttribute("aria-hidden", "true"); tank.appendChild(e); });
     // Spoken description: the tank is a labelled group; its fish are buttons; the decorations are read out in the label (they are only pictures)
-    tank.setAttribute("role", "group"); tank.dataset.a11y = `${salt ? "Saltwater" : "Freshwater"} tank with ${fish.length} species. Tab to a fish and press Enter for its details.`; tank.dataset.decor = got.map(d => d.n).join(", ");
-    // The cabinet: the tank sits in a dark frame with a name plaque under the glass ("Saltwater tank · 6 fish"; tanks have no names yet)
+    tank.setAttribute("role", "group"); tank.dataset.a11y = `${view.name ? view.name + ", a " + (salt ? "saltwater" : "freshwater") + " tank" : view.title} with ${fish.length} species. Tab to a fish and press Enter for its details.`; tank.dataset.decor = got.map(d => d.n).join(", ");
+    // The cabinet: the tank sits in a dark frame with a name plaque under the glass ("Snook Corner · 6 fish", or "Saltwater tank · 6 fish" with no name)
     const cab = el("div", "tank-cab"); cab.appendChild(tank);
-    cab.appendChild(el("div", "tank-plaque", `${salt ? "Saltwater" : "Freshwater"} tank · ${fish.length} fish`));
+    cab.appendChild(el("div", "tank-plaque", `${view.title} · ${fish.length} fish`));
     card.appendChild(cab);
     tankApplySetup(tank, opts.setup);
     tankSwim(tank, items, { seed: salt ? 1 : 2, chase: true });
@@ -431,9 +435,11 @@
     card.appendChild(tankMoodLine());
     const acts = el("div", "tank-actions");
     if (!opts.other) { tankFeedBind(tank); acts.appendChild(feedBtn(tank, true)); }
-    acts.appendChild(fullBtn(tank, salt ? "🌊 Saltwater tank" : "🌿 Freshwater tank", !opts.other));
-    if (opts.own && !opts.other) { const cb = el("button", "btn ghost custom-btn", "🎨 Customize"); cb.type = "button"; cb.addEventListener("click", () => { if (!shop.ready) { if (typeof toast === "function") toast("Opening your items…"); shopLoad().then(() => tankCustomize(kind, tank, card)); } else tankCustomize(kind, tank, card); }); acts.appendChild(cb); }
+    acts.appendChild(fullBtn(tank, icon + " " + view.title, !opts.other));
+    if (mineOwn) { const cb = el("button", "btn ghost custom-btn", "🎨 Customize"); cb.type = "button"; cb.addEventListener("click", () => { if (!shop.ready) { if (typeof toast === "function") toast("Opening your items…"); shopLoad().then(() => tankCustomize(view, tank, card)); } else tankCustomize(view, tank, card); }); acts.appendChild(cb); }
     card.appendChild(acts);
+    if (mineOwn) tankNameTools(card, view, opts);
+    else if (opts.other && view.name && opts.ownerId && typeof adminCan === "function" && adminCan("reports")) tankHideName(card, view, opts.ownerId);
     const info = el("div", "tank-info"); info.hidden = true; info.setAttribute("role", "status"); card.appendChild(info);
     box.appendChild(card);
   }
@@ -489,7 +495,8 @@
     const sum = x => x.pond.reduce((s, p) => s + p.n, 0);
     $("tank-sum").textContent = n ? `${n} species in your tanks · ${t.salt.fish.length} saltwater · ${t.fresh.fish.length} freshwater · ${sum(t.salt)} in the lagoon · ${sum(t.fresh)} in the pond` : "Log a catch and your first fish appears.";
     walletDraw(); tankClaim();
-    tankDraw("salt", t.salt, box, { own: true, setup: shop.setups.salt }); tankDraw("fresh", t.fresh, box, { own: true, setup: shop.setups.fresh }); collectionDraw(mine, box); overflowDraw(t, "fresh", pbox); overflowDraw(t, "salt", lbox);
+    tankViews(t, shop.setups).forEach(v => tankDraw(v.kind, v.data, box, { own: true, setup: v.setup, view: v, movedAll: v.base && t[v.kind].fish.length > 0, all: t }));
+    moreTanksDraw(box); collectionDraw(mine, box); overflowDraw(t, "fresh", pbox); overflowDraw(t, "salt", lbox);
     if (sbox && tankMode === "shop") shopDraw(sbox);
   }
   document.querySelectorAll("#tank-sw button").forEach(b => b.addEventListener("click", () => { tankMode = b.dataset.mode; renderTank(); }));
@@ -634,14 +641,15 @@
     trophy_gold: { e: "🏆", sz: 32, n: "Gold trophy cup" }, trophy_silver: { e: "🏆", sz: 30, f: "grayscale(1) brightness(1.25)", n: "Silver trophy cup" }, trophy_bronze: { e: "🏆", sz: 28, f: "sepia(1) saturate(2) hue-rotate(-15deg)", n: "Bronze trophy cup" }
   };
   const SHOP_CATS = [["gravel", "Gravel colors"], ["wood", "Driftwood"], ["plant", "Plants"], ["rock", "Rocks"], ["coral", "Coral"], ["shell", "Shells"], ["diver", "Diver"], ["chest", "Treasure chest"], ["trophy", "Trophy cups"]];
-  const shop = { ready: false, loading: false, items: {}, owned: new Set(), setups: { salt: null, fresh: null } };
+  const shop = { ready: false, loading: false, items: {}, owned: new Set(), setups: { salt: null, fresh: null, extras: [], place: {} } };
   async function shopLoad() {
     if (!me || !db || shop.loading) return; shop.loading = true;
     try {
-      const [it, ow, su] = await Promise.all([db.from("shop_items").select("*").order("sort"), db.from("user_items").select("item_key").eq("user_id", me.id), db.from("tank_setups").select("tank,gravel,placed").eq("user_id", me.id)]);
+      const [it, ow, su, ut, ts] = await Promise.all([db.from("shop_items").select("*").order("sort"), db.from("user_items").select("item_key").eq("user_id", me.id), db.from("tank_setups").select("tank,gravel,placed,name,name_hidden_at").eq("user_id", me.id),
+        db.from("user_tanks").select("*").eq("user_id", me.id).order("created_at"), db.from("tank_species").select("species_key,tank_id").eq("user_id", me.id)]);
       shop.items = {}; (it.data || []).forEach(x => { shop.items[x.key] = x; });
       shop.owned = new Set((ow.data || []).map(x => x.item_key));
-      shop.setups = { salt: null, fresh: null }; (su.data || []).forEach(x => { shop.setups[x.tank] = x; });
+      shop.setups = tankSetupsFrom(su.data, ut.data, ts.data);
     } catch (e) { /* older database: no shop yet */ }
     shop.ready = true; shop.loading = false;
   }
@@ -686,9 +694,10 @@
       tank.appendChild(d);
     });
   }
-  function tankCustomize(kind, tank, card) {
-    const old = card.querySelector(".tank-custom"); if (old) { old.remove(); tankApplySetup(tank, shop.setups[kind]); return; }
-    const saved = shop.setups[kind] || { gravel: null, placed: [] };
+  function tankCustomize(view, tank, card) {
+    const kind = view.kind, setupOf = () => tankSetupOf(shop.setups, view.id);
+    const old = card.querySelector(".tank-custom:not(.tank-name-panel):not(.tank-fish-panel)"); if (old) { old.remove(); tankApplySetup(tank, setupOf()); return; }
+    const saved = setupOf() || { gravel: null, placed: [] };
     const draft = { gravel: saved.gravel || "sand", placed: (saved.placed || []).map(p => ({ key: p.key, x: p.x, layer: p.layer })) };
     const panel = el("div", "tank-custom"); panel.setAttribute("role", "group"); panel.setAttribute("aria-label", `Customize your ${kind === "salt" ? "saltwater" : "freshwater"} tank`); panel.tabIndex = -1; card.appendChild(panel);
     const backToButton = () => { const cb = card.querySelector(".custom-btn"); if (cb && cb.focus) cb.focus(); };
@@ -726,12 +735,12 @@
       });
       const acts = el("div", "tank-actions"), save = el("button", "btn small", "Save"), cancel = el("button", "btn ghost small", "Cancel"), msg = el("div", "msg"); msg.setAttribute("role", "status"); msg.setAttribute("aria-live", "polite");
       save.type = "button"; cancel.type = "button";
-      cancel.addEventListener("click", () => { tankApplySetup(tank, shop.setups[kind]); panel.remove(); backToButton(); });
+      cancel.addEventListener("click", () => { tankApplySetup(tank, setupOf()); panel.remove(); backToButton(); });
       save.addEventListener("click", async () => {
         save.disabled = true; msg.className = "msg"; msg.textContent = "Saving…";
-        const r = await db.rpc("save_tank_setup", { p_tank: kind, p_gravel: draft.gravel === "sand" ? null : draft.gravel, p_placed: draft.placed });
+        const r = await db.rpc("save_tank_setup", { p_tank: view.id, p_gravel: draft.gravel === "sand" ? null : draft.gravel, p_placed: draft.placed });
         if (r.error) { save.disabled = false; msg.className = "msg err"; msg.textContent = r.error.message; return; }
-        shop.setups[kind] = { tank: kind, gravel: draft.gravel === "sand" ? null : draft.gravel, placed: draft.placed.map(p => ({ key: p.key, x: p.x, layer: p.layer })) };
+        tankSetupSet(view.id, { gravel: draft.gravel === "sand" ? null : draft.gravel, placed: draft.placed.map(p => ({ key: p.key, x: p.x, layer: p.layer })) });
         panel.remove(); backToButton(); if (typeof toast === "function") toast("🎨 Tank saved — friends can see it on your profile");
       });
       acts.appendChild(save); acts.appendChild(cancel); panel.appendChild(acts); panel.appendChild(msg);
@@ -785,6 +794,149 @@
       });
       box.appendChild(card);
     });
+  }
+
+  // ---- 🏷 Tank names + more tanks (setup/92): name any tank, up to 5 tanks, pick which of your best catches swim in an extra tank ----
+  // More tanks will be bought with 🏴‍☠️ doubloons (real money) after the lawyer review; until then only the owner can give one, to test.
+  const TANK_MAX = 5, TANK_NAME_MAX = 24;
+  // database rows → { salt, fresh, extras: [user_tanks rows, oldest first], place: { species key → extra tank id } }
+  function tankSetupsFrom(setupRows, extraRows, placeRows) {
+    const out = { salt: null, fresh: null, extras: (extraRows || []).slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at)), place: {} };
+    (setupRows || []).forEach(x => { out[x.tank] = x; });
+    (placeRows || []).forEach(x => { out.place[x.species_key] = x.tank_id; });
+    return out;
+  }
+  const tankSetupOf = (setups, id) => !setups ? null : (id === "salt" || id === "fresh") ? setups[id] : (setups.extras || []).find(x => x.id === id) || null;
+  function tankSetupSet(id, patch) {
+    if (id === "salt" || id === "fresh") shop.setups[id] = Object.assign({ tank: id, gravel: null, placed: [] }, shop.setups[id] || {}, patch);
+    else { const x = (shop.setups.extras || []).find(e => e.id === id); if (x) Object.assign(x, patch); }
+  }
+  // Every tank to draw, each with the fish that swim in it: a species picked for an extra tank (same water) swims there; all others in the free tank.
+  function tankViews(t, setups) {
+    setups = setups || {};
+    const plain = k => k === "salt" ? "Saltwater tank" : "Freshwater tank", n = { salt: 1, fresh: 1 };
+    const views = ["salt", "fresh"].map(k => { const su = setups[k] || null; return { id: k, kind: k, base: true, name: (su && su.name) || null, hiddenAt: su && su.name_hidden_at, title: (su && su.name) || plain(k), setup: su, data: { fish: [], pond: t[k].pond } }; });
+    (setups.extras || []).forEach(x => { if (x.water !== "salt" && x.water !== "fresh") return; n[x.water]++; views.push({ id: x.id, kind: x.water, base: false, name: x.name || null, hiddenAt: x.name_hidden_at, title: x.name || plain(x.water) + " " + n[x.water], setup: x, data: { fish: [], pond: [] } }); });
+    const place = setups.place || {};
+    ["salt", "fresh"].forEach(k => t[k].fish.forEach(f => {
+      const to = place[f.key], v = to && views.find(x => x.id === to && x.kind === k);
+      (v || views.find(x => x.id === k)).data.fish.push(f);
+    }));
+    return views;
+  }
+  // ✏️ Name (every tank) and 🐟 Choose fish (extra tanks), under your own tank
+  function tankNameTools(card, view, opts) {
+    const row = el("div", "tank-actions tank-own-tools");
+    if (view.hiddenAt && !view.name) card.appendChild(el("div", "spot-meta", "The team removed this tank's name. You can pick a new one."));
+    const nb = el("button", "btn ghost small tank-name-btn", view.name ? "✏️ Rename" : "✏️ Name this tank"); nb.type = "button";
+    nb.setAttribute("aria-label", (view.name ? "Rename " : "Name ") + view.title);
+    nb.addEventListener("click", () => tankNamePanel(card, view, nb));
+    row.appendChild(nb);
+    if (!view.base) {
+      const fb = el("button", "btn ghost small tank-fish-btn", "🐟 Choose fish"); fb.type = "button";
+      fb.setAttribute("aria-label", "Choose which fish swim in " + view.title);
+      fb.addEventListener("click", () => tankFishPanel(card, view, opts.all, fb));
+      row.appendChild(fb);
+    }
+    card.appendChild(row);
+  }
+  function tankNamePanel(card, view, back) {
+    const old = card.querySelector(".tank-name-panel"); if (old) { old.remove(); back.focus(); return; }
+    const p = el("div", "tank-custom tank-name-panel"); p.setAttribute("role", "group"); p.setAttribute("aria-label", "Name this tank");
+    const lab = el("label", null, "Tank name"); const inp = document.createElement("input"); inp.maxLength = TANK_NAME_MAX; inp.value = view.name || ""; inp.placeholder = view.kind === "salt" ? "e.g. Snook Corner" : "e.g. Bass Palace";
+    inp.id = "tn-" + view.id; lab.htmlFor = inp.id; p.appendChild(lab); p.appendChild(inp);
+    p.appendChild(el("div", "spot-meta", `Up to ${TANK_NAME_MAX} letters. People who can see your profile see it. Leave it empty to remove the name.`));
+    const msg = el("div", "msg"); msg.setAttribute("role", "status"); msg.setAttribute("aria-live", "polite");
+    const acts = el("div", "tank-actions"), save = el("button", "btn small", "Save name"), cancel = el("button", "btn ghost small", "Cancel"); save.type = "button"; cancel.type = "button";
+    cancel.addEventListener("click", () => { p.remove(); back.focus(); });
+    const go = async () => {
+      save.disabled = true; msg.className = "msg"; msg.textContent = "Saving…";
+      const r = await db.rpc("set_tank_name", { p_tank: view.id, p_name: inp.value });
+      if (r.error) { save.disabled = false; msg.className = "msg err"; msg.textContent = r.error.message; inp.focus(); return; }
+      tankSetupSet(view.id, { name: r.data || null, name_hidden_at: null });
+      if (typeof toast === "function") toast(r.data ? "🏷 Tank named “" + r.data + "”" : "🏷 Name removed");
+      renderTank();
+    };
+    save.addEventListener("click", go); inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); go(); } else if (e.key === "Escape") { e.preventDefault(); p.remove(); back.focus(); } });
+    acts.appendChild(save); acts.appendChild(cancel); p.appendChild(acts); p.appendChild(msg);
+    card.appendChild(p); inp.focus();
+  }
+  // tick the species that swim in this extra tank (only this tank's water); a species can live in one tank at a time
+  function tankFishPanel(card, view, all, back) {
+    const old = card.querySelector(".tank-fish-panel"); if (old) { old.remove(); back.focus(); return; }
+    const p = el("div", "tank-custom tank-fish-panel"); p.setAttribute("role", "group"); p.setAttribute("aria-label", "Choose fish for " + view.title);
+    p.appendChild(el("div", "label", "🐟 Fish in " + view.title));
+    const list = (all && all[view.kind] && all[view.kind].fish) || [], place = shop.setups.place || {};
+    if (!list.length) p.appendChild(el("div", "spot-meta", `You don't have any ${view.kind === "salt" ? "saltwater" : "freshwater"} fish yet — log a catch first.`));
+    p.appendChild(el("div", "spot-meta", "Ticked fish swim here. Unticked ones swim in your first tank."));
+    const names = {}; (shop.setups.extras || []).forEach(x => { const v = tankViews({ salt: { fish: [], pond: [] }, fresh: { fish: [], pond: [] } }, shop.setups).find(y => y.id === x.id); names[x.id] = v ? v.title : "another tank"; });
+    const boxes = list.map(f => {
+      const lab = el("label", "check-row"), cb = document.createElement("input"); cb.type = "checkbox"; cb.value = f.key; cb.checked = place[f.key] === view.id;
+      lab.appendChild(cb); const sp = el("span", null, f.species + (place[f.key] && place[f.key] !== view.id && names[place[f.key]] ? ` (now in ${names[place[f.key]]})` : "")); lab.appendChild(sp);
+      p.appendChild(lab); return cb;
+    });
+    const msg = el("div", "msg"); msg.setAttribute("role", "status"); msg.setAttribute("aria-live", "polite");
+    const acts = el("div", "tank-actions"), save = el("button", "btn small", "Save"), cancel = el("button", "btn ghost small", "Cancel"); save.type = "button"; cancel.type = "button";
+    cancel.addEventListener("click", () => { p.remove(); back.focus(); });
+    save.addEventListener("click", async () => {
+      const keys = boxes.filter(b => b.checked).map(b => b.value);
+      save.disabled = true; msg.className = "msg"; msg.textContent = "Saving…";
+      const r = await db.rpc("set_tank_fish", { p_tank: view.id, p_species: keys });
+      if (r.error) { save.disabled = false; msg.className = "msg err"; msg.textContent = r.error.message; return; }
+      Object.keys(place).forEach(k => { if (place[k] === view.id) delete place[k]; });
+      keys.forEach(k => { place[k] = view.id; }); shop.setups.place = place;
+      if (typeof toast === "function") toast(`🐟 ${keys.length} fish now swim in ${view.title}`);
+      renderTank();
+    });
+    acts.appendChild(save); acts.appendChild(cancel); p.appendChild(acts); p.appendChild(msg);
+    card.appendChild(p); (boxes[0] || save).focus();
+  }
+  // 🏴‍☠️ More tanks: locked until doubloons are on sale. The owner can give themself a test tank or take one back.
+  function moreTanksDraw(box) {
+    const ex = (shop.setups && shop.setups.extras) || [], have = 2 + ex.length;
+    const card = el("div", "tank-card more-tanks"); card.id = "more-tanks";
+    card.appendChild(el("div", "label", "🏴‍☠️ More tanks"));
+    card.appendChild(el("div", "spot-meta", `You have ${have} of ${TANK_MAX} tanks.` + (have < TANK_MAX ? " Extra tanks will come with 🏴‍☠️ doubloons — pick which of your best catches swim in each one." : " That's the most.")));
+    if (have < TANK_MAX) { const b = el("button", "btn small", "🏴‍☠️ Coming soon"); b.type = "button"; b.disabled = true; b.id = "more-tanks-buy"; b.setAttribute("aria-label", "Get another tank: coming soon"); card.appendChild(b); }
+    if (me && me.isOwner) {
+      const ow = el("div", "tank-actions"); ow.appendChild(el("span", "spot-meta", "🧪 Owner test:"));
+      if (have < TANK_MAX) [["salt", "🌊 Give me a saltwater tank"], ["fresh", "🌿 Give me a freshwater tank"]].forEach(([w, txt]) => {
+        const b = el("button", "btn ghost small", txt); b.type = "button"; b.dataset.give = w;
+        b.addEventListener("click", async () => { b.disabled = true; const r = await db.rpc("give_tank", { p_user: me.id, p_water: w }); if (r.error) { b.disabled = false; toast("Couldn't: " + r.error.message, 5000); return; } shop.ready = false; await shopLoad(); renderTank(); });
+        ow.appendChild(b);
+      });
+      tankViews({ salt: { fish: [], pond: [] }, fresh: { fish: [], pond: [] } }, shop.setups).filter(v => !v.base).forEach(v => {
+        const b = el("button", "btn ghost small", "Take back " + v.title); b.type = "button"; b.dataset.take = v.id;
+        b.addEventListener("click", async () => { if (!(await askOk(`Take back ${v.title}? Its fish go back to your first tank.`))) return; const r = await db.rpc("take_tank", { p_tank: v.id }); if (r.error) { toast("Couldn't: " + r.error.message, 5000); return; } shop.ready = false; await shopLoad(); renderTank(); });
+        ow.appendChild(b);
+      });
+      card.appendChild(ow);
+    }
+    box.appendChild(card);
+  }
+  // On someone's profile: the owner can give them a test tank
+  function tankOwnerGive(box, uid, extras) {
+    if (2 + extras >= TANK_MAX) return;
+    const row = el("div", "tank-actions"); row.id = "prof-give-tank"; row.appendChild(el("span", "spot-meta", `🧪 Owner test (${2 + extras} of ${TANK_MAX} tanks):`));
+    [["salt", "🌊 Give a saltwater tank"], ["fresh", "🌿 Give a freshwater tank"]].forEach(([w, txt]) => {
+      const b = el("button", "btn ghost small", txt); b.type = "button"; b.dataset.give = w;
+      b.addEventListener("click", async () => { b.disabled = true; const r = await db.rpc("give_tank", { p_user: uid, p_water: w }); b.disabled = false; toast(r.error ? "Couldn't: " + r.error.message : "✓ Tank given — they can name it and choose its fish", 5000); });
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+  }
+  // On someone's profile: an admin with the Reports box can remove a tank's name (with a reason; logged; the owner is told)
+  function tankHideName(card, view, ownerId) {
+    const b = el("button", "btn ghost small", "🙈 Remove name"); b.type = "button"; b.setAttribute("aria-label", "Remove the tank name " + view.name);
+    b.addEventListener("click", () => {
+      if (card.querySelector(".tank-hide-panel")) return;
+      const p = el("div", "tank-custom tank-hide-panel"), lab = el("label", null, "Why? (the owner sees this)"), inp = document.createElement("input");
+      inp.maxLength = 150; inp.id = "th-" + view.id; lab.htmlFor = inp.id; p.appendChild(lab); p.appendChild(inp);
+      const ok = el("button", "btn small", "Remove name"); ok.type = "button";
+      ok.addEventListener("click", async () => { const r = await db.rpc("hide_tank_name", { p_owner: ownerId, p_tank: view.id, p_reason: inp.value }); if (r.error) { toast("Couldn't: " + r.error.message, 5000); return; } toast("Name removed (logged)"); p.remove(); b.remove(); card.querySelectorAll(".tank-plaque").forEach(x => { x.textContent = x.textContent.replace(view.name, view.kind === "salt" ? "Saltwater tank" : "Freshwater tank"); }); });
+      p.appendChild(ok); card.appendChild(p); inp.focus();
+    });
+    const row = el("div", "tank-actions"); row.appendChild(b); card.appendChild(row);
   }
 
   // ---- 🏆 Collections: how many of each Seasons group (inshore, beach & pier, offshore, freshwater) you have caught ----
@@ -871,7 +1023,8 @@
     const t = tankBuild(catches, spotList), n = t.salt.fish.length + t.fresh.fish.length;
     const head = el("div", "label", "🐠 Tank"); head.style.marginTop = "12px"; head.id = "prof-tank"; box.appendChild(head);
     if (!n) { box.appendChild(el("div", "spot-meta", own ? "No fish yet — public and friends-only catches show here." : "No fish in the tank yet.")); return; }
-    ["salt", "fresh"].forEach(k => { if (t[k].fish.length) tankDraw(k, t[k], box, { noSpot: true, other: !own, setup: setups && setups[k] }); });
+    tankViews(t, setups).forEach(v => { if (v.data.fish.length) tankDraw(v.kind, v.data, box, { noSpot: true, other: !own, setup: v.setup, view: v, ownerId: setups && setups.ownerId }); });
+    if (!own && me && me.isOwner && setups && setups.ownerId) tankOwnerGive(box, setups.ownerId, (setups.extras || []).length);
     const sum = x => x.pond.reduce((s, p) => s + p.n, 0), bits = [];
     if (sum(t.salt)) bits.push(`🌴 ${sum(t.salt)} in the lagoon`); if (sum(t.fresh)) bits.push(`🏞 ${sum(t.fresh)} in the pond`);
     if (bits.length) box.appendChild(el("div", "spot-meta", bits.join(" · ")));

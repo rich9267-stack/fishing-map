@@ -409,17 +409,18 @@
         const pod = el("div", "ct-pod"); pod.setAttribute("role", "list"); pod.setAttribute("aria-label", "Top three");
         [1, 0, 2].forEach(i => {
           const r = list[i]; if (!r) return;
-          const col = el("div", "ct-pod-col p" + (i + 1)); col.setAttribute("role", "listitem");
-          col.appendChild(el("div", "ct-pod-medal", ["🥇", "🥈", "🥉"][i]));
+          const p = lbPlace(list, i);   // ties share a place (two 34″ fish are both 1st), same as the 📊 Leaderboards cards
+          const col = el("div", "ct-pod-col p" + p); col.setAttribute("role", "listitem");
+          col.appendChild(el("div", "ct-pod-medal", ["🥇", "🥈", "🥉"][p - 1]));
           const nm = el("div", "ct-pod-name"); nm.appendChild(personLink(r.user_id === me.id ? null : r.user_id, ctWho(r.user_id))); col.appendChild(nm);
-          const blk = el("div", "ct-pod-blk"); blk.appendChild(el("b", null, String(i + 1))); blk.appendChild(el("span", null, ctVal(bd, r.value))); col.appendChild(blk);
+          const blk = el("div", "ct-pod-blk"); blk.appendChild(el("b", null, String(p))); blk.appendChild(el("span", null, ctVal(bd, r.value))); col.appendChild(blk);
           if (r.user_id === me.id) col.classList.add("me");
           pod.appendChild(col);
         });
         wrap.appendChild(pod);
         const det = r => r.species ? `${cap(r.species)} · ${new Date(r.caught_at).toLocaleDateString([], { month: "short", day: "numeric" })}` : "";
         const upto = ctBoardAll ? list.length : 6;
-        list.slice(3, upto).forEach((r, k) => wrap.appendChild(boardRow(k + 3, { uid: r.user_id, c: {}, label: ctVal(bd, r.value), detail: det(r) })));
+        list.slice(3, upto).forEach((r, k) => wrap.appendChild(boardRow(lbPlace(list, k + 3) - 1, { uid: r.user_id, c: {}, label: ctVal(bd, r.value), detail: det(r) })));
         if (list.length > 6) {
           const more = el("button", "linkbtn", ctBoardAll ? "Show top 6 only" : `Show the whole board (${list.length})`); more.type = "button"; more.id = "ctd-board-all";
           more.addEventListener("click", () => { ctBoardAll = !ctBoardAll; draw(); });
@@ -430,8 +431,9 @@
       const idx = list.findIndex(r => r.user_id === me.id);
       let you = null;
       if (idx >= 0) {
-        const r = list[idx], ahead = list[idx - 1];
-        you = `▶ You: ${ctOrd(idx + 1)} · ${ctVal(bd, r.value)}` + (idx === 0 ? " · in the lead" : Number(ahead.value) === Number(r.value) ? ` · tied with ${ctWho(ahead.user_id)}` : ` · ${ctVal(bd, Number(ahead.value) - Number(r.value))} behind ${ctWho(ahead.user_id)}`);
+        const r = list[idx], p = lbPlace(list, idx);
+        const tie = list.find((x, j) => j !== idx && Number(x.value) === Number(r.value)), ahead = list[p - 2];   // ahead = the nearest better catch
+        you = `▶ You: ${ctOrd(p)} · ${ctVal(bd, r.value)}` + (tie ? ` · tied with ${ctWho(tie.user_id)}` : p === 1 ? " · in the lead" : ` · ${ctVal(bd, Number(ahead.value) - Number(r.value))} behind ${ctWho(ahead.user_id)}`);
       } else if (mineSt === "joined" && st.k !== "soon" && !t.cancelled_at) you = "▶ You: no qualifying catch yet";
       if (you) { const y = el("div", "ct-you", you); y.id = "ctd-you"; wrap.appendChild(y); }
     }
@@ -530,9 +532,10 @@
         const teams = {}; trows.forEach(r => { teams[r.group_id] = { name: r.name, j: Number(r.joined_n), n: Number(r.total_n) }; });
         Object.values(teams).length && t.boards.forEach(bd => {
           lb.appendChild(el("div", "spot-meta", CT_BOARDS[bd]));
-          trows.filter(r => r.board === bd).sort((x, y) => y.value - x.value).forEach((r, i) => {
-            const row = el("div", "team-row"); row.style.cssText = "display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--line)";
-            row.appendChild(el("span", null, ["🥇", "🥈", "🥉"][i] || (i + 1) + "."));
+          const tl = trows.filter(r => r.board === bd).sort((x, y) => y.value - x.value);
+          tl.forEach((r, i) => {
+            const p = lbPlace(tl, i), row = el("div", "team-row"); row.style.cssText = "display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--line)";
+            row.appendChild(el("span", null, ["🥇", "🥈", "🥉"][p - 1] || p + "."));
             const nm = el("span", null, r.name); nm.style.flex = "1"; row.appendChild(nm);
             row.appendChild(el("span", "spot-meta", `${ctVal(bd, r.value)} · ${r.joined_n} of ${r.total_n} joined`));
             lb.appendChild(row);

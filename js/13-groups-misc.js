@@ -503,6 +503,17 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-20k", title: "🧹 Tidier Me page", items: [
+      "The small grey line under Clubs & businesses and Colors now sits on its own line under the name, instead of running into it."
+    ] },
+    { id: "2026-10-20j", title: "🏷 Name your tanks", items: [
+      "Give any tank a name (up to 24 letters) with ✏️ Name this tank. It shows on the brass plaque, and friends see it on your profile.",
+      "Coming soon: up to 5 tanks. In an extra tank you pick which of your best catches swim there with 🐟 Choose fish (a Snook-only tank, say). Getting one isn't open yet — look for 🏴‍☠️ More tanks under your tanks."
+    ] },
+    { id: "2026-10-20i", title: "🥇 Ties share a place", items: [
+      "On a tournament's page, two people with the same catch now share the same place: two 34″ fish are both 1st (both get 🥇), and the next one is 3rd.",
+      "Your own line says who you're tied with, and the team list works the same way."
+    ] },
     { id: "2026-10-20h", title: "📊 Leaderboards on Compete", items: [
       "New third tab on 🏁 Compete: 📊 Leaderboards. Every live or starting-soon tournament gets one card with its top 3 and your place, so you can see every race without opening each one.",
       "Your friend contests have their own group underneath. The ones you're in come first, then the ones ending soonest.",

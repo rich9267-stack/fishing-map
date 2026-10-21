@@ -498,12 +498,13 @@
       const pr = await db.from("profiles").select("user_id,handle,display_name,home_area,bio").eq("user_id", id).maybeSingle();
       if (pr.data && pr.data.user_id) pubProfiles[id] = pr.data;
       if (!access.can_view) { profView = { catches: [], locked: true, access }; if (pubProfileId === id) renderPublic(); return; }
-      const [ex, ct, tk, ts] = await Promise.all([
+      const [ex, ct, tk, ts, ut, tsp] = await Promise.all([
         db.from("profile_extras").select("*").eq("user_id", id).maybeSingle(),
         db.from("catches").select("*").eq("created_by", id).eq("visibility", "public").is("deleted_at", null).order("caught_at", { ascending: false }).limit(30),
         // for the 🐠 tank: everything I'm allowed to see of theirs except private (the database decides friends-only vs public)
         db.from("catches").select("id,species,weight_lb,length_in,how_many,caught_at,spot_id,created_by").eq("created_by", id).in("visibility", ["friends", "public"]).is("deleted_at", null).limit(2000),
-        db.from("tank_setups").select("tank,gravel,placed").eq("user_id", id) // gravel + pieces they placed (the database lets you see it when you may see their page)
+        db.from("tank_setups").select("tank,gravel,placed,name").eq("user_id", id), // gravel + pieces they placed + tank names (the database lets you see it when you may see their page)
+        db.from("user_tanks").select("id,water,name,gravel,placed,created_at").eq("user_id", id), db.from("tank_species").select("species_key,tank_id").eq("user_id", id) // extra tanks (setup/92)
       ]);
       if (ct.error) throw ct.error;
       const extras = (ex && ex.data) || null;
@@ -512,7 +513,7 @@
         try { const pc = await db.from("catches").select("*").eq("id", extras.pinned_catch_id).is("deleted_at", null).maybeSingle(); pinned = pc && pc.data && pc.data.id ? pc.data : null; } catch (e) { pinned = null; }
       }
       const avatar = extras && extras.avatar_path ? await avatarUrl(extras.avatar_path) : null;
-      profView = { catches: ct.data || [], extras, pinned, avatar, access, tankCatches: tk && !tk.error ? (tk.data || []) : null, tankSetups: ts && !ts.error ? Object.fromEntries((ts.data || []).map(x => [x.tank, x])) : {} };
+      profView = { catches: ct.data || [], extras, pinned, avatar, access, tankCatches: tk && !tk.error ? (tk.data || []) : null, tankSetups: Object.assign(typeof tankSetupsFrom === "function" ? tankSetupsFrom(ts && !ts.error ? ts.data : [], ut && !ut.error ? ut.data : [], tsp && !tsp.error ? tsp.data : []) : {}, { ownerId: id }) };
       await loadPubPhotos(pinned ? profView.catches.concat([pinned]) : profView.catches);
     } catch (e) { profView = { catches: [], error: true }; }
     if (pubProfileId === id) renderPublic();

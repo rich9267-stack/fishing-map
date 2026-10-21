@@ -135,6 +135,19 @@ Questions for the lawyer:
 - Do conservation events run through the app (cleanups, tagging days) need waivers or insurance?
 Accountant: how a pledged share of income is recorded and taxed; donations from the app business.
 
+### Lawyer packet: tanks, tank names and doubloons (added Oct 20)
+**What is built (v150, setup/92):** any tank can have a name (up to 24 letters) shown on its plaque and to anyone who may see the owner's profile. Names are checked (no links, no < >, a short rude-word list) and the team can remove one (with a reason, logged, the owner is told). People can have up to 5 tanks (2 free + 3 more) and choose which of their best catches swim in each. **Nobody can get an extra tank yet**: the button says "🏴‍☠️ Coming soon". Only the owner can give a test tank (logged).
+**Plan for later (not built):** extra tanks bought with 🏴‍☠️ doubloons, the real-money currency in fishing-map-plan.md (cosmetic only, dollar price shown on every button, 18+ to buy, no mystery items, doubloons never turn into coins or gems, smallest pack $4.99 through Stripe).
+Proposed terms lines (draft, not live): "Tank names are content you post; the same rules apply and we may remove a name." · "Extra tanks and other doubloon items are a limited licence to use a look in the app; they have no cash value, can't be traded or sold, and stay with your account." · "Doubloon purchases are final except where the law requires a refund." · "If we close the app or remove an item, …" (lawyer to write).
+Questions for the lawyer:
+- Is a tank name user content under our terms already, or does it need its own line? Is report + remove enough for names others see?
+- Selling doubloons: what must the terms say (refunds, chargebacks, what happens to unspent doubloons if the app closes or an account is deleted or banned)?
+- Florida / US rules for virtual currency sold for real money: any licence, gift-card or money-transmitter issues if doubloons can't be cashed out or transferred?
+- 18+ to buy while accounts are 18+ today: anything extra (parental-consent rules if we ever allow under-18 accounts)?
+- Is "purchases are final" allowed for digital items in Florida, and with Apple/Google rules if the app goes into the app stores?
+- Do we need an LLC before the first doubloon sale (the plan's open question)?
+Accountant: sales tax on digital items in Florida; how unspent doubloons are recorded (income when bought or when spent?); Stripe fees.
+
 ---
 
 ## Go-public day checklist
@@ -189,7 +202,7 @@ Accountant: how a pledged share of income is recorded and taxed; donations from 
 ---
 
 ## Do NOT build yet
-- Doubloons, Stripe, any payments, paid artist packs.
+- Doubloons, Stripe, any payments, paid artist packs. (Extra tanks and tank names are built, but getting an extra tank stays locked as "Coming soon" until doubloons exist; see the tanks lawyer packet.)
 - "Use my own AI" for Fish ID.
 - Public race rooms (strangers + coin entry fees = lawyer question first).
 - Anything dropped Oct 18: private-spot view, chat review, monthly totals, deleting another person's data.
