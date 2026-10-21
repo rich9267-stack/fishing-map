@@ -1150,3 +1150,5 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
 .bg-sq.free { border-style: dashed; }
 .bg-ic { font-size: 1.5rem; line-height: 1; }
 .bg-lbl { font-size: .78rem; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.kr-q .gf-pic { width: 100%; align-self: stretch; }
+.kr-made { font-size: .8rem; }

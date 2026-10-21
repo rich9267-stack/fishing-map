@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-21b", title: "📸 Games use members' photos", items: [
+      "Guess the fish, How long is it? and Keeper or release? now show real catch photos that members set to 🌎 Public, with their name under each one.",
+      "Want your fish in the games? Set a catch with a photo to 🌎 Public."
+    ] },
     { id: "2026-10-21a", title: "🎮 Three new games", items: [
       "🔍 Guess the fish: name 5 fish from real Florida photos each day.",
       "📏 How long is it?: guess a fish's length next to a dollar bill. The closer you get, the more points.",

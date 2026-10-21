@@ -1,7 +1,8 @@
   // ---- 🎮 Games (Games plan step 1): Play › Games is a list of game cards; the first new game is "Keeper or release?" ----
   // Fish race lives here too (its card opens the race screen, which is unchanged: showPlay("race") and ?go=race links still go straight to it).
   // Keeper or release? = the same 5 questions for everyone each day (picked from the New York date), built ONLY from the app's own
-  // size & season rules (fishRules, js/10). Never anyone's catches or photos. Nothing is saved to the database: today's answers stay on this phone.
+  // size & season rules (fishRules, js/10). Each question shows a member's 🌎 Public catch photo of that fish when there is one (js/52); the size and
+  // date in the question are made up, never the member's own, so nobody's real catch is called "too small". Nothing is saved to the database.
   let gamesScreen = "list";            // "list" | "keeper" | "guess" | "length" | "bingo" (the last three are in js/52)
   let gamesRaceLeft = null;            // paid race wins left today (null = not loaded yet)
   const GAMES_RACE_CAP = 3;
@@ -39,13 +40,17 @@
     return { keep: true, why: `Keeper: the season is open and ${inch(len)} is ${size}.` };
   }
   // Today's 5: one question per species. Each picks Keep or one way to be a Release, then a date and a length that fit it.
-  function krPick(day, rules) {
+  function krPick(day, rules, pool) {
     rules = (rules || []).filter(krUsable);
     const rand = krRand("keeper-" + day), year = +day.slice(0, 4);
     const pickOf = a => a[Math.floor(rand() * a.length)];
     const half = (lo, hi) => Math.round((lo + rand() * (hi - lo)) * 2) / 2;
     const rows = rules.slice().sort((a, b) => (a.species + (a.regions || []).join()).localeCompare(b.species + (b.regions || []).join()));
     for (let i = rows.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [rows[i], rows[j]] = [rows[j], rows[i]]; }
+    // fish that have a member's public photo go first
+    const pics = {};
+    (pool || []).forEach(p => { const r = ruleFor(p.species); if (r) (pics[r.species] = pics[r.species] || []).push(p); });
+    rows.sort((a, b) => (pics[b.species] ? 1 : 0) - (pics[a.species] ? 1 : 0));
     const days = [];
     for (let t = Date.UTC(year, 0, 1); new Date(t).getUTCFullYear() === year; t += 86400000) { const u = new Date(t); days.push(new Date(year, u.getUTCMonth(), u.getUTCDate(), 12)); }
     const out = [], used = new Set();
@@ -71,7 +76,8 @@
       else if (kind === "big") { when = pickOf(open); len = half(+r.max_in + 0.5, r.max_in * 1.3); }
       else { when = pickOf(open); len = half(lo, hi); }
       used.add(r.species);
-      out.push({ rule: r, species: r.species, where: krWhere(r, rules), tags: krTags(r), len, when, measure: r.measure === "fork" ? "fork length" : "total length", ...krAnswer(r, len, when) });
+      const ph = pics[r.species] ? pics[r.species][Math.floor(rand() * pics[r.species].length)] : null;
+      out.push({ photo: ph ? { path: ph.path, by: ph.by } : null, rule: r, species: r.species, where: krWhere(r, rules), tags: krTags(r), len, when, measure: r.measure === "fork" ? "fork length" : "total length", ...krAnswer(r, len, when) });
     }
     return out;
   }
@@ -79,9 +85,18 @@
   const krKey = () => "fm-keeper-" + (me ? me.id : "");
   function krLoad(day) { try { const s = JSON.parse(localStorage.getItem(krKey()) || "null"); if (s && s.day === day && Array.isArray(s.picks)) return s; } catch (e) { /* none */ } return { day, picks: [] }; }
   function krSave(s) { try { localStorage.setItem(krKey(), JSON.stringify(s)); } catch (e) { /* private mode: just this visit */ } if (s.picks.length >= KR_N && typeof gamesMarkDone === "function") gamesMarkDone(s.day); }
+  // Today's questions, fixed once you answer the first one (kept with your answers). null = still loading.
+  const krSnap = qs => qs.map(q => ({ r: q.rule.id, species: q.species, where: q.where, tags: q.tags, len: q.len, when: q.when.toISOString(), measure: q.measure, keep: q.keep, why: q.why, photo: q.photo }));
+  const krUnsnap = a => a.map(x => Object.assign({}, x, { rule: fishRules.find(r => r.id === x.r) || null, when: new Date(x.when) }));
+  function krToday() {
+    const day = gamesDay(), s = krLoad(day);
+    if (Array.isArray(s.qs) && s.qs.length) return krUnsnap(s.qs);
+    if (typeof gpReady === "function" && !gpReady()) { gpLoad(); return null; }
+    return krPick(day, fishRules, typeof gpList === "function" ? gpList() : []);
+  }
   const krScore = (qs, s) => s.picks.filter((p, i) => qs[i] && p === qs[i].keep).length;
   // The rule's freshness line: the same wording as the keeper checker
-  const krFresh = r => ruleStale(r) ? `⚠️ This rule was last checked ${ruleAge(r) == null ? "a while ago" : ruleAge(r) + " days ago"} — it may have changed, so confirm with FWC.` : `Always check the current FWC rules (checked ${r.verified_on}).`;
+  const krFresh = r => !r ? "Always check the current FWC rules." : ruleStale(r) ? `⚠️ This rule was last checked ${ruleAge(r) == null ? "a while ago" : ruleAge(r) + " days ago"} — it may have changed, so confirm with FWC.` : `Always check the current FWC rules (checked ${r.verified_on}).`;
 
   async function gamesRaceLoad() {
     if (!me || typeof db === "undefined" || !db) return;
@@ -108,11 +123,11 @@
     head.appendChild(help); box.appendChild(head);
     box.appendChild(el("div", "spot-meta games-sub", "Play a quick round while you wait for the tide."));
     box.appendChild(gamesStreakBox());
-    const day = gamesDay(), qs = krPick(day, fishRules), s = krLoad(day);
+    const day = gamesDay(), qs = krToday() || [], s = krLoad(day);
     const krStatus = !qs.length ? "Loading…" : s.picks.length >= qs.length ? `Done · ${krScore(qs, s)}/${qs.length}` : s.picks.length ? `${s.picks.length} of ${qs.length} done` : `Today's ${qs.length} ready`;
     const raceStatus = gamesRaceLeft == null ? "" : gamesRaceLeft ? `${gamesRaceLeft} win${gamesRaceLeft === 1 ? "" : "s"} left today` : "No paid wins left today";
     const open = k => () => { gamesScreen = k; renderGames(); window.scrollTo({ top: 0 }); };
-    if (!gfPhotos && !gfErr) gfLoad();
+    gpLoad();
     const gfS = gfStatus(), glS = glStatus(), bgS = bgStatus();
     const list = el("div", "games-list"); list.setAttribute("role", "list");
     [
@@ -138,13 +153,14 @@
 
   // The quiz screen: one question at a time, then the score
   function krDraw(box) {
-    const day = gamesDay(), qs = krPick(day, fishRules), s = krLoad(day);
+    const day = gamesDay(), qs = krToday(), s = krLoad(day);
     const head = el("div", "games-head");
     const back = el("button", "games-back", "‹ Games"); back.type = "button"; back.setAttribute("aria-label", "Back to Games");
     back.addEventListener("click", () => { gamesScreen = "list"; renderGames(); window.scrollTo({ top: 0 }); });
     head.appendChild(back);
     head.appendChild(el("h2", "games-title", "Keeper or release?"));
     box.appendChild(head);
+    if (!qs) return gLoading(box, "Getting today's questions…");
     if (!qs.length) { box.appendChild(el("div", "spot-meta", "The size rules are still loading. Try again in a moment.")); return; }
     const at = Math.min(s.picks.length, qs.length);
     const bar = el("div", "kr-bar"); bar.setAttribute("aria-hidden", "true");
@@ -156,9 +172,11 @@
     const q = qs[showing], answered = showing < s.picks.length;
     box.appendChild(el("div", "kr-count", `${showing + 1} of ${qs.length}`));
     const card = el("div", "kr-q");
-    if (typeof fishSvg === "function") { const f = fishSvg(q.species, 64); f.classList && f.classList.add("kr-fish"); card.appendChild(f); }
+    if (q.photo && typeof gpFigure === "function") card.appendChild(gpFigure(q.photo));
+    else if (typeof fishSvg === "function") { const f = fishSvg(q.species, 64); f.classList && f.classList.add("kr-fish"); card.appendChild(f); }
     card.appendChild(el("div", "kr-sp", q.species));
-    card.appendChild(el("div", "kr-facts", `${inch(q.len)} ${q.measure} · ${KR_MONTHS[q.when.getMonth()]} ${q.when.getDate()} · ${q.where}`));
+    card.appendChild(el("div", "kr-facts", `${q.photo ? "If you caught one at " : ""}${inch(q.len)} ${q.measure} · ${KR_MONTHS[q.when.getMonth()]} ${q.when.getDate()} · ${q.where}`));
+    if (q.photo) card.appendChild(el("div", "spot-meta kr-made", "The size and date are made up for the quiz, not this angler's catch."));
     box.appendChild(card);
     box.appendChild(el("p", "kr-ask", "Keep it or let it go?"));
     const row = el("div", "kr-btns");
@@ -169,6 +187,7 @@
         if (k === q.keep) b.classList.add("right");
         else if (s.picks[showing] === k) b.classList.add("wrong");
       } else b.addEventListener("click", () => {
+        if (!s.qs) s.qs = krSnap(qs);
         s.picks.push(k); krSave(s);
         box.dataset.justAnswered = String(showing + 1); renderGames();
       });
@@ -203,7 +222,7 @@
       list.appendChild(li);
     });
     box.appendChild(list);
-    const stale = qs.filter(q => ruleStale(q.rule));
+    const stale = qs.filter(q => q.rule && ruleStale(q.rule));
     box.appendChild(el("div", "spot-meta kr-fresh", stale.length ? `A guide only. ⚠️ ${stale.map(q => q.species).join(", ")}: last checked a while ago — the rules may have changed, so confirm with FWC.` : "A guide only. Always check the current FWC rules before you keep a fish."));
     const back = el("button", "btn ghost", "‹ Back to Games"); back.type = "button";
     back.addEventListener("click", () => { gamesScreen = "list"; renderGames(); window.scrollTo({ top: 0 }); });

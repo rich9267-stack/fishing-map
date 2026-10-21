@@ -1,7 +1,7 @@
   // ---- 🎮 More games (Games plan, rest of the list): Guess the fish, How long is it?, Fishing bingo + the daily streak ----
-  // All three follow the step 1 limits: no coins, nothing saved to the database, never anyone's catches or photos but your own.
-  // Guess the fish uses public iNaturalist photos (research grade, Florida, only licences that allow reuse: CC0 / CC BY / CC BY-SA), with credit shown.
-  // How long is it? uses the app's own fish drawings next to a dollar bill. Bingo fills in from YOUR OWN catches and trips this month.
+  // No coins, nothing saved to the database. Photos come from members' 🌎 Public catches (the same ones the Public feed shows every approved member),
+  // credited "📷 name". Only when the app has too few: Guess the fish fills in with iNaturalist photos (CC0 / CC BY / CC BY-SA, credited) and
+  // How long is it? with the app's fish drawing next to a dollar bill. Bingo fills in from YOUR OWN catches and trips this month.
   // Today's answers and the streak are kept on this phone only (like Keeper or release?).
   const G_N = 5;
   const gKey = name => "fm-" + name + "-" + (me ? me.id : "");
@@ -21,6 +21,51 @@
     setTimeout(() => { try { next.focus({ preventScroll: true }); } catch (e) { /* fine */ } }, 0);
   }
   function gEndBack(box) { const back = el("button", "btn ghost", "‹ Back to Games"); back.type = "button"; back.addEventListener("click", () => { gamesScreen = "list"; renderGames(); window.scrollTo({ top: 0 }); }); box.appendChild(back); }
+
+  // ---- 📸 Members' public photos: 🌎 Public catches that have a photo (what the Public feed already shows every approved member) ----
+  // Loaded once a day and kept on this phone for the day. Only catches from before today count, so everyone gets the same pool all day.
+  // Blocked people's photos are left out; photos an admin hid are already left out by the database.
+  let gpPool = null, gpBusy = false;   // { day, list: [{ id, species, len, path, by }], failed }
+  const GP_KEY = "fm-games-pool";
+  const gpReady = () => !!(gpPool && gpPool.day === gamesDay());
+  const gpList = () => gpReady() ? gpPool.list : [];
+  async function gpLoad() {
+    const day = gamesDay();
+    if (gpReady() || gpBusy) return;
+    try { const c = JSON.parse(localStorage.getItem(GP_KEY) || "null"); if (c && c.day === day && Array.isArray(c.list)) { gpPool = c; if (playSub === "games") renderGames(); return; } } catch (e) { /* none */ }
+    if (!me || typeof db === "undefined" || !db) return;
+    gpBusy = true;
+    try {
+      const { data, error } = await db.from("catches").select("id,species,length_in,created_by,caught_at").eq("visibility", "public").is("deleted_at", null).order("caught_at", { ascending: false }).limit(400);
+      if (error) throw error;
+      const blocked = typeof blockedIds !== "undefined" ? blockedIds : new Set();
+      const cs = (data || []).filter(c => c.species && String(c.species).trim() && c.caught_at && gamesDay(new Date(c.caught_at)) < day && !blocked.has(c.created_by));
+      let ph = [];
+      if (cs.length) { const r = await db.from("photos").select("catch_id,path,created_at").in("catch_id", cs.map(c => c.id)); if (r.error) throw r.error; ph = r.data || []; }
+      const first = {};
+      ph.slice().sort((a, b) => String(a.created_at || "").localeCompare(String(b.created_at || ""))).forEach(x => { if (x.path && !first[x.catch_id]) first[x.catch_id] = x.path; });
+      const keep = cs.filter(c => first[c.id]);
+      if (typeof ensureProfiles === "function") { try { await ensureProfiles(keep.map(c => c.created_by)); } catch (e) { /* names are optional */ } }
+      const list = keep.map(c => ({ id: c.id, species: String(c.species).trim(), len: c.length_in != null && +c.length_in > 0 ? +c.length_in : null, path: first[c.id],
+        by: (typeof profName === "function" && profName(c.created_by)) || "a member" })).sort((a, b) => String(a.id).localeCompare(String(b.id)));
+      gpPool = { day, list };
+      try { localStorage.setItem(GP_KEY, JSON.stringify(gpPool)); } catch (e) { /* storage full */ }
+    } catch (e) { gpPool = { day, list: [], failed: true }; }
+    gpBusy = false;
+    if (playSub === "games") renderGames();
+  }
+  // A member's photo with "📷 name" under it (the link is signed when needed, like the Public feed)
+  function gpFigure(p, note) {
+    const fig = el("figure", "gf-pic");
+    const img = el("img"); img.alt = "A member's catch"; img.decoding = "async";
+    const show = () => { if (photoUrls[p.path]) img.src = photoUrls[p.path]; };
+    show();
+    if (!photoUrls[p.path] && typeof db !== "undefined" && db) db.storage.from("photos").createSignedUrls([p.path], 3600).then(({ data }) => { (data || []).forEach(l => { if (l.signedUrl) photoUrls[l.path] = l.signedUrl; }); show(); }).catch(() => {});
+    fig.appendChild(img);
+    fig.appendChild(el("figcaption", "gf-credit", "📷 " + p.by + (note ? " · " + note : "")));
+    return fig;
+  }
+  function gLoading(box, msg) { box.appendChild(el("div", "spot-meta", msg || "Getting today's photos…")); gpLoad(); }
 
   // ---- 🔥 Daily streak: days in a row you finished at least one daily game (Keeper or release?, Guess the fish, How long is it?) ----
   const gDaysKey = () => gKey("games-days");
@@ -48,7 +93,7 @@
     b.appendChild(t); return b;
   }
 
-  // ---- 🔍 Guess the fish: 5 public photos a day, pick the right name from 4 ----
+  // ---- 🔍 Guess the fish: 5 photos a day (members' public catches first), pick the right name from 4 ----
   const GF_LICENCES = ["cc0", "cc-by", "cc-by-sa"];
   const GF_URL = "https://api.inaturalist.org/v1/observations?taxon_id=47178&place_id=21&quality_grade=research&photos=true" +
     "&photo_license=" + GF_LICENCES.join(",") + "&order_by=votes&per_page=200";
@@ -79,8 +124,9 @@
   // Today's 5: 5 different fish, each with 3 wrong names (fish from the same group first, so it's not too easy)
   function gfPick(day, photos) {
     const rand = krRand("guess-" + day), fish = gfFish(), out = [], used = new Set();
-    const pool = (photos || []).slice();
+    const pool = (photos || []).slice().sort((a, b) => String(a.id).localeCompare(String(b.id)));
     for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    pool.sort((a, b) => (b.app ? 1 : 0) - (a.app ? 1 : 0));   // members' photos first; iNaturalist only fills a gap
     for (const p of pool) {
       if (out.length >= G_N) break;
       if (used.has(p.name)) continue;
@@ -96,39 +142,55 @@
     return out;
   }
   const gfScore = (qs, s) => s.picks.filter((p, i) => qs[i] && p === qs[i].name).length;
-  function gfStatus() {
+  // Members' public photos of fish the app knows (one of the Seasons fish)
+  const gfApp = () => gpList().map(p => { const f = seasonFor(p.species); return f && !f.far && !/\brun\b/i.test(f.name) ? { id: "m" + p.id, name: f.name, inat: cap(p.species), app: true, path: p.path, by: p.by } : null; }).filter(Boolean);
+  // Today's questions: fixed once you answer the first one (kept with your answers), so they never change halfway through.
+  // null = still loading. iNaturalist is only asked when members' photos cover fewer than 5 kinds of fish.
+  function gfToday() {
     const day = gamesDay(), s = gLoad("guess", day, { picks: [] });
-    if (!gfPhotos) return gfErr ? "Needs internet" : "Loading…";
-    const qs = gfPick(day, gfPhotos); if (!qs.length) return "Needs internet";
+    if (Array.isArray(s.qs) && s.qs.length) return s.qs;
+    if (!gpReady()) { gpLoad(); return null; }
+    const app = gfApp();
+    if (new Set(app.map(x => x.name)).size >= G_N) return gfPick(day, app);
+    if (!gfPhotos && !gfErr) { gfLoad(); return null; }
+    return gfPick(day, app.concat(gfPhotos || []));
+  }
+  function gfStatus() {
+    const s = gLoad("guess", gamesDay(), { picks: [] }), qs = gfToday();
+    if (!qs) return "Loading…";
+    if (!qs.length) return "Needs internet";
     return s.picks.length >= qs.length ? `Done · ${gfScore(qs, s)}/${qs.length}` : s.picks.length ? `${s.picks.length} of ${qs.length} done` : `Today's ${qs.length} ready`;
   }
   function gfDraw(box) {
     gHead(box, "Guess the fish");
-    if (!gfPhotos) {
-      if (gfErr) {
-        box.appendChild(el("div", "spot-meta", gfErr));
-        const again = el("button", "btn", "Try again"); again.type = "button"; again.addEventListener("click", () => { gfErr = null; renderGames(); gfLoad(true); }); box.appendChild(again);
-      } else { box.appendChild(el("div", "spot-meta", "Getting today's photos…")); gfLoad(); }
-      return;
+    const day = gamesDay(), qs = gfToday(), s = gLoad("guess", day, { picks: [] });
+    if (!qs) return gLoading(box);
+    if (!qs.length) {
+      box.appendChild(el("div", "spot-meta", gfErr || "No photos today. Try again later."));
+      const again = el("button", "btn", "Try again"); again.type = "button";
+      again.addEventListener("click", () => { gfErr = null; if (gpPool && gpPool.failed) { gpPool = null; try { localStorage.removeItem(GP_KEY); } catch (e) { /* fine */ } } renderGames(); gfLoad(true); });
+      box.appendChild(again); return;
     }
-    const day = gamesDay(), qs = gfPick(day, gfPhotos), s = gLoad("guess", day, { picks: [] });
-    if (!qs.length) { box.appendChild(el("div", "spot-meta", "No photos today. Try again later.")); return; }
     gBar(box, qs.length, qs.map((q, i) => i < s.picks.length ? (s.picks[i] === q.name ? "right" : "wrong") : ""));
     const at = Math.min(s.picks.length, qs.length);
     if (at >= qs.length && !box.dataset.justAnswered) return gfEnd(box, qs, s);
     const showing = box.dataset.justAnswered ? +box.dataset.justAnswered - 1 : at, q = qs[showing], answered = showing < s.picks.length;
     box.appendChild(el("div", "kr-count", `${showing + 1} of ${qs.length}`));
-    const fig = el("figure", "gf-pic");
-    const img = el("img"); img.src = q.photo; img.alt = "A fish to name"; img.loading = "eager"; img.decoding = "async"; img.referrerPolicy = "no-referrer";
-    fig.appendChild(img);
-    const cr = el("figcaption", "gf-credit"); const a = el("a", null, `📷 ${q.credit} · iNaturalist`); a.href = q.url; a.target = "_blank"; a.rel = "noopener"; cr.appendChild(a); fig.appendChild(cr);
-    box.appendChild(fig);
+    if (q.app) box.appendChild(gpFigure(q));
+    else {
+      const fig = el("figure", "gf-pic");
+      const img = el("img"); img.src = q.photo; img.alt = "A fish to name"; img.loading = "eager"; img.decoding = "async"; img.referrerPolicy = "no-referrer";
+      fig.appendChild(img);
+      const cr = el("figcaption", "gf-credit"); const a = el("a", null, `📷 ${q.credit} · iNaturalist`); a.href = q.url; a.target = "_blank"; a.rel = "noopener"; cr.appendChild(a); fig.appendChild(cr);
+      box.appendChild(fig);
+    }
     box.appendChild(el("p", "kr-ask", "What fish is this?"));
     const grid = el("div", "gf-btns");
     q.choices.forEach(name => {
       const b = el("button", "kr-btn gf-btn", name); b.type = "button"; b.dataset.name = name;
       if (answered) { b.disabled = true; if (name === q.name) b.classList.add("right"); else if (s.picks[showing] === name) b.classList.add("wrong"); }
       else b.addEventListener("click", () => {
+        if (!s.qs) s.qs = qs;
         s.picks.push(name); gSave("guess", s); if (s.picks.length >= qs.length) gamesMarkDone(day);
         box.dataset.justAnswered = String(showing + 1); renderGames();
       });
@@ -139,7 +201,7 @@
       const right = s.picks[showing] === q.name;
       const res = el("div", "kr-why " + (right ? "right" : "wrong")); res.setAttribute("role", "status");
       res.appendChild(el("b", null, right ? "Right! " : `Not quite — the answer is ${q.name}. `));
-      res.appendChild(document.createTextNode(q.inat.toLowerCase() !== q.name.toLowerCase() ? `(iNaturalist calls it ${q.inat}.)` : ""));
+      res.appendChild(document.createTextNode(q.inat.toLowerCase() === q.name.toLowerCase() ? "" : q.app ? `(Logged as ${q.inat}.)` : `(iNaturalist calls it ${q.inat}.)`));
       if (q.tip) res.appendChild(el("div", "spot-meta", "Tip: " + q.tip));
       box.appendChild(res);
       gNext(box, showing + 1 >= qs.length);
@@ -159,11 +221,12 @@
       list.appendChild(li);
     });
     box.appendChild(list);
-    box.appendChild(el("div", "spot-meta kr-fresh", "Photos: research-grade iNaturalist sightings in Florida, shared by their photographers under open licences."));
+    box.appendChild(el("div", "spot-meta kr-fresh", qs.every(q => q.app) ? "Photos: members' 🌎 Public catches." : "Photos: members' 🌎 Public catches, plus research-grade iNaturalist sightings in Florida shared under open licences."));
     gEndBack(box);
   }
 
-  // ---- 📏 How long is it?: a fish drawing next to a dollar bill (6.1″ long) — guess the length; the closer, the more points ----
+  // ---- 📏 How long is it?: members' public photos of measured catches — guess the length the angler measured; the closer, the more points ----
+  // When the app has fewer than 5 measured public photos, the rest are the app's fish drawing next to a dollar bill (6.1″ long).
   const GL_BILL = 6.14, GL_MIN = 4, GL_MAX = 60;
   const glPts = off => off <= 1 ? 3 : off <= 3 ? 2 : off <= 6 ? 1 : 0;
   const GL_WORD = ["Way off", "Not bad", "Close!", "Spot on!"];
@@ -176,8 +239,16 @@
     else if (r && r.max_in != null) { lo = r.max_in * 0.5; hi = r.max_in * 1.1; }
     return [Math.max(GL_MIN + 2, lo), Math.min(GL_MAX - 6, Math.max(hi, lo + 6))];
   }
-  function glPick(day) {
+  function glPick(day, pool) {
     const rand = krRand("length-" + day), fish = gfFish().slice().sort((a, b) => a.name.localeCompare(b.name)), out = [];
+    // members' measured catches first: different kinds of fish before a second of the same kind
+    const ph = (pool || []).filter(p => p.len != null && p.len >= GL_MIN && p.len <= GL_MAX);
+    for (let i = ph.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [ph[i], ph[j]] = [ph[j], ph[i]]; }
+    const nameOf = p => { const f = seasonFor(p.species); return f && !/\brun\b/i.test(f.name) ? f.name : cap(p.species); };
+    const seen = new Set();
+    [ph.filter(p => !seen.has(nameOf(p)) && seen.add(nameOf(p))), ph].forEach(list => list.forEach(p => {
+      if (out.length < G_N && !out.some(q => q.id === p.id)) out.push({ id: p.id, name: nameOf(p), len: Math.round(p.len * 2) / 2, app: true, path: p.path, by: p.by });
+    }));
     while (out.length < G_N && fish.length) {
       const f = fish.splice(Math.floor(rand() * fish.length), 1)[0], [lo, hi] = glRange(f);
       out.push({ name: f.name, len: Math.round((lo + rand() * (hi - lo)) * 2) / 2 });
@@ -185,8 +256,15 @@
     return out;
   }
   const glScore = (qs, s) => s.guesses.reduce((n, g, i) => n + (qs[i] ? glPts(Math.abs(g - qs[i].len)) : 0), 0);
+  function glToday() {
+    const day = gamesDay(), s = gLoad("length", day, { guesses: [] });
+    if (Array.isArray(s.qs) && s.qs.length) return s.qs;
+    if (!gpReady()) { gpLoad(); return null; }
+    return glPick(day, gpList());
+  }
   function glStatus() {
-    const day = gamesDay(), qs = glPick(day), s = gLoad("length", day, { guesses: [] });
+    const qs = glToday(), s = gLoad("length", gamesDay(), { guesses: [] });
+    if (!qs) return "Loading…";
     return s.guesses.length >= qs.length ? `Done · ${glScore(qs, s)}/${qs.length * 3}` : s.guesses.length ? `${s.guesses.length} of ${qs.length} done` : `Today's ${qs.length} ready`;
   }
   // The picture: fish and bill drawn to the same scale (as shares of the picture's width, so it stays right on any phone), so the bill is the only clue
@@ -201,13 +279,15 @@
   }
   function glDraw(box) {
     gHead(box, "How long is it?");
-    const day = gamesDay(), qs = glPick(day), s = gLoad("length", day, { guesses: [] });
+    const day = gamesDay(), qs = glToday(), s = gLoad("length", day, { guesses: [] });
+    if (!qs) return gLoading(box);
     gBar(box, qs.length, qs.map((q, i) => i < s.guesses.length ? (glPts(Math.abs(s.guesses[i] - q.len)) >= 2 ? "right" : "wrong") : ""));
     const at = Math.min(s.guesses.length, qs.length);
     if (at >= qs.length && !box.dataset.justAnswered) return glEnd(box, qs, s);
     const showing = box.dataset.justAnswered ? +box.dataset.justAnswered - 1 : at, q = qs[showing], answered = showing < s.guesses.length;
     box.appendChild(el("div", "kr-count", `${showing + 1} of ${qs.length}`));
-    const card = el("div", "kr-q"); card.appendChild(el("div", "kr-sp", q.name)); card.appendChild(glScene(q)); box.appendChild(card);
+    const card = el("div", "kr-q"); card.appendChild(el("div", "kr-sp", q.name));
+    card.appendChild(q.app ? gpFigure(q, "measured by the angler") : glScene(q)); box.appendChild(card);
     box.appendChild(el("p", "kr-ask", "How long is this fish?"));
     let v = answered ? s.guesses[showing] : 20;
     const big = el("div", "gl-val", inch(v)); big.setAttribute("aria-live", "polite");
@@ -225,18 +305,19 @@
       const off = Math.abs(s.guesses[showing] - q.len), pts = glPts(off);
       const res = el("div", "kr-why " + (pts >= 2 ? "right" : "wrong")); res.setAttribute("role", "status");
       res.appendChild(el("b", null, `${GL_WORD[pts]} `));
-      res.appendChild(document.createTextNode(`It's ${inch(q.len)}. You said ${inch(s.guesses[showing])} (${off ? inch(off) + " off" : "exactly right"}) · +${pts} point${pts === 1 ? "" : "s"}.`));
+      res.appendChild(document.createTextNode(`It's ${inch(q.len)}${q.app ? ` (measured by ${q.by})` : ""}. You said ${inch(s.guesses[showing])} (${off ? inch(off) + " off" : "exactly right"}) · +${pts} point${pts === 1 ? "" : "s"}.`));
       box.appendChild(res);
       gNext(box, showing + 1 >= qs.length);
     } else {
       const lock = el("button", "btn kr-next gl-lock", "Lock in my guess"); lock.type = "button";
       lock.addEventListener("click", () => {
+        if (!s.qs) s.qs = qs;
         s.guesses.push(v); gSave("length", s); if (s.guesses.length >= qs.length) gamesMarkDone(day);
         box.dataset.justAnswered = String(showing + 1); renderGames();
       });
       box.appendChild(lock);
     }
-    box.appendChild(el("div", "spot-meta kr-fresh", "Points: 3 within 1″ · 2 within 3″ · 1 within 6″. Practice for sizing up a fish before you measure it."));
+    box.appendChild(el("div", "spot-meta kr-fresh", "Points: 3 within 1″ · 2 within 3″ · 1 within 6″. Practice for sizing up a fish before you measure it." + (q.app ? " Photos: members' 🌎 Public catches." : "")));
   }
   function glEnd(box, qs, s) {
     const n = glScore(qs, s), max = qs.length * 3, end = el("div", "kr-end"); end.setAttribute("role", "status");
