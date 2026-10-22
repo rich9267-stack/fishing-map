@@ -84,5 +84,8 @@ if timeout 90 node test168.js > /tmp/test168.out 2>&1; then echo "ok   test168";
 if timeout 90 node test169.js > /tmp/test169.out 2>&1; then echo "ok   test169"; else echo "FAIL test169 (see /tmp/test169.out)"; fail=1; fi
 if timeout 90 node test170.js > /tmp/test170.out 2>&1; then echo "ok   test170"; else echo "FAIL test170 (see /tmp/test170.out)"; fail=1; fi
 if timeout 90 node test171.js > /tmp/test171.out 2>&1; then echo "ok   test171"; else echo "FAIL test171 (see /tmp/test171.out)"; fail=1; fi
+if timeout 90 node test172.js > /tmp/test172.out 2>&1; then echo "ok   test172"; else echo "FAIL test172 (see /tmp/test172.out)"; fail=1; fi
+if timeout 90 node test173.js > /tmp/test173.out 2>&1; then echo "ok   test173"; else echo "FAIL test173 (see /tmp/test173.out)"; fail=1; fi
+if timeout 90 node test175.js > /tmp/test175.out 2>&1; then echo "ok   test175"; else echo "FAIL test175 (see /tmp/test175.out)"; fail=1; fi
 [ $fail = 0 ] && echo "ALL OK" || echo "SOME FAILED"
 exit $fail

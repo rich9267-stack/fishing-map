@@ -25,7 +25,7 @@ const code = [
   cut(t10, "  let fishRules = [];", "  // Admin: edit the rules table"),
   cut(s31, "  // Seasons cards: closed dates", "  // The chips under the month"),
   cut(s05, "  // US plan step 4: the Seasons list", "  const mmdd"),
-  "const SEASONS = ['FL'], SE_STATES = ['GA'], SEASONS_SE = ['SE'], GULF_STATES = ['LA', 'TX'], SEASONS_GULF = ['GULF'], MIDATL_STATES = ['VA', 'MD', 'DE', 'NJ', 'PA', 'DC'], SEASONS_MIDATL = ['MIDATL'];",
+  "const SEASONS = ['FL'], SE_STATES = ['GA'], SEASONS_SE = ['SE'], GULF_STATES = ['LA', 'TX'], SEASONS_GULF = ['GULF'], MIDATL_STATES = ['VA', 'MD', 'DE', 'NJ', 'PA', 'DC'], SEASONS_MIDATL = ['MIDATL'], NE_STATES = ['NY', 'CT', 'RI', 'MA', 'NH', 'VT', 'ME'], SEASONS_NE = ['NE'], GL_STATES = ['OH', 'MI', 'IN', 'IL', 'WI', 'MN', 'IA', 'MO'], SEASONS_GL = ['GL'];",
   "return { loadRules, keeperCheck, ruleFor, seasonView, seasonList, setInfo: i => { CURX = i; } };"
 ].join("\n");
 const S = new Function("ROWS", code)(ROWS);
@@ -56,7 +56,7 @@ const day = s => new Date(s + "T12:00:00");
   S.setInfo(TX); ok("Texas → Gulf cards", S.seasonList()[0] === "GULF");
   S.setInfo(LA); ok("Louisiana → Gulf cards", S.seasonList()[0] === "GULF");
   S.setInfo({ outside: true, state: "GA" }); ok("Georgia → Southeast cards", S.seasonList()[0] === "SE");
-  S.setInfo({ outside: true, state: "OH" }); ok("Ohio → Florida cards", S.seasonList()[0] === "FL");
+  S.setInfo({ outside: true, state: "KS" }); ok("Kansas → Florida cards", S.seasonList()[0] === "FL");
   S.setInfo(FL); ok("Florida → Florida cards", S.seasonList()[0] === "FL");
   S.setInfo(TX);
   ok("Texas flounder card carries the Nov 1 – Dec 14 closure", JSON.stringify(S.seasonView({ name: "Flounder", match: ["flounder"] }).closed) === '[["11-01","12-14"]]');

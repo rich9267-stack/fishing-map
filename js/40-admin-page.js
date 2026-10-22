@@ -11,7 +11,8 @@ const ADMIN_SECTIONS = [
   { id: "coins", label: "💰 Coins", power: "correct_coins" },
   { id: "removed", label: "↩️ Removed", any: ["reports", "delete_spot", "pages"] },
   { id: "admins", label: "🔑 Admins", power: "manage_admins" },
-  { id: "log", label: "📜 Log", power: "read_log" }
+  { id: "log", label: "📜 Log", power: "read_log" },
+  { id: "fishid", label: "🧠 Fish ID", power: "fishid_training" }   // owner only (not an admin power, so adminCan is true only for the Owner)
 ];
 let adminSec = "people";
 function adminPageShow(sec) {
@@ -31,6 +32,7 @@ function adminPageShow(sec) {
   if (sec === "removed" && typeof window.adminUndoLoad === "function") window.adminUndoLoad();
   if (sec === "official" && typeof window.adminOfficialLoad === "function") window.adminOfficialLoad();
   if (sec === "coins" && typeof window.adminCoinsLoad === "function") window.adminCoinsLoad();
+  if (sec === "fishid" && typeof window.adminFishIdLoad === "function") window.adminFishIdLoad();
   if (sec === "admins" && typeof window.adminsLoad === "function") window.adminsLoad();
   if (sec === "log") { const det = document.querySelector("#admin-log details"); if (det && !det.open) det.open = true; }
 }

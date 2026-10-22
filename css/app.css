@@ -1152,3 +1152,12 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
 .bg-lbl { font-size: .78rem; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
 .kr-q .gf-pic { width: 100%; align-self: stretch; }
 .kr-made { font-size: .8rem; }
+/* Fish ID training review (js/57, owner only) */
+.fir-stats { font-weight: 700; margin: 8px 0 4px; }
+.fir-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: .9rem; }
+.fir-table th, .fir-table td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.fir-table td:nth-child(2) { white-space: nowrap; }
+.fir-few { color: var(--danger, #c0392b); font-weight: 700; }
+.fir-preview { margin-top: 12px; scroll-margin-top: 60px; }
+.fir-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; margin-top: 6px; }
+.fir-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: var(--line); }
