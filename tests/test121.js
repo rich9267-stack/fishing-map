@@ -94,11 +94,11 @@ ok(nodes["qc-zone"].hidden === true, "Quick catch: hidden with no position");
 (async () => {
   A.zn.rows = []; A.zn.t = 0; A.zn.read = false; asked = 0; Object.keys(store).forEach(k => delete store[k]);
   await A.zonesEnsure();
-  ok(asked === 1 && A.zn.rows.length === rows.length && JSON.parse(store["fm-zones-v1"]).rows.length === rows.length, "first time: asks the database once and keeps a copy on the phone");
+  ok(asked === 1 && A.zn.rows.length === rows.length && JSON.parse(store["fm-zones-v2"]).rows.length === rows.length, "first time: asks the database once and keeps a copy on the phone");
   A.zn.rows = []; A.zn.read = false; A.zn.t = 0;    // a new visit: the copy on the phone is read first
   await A.zonesEnsure();
   ok(asked === 1 && A.zn.rows.length === rows.length, "next visit within a week: uses the phone's copy, no new request");
-  const old = JSON.parse(store["fm-zones-v1"]); old.t = Date.now() - 8 * 86400000; store["fm-zones-v1"] = JSON.stringify(old);
+  const old = JSON.parse(store["fm-zones-v2"]); old.t = Date.now() - 8 * 86400000; store["fm-zones-v2"] = JSON.stringify(old);
   A.zn.rows = []; A.zn.read = false; A.zn.t = 0; dbMode = "down";
   await A.zonesEnsure();
   ok(asked === 2 && A.zn.rows.length === rows.length, "a week old + database unreachable: the old copy keeps working");

@@ -5,7 +5,9 @@
   // for a week (works offline on the boat). Levels: 'no_fishing' (fishing prohibited) · 'no_entry' (closed to the public).
   // HONEST LIMITS: this is a heads-up, not legal advice. "Nothing found" never means "allowed": state parks, other refuges, aquatic preserves,
   // seasonal closures and local rules are NOT in this list (the map's dashed 🚫 layer shows those as "rules apply").
-  const ZN = { key: "fm-zones-v1", age: 7 * 86400000, nearMi: 0.5 };
+  // US plan step 5 (setup/107): the same table now also holds the no-take / no-access areas of the other continental states (about 160 more,
+  // ~600 KB in all; each row has a `state`). Florida rows and Florida wording are unchanged; other states' cards name that state's agency.
+  const ZN = { key: "fm-zones-v2", age: 7 * 86400000, nearMi: 0.5 };
   const zn = { rows: [], t: 0, read: false, loading: null, layer: null, open: {} };
 
   // ---- shape tests (flat maths is plenty at this size) ----
@@ -74,13 +76,15 @@
     if (r.anchor && r.anchor !== "Unrestricted") box.appendChild(el("div", "spot-meta", "Anchoring: " + r.anchor));
     if (r.vessel && r.vessel !== "Unrestricted") box.appendChild(el("div", "spot-meta", "Boats: " + r.vessel));
     if (r.url && /^https?:\/\//.test(r.url)) { const a = el("a", "spot-meta", "More about this area ↗"); a.href = r.url; a.target = "_blank"; a.rel = "noopener"; box.appendChild(a); }
-    box.appendChild(el("div", "spot-meta", "Source: NOAA's national Marine Protected Areas inventory. A guide only — check FWC / NOAA rules before you fish. Areas not on this list can still have rules."));
+    const ag = r.state && r.state !== "FL" && typeof stateAgency === "function" ? stateAgency(r.state) : null;   // Florida (and older rows): FWC, as before
+    box.appendChild(el("div", "spot-meta", "Source: NOAA's national Marine Protected Areas inventory. A guide only — check " + (ag ? ag.short : "FWC") + " / NOAA rules before you fish. Areas not on this list can still have rules."));
     return box;
   }
 
   // ---- the list: this phone's copy, refreshed from the database about once a week ----
   function znCacheRead() {
     zn.read = true;
+    try { localStorage.removeItem("fm-zones-v1"); } catch (e) { /* fine */ }   // the Florida-only copy: the national list replaces it
     try { const j = JSON.parse(localStorage.getItem(ZN.key) || "null"); if (j && Array.isArray(j.rows)) { zn.rows = j.rows; zn.t = j.t || 0; } } catch (e) { /* no copy yet */ }
   }
   function zonesEnsure() {
@@ -90,7 +94,7 @@
     if (zn.failAt && Date.now() - zn.failAt < 300000) return null;   // asked and failed (offline?): wait 5 minutes before asking again
     zn.loading = (async () => {
       try {
-        const { data, error } = await db.from("protected_zones").select("id,name,level,rule,protection,agency,url,anchor,vessel,geom,min_lat,min_lng,max_lat,max_lng").limit(500);
+        const { data, error } = await db.from("protected_zones").select("id,name,level,rule,protection,agency,url,anchor,vessel,geom,min_lat,min_lng,max_lat,max_lng,state").limit(500);
         if (error) throw error;
         const changed = (data || []).length !== zn.rows.length;   // redraw only when the list really changed (an empty answer must not trigger redraw → ask → redraw…)
         zn.rows = data || []; zn.t = Date.now();

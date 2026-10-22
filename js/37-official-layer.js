@@ -11,6 +11,8 @@
   // Card buttons: Directions (official places are public, so the exact spot is fine) · Save as my spot (a PRIVATE spot, same fields as "+ Add to my spots" in Find new water;
   // a place within ~150 m of one of your spots counts as already saved and shows "✓ Saved") · Start a trip here (saves it first if needed, then starts the trip like ▶ Start trip).
   // The old ⛵ Boat ramps layer is gone (v127): ramps live here only, and only open public-use ones show.
+  // Outside Florida (US plan step 5): boat ramps and piers from OpenStreetMap for the view on screen (js/58, source "osm"); same pins and buttons,
+  // the card shows how sure we are it is public instead of "✅". Florida views ask nothing new and look exactly as before.
   const OL = { minZoom: 9, max: 400, on: false, group: null, seq: 0, timer: null, skipped: 0, show: { ramp: true, pier: true, park: true, admin: true } };
   const olKind = o => (o.kind === "ramp" ? "ramp" : (o.kind === "pier" || o.kind === "jetty" || o.kind === "bridge") ? "pier" : "park");
   const olGroup = o => (o.source === "admin" ? "admin" : olKind(o));   // which filter button a place belongs to
@@ -47,12 +49,12 @@
     const have = olSavedSpot(o);
     if (have) return have;
     if (!db || !me) throw new Error("Sign in and get a signal first.");
-    const g = { src: o.source, trust: "official" }, st = stationFor({ lat: o.lat, lng: o.lng });
+    const osm = o.source === "osm", g = { src: o.source, trust: osm ? o.trust : "official" }, st = stationFor({ lat: o.lat, lng: o.lng });
     const row = {
       name: o.name || "Official spot",
       spot_type: OFFICIAL_KINDS[o.kind] || "dock",
       water_type: o.water_type || (st && st.dist != null && st.dist < 1.5 ? "saltwater" : "brackish"),
-      public_access: "yes", added_by: me.name, lat: o.lat, lng: o.lng, is_private: true, visibility: "private",
+      public_access: osm && o.trust !== "public" ? "unsure" : "yes", added_by: me.name, lat: o.lat, lng: o.lng, is_private: true, visibility: "private",
       notes: `Added from the official spots map layer (${suggSourceName(g)}). Check the water type before you rely on it.`
     };
     const { data, error } = await db.from("spots").insert(row).select("*").single();
@@ -98,14 +100,15 @@
     row.appendChild(msg);
     return row;
   }
-  const OL_CREDIT = { admin: "Added by an admin of this app" };
+  const OL_CREDIT = { admin: "Added by an admin of this app", osm: "OpenStreetMap (a volunteer map, not an official list) — make sure it is open to the public" };
   // The tap card. Built from the saved list only (no network), so it opens instantly and works offline.
   function olPopup(o) {
     const d = o.details || {}, box = document.createElement("div");
     const label = /hand/i.test(d.type || "") ? "Hand launch (kayak)" : (OFFICIAL_LABEL[o.kind] || "Fishing spot");
     box.appendChild(el("div", "pop-name", `${OL_SYMBOL[olKind(o)]} ${o.name || "Official spot"}${o.source === "admin" ? " ⭐" : ""}`));
     const county = o.county ? o.county.charAt(0) + o.county.slice(1).toLowerCase() + " County" : "";
-    box.appendChild(el("div", "pop-meta", ["✅ " + label, county].filter(Boolean).join(" · ")));
+    const badge = o.source === "osm" && typeof trustOf === "function" ? trustOf(o).badge + " · " : "✅ ";   // OpenStreetMap places: how sure we are it is public
+    box.appendChild(el("div", "pop-meta", [badge + label, county].filter(Boolean).join(" · ")));
     const facts = officialFacts({ info: d, county: null });   // lanes, fee, hours, water, who runs it (the county is already on the line above)
     if (facts) box.appendChild(el("div", "pop-meta", facts));
     if (o.source === "fwc-ramp" && o.source_id) {   // "More from FWC": filled in a moment later; stays out if there is no signal
@@ -138,7 +141,8 @@
     if (!map || !OL.on) return;
     olClear();
     const box = map.getBounds().pad(0.1), c = map.getCenter();
-    const inView = (officialSpots || []).filter(o => o.lat != null && o.lng != null && box.contains([o.lat, o.lng]));
+    const osm = typeof osmOlItems === "function" ? osmOlItems() : [], note = typeof osmOlNote === "function" ? osmOlNote() : "";   // js/58 (outside Florida only)
+    const inView = (officialSpots || []).concat(osm).filter(o => o.lat != null && o.lng != null && box.contains([o.lat, o.lng]));
     let list = inView.filter(o => OL.show[olGroup(o)]);   // the filter buttons
     let capped = false;
     if (list.length > OL.max) {   // a very busy view: keep the ones nearest the middle
@@ -149,13 +153,13 @@
     const g = L.layerGroup();
     list.forEach(o => {
       const label = (OFFICIAL_LABEL[o.kind] || "Fishing spot");
-      L.marker([o.lat, o.lng], { icon: olIcon(o), keyboard: true, title: `${o.name || "Official spot"} — ${label}`, alt: `${o.name || "Official spot"}, official ${label}` }).bindPopup(() => olPopup(o)).addTo(g);
+      L.marker([o.lat, o.lng], { icon: olIcon(o), keyboard: true, title: `${o.name || "Official spot"} — ${label}`, alt: `${o.name || "Official spot"}, ${o.source === "osm" ? "OpenStreetMap" : "official"} ${label}` }).bindPopup(() => olPopup(o)).addTo(g);
     });
     g.addTo(map); OL.group = g;
     if (!list.length && inView.length) olSay("Nothing to show — every kind of spot in this view is switched off. Tap the buttons under the switch to turn some back on.");
-    else if (!list.length) olSay(navigator.onLine === false ? "No signal — this phone has no saved official spots for this view yet." : "No official spots in this view.");
+    else if (!list.length) olSay(navigator.onLine === false ? "No signal — this phone has no saved official spots for this view yet." : note || "No official spots in this view.");
     else if (capped || skippedCells) olSay("Showing the official spots nearest the middle — zoom in to see them all.");
-    else olSay("");
+    else olSay(note);
   }
 
   async function olRefresh() {
@@ -163,6 +167,8 @@
     const seq = ++OL.seq;
     if (map.getZoom() < OL.minZoom) { olClear(); olSay("Zoom in to see official spots."); return; }
     const b = map.getBounds(), c = map.getCenter();
+    // outside Florida: ramps and piers from OpenStreetMap for this view (js/58; asks nothing for an all-Florida view), fetched while the cells load
+    const osmWait = typeof osmOlLoad === "function" ? osmOlLoad(b) : null;
     const keys = officialCellsAround(c, (b.getNorth() - b.getSouth()) / 2, (b.getEast() - b.getWest()) / 2);
     const midDist = k => { const [i, j] = k.split(",").map(Number); return miles(c.lat, c.lng, (i + 0.5) * OFFICIAL_CELL, (j + 0.5) * OFFICIAL_CELL); };
     const near = keys.sort((a, z) => midDist(a) - midDist(z)).slice(0, OFFICIAL_MAX_CELLS);   // never more squares than the phone keeps
@@ -175,6 +181,11 @@
       if (changed) { officialRebuild(); officialSave(c); }
     }
     OL.skipped = skipped; olDraw(skipped);
+    if (osmWait) {
+      const said = osmOlNote(), changed = await osmWait;
+      if (seq !== OL.seq || !OL.on) return;
+      if (changed || osmOlNote() !== said) olDraw(skipped);   // an all-Florida view: nothing new, same (empty) note, so nothing is redrawn
+    }
   }
 
   function olRefreshSoon() { clearTimeout(OL.timer); OL.timer = setTimeout(olRefresh, 400); }

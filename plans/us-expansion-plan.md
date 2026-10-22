@@ -48,7 +48,8 @@ Southeast, Gulf, Great Lakes/Midwest, Plains/South-Central, Mountain West, Pacif
   Region order (Richard: no preference, all members are in Florida): nearest first — Southeast (GA, AL, SC, NC, MS) → Gulf (LA, TX) →
   Mid-Atlantic → Northeast → Great Lakes/Midwest → Plains/South-Central → Mountain West → Pacific.
 
-**Step 5 — Spots everywhere.** Load the rest of NOAA's national no-fishing zones (same table, same code).
+**Step 5 — Spots everywhere.** ✅ built v169 (setup/107 applied: 158 more NOAA zones in `protected_zones`; js/58 OpenStreetMap ramps + piers for the view outside Florida; test181). Left for later: state ramp lists one state at a time; the dashed 🚫 "rules apply" outlines are still Florida-only.
+ Load the rest of NOAA's national no-fishing zones (same table, same code).
 Official boat ramps / piers outside Florida: start with OpenStreetMap (already free, asked only for the part of the map on
 screen, so the database doesn't grow) and add state lists one state at a time where a state publishes one.
 *Watch the free database size (500 MB) — loading every state's list into Supabase could fill it.*
