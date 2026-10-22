@@ -1161,3 +1161,13 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
 .fir-preview { margin-top: 12px; scroll-margin-top: 60px; }
 .fir-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; margin-top: 6px; }
 .fir-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: var(--line); }
+.fir-card { position: relative; display: flex; flex-direction: column; gap: 4px; }
+.fir-card.fir-flagged img { opacity: .35; }
+.fir-tag { font-size: .75rem; font-weight: 700; min-height: 0; }
+.fir-tag:empty { display: none; }
+.fir-flagbar { display: flex; gap: 2px; justify-content: space-between; }
+.fir-flagbar .btn { flex: 1; padding: 6px 0; min-width: 0; }
+.fir-flagbar .btn[aria-pressed="true"] { outline: 2px solid var(--accent, #1e88e5); }
+.fir-acts { display: flex; flex-wrap: wrap; gap: 4px; }
+.fir-merge { margin: 4px 0; font-size: .9rem; overflow-wrap: anywhere; }
+.fir-preview input[type="text"] { width: 100%; margin: 6px 0; }

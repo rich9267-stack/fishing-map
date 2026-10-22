@@ -32,7 +32,7 @@
     NE: ["Nebraska Game & Parks Commission", "Nebraska Game & Parks", "https://outdoornebraska.gov/fishing/", "https://outdoornebraska.gov/buypermits/"],
     NH: ["New Hampshire Fish & Game Dept.", "New Hampshire Fish & Game", "https://www.wildlife.nh.gov/fishing-and-boating", "https://www.wildlife.nh.gov/licensing"],
     NJ: ["New Jersey Div. of Fish & Wildlife", "New Jersey Fish & Wildlife", "https://dep.nj.gov/njfw/fishing/", "https://dep.nj.gov/njfw/fishing/licenses-permits/"],
-    NM: ["New Mexico Dept. of Game & Fish", "New Mexico Game & Fish", "https://www.wildlife.state.nm.us/fishing/", "https://www.wildlife.state.nm.us/licensing/"],
+    NM: ["New Mexico Dept. of Wildlife", "New Mexico Wildlife", "https://wildlife.dgf.nm.gov/fishing/", "https://onlinesales.wildlife.state.nm.us/"],
     NV: ["Nevada Dept. of Wildlife", "Nevada Wildlife", "https://www.ndow.org/fish-wildlife-habitat/fishing/", "https://www.ndow.org/licenses/"],
     NY: ["New York State Dept. of Environmental Conservation", "New York DEC", "https://dec.ny.gov/things-to-do/freshwater-fishing", "https://dec.ny.gov/regulatory/permits-licenses/sporting-and-use/sporting/fishing-license"],
     OH: ["Ohio Dept. of Natural Resources, Division of Wildlife", "Ohio DNR", "https://ohiodnr.gov/buy-and-apply/hunting-fishing-boating/fishing-resources/fishing-regulations", "https://ohiodnr.gov/buy-and-apply/hunting-fishing-boating/fishing-resources/fishing-licenses"],

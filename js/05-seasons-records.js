@@ -495,7 +495,7 @@
     return { pen: 0, text: "" };
   }
   let seaMonth = new Date().getMonth(), seaGroup = "";
-  // US plan step 4: the Seasons list for the place on screen: the Southeast cards (js/55) in GA / AL / SC / NC / MS, the Gulf cards in LA / TX, the Mid-Atlantic cards in VA / MD / DE / NJ / PA / DC, the Northeast cards in NY / CT / RI / MA / NH / VT / ME, the Great Lakes cards in OH / MI / IN / IL / WI / MN / IA / MO, the Plains cards in KS / NE / SD / ND / OK / AR / KY / TN / WV, else the Florida cards
+  // US plan step 4: the Seasons list for the place on screen: the Southeast cards (js/55) in GA / AL / SC / NC / MS, the Gulf cards in LA / TX, the Mid-Atlantic cards in VA / MD / DE / NJ / PA / DC, the Northeast cards in NY / CT / RI / MA / NH / VT / ME, the Great Lakes cards in OH / MI / IN / IL / WI / MN / IA / MO, the Plains cards in KS / NE / SD / ND / OK / AR / KY / TN / WV, the Mountain West cards in MT / ID / WY / CO / UT / NV / AZ / NM, else the Florida cards
   function seasonList() {
     const i = typeof rulesInfo === "function" ? rulesInfo() : null;
     if (i && i.outside && typeof SEASONS_SE !== "undefined") {
@@ -505,6 +505,7 @@
       if (GL_STATES.includes(i.state)) return SEASONS_GL;   // Ohio, Michigan, Indiana, Illinois, Wisconsin, Minnesota, Iowa, Missouri (js/55)
       if (NE_STATES.includes(i.state)) return SEASONS_NE;   // New York, Connecticut, Rhode Island, Massachusetts, New Hampshire, Vermont, Maine (js/55)
       if (PLAINS_STATES.includes(i.state)) return SEASONS_PLAINS;   // Kansas, Nebraska, the Dakotas, Oklahoma, Arkansas, Kentucky, Tennessee, West Virginia (js/55)
+      if (MW_STATES.includes(i.state)) return SEASONS_MW;   // Montana, Idaho, Wyoming, Colorado, Utah, Nevada, Arizona, New Mexico (js/55)
     }
     return SEASONS;
   }

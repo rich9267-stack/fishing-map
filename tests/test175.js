@@ -13,7 +13,7 @@ const add = (sp, n) => { for (let i = 0; i < n; i++) rows.push({ catch_id: sp + 
 add("Snook", 40); add("snook ", 2); add("Redfish", 31); add("Mangrove snapper", 5); rows.push({ catch_id: "x", species: "  ", path: "u1/blank.jpg" });
 let signed = [], fail = null;
 const db = {
-  rpc: async n => fail ? { data: null, error: { message: fail } } : n === "fishid_training_members" ? { data: 3, error: null } : n === "fishid_training_list" ? { data: rows, error: null } : { error: { message: "no " + n } },
+  rpc: async n => fail ? { data: null, error: { message: fail } } : n === "fishid_training_members" ? { data: 3, error: null } : n === "fishid_training_list" ? { data: rows, error: null } : n === "fishid_training_marks" ? { data: { flags: [], names: [] }, error: null } : { error: { message: "no " + n } },
   storage: { from: b => ({ createSignedUrls: async (paths, sec) => { signed.push({ b, paths, sec }); return { data: paths.map(p => ({ path: p, signedUrl: p === "u1/Snook-0.jpg" ? null : "https://x/" + p })), error: null }; } }) }
 };
 const mk = me => new Function("document", "window", "el", "db", "me", read("js/38-admin-powers.js") + "\n" + read("js/57-fishid-review.js") + "\n" + read("js/40-admin-page.js") + "; return { adminFishIdLoad, firGroup, adminPageShow };")
@@ -39,17 +39,17 @@ dom.window.HTMLElement.prototype.scrollIntoView = function () {};
   const t = box().textContent;
   ok("summary: members, photos, fish", /3 members opted in/.test(t) && /78 photos/.test(t) && /3 fish/.test(t));
   ok("plain words: never Private, nothing is copied", /Never Private/.test(t) && /Nothing is copied/.test(t));
-  ok("fish under 30 named as too few", /1 of 3 fish have fewer than 30 photos \(too few to train on\): Mangrove snapper\./.test(t));
+  ok("fish under 30 named as too few", /1 of 3 fish have fewer than 30 photos after flags \(too few to train on\): Mangrove snapper\./.test(t));
   const trs = [...box().querySelectorAll("table tr")].slice(1).map(tr => [...tr.children].map(td => td.textContent));
-  ok("table: biggest first, warning mark on the small one", trs.length === 3 && trs[0][0] === "Snook" && trs[0][1] === "42" && trs[1][1] === "31" && trs[2][1] === "5 ⚠️");
+  ok("table: biggest first, warning mark on the small one", trs.length === 3 && trs[0][0] === "Snook" && trs[0][1] === "42" && trs[1][1] === "31" && trs[2][2] === "5 ⚠️");
 
-  [...box().querySelectorAll("table button")][0].click(); await new Promise(r => setTimeout(r, 10));
+  [...box().querySelectorAll("table button")].filter(b => b.textContent === "Preview 12")[0].click(); await new Promise(r => setTimeout(r, 10));
   const s = signed[signed.length - 1];
   ok("Preview 12 asks for 12 different Snook photos from the photos bucket, short-lived links", s.b === "photos" && s.paths.length === 12 && new Set(s.paths).size === 12 && s.paths.every(p => /Snook|snook/i.test(p)) && s.sec <= 3600);
   const imgs = box().querySelectorAll(".fir-preview img"), missing = s.paths.includes("u1/Snook-0.jpg") ? 1 : 0;
   ok("shows the photos it could open, says how many couldn't", imgs.length === 12 - missing && (missing ? /1 couldn't be opened/.test(box().textContent) : true) && /saved as "Snook"/.test(box().textContent));
   ok("mentions when a name was typed different ways", /typed 2 different ways/.test(box().textContent));
-  [...box().querySelectorAll("table button")][2].click(); await new Promise(r => setTimeout(r, 10));
+  [...box().querySelectorAll("table button")].filter(b => b.textContent === "Preview 12")[2].click(); await new Promise(r => setTimeout(r, 10));
   ok("a fish with only 5 photos previews all 5", signed[signed.length - 1].paths.length === 5);
 
   fail = "network"; await OWNER.adminFishIdLoad(); fail = null;
