@@ -13,7 +13,6 @@ The organization / QOL plan (docs/ux_cleanup_plan.md) is finished: bottom bar, H
 - **Games: compare with the Project games plan** (Oct 21) — Richard pastes `claude/games-plan.md` into a session; the Engineer lists differences from what v151–153 built, smallest fix first, changes nothing until Richard picks.
 - **Continental US map** (Oct 21) — draft plan in plans/us-expansion-plan.md; US weight data collected in docs/weight-data.md. Approved Oct 21 (decisions in the plan); next = step 1 (which state a spot is in).
 - **Host pages leftovers** — owner can't rename a page after asking (admin only); should page tournaments ever pay prizes / Hall of Fame (e.g. verified businesses)?
-- **No-fishing zone warnings elsewhere** — the red protected-zone warning isn't yet shown in Find new water, Plan a trip or Home.
 - **Official spots beyond the Keys + Gulf coast** — refresh the data now and then; OSM piers not loaded.
 - **Gems for badges** — needs the badge rules moved to the server. Friend contests pay nothing (too easy to farm).
 - **Tank mood thresholds** are guesses — tune after Richard plays.
