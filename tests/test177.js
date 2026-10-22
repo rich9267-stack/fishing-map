@@ -25,14 +25,14 @@ const ROWS = parseRows(sql).concat([
   { species: "Redfish (red drum)", match: ["redfish", "red drum"], regions: null, min_in: 18, max_in: 27, measure: "total", one_over: false, bag: "2 per boat", release_only: false, closed: null, open_only: null, note: null, verified_on: new Date().toISOString().slice(0, 10), active: true }
 ]);
 const code = [
-  "const STATE_NAMES = { MT: 'Montana', ID: 'Idaho', WY: 'Wyoming', CO: 'Colorado', UT: 'Utah', NV: 'Nevada', AZ: 'Arizona', NM: 'New Mexico', OR: 'Oregon', SD: 'South Dakota' };",
+  "const STATE_NAMES = { MT: 'Montana', ID: 'Idaho', WY: 'Wyoming', CO: 'Colorado', UT: 'Utah', NV: 'Nevada', AZ: 'Arizona', NM: 'New Mexico', OR: 'Oregon', KS: 'Kansas', SD: 'South Dakota' };",
   "const me = {}, db = { from: () => ({ select: () => ({ eq: async () => ({ data: ROWS }) }) }) }; const renderSeasons = null;",
   "let CURX = null; const rulesInfo = () => CURX;",
   read("js/54-state-agencies.js"),
   cut(t10, "  let fishRules = [];", "  // Admin: edit the rules table"),
   cut(s31, "  // Seasons cards: closed dates", "  // The chips under the month"),
   cut(s05, "  // US plan step 4: the Seasons list", "  const mmdd"),
-  "const SEASONS = ['FL'], SE_STATES = ['GA'], SEASONS_SE = ['SE'], GULF_STATES = ['LA', 'TX'], SEASONS_GULF = ['GULF'], MIDATL_STATES = ['VA','MD','DE','NJ','PA','DC'], SEASONS_MIDATL = ['MIDATL'], NE_STATES = ['NY', 'CT', 'RI', 'MA', 'NH', 'VT', 'ME'], SEASONS_NE = ['NE'], GL_STATES = ['OH', 'MI', 'IN', 'IL', 'WI', 'MN', 'IA', 'MO'], SEASONS_GL = ['GL'], PLAINS_STATES = ['KS', 'NE', 'SD', 'ND', 'OK', 'AR', 'KY', 'TN', 'WV'], SEASONS_PLAINS = ['PLAINS'], MW_STATES = ['MT', 'ID', 'WY', 'CO', 'UT', 'NV', 'AZ', 'NM'], SEASONS_MW = ['MW'];",
+  "const SEASONS = ['FL'], SE_STATES = ['GA'], SEASONS_SE = ['SE'], GULF_STATES = ['LA', 'TX'], SEASONS_GULF = ['GULF'], MIDATL_STATES = ['VA','MD','DE','NJ','PA','DC'], SEASONS_MIDATL = ['MIDATL'], NE_STATES = ['NY', 'CT', 'RI', 'MA', 'NH', 'VT', 'ME'], SEASONS_NE = ['NE'], GL_STATES = ['OH', 'MI', 'IN', 'IL', 'WI', 'MN', 'IA', 'MO'], SEASONS_GL = ['GL'], PLAINS_STATES = ['KS', 'NE', 'SD', 'ND', 'OK', 'AR', 'KY', 'TN', 'WV'], SEASONS_PLAINS = ['PLAINS'], MW_STATES = ['MT', 'ID', 'WY', 'CO', 'UT', 'NV', 'AZ', 'NM'], SEASONS_MW = ['MW'], PAC_STATES = ['WA', 'OR', 'CA'], SEASONS_PAC = ['PAC'];",
   "return { loadRules, keeperCheck, ruleFor, seasonView, seasonList, get stateRules() { return stateRules; }, get fishRules() { return fishRules; }, setInfo: i => { CURX = i; } };"
 ].join("\n");
 const S = new Function("ROWS", code)(ROWS);
@@ -103,7 +103,7 @@ const MW = ["MT", "ID", "WY", "CO", "UT", "NV", "AZ", "NM"];
   ok("New Mexico tiger muskie 40″; striped bass 1; catfish 2 in summer catfish waters", chk("NM", "Tiger muskie", 39).level === "bad" && /1 per day/.test(chk("NM", "Striped bass", 20).text) && /2 per day/.test(chk("NM", "Channel catfish", 18).text));
 
   // honest gaps
-  ok("Oregon says no rules yet", /We don't have Oregon rules yet/.test(chk("OR", "Rainbow trout", 12).text));
+  ok("Kansas (no rows) says no rules yet", /We don't have Kansas rules yet/.test(chk("KS", "Rainbow trout", 12).text));
   ok("a Utah rule is never used in Colorado", !/Utah/.test(chk("CO", "Walleye", 19).text));
   ok("no Plains rows loaded here → South Dakota says no rules yet", /We don't have South Dakota rules yet/.test(chk("SD", "Walleye", 19).text));
 
@@ -111,14 +111,15 @@ const MW = ["MT", "ID", "WY", "CO", "UT", "NV", "AZ", "NM"];
   S.setInfo(inf("UT"));
   const v = S.seasonView({ name: "Kokanee salmon", match: ["kokanee"] });
   ok("Utah kokanee card shows the rule and the checked date", /Utah/.test(v.rule) && /checked 2026-10-22/.test(v.rule));
-  S.setInfo(inf("OR"));
-  ok("an Oregon card says We don't have…", /We don't have Oregon rules yet/.test(S.seasonView({ name: "Walleye & sauger", match: ["walleye"] }).rule));
+  S.setInfo(inf("KS"));
+  ok("a Kansas card says We don't have…", /We don't have Kansas rules yet/.test(S.seasonView({ name: "Walleye & sauger", match: ["walleye"] }).rule));
   MW.forEach(c => { S.setInfo(inf(c)); ok(c + " → the Mountain West cards", S.seasonList()[0] === "MW"); });
   ["KS", "SD", "WV"].forEach(c => { S.setInfo(inf(c)); ok(c + " → still the Plains cards", S.seasonList()[0] === "PLAINS"); });
   S.setInfo(inf("OH")); ok("Ohio → still the Great Lakes cards", S.seasonList()[0] === "GL");
   S.setInfo(inf("GA")); ok("Georgia → the Southeast cards (unchanged)", S.seasonList()[0] === "SE");
   S.setInfo(inf("TX")); ok("Texas → the Gulf cards (unchanged)", S.seasonList()[0] === "GULF");
-  S.setInfo(inf("OR")); ok("Oregon → the Florida cards (until the Pacific region is built)", S.seasonList()[0] === "FL");
+  S.setInfo(inf("OR")); ok("Oregon → the Pacific cards", S.seasonList()[0] === "PAC");
+  S.setInfo(inf("XX")); ok("a place outside every list (XX) → the Florida cards", S.seasonList()[0] === "FL");
 
   // the cards
   const g = new Function(read("js/55-southeast-seasons.js") + "; return { MW_STATES, SEASONS_MW };")();

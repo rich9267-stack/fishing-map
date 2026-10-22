@@ -32,7 +32,7 @@ const code = [
   cut(t10, "  let fishRules = [];", "  // Admin: edit the rules table"),
   cut(s31, "  // Seasons cards: closed dates", "  // The chips under the month"),
   cut(s05, "  // US plan step 4: the Seasons list", "  const mmdd"),
-  "const SEASONS = ['FL'], SE_STATES = ['GA'], SEASONS_SE = ['SE'], GULF_STATES = ['LA', 'TX'], SEASONS_GULF = ['GULF'], MIDATL_STATES = ['VA','MD','DE','NJ','PA','DC'], SEASONS_MIDATL = ['MIDATL'], NE_STATES = ['NY', 'CT', 'RI', 'MA', 'NH', 'VT', 'ME'], SEASONS_NE = ['NE'], GL_STATES = ['OH', 'MI', 'IN', 'IL', 'WI', 'MN', 'IA', 'MO'], SEASONS_GL = ['GL'], PLAINS_STATES = ['KS', 'NE', 'SD', 'ND', 'OK', 'AR', 'KY', 'TN', 'WV'], SEASONS_PLAINS = ['PLAINS'], MW_STATES = ['MT', 'ID', 'WY', 'CO', 'UT', 'NV', 'AZ', 'NM'], SEASONS_MW = ['MW'];",
+  "const SEASONS = ['FL'], SE_STATES = ['GA'], SEASONS_SE = ['SE'], GULF_STATES = ['LA', 'TX'], SEASONS_GULF = ['GULF'], MIDATL_STATES = ['VA','MD','DE','NJ','PA','DC'], SEASONS_MIDATL = ['MIDATL'], NE_STATES = ['NY', 'CT', 'RI', 'MA', 'NH', 'VT', 'ME'], SEASONS_NE = ['NE'], GL_STATES = ['OH', 'MI', 'IN', 'IL', 'WI', 'MN', 'IA', 'MO'], SEASONS_GL = ['GL'], PLAINS_STATES = ['KS', 'NE', 'SD', 'ND', 'OK', 'AR', 'KY', 'TN', 'WV'], SEASONS_PLAINS = ['PLAINS'], MW_STATES = ['MT', 'ID', 'WY', 'CO', 'UT', 'NV', 'AZ', 'NM'], SEASONS_MW = ['MW'], PAC_STATES = ['WA', 'OR', 'CA'], SEASONS_PAC = ['PAC'];",
   "return { loadRules, keeperCheck, ruleFor, seasonView, seasonList, get stateRules() { return stateRules; }, get fishRules() { return fishRules; }, setInfo: i => { CURX = i; } };"
 ].join("\n");
 const S = new Function("ROWS", code)(ROWS);
@@ -94,7 +94,7 @@ const STATES = [["SD", 10], ["ND", 11], ["OK", 10], ["AR", 12], ["KY", 16], ["TN
   // honest gaps
   ok("Kansas says no rules yet", /We don't have Kansas rules yet/.test(chk("KS", "Walleye", 20).text));
   ok("Nebraska says no rules yet", /We don't have Nebraska rules yet/.test(chk("NE", "Walleye", 20).text));
-  ok("Oregon says no rules yet", /We don't have Oregon rules yet/.test(chk("OR", "Walleye", 20).text));
+  ok("Kansas (no rows) says no rules yet", /We don't have Kansas rules yet/.test(chk("KS", "Walleye", 20).text));
   ok("West Virginia northern pike (no row) → gap message", /We don't have an? West Virginia rule for this fish yet/.test(chk("WV", "Northern pike", 25).text));
   ok("Kentucky bluegill (no row) → gap message", /We don't have an? Kentucky rule for this fish yet/.test(chk("KY", "Bluegill", 6).text));
   ok("a Tennessee rule is never used in Kentucky", !/Tennessee/.test(chk("KY", "Walleye", 19).text));
@@ -110,7 +110,8 @@ const STATES = [["SD", 10], ["ND", 11], ["OK", 10], ["AR", 12], ["KY", 16], ["TN
   S.setInfo(inf("VA")); ok("Virginia → still the Mid-Atlantic cards", S.seasonList()[0] === "MIDATL");
   S.setInfo(inf("GA")); ok("Georgia → the Southeast cards (unchanged)", S.seasonList()[0] === "SE");
   S.setInfo(inf("TX")); ok("Texas → the Gulf cards (unchanged)", S.seasonList()[0] === "GULF");
-  S.setInfo(inf("OR")); ok("Oregon → the Florida cards (until its region is built)", S.seasonList()[0] === "FL");
+  S.setInfo(inf("OR")); ok("Oregon → the Pacific cards", S.seasonList()[0] === "PAC");
+  S.setInfo(inf("XX")); ok("a place outside every list (XX) → the Florida cards", S.seasonList()[0] === "FL");
 
   // the cards
   const g = new Function(read("js/55-southeast-seasons.js") + "; return { PLAINS_STATES, SEASONS_PLAINS };")();

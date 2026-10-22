@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-22g", title: "🌊 The Pacific coast", items: [
+      "Fishing in Washington, Oregon or California? The Seasons tab now has fish for those waters: Chinook and coho salmon, rockfish, lingcod, cabezon and greenling, California and Pacific halibut, kelp and sand bass, sheephead, surfperch, leopard shark, albacore, yellowtail, white seabass and Dungeness crab, plus steelhead, trout, kokanee, bass, walleye, stripers, sturgeon, catfish and panfish.",
+      "Size, bag and closed-date rules are in for all three states, each with the date we checked it. Where a rule changes by area or water (Puget Sound vs. the ocean, one zone vs. another), the app shows the stricter one and explains the rest. Crabs get no size check yet, because their size is measured across the shell."
+    ] },
     { id: "2026-10-22f", title: "🏔 The Mountain West", items: [
       "Fishing in Montana, Idaho, Wyoming, Colorado, Utah, Nevada, Arizona or New Mexico? The Seasons tab now has fish for those waters: rainbow, brown, cutthroat, brook and lake trout, kokanee, whitefish and grayling, largemouth and smallmouth bass, walleye, pike, tiger muskie, stripers and wipers, catfish, crappie, perch and sunfish.",
       "Size, bag and closed-date rules are in for all eight states, each with the date we checked it. Where a state's rule changes by district or water, the app shows the stricter one and explains the rest."
