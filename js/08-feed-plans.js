@@ -92,7 +92,7 @@
       const ph = o.photos || (photosBySpot[c.spot_id] || []).filter(x => x.catch_id === c.id && photoUrls[x.path]);
       if (ph.length) {
         const img = document.createElement("img");
-        img.className = "feed-photo"; img.src = photoUrls[ph[0].path]; img.alt = "Photo of the catch"; img.loading = "lazy";
+        img.className = "feed-photo"; img.src = picUrl(ph[0].path); img.alt = "Photo of the catch"; img.loading = "lazy";
         img.addEventListener("click", () => openViewer(ph[0]));
         item.appendChild(img);
         if (ph.length > 1) item.appendChild(thumbStrip(ph.slice(1)));

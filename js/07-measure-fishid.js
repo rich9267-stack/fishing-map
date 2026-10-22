@@ -688,8 +688,8 @@
       const { data } = await db.from("photos").select("id,path,catch_id").in("catch_id", ids).eq("created_by", me.id);
       const rows = data || [];
       if (!rows.length) return;
-      await db.storage.from("photos").remove(rows.map(r => r.path));
-      for (const r of rows) { await db.from("photos").delete().eq("id", r.id); delete photoUrls[r.path]; }
+      await db.storage.from("photos").remove(rows.flatMap(r => [r.path, thumbPath(r.path)]));
+      for (const r of rows) { await db.from("photos").delete().eq("id", r.id); delete photoUrls[r.path]; delete thumbUrls[r.path]; }
       await loadPhotos();
     } catch (e) { /* the sweep at next start-up tries again */ }
   }

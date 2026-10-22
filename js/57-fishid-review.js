@@ -132,6 +132,22 @@ async function adminFishIdLoad() {
   fir.redraw = () => firCounts(counts, prev, mem.data || 0);
   fir.redraw();
 }
+// Step 4: "Ready to train?" summary — fish with 30+ photos after flags, photos flagged, fish that need more (fewest missing first).
+// Only counts; training itself waits for the lawyer review (plans/fishid-model-plan.md).
+const FIR_READY_FISH = 2;   // a model needs at least 2 fish to tell apart
+function firReady(groups) {
+  const box = el("div", "fir-ready"), ready = groups.filter(g => g.ok >= FIR_MIN), need = groups.filter(g => g.ok < FIR_MIN).sort((a, b) => b.ok - a.ok || a.name.localeCompare(b.name));
+  const fl = { wrong: 0, unsure: 0 }; fir.rows.forEach(r => { const f = fir.flags[r.catch_id]; if (f && r.path && String(r.species || "").trim()) fl[f]++; });
+  const nfl = fl.wrong + fl.unsure;
+  box.appendChild(el("div", "label", "🎯 Ready to train?"));
+  box.appendChild(el("div", "fir-verdict", ready.length >= FIR_READY_FISH
+    ? `Yes — ${ready.length} fish have enough photos for a first try. (Training itself waits for the lawyer review.)`
+    : `Not yet — a first try needs at least ${FIR_READY_FISH} fish with ${FIR_MIN}+ photos each; ${ready.length} so far.`));
+  box.appendChild(el("div", "spot-meta", `✅ ${ready.length} of ${groups.length} fish have ${FIR_MIN}+ photos after flags` + (ready.length ? `: ${ready.map(g => `${g.name} (${g.ok})`).join(", ")}.` : ".")));
+  box.appendChild(el("div", "spot-meta", nfl ? `🚩 ${nfl} photo${nfl === 1 ? "" : "s"} flagged (${fl.wrong} wrong fish, ${fl.unsure} can't tell) — left out.` : "🚩 0 photos flagged."));
+  if (need.length) box.appendChild(el("div", "spot-meta", `📸 Need more photos: ${need.map(g => `${g.name} (${FIR_MIN - g.ok} more)`).join(", ")}.`));
+  return box;
+}
 function firCounts(out, prev, members) {
   out.innerHTML = "";
   const groups = firGroup(fir.rows, fir.names, fir.flags), photos = groups.reduce((s, g) => s + g.n, 0), ok = groups.reduce((s, g) => s + g.ok, 0);
@@ -139,6 +155,7 @@ function firCounts(out, prev, members) {
   out.appendChild(el("div", "fir-stats", `👥 ${members} member${members === 1 ? "" : "s"} opted in · 📷 ${photos} photo${photos === 1 ? "" : "s"}` +
     (ok < photos ? ` (${ok} after flags)` : "") + ` · 🐟 ${groups.length} fish`));
   if (!groups.length) { out.appendChild(el("div", "spot-meta", "No training photos yet.")); return; }
+  out.appendChild(firReady(groups));
   out.appendChild(el("div", "spot-meta", few.length
     ? `⚠️ ${few.length} of ${groups.length} fish have fewer than ${FIR_MIN} photos after flags (too few to train on): ${few.map(g => g.name).join(", ")}.`
     : `✅ Every fish has at least ${FIR_MIN} photos after flags.`));

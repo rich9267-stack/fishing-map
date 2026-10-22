@@ -1,4 +1,4 @@
-  // ---- Photos (private Supabase storage, shown through 1-hour signed links) ----
+  // ---- Photos (private Supabase storage, shown through 1-hour signed links; small copies + phone saving below) ----
   let photosBySpot = {};   // spot id -> photos, newest first
   let photoUrls = {};      // storage path -> signed link
 
@@ -11,19 +11,89 @@
       if (error) throw error;
       photosBySpot = {};
       data.forEach(p => (photosBySpot[p.spot_id] = photosBySpot[p.spot_id] || []).push(p));
-      const need = data.map(p => p.path).filter(path => !photoUrls[path]);
-      if (need.length) {
-        const { data: links } = await db.storage.from("photos").createSignedUrls(need, 3600);
-        (links || []).forEach(l => { if (l.signedUrl) photoUrls[l.path] = l.signedUrl; });
-      }
+      await signPhotos(data.map(p => p.path));
+      setTimeout(() => thumbBackfill(data), 8000);
     } catch (e) { /* the app works without photos */ }
     renderSpots();
     feedRefresh();
   }
 
-  // Shrink a phone photo (often 4–8 MB) to ~300 KB before uploading
-  async function compressImage(file) {
-    const MAX = 1600;
+  // ---- 💾 Fewer downloads (Supabase's free limit): each link is kept on the phone for its whole hour, every photo gets a small copy
+  //      ("<name>.t.jpg", ~20 KB) shown in lists, the feed and the games — the full photo only opens in the viewer. sw.js keeps the
+  //      pictures themselves by their storage path, so a photo is downloaded once per phone. Old photos get their small copy from
+  //      their owner's phone, a few per visit. ----
+  const LINKS_KEY = "fm-photo-links", LINK_SECS = 3600, LINK_SPARE = 10 * 60 * 1000, THUMB_MAX = 480, THUMB_Q = 0.7;
+  let thumbUrls = {};            // photo path -> signed link to its small copy
+  let linkTimes = {};            // "f:<path>" / "t:<path>" -> when that link runs out
+  let linksFor = null;           // whose links are loaded
+  const thumbNone = new Set();   // photos with no small copy (or not ours to see yet), checked this visit
+  const thumbPath = p => String(p).replace(/\.jpg$/i, "") + ".t.jpg";
+  const picUrl = p => thumbUrls[p] || photoUrls[p];   // lists, feed, games: the small copy when there is one
+  function linksLoad() {
+    if (!me || linksFor === me.id) return;
+    linksFor = me.id; linkTimes = {};
+    try {
+      const s = JSON.parse(localStorage.getItem(LINKS_KEY) || "null"), soon = Date.now() + LINK_SPARE;
+      if (!s || s.who !== me.id) return;
+      Object.keys(s.l || {}).forEach(k => { const [u, t] = s.l[k]; if (t > soon) { linkTimes[k] = t; (k[0] === "t" ? thumbUrls : photoUrls)[k.slice(2)] = u; } });
+    } catch (e) { /* start fresh */ }
+  }
+  function linksSave() {
+    try {
+      const l = {}, soon = Date.now() + LINK_SPARE;
+      Object.keys(linkTimes).forEach(k => { const u = (k[0] === "t" ? thumbUrls : photoUrls)[k.slice(2)]; if (u && linkTimes[k] > soon) l[k] = [u, linkTimes[k]]; });
+      localStorage.setItem(LINKS_KEY, JSON.stringify({ who: me.id, l }));
+    } catch (e) { /* storage full: links are just asked again */ }
+  }
+  // Get links for these photos (and their small copies) that we don't already have — one ask per 300
+  async function signPhotos(paths) {
+    if (!me || !db) return;
+    linksLoad();
+    const soon = Date.now() + LINK_SPARE, fresh = k => linkTimes[k] > soon;
+    const uniq = [...new Set((paths || []).filter(Boolean))];
+    const full = uniq.filter(p => !fresh("f:" + p)), small = uniq.filter(p => !fresh("t:" + p) && !thumbNone.has(p));
+    const ask = [...full, ...small.map(thumbPath)];
+    if (!ask.length) return;
+    const got = {}; let answered = false;
+    for (let i = 0; i < ask.length; i += 300) {
+      try {
+        const { data } = await db.storage.from("photos").createSignedUrls(ask.slice(i, i + 300), LINK_SECS);
+        if (data) answered = true;
+        (data || []).forEach(l => { if (l.signedUrl) got[l.path] = l.signedUrl; });
+      } catch (e) { /* no signal: try again next time */ }
+    }
+    const until = Date.now() + LINK_SECS * 1000;
+    full.forEach(p => { if (got[p]) { photoUrls[p] = got[p]; linkTimes["f:" + p] = until; } });
+    small.forEach(p => { const u = got[thumbPath(p)]; if (u) { thumbUrls[p] = u; linkTimes["t:" + p] = until; } else if (answered) thumbNone.add(p); });
+    linksSave();
+  }
+  // Signing out / deleting the account: forget the links and empty the phone's saved photos (sw.js)
+  async function photoCacheClear() {
+    photoUrls = {}; thumbUrls = {}; linkTimes = {}; linksFor = null; thumbNone.clear();
+    try { localStorage.removeItem(LINKS_KEY); } catch (e) { /* fine */ }
+    try { if (window.caches) await window.caches.delete("fishing-map-photos"); } catch (e) { /* fine */ }
+  }
+  // Old photos of mine with no small copy: make it from the full photo (usually already saved on the phone) and upload it, 8 per visit
+  let thumbFixes = 0;
+  async function thumbBackfill(list) {
+    if (!me || !db) return;
+    const todo = (list || []).filter(p => p.created_by === me.id && thumbNone.has(p.path) && photoUrls[p.path]).slice(0, Math.max(0, 8 - thumbFixes));
+    const done = [];
+    for (const p of todo) {
+      thumbFixes++;
+      try {
+        const res = await fetch(photoUrls[p.path]); if (!res.ok) continue;
+        const small = await compressImage(await res.blob(), THUMB_MAX, THUMB_Q);
+        const { error } = await db.storage.from("photos").upload(thumbPath(p.path), small, { contentType: "image/jpeg" });
+        if (error && !/exist|duplicate/i.test(error.message || "")) continue;
+        thumbNone.delete(p.path); done.push(p.path);
+      } catch (e) { /* next visit */ }
+    }
+    if (done.length) await signPhotos(done);
+  }
+
+  // Shrink a phone photo (often 4–8 MB) to ~300 KB before uploading (or to a ~20 KB small copy: max 480, quality 0.7)
+  async function compressImage(file, MAX = 1600, Q = 0.8) {
     let src;
     try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); }
     catch (e) {
@@ -33,7 +103,7 @@
     const c = document.createElement("canvas");
     c.width = Math.round(src.width * scale); c.height = Math.round(src.height * scale);
     c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
-    return await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("Couldn't read that photo")), "image/jpeg", 0.8));
+    return await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("Couldn't read that photo")), "image/jpeg", Q));
   }
 
   function newId() {
@@ -63,11 +133,13 @@
     const path = `${me.id}/${newId()}.jpg`;
     const { error: upErr } = await db.storage.from("photos").upload(path, blob, { contentType: "image/jpeg" });
     if (upErr) throw upErr;
+    try { await db.storage.from("photos").upload(thumbPath(path), await compressImage(blob, THUMB_MAX, THUMB_Q), { contentType: "image/jpeg" }); }
+    catch (e) { /* no small copy: lists show the full photo */ }
     const { error } = await db.from("photos").insert({
       spot_id: spotId, catch_id: catchId || null, path,
       taken_at: info.when ? info.when.toISOString() : null, lat: info.lat, lng: info.lng
     });
-    if (error) { await db.storage.from("photos").remove([path]); throw error; }
+    if (error) { await db.storage.from("photos").remove([path, thumbPath(path)]); throw error; }
     if (!noReload) await loadPhotos();
   }
 
@@ -161,7 +233,7 @@
     list.forEach(ph => {
       if (!photoUrls[ph.path]) return;
       const img = document.createElement("img");
-      img.src = photoUrls[ph.path]; img.alt = "Photo"; img.loading = "lazy";
+      img.src = picUrl(ph.path); img.alt = "Photo"; img.loading = "lazy";
       img.addEventListener("click", () => openViewer(ph));
       strip.appendChild(img);
     });
@@ -233,7 +305,7 @@
   let viewing = null;
   function openViewer(ph) {
     viewing = ph;
-    $("viewer-img").src = photoUrls[ph.path];
+    $("viewer-img").src = photoUrls[ph.path] || picUrl(ph.path);   // the full photo (only here)
     const spot = (spots || []).find(x => x.id === ph.spot_id);
     const ct = ph.catch_id ? Object.values(catchesBySpot).flat().find(c => c.id === ph.catch_id) : null;
     const who = ct ? (isMine(ct) ? "you" : (typeof profName === "function" ? profName(ct.created_by) : null) || "a friend") : null;
@@ -257,8 +329,8 @@
     const ph = viewing;
     const { error } = await db.from("photos").delete().eq("id", ph.id);
     if (error) return alert("Couldn't delete: " + error.message);
-    await db.storage.from("photos").remove([ph.path]);
-    delete photoUrls[ph.path];
+    await db.storage.from("photos").remove([ph.path, thumbPath(ph.path)]);
+    delete photoUrls[ph.path]; delete thumbUrls[ph.path];
     closeViewer();
     loadPhotos();
   });

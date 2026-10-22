@@ -58,9 +58,9 @@
   function gpFigure(p, note) {
     const fig = el("figure", "gf-pic");
     const img = el("img"); img.alt = "A member's catch"; img.decoding = "async";
-    const show = () => { if (photoUrls[p.path]) img.src = photoUrls[p.path]; };
+    const show = () => { const u = picUrl(p.path); if (u) img.src = u; };   // the small copy when there is one (js/03)
     show();
-    if (!photoUrls[p.path] && typeof db !== "undefined" && db) db.storage.from("photos").createSignedUrls([p.path], 3600).then(({ data }) => { (data || []).forEach(l => { if (l.signedUrl) photoUrls[l.path] = l.signedUrl; }); show(); }).catch(() => {});
+    if (!thumbUrls[p.path] && typeof db !== "undefined" && db) signPhotos([p.path]).then(show).catch(() => {});
     fig.appendChild(img);
     fig.appendChild(el("figcaption", "gf-credit", "📷 " + p.by + (note ? " · " + note : "")));
     return fig;

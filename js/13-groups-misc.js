@@ -345,7 +345,7 @@
         if (phs.length) {
           const strip = el("div"); strip.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;margin-top:6px";
           phs.forEach(ph => {
-            const im = document.createElement("img"); im.src = photoUrls[ph.path]; im.alt = "Catch photo"; im.loading = "lazy";
+            const im = document.createElement("img"); im.src = picUrl(ph.path); im.alt = "Catch photo"; im.loading = "lazy";
             im.style.cssText = "width:84px;height:84px;object-fit:cover;border-radius:8px;cursor:pointer";
             im.addEventListener("click", () => openViewer(ph)); strip.appendChild(im);
           });
@@ -503,6 +503,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-22k", title: "📷 Photos load faster", items: [
+      "Photos are now saved on your phone after the first look, and lists, the feed and the games show a small copy. Tap a photo to see it full size, just like before. Uses less data, and photos show up even with a weak signal."
+    ] },
     { id: "2026-10-22j", title: "🎮 Games and 🚫 zones outside Florida", items: [
       "Outside Florida, Guess the fish now uses that region's fish, with iNaturalist photos from near you first (then the rest of the US), and Fishing bingo uses your region's Seasons fish — lakes and rivers count too. In Florida both games are unchanged.",
       "The map's 🚫 Protected zones layer now shows the dashed \"other rules apply\" outlines (sanctuaries, refuges, reserves) in other states too, from NOAA's national list. Tap one to see its fishing rules. Florida looks the same as before."

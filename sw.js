@@ -2,7 +2,9 @@
 // - The page itself: try the network first (so updates show up), fall back to the saved copy.
 // - Code libraries from CDNs: use the saved copy right away, refresh it in the background.
 // - Live data (database, tides, weather) is never cached here. Map tiles are served from the phone only if saved for offline.
-const CACHE = "fishing-map-v170";
+// - Catch photos: kept by their storage path (the link's ?token= changes every hour, the photo never does), so each photo is
+//   downloaded once per phone. The app empties this on sign-out and account delete.
+const CACHE = "fishing-map-v172";
 const APP_FILES = ["./", "./index.html", "./privacy.html", "./terms.html", "./css/app.css", "./js/01-core.js", "./js/02-spots.js", "./js/03-photos.js", "./js/04-insights.js", "./js/05-seasons-records.js", "./js/06-catching.js", "./js/07-measure-fishid.js", "./js/08-feed-plans.js", "./js/09-map-forecast.js", "./js/10-tools-safety.js", "./js/11-accounts-social.js", "./js/12-contests-alerts.js", "./js/13-groups-misc.js", "./js/14-tank.js", "./js/15-fish-rank.js", "./js/16-fish-race.js", "./js/17-license-help.js", "./js/18-species.js", "./js/19-biting.js", "./js/20-spot-share.js", "./js/21-pub-filters.js", "./js/22-public-water.js", "./js/23-depth.js", "./js/24-delete-account.js", "./js/25-home-map.js", "./js/26-sub-tabs.js", "./js/27-me-find.js", "./js/28-host-pages.js", "./js/29-home-waters.js", "./js/30-red-tide.js", "./js/31-regional-rules.js", "./js/32-spot-style.js", "./js/33-zones.js", "./js/34-official-admin.js", "./js/35-palettes.js", "./js/36-tutorials.js", "./js/37-official-layer.js", "./js/38-admin-powers.js",
   "./js/39-admin-log.js", "./js/40-admin-page.js", "./js/41-admin-people.js", "./js/42-admin-undo.js", "./js/43-admin-warn.js",
   "./js/44-admin-hide.js",
@@ -23,6 +25,14 @@ const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com"];
 const TILE_CACHE = "fishing-map-tiles";   // map tiles the person chose to save for offline (kept across updates)
 const CV_CACHE = "fishing-map-cv";        // the ~10 MB OpenCV helper for auto-finding the bill/card (downloaded once, kept across updates)
 const TILE_HOSTS = ["tile.openstreetmap.org", "server.arcgisonline.com"];
+const PHOTO_CACHE = "fishing-map-photos";  // catch photos + their small copies (kept across updates; emptied on sign-out)
+const PHOTO_KEEP = 800;                     // newest 800 pictures (~ small copies 20 KB, full photos ~300 KB)
+const photoKey = url => url.origin + url.pathname;   // the same photo whatever its token
+let photoPuts = 0;
+function photoTrim(c) {
+  if (++photoPuts % 25) return;
+  c.keys().then(ks => { if (ks.length > PHOTO_KEEP) ks.slice(0, ks.length - PHOTO_KEEP).forEach(k => c.delete(k)); });
+}
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(c => c.addAll(APP_FILES)).then(() => self.skipWaiting()));
@@ -31,7 +41,7 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE && k !== CV_CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE && k !== CV_CACHE && k !== PHOTO_CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -49,6 +59,17 @@ self.addEventListener("fetch", event => {
         return res;
       }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match("./index.html")))
     );
+    return;
+  }
+
+  // Catch photos (Supabase signed links): the phone's copy first, otherwise download once and keep it
+  if (url.pathname.includes("/storage/v1/object/sign/photos/")) {
+    const key = photoKey(url);
+    event.respondWith(caches.open(PHOTO_CACHE).then(c => c.match(key).then(hit => hit ||
+      fetch(req.url, { mode: "cors", credentials: "omit" }).then(res => {
+        if (res.ok && res.status === 200) c.put(key, res.clone()).then(() => photoTrim(c)).catch(() => {});
+        return res;
+      }).catch(() => fetch(req)))));
     return;
   }
 

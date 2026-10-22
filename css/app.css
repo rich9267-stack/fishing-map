@@ -1171,3 +1171,5 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
 .fir-acts { display: flex; flex-wrap: wrap; gap: 4px; }
 .fir-merge { margin: 4px 0; font-size: .9rem; overflow-wrap: anywhere; }
 .fir-preview input[type="text"] { width: 100%; margin: 6px 0; }
+.fir-ready { margin: 10px 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
+.fir-verdict { font-weight: 700; margin: 4px 0; }

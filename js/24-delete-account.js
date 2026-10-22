@@ -37,7 +37,7 @@
       try { const { data } = await db.storage.from(bucket).list(folder, { limit: 1000 }); return (data || []).filter(f => f && f.name).map(f => folder + "/" + f.name); } catch (e) { return []; }
     };
     const { data: ph } = await db.from("photos").select("path").eq("created_by", me.id);
-    await gone("photos", (ph || []).map(p => p.path).filter(Boolean));
+    await gone("photos", (ph || []).map(p => p.path).filter(Boolean).flatMap(p => [p, thumbPath(p)]));   // + the small copies (js/03)
     await gone("avatars", await listed("avatars", me.id));
     const { data: gr } = await db.from("groups").select("id").eq("created_by", me.id);
     for (const g of gr || []) await gone("group-avatars", await listed("group-avatars", g.id));
@@ -47,6 +47,7 @@
   async function delLocal() {
     try { Object.keys(localStorage).filter(k => /^fm-/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { /* fine */ }
     try { indexedDB.deleteDatabase("fishing-map"); indexedDB.deleteDatabase("fm-stash"); } catch (e) { /* fine */ }
+    try { await photoCacheClear(); } catch (e) { /* fine */ }
     try { const r = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); const s = r && r.pushManager && await r.pushManager.getSubscription(); if (s) await s.unsubscribe(); } catch (e) { /* fine */ }
   }
   async function delNow() {

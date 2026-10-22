@@ -184,6 +184,7 @@
 
   async function signOut() {
     await db.auth.signOut();
+    try { await photoCacheClear(); } catch (e) { /* fine */ }
     me = null; spots = null; catchesBySpot = {}; safetyStop();
     if (typeof tutClose === "function") tutClose(false);
     $("invite-card").hidden = true;
@@ -408,11 +409,7 @@
     if (!ids.length) return;
     const { data } = await db.from("photos").select("*").in("catch_id", ids).order("created_at", { ascending: false });
     (data || []).forEach(ph => { (pubPhotos[ph.catch_id] = (pubPhotos[ph.catch_id] || []).filter(x => x.id !== ph.id)).push(ph); });
-    const need = (data || []).map(x => x.path).filter(path => !photoUrls[path]);
-    if (need.length) {
-      const { data: links } = await db.storage.from("photos").createSignedUrls(need, 3600);
-      (links || []).forEach(l => { if (l.signedUrl) photoUrls[l.path] = l.signedUrl; });
-    }
+    await signPhotos((data || []).map(x => x.path));
   }
   async function loadPublic() {
     pubLoading = true;
