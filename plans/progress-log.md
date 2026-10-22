@@ -23,7 +23,7 @@ After the US expansion (done v173): make the national map trustworthy and useful
 ## Next up
 1. **Engineer: private docks in Official public spots outside Florida.** Make js/58 (OpenStreetMap ramps/piers) as strict as Florida: only places that are clearly public; when unsure, leave it out. Done when: Richard's private dock no longer shows, Florida unchanged, test ALL OK. **Built v174 (test186); waiting for Richard's phone check.**
 2. **Richard: finish the outside-Florida phone checklist** (the rest of it) and list anything else that looked off.
-3. **Engineer: time zones across the country.** Weather and the water-temperature backup still ask for Eastern time (js/02 `America/New_York`); games use the New York day on purpose. Check every place a time is shown for a spot in Central, Mountain, Pacific and Arizona (no daylight saving).
+3. **Engineer: time zones across the country.** Weather and the water-temperature backup still ask for Eastern time (js/02 `America/New_York`); games use the New York day on purpose. Check every place a time is shown for a spot in Central, Mountain, Pacific and Arizona (no daylight saving). **Built v175 (test187); waiting for Richard's phone check.**
 4. **Researcher → Engineer: nationwide official ramp lists** (state agency lists, free servers, public + open only), then **tide + water-temperature station lists for every coastal state** (NOAA, free).
 5. **Designer: 📚 Learn page plan** (rules for any state, fish info, state/local info, rigs/bait/lures/knots). Plan only first.
 

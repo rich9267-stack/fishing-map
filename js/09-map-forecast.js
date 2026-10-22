@@ -210,12 +210,12 @@
     }
     box.appendChild(el("div", "spot-meta ol-kind-note", bits.join(" · ")));
   }
-  const DAYNAME = d => d.toDateString() === new Date().toDateString() ? "Today" : d.toLocaleDateString([], { weekday: "short" });
-  const hourLabel = d => d.toLocaleTimeString([], { hour: "numeric" }).replace(":00", "").replace(/\s/g, "").toLowerCase();
+  const DAYNAME = (d, tz) => tzDayDiff(d, tz) === 0 ? "Today" : d.toLocaleDateString([], { weekday: "short", timeZone: tzGood(tz) });
+  const hourLabel = (d, tz) => tzHourLabel(d, tz);
   function fillOutlook(box, s) {
     box.innerHTML = "";
     if (!hasLoc(s)) { box.appendChild(el("div", "spot-meta", "Set this spot's location to see its outlook.")); return; }
-    const fc = spotForecast(s);
+    const fc = spotForecast(s), tz = tzFor(s.lat, s.lng);
     if (!fc.done) { box.appendChild(el("div", "spot-meta", "Loading forecast…")); return; }
     if (fc.done === "error") { box.appendChild(el("div", "spot-meta", "Forecast unavailable right now — try again in a bit.")); return; }
     if (s.water_type !== "freshwater" && !spotTides(s)) { box.appendChild(el("div", "spot-meta", "Loading tides…")); return; }
@@ -242,7 +242,7 @@
         cur.end = x.t; cur.peak = Math.max(cur.peak, x.score);
       });
       runs.sort((a, b) => b.peak - a.peak);
-      const fmt = r => `${DAYNAME(r.start)} ${hourLabel(r.start)}–${hourLabel(new Date(r.end.getTime() + 3600000))}`;
+      const fmt = r => `${DAYNAME(r.start, tz)} ${hourLabel(r.start, tz)}–${hourLabel(new Date(r.end.getTime() + 3600000), tz)}`;
       box.appendChild(el("div", "best-why", runs.length ? `⭐ Best windows${kind ? " for " + kind : ""}: ` + runs.slice(0, 3).map(fmt).join(" · ")
         : `No standout window in the next 3 days for ${kind ? kind + " " : "what's been caught "}${kind && !H.local ? "in your group" : "here"}.`));
       if (kind) box.appendChild(el("div", "spot-meta", H.local ? `Scored from the ${kind} caught at this spot.` : `Fewer than 3 ${kind} here, so it uses every ${kind} your group has logged.`));
@@ -254,14 +254,14 @@
     const detail = el("div", "spot-meta");
     const showDetail = x => {
       const kind = styleShowsWindKind(s) ? windKind(x.fh.deg, s.faces_deg) : null;
-      detail.textContent = `${DAYNAME(x.t)} ${hourLabel(x.t)} · 💨 ${compass(x.fh.deg)} ${x.fh.mph} mph${kind ? " (" + KIND_ICON[kind] + ")" : ""}` +
+      detail.textContent = `${DAYNAME(x.t, tz)} ${hourLabel(x.t, tz)} · 💨 ${compass(x.fh.deg)} ${x.fh.mph} mph${kind ? " (" + KIND_ICON[kind] + ")" : ""}` +
         (x.fh.trend ? ` · pressure ${x.fh.trend}` : "") +
         (x.score != null ? ` · ${x.lvl === "strong" ? "Strong match" : x.lvl === "good" ? "Good match" : "Weak match"}` : "") +
         (x.reasons.length ? " — " + x.reasons.slice(0, 2).map(r => r.text).join(" · ") : "") +
         (x.warn ? " · " + x.warn : "");
     };
     const days = [];
-    slots.forEach(x => { const k = x.t.toDateString(); let d = days.find(y => y.k === k); if (!d) days.push(d = { k, date: x.t, slots: [] }); d.slots.push(x); });
+    slots.forEach(x => { const k = tzDayKey(x.t, tz); let d = days.find(y => y.k === k); if (!d) days.push(d = { k, date: x.t, slots: [] }); d.slots.push(x); });
     const selected = slots.find(x => x.t.getTime() === outlookSel[s.id]) || null;
     days.forEach(d => {
       const mph = d.slots.map(x => x.fh.mph);
@@ -269,16 +269,16 @@
       d.slots.forEach(x => { const a = x.fh.deg * Math.PI / 180; sx += Math.sin(a) * (x.fh.mph + 1); sy += Math.cos(a) * (x.fh.mph + 1); });
       const dir = (Math.atan2(sx, sy) * 180 / Math.PI + 360) % 360;
       const kind = styleShowsWindKind(s) ? windKind(dir, s.faces_deg) : null;
-      const head = el("div", "ol-day", DAYNAME(d.date));
+      const head = el("div", "ol-day", DAYNAME(d.date, tz));
       head.appendChild(el("span", null, `💨 ${compass(dir)} ${Math.min(...mph)}–${Math.max(...mph)} mph${kind ? " · " + KIND_ICON[kind] : ""}`));
       box.appendChild(head);
       const bar = el("div", "ol-bar");
       for (let h = 0; h < 24; h++) {
-        const x = d.slots.find(y => y.t.getHours() === h);
+        const x = d.slots.find(y => tzHour(y.t, tz) === h);
         const c = el("button", "ol-c" + (x ? (x.lvl ? " " + x.lvl : "") : " off"));
         c.type = "button";
         if (x) {
-          c.setAttribute("aria-label", hourLabel(x.t));
+          c.setAttribute("aria-label", hourLabel(x.t, tz));
           if (selected === x) c.classList.add("sel");
           c.addEventListener("click", () => {
             outlookSel[s.id] = x.t.getTime();
@@ -353,7 +353,7 @@
       const rating = r.best.score > 1.2 ? ["strong", "Strong match"] : r.best.score > 0.4 ? ["", "Good match"] : ["", "Weak match"];
       name.appendChild(el("span", "rating " + rating[0], rating[1]));
       top.appendChild(name);
-      top.appendChild(el("span", "best-when", r.best.now ? "Best: now" : `Best around ${clock(r.best.t)}`));
+      top.appendChild(el("span", "best-when", r.best.now ? "Best: now" : `Best around ${clock(r.best.t, tzFor(r.s.lat, r.s.lng))}`));
       row.appendChild(top);
       { const zr = typeof zoneRow === "function" ? zoneRow(r.s) : null; if (zr) row.appendChild(zr); }   // 🚫 flag only, the spot stays ranked (js/33)
       row.appendChild(el("div", "best-why", r.best.reasons.length ? "✓ " + r.best.reasons.slice(0, 3).map(x => x.text).join(" · ") : "No strong pattern yet for these conditions"));
@@ -605,7 +605,7 @@
       if (!near || Math.abs(near.d) > 5 * 3600000) { msg.textContent = `No ${high ? "high" : "low"} tide at ${st.name} within 5 hours of now — try at the next turn.`; return; }
       const min = Math.round(near.d / 60000 / 5) * 5;
       $("f-tide-offset").value = min;
-      msg.textContent = `${st.name} had ${high ? "high" : "low"} tide at ${clock(near.t.when)}, so the tide here runs ${min === 0 ? "right on time" : offsetText(min).replace(/^[+−]/, "") + (min > 0 ? " later" : " earlier")}. Tap Save to keep it.` + (Math.abs(min) > 120 ? " (That's a big difference — make sure the water has really stopped and turned.)" : "");
+      msg.textContent = `${st.name} had ${high ? "high" : "low"} tide at ${clock(near.t.when, tzFor(where.lat, where.lng))}, so the tide here runs ${min === 0 ? "right on time" : offsetText(min).replace(/^[+−]/, "") + (min > 0 ? " later" : " earlier")}. Tap Save to keep it.` + (Math.abs(min) > 120 ? " (That's a big difference — make sure the water has really stopped and turned.)" : "");
     } catch (e) { msg.textContent = "Couldn't get the station's tide times — check your signal."; }
   }
   $("f-tide-high").addEventListener("click", () => tideTurnNow(true));
@@ -664,14 +664,14 @@
       const current = periods.find(p => now >= p.start && now <= p.end);
       const upcoming = periods.find(p => p.start > now);
       $("moon-detail").textContent = current
-        ? `In a ${current.type} solunar period now (${current.why}) until ${clock(current.end)}`
-        : upcoming ? `Next: ${upcoming.type} period at ${clock(upcoming.start)}` : "No more solunar periods today";
+        ? `In a ${current.type} solunar period now (${current.why}) until ${clock(current.end, areaTz())}`
+        : upcoming ? `Next: ${upcoming.type} period at ${clock(upcoming.start, areaTz())}` : "No more solunar periods today";
       const ul = $("moon-periods");
       ul.innerHTML = "";
       periods.forEach(p => {
         const li = el("li", p.end < now ? "past" : null);
         li.appendChild(el("span", "kind " + (p.type === "major" ? "rising" : ""), cap(p.type)));
-        const right = el("span", null, `${clock(p.start)} – ${clock(p.end)}`);
+        const right = el("span", null, `${clock(p.start, areaTz())} – ${clock(p.end, areaTz())}`);
         right.appendChild(el("span", "ft", p.why));
         li.appendChild(right);
         ul.appendChild(li);

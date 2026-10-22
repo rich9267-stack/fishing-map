@@ -52,14 +52,14 @@
       const p = stationTides(st.id);
       if (p.done && p.done !== "error") {
         const nx = p.done.find(t => t.when > now);
-        if (nx) { tb.innerHTML = ""; tb.appendChild(el("span", null, nx.high ? "🌊 Next high tide" : "🌊 Next low tide")); tb.appendChild(el("b", null, nx.when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))); tb.appendChild(el("span", null, "in " + boatInTime(nx.when - now))); }
+        if (nx) { tb.innerHTML = ""; tb.appendChild(el("span", null, nx.high ? "🌊 Next high tide" : "🌊 Next low tide")); tb.appendChild(el("b", null, clock(nx.when, tzFor(here.lat, here.lng)))); tb.appendChild(el("span", null, "in " + boatInTime(nx.when - now))); }
       } else tb.textContent = p.done === "error" ? "🌊 Tide times unavailable" : "🌊 Loading tide…";
     }
     const t = SunCalc.getTimes(now, here.lat, here.lng), sb = $("boat-sun");
     let label = "🌅 Sunset", at = t.sunset;
     if (now > t.sunset) { const t2 = SunCalc.getTimes(new Date(now.getTime() + 86400000), here.lat, here.lng); label = "🌅 Sunrise"; at = now < t.sunrise ? t.sunrise : t2.sunrise; }
     else if (now < t.sunrise) { label = "🌅 Sunrise"; at = t.sunrise; }
-    sb.innerHTML = ""; sb.appendChild(el("span", null, label)); sb.appendChild(el("b", null, at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })));
+    sb.innerHTML = ""; sb.appendChild(el("span", null, label)); sb.appendChild(el("b", null, clock(at, tzFor(here.lat, here.lng))));
     const left = at - now; sb.appendChild(el("span", null, label === "🌅 Sunset" && left < 3600000 ? `only ${boatInTime(left)} of light — head in soon` : "in " + boatInTime(left)));
     sb.classList.toggle("soon", label === "🌅 Sunset" && left < 3600000);
   }

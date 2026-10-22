@@ -32,16 +32,15 @@
     const [hh, mm] = time.split(":").map(Number);
     return new Date(Date.UTC(y, m - 1, d, hh, mm));
   }
-  function clock(d) {
-    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  // `tz` (optional) = the time zone of the place the time is for (tzFor / areaTz in js/53); left out = this phone's own zone
+  function clock(d, tz) {
+    return tzClock(d, tz);
   }
-  function dayName(d) {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const that = new Date(d); that.setHours(0, 0, 0, 0);
-    const diff = Math.round((that - today) / 86400000);
+  function dayName(d, tz) {
+    const diff = tzDayDiff(d, tz);
     if (diff === 0) return "Today";
     if (diff === 1) return "Tomorrow";
-    return d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+    return d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric", timeZone: tzGood(tz) });
   }
   function untilText(ms) {
     const mins = Math.round(ms / 60000);
@@ -64,15 +63,15 @@
       const tides = data.predictions.map(p => ({
         when: parseNoaa(p.t), high: p.type === "H", ft: parseFloat(p.v)
       }));
-      const now = new Date();
+      const now = new Date(), tz0 = areaTz();
       const next = tides.find(t => t.when > now);
 
       if (next) {
         stage.textContent = next.high ? "⬆ Incoming (rising)" : "⬇ Outgoing (falling)";
         stage.className = "now " + (next.high ? "rising" : "falling");
         document.getElementById("next").textContent =
-          `Next ${next.high ? "high" : "low"} tide at ${clock(next.when)} — in ${untilText(next.when - now)}`;
-        cond.tide = `${next.high ? "⬆ Incoming" : "⬇ Outgoing"} · ${next.high ? "high" : "low"} ${clock(next.when)}`;
+          `Next ${next.high ? "high" : "low"} tide at ${clock(next.when, tz0)} — in ${untilText(next.when - now)}`;
+        cond.tide = `${next.high ? "⬆ Incoming" : "⬇ Outgoing"} · ${next.high ? "high" : "low"} ${clock(next.when, tz0)}`;
         // Tide stage saved with catches: "slack" within 30 min of a high or low
         const prev = [...tides].reverse().find(t => t.when <= now);
         const SLACK = 30 * 60000;
@@ -85,10 +84,11 @@
       }
 
       // Group today and the next 2 days
-      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const tz = areaTz();
+      const todayStart = tzDayStart(new Date(), tz);
       const groups = {};
       tides.filter(t => t.when >= todayStart).forEach(t => {
-        const key = t.when.toDateString();
+        const key = tzDayKey(t.when, tz);
         (groups[key] = groups[key] || []).push(t);
       });
 
@@ -97,13 +97,13 @@
         const list = groups[key];
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `<div class="label">${dayName(list[0].when)}</div><ul></ul>`;
+        card.innerHTML = `<div class="label">${dayName(list[0].when, tz)}</div><ul></ul>`;
         const ul = card.querySelector("ul");
         list.forEach(t => {
           const li = document.createElement("li");
           if (t.when < now) li.className = "past";
           li.innerHTML = `<span class="kind ${t.high ? "rising" : "falling"}">${t.high ? "High" : "Low"}</span>` +
-            `<span>${clock(t.when)}<span class="ft">${t.ft.toFixed(1)} ft</span></span>`;
+            `<span>${clock(t.when, tz)}<span class="ft">${t.ft.toFixed(1)} ft</span></span>`;
           ul.appendChild(li);
         });
         days.appendChild(card);
@@ -162,7 +162,7 @@
       periods.slice(1, 13).filter((_, i) => i % 2 === 0).forEach(p => {
         const li = document.createElement("li");
         const r = p.probabilityOfPrecipitation && p.probabilityOfPrecipitation.value;
-        li.innerHTML = `<span>${clock(new Date(p.startTime))}</span>` +
+        li.innerHTML = `<span>${clock(new Date(p.startTime), areaTz())}</span>` +
           `<span>${p.windDirection} ${p.windSpeed}<span class="ft">${r != null ? r + "% rain" : ""}</span></span>`;
         ul.appendChild(li);
       });

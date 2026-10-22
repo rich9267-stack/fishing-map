@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-22n", title: "🕒 Times use the spot's own time zone", items: [
+      "Tide times, the hour-by-hour forecast, sunrise and sunset, the moon and the weather now follow the clock where the spot is — Central, Mountain, Pacific (Arizona has no daylight saving) — not the clock on your phone. Looking at a Texas or California spot from Florida shows its own time.",
+      "Florida looks exactly the same (the Panhandle west of the Apalachicola River uses Central time, like the people there)."
+    ] },
     { id: "2026-10-22m", title: "✅ Only public ramps and piers outside Florida", items: [
       "Outside Florida, ✅ Official public spots and Find new water now show only boat ramps and piers that the map clearly marks as public — a park, public access, a city, county, state or federal place, or tagged public / fishing. Docks behind houses, HOA, club, condo and \"private\" places are left out, and so is anything we can't be sure about. Florida looks exactly the same."
     ] },

@@ -566,7 +566,7 @@
     const arrow = { incoming: "⬆ Incoming", outgoing: "⬇ Outgoing", "high slack": "High slack", "low slack": "Low slack" }[r.stage];
     const adj = s.tide_offset_min ? `, ${offsetText(s.tide_offset_min)} here` : "";
     const where = st.dist != null ? ` (${st.name}, ${st.dist < 0.1 ? "here" : st.dist.toFixed(1) + " mi"}${adj})` : "";
-    return `${arrow} · ${r.next.high ? "high" : "low"} ${clock(r.next.when)}${where}`;
+    return `${arrow} · ${r.next.high ? "high" : "low"} ${clock(r.next.when, tzFor(s.lat, s.lng))}${where}`;
   }
 
   // Freshwater: nearest active USGS gauge with a water-level reading, plus its 24-hour change
@@ -620,7 +620,7 @@
     if (!localWxCache[key]) {
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${s.lat.toFixed(2)}&longitude=${s.lng.toFixed(2)}` +
         "&current=temperature_2m,wind_speed_10m,wind_direction_10m,pressure_msl&hourly=pressure_msl&past_hours=3&forecast_hours=1" +
-        "&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FNew_York";
+        "&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=" + encodeURIComponent(tzFor(s.lat, s.lng) || "auto");
       const p = localWxCache[key] = fetch(url).then(r => r.json()).then(d => {
         const c = d.current, h = d.hourly && d.hourly.pressure_msl;
         const inHg = c.pressure_msl / 33.8639;
@@ -709,7 +709,7 @@
       }
       try {
         const d = await (await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat.toFixed(3)}&longitude=${lng.toFixed(3)}` +
-          "&current=sea_surface_temperature&temperature_unit=fahrenheit&timezone=America%2FNew_York")).json();
+          "&current=sea_surface_temperature&temperature_unit=fahrenheit&timezone=" + encodeURIComponent(tzFor(lat, lng) || "auto"))).json();
         const v = d.current && d.current.sea_surface_temperature;
         if (okTemp(v)) return { f: Math.round(v * 10) / 10, source: "ocean model", label: "ocean estimate" };
       } catch (e) { /* fall through to the satellite map */ }

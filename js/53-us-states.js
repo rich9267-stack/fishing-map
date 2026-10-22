@@ -136,3 +136,64 @@ function stateOf(lat, lng) {
   }
   return best;
 }
+
+// ---- Time zones: every time shown for a spot uses that spot's own clock (Eastern / Central / Mountain / Pacific; Arizona has no daylight saving) ----
+// tzFor(26.2, -80.1) → "America/New_York". Off the map (open sea, far outside the US) → undefined, which means "this phone's own time zone".
+// Passing undefined as a time zone to Intl is exactly what the app did before, so Florida in the Eastern zone looks the same.
+function tzFor(lat, lng) {
+  lat = +lat; lng = +lng;
+  if (!isFinite(lat) || !isFinite(lng)) return undefined;
+  const st = stateOf(lat, lng);
+  if (!st) return undefined;
+  const E = "America/New_York", C = "America/Chicago", M = "America/Denver", P = "America/Los_Angeles";
+  switch (st) {
+    case "AZ": return "America/Phoenix";                                   // no daylight saving
+    case "FL": return lng < -85.4 && lat > 29.4 ? C : E;                   // Panhandle west of the Apalachicola River = Central
+    case "AL": case "AR": case "IL": case "IA": case "LA": case "MN": case "MS": case "MO": case "OK": case "WI": return C;
+    case "TX": return lng < -104.7 ? M : C;                                // El Paso area
+    case "KS": return lng < -101.5 && lat < 39.57 ? M : C;                 // Greeley, Wallace, Sherman, Hamilton counties
+    case "NE": return lng < -101.5 ? M : C;
+    case "SD": return lng < -100.4 ? M : C;
+    case "ND": return lng < -101.1 && lat < 47.3 ? M : C;
+    case "TN": return lng < -85.5 ? C : E;
+    case "KY": return lng < -86.3 ? C : E;
+    case "IN": return (lat > 41 && lng < -86.5) || (lat < 38.6 && lng < -86.8) ? C : E;
+    case "MI": return lat > 45 && lng < -87.55 ? C : E;                    // four Upper Peninsula counties next to Wisconsin
+    case "MT": case "WY": case "CO": case "UT": case "NM": return M;
+    case "ID": return lat > 45.5 ? P : M;                                  // the northern Panhandle is Pacific
+    case "OR": return lng > -118 && lat < 44.3 ? M : P;                    // Malheur County
+    case "NV": return lng > -114.2 && lat > 40.5 ? M : P;                  // West Wendover
+    case "WA": case "CA": return P;
+    default: return E;                                                      // the eastern states
+  }
+}
+const tzGood = tz => { if (!tz) return undefined; try { new Intl.DateTimeFormat("en-US", { timeZone: tz }); return tz; } catch (e) { return undefined; } };
+// The time zone of the "area now" (the home waters, or where the phone is — LAT/LNG in js/06)
+const areaTz = () => (typeof LAT === "number" && typeof LNG === "number") ? tzFor(LAT, LNG) : undefined;
+// "3:45 PM" on the clock of that zone
+const tzClock = (d, tz) => new Date(d).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: tzGood(tz) });
+// "3p" / "12a" (hour only)
+const tzHourLabel = (d, tz) => new Date(d).toLocaleTimeString([], { hour: "numeric", timeZone: tzGood(tz) }).replace(":00", "").replace(/\s/g, "").toLowerCase();
+// year / month / day / hour / minute / second on the clock of that zone (no tz = this phone)
+function tzParts(d, tz) {
+  const p = {}, z = tzGood(tz);
+  new Intl.DateTimeFormat("en-US", { timeZone: z, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" })
+    .formatToParts(new Date(d)).forEach(x => { if (x.type !== "literal") p[x.type] = +x.value; });
+  return { y: p.year, m: p.month, d: p.day, h: p.hour % 24, min: p.minute, s: p.second };
+}
+const tzHour = (d, tz) => tzParts(d, tz).h;
+// "2026-10-22" for that zone's calendar day
+const tzDayKey = (d, tz) => { const p = tzParts(d, tz); return p.y + "-" + String(p.m).padStart(2, "0") + "-" + String(p.d).padStart(2, "0"); };
+// The moment that zone's day began (midnight there)
+function tzDayStart(d, tz) {
+  if (!tzGood(tz)) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+  const p = tzParts(d, tz), guess = Date.UTC(p.y, p.m - 1, p.d);
+  const off = t => { const q = tzParts(t, tz); return Date.UTC(q.y, q.m - 1, q.d, q.h, q.min, q.s) - Math.floor(t / 1000) * 1000; };
+  let t = guess - off(guess); t = guess - off(t);
+  return new Date(t);
+}
+// Whole calendar days from today to that moment, on that zone's calendar (0 = today, 1 = tomorrow)
+function tzDayDiff(d, tz) {
+  const a = tzParts(d, tz), b = tzParts(new Date(), tz);
+  return Math.round((Date.UTC(a.y, a.m - 1, a.d) - Date.UTC(b.y, b.m - 1, b.d)) / 86400000);
+}

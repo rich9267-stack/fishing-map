@@ -962,7 +962,7 @@
   }
   // Major = moon overhead or underfoot (about 2 hours); minor = moonrise or moonset (about 1 hour)
   function solunarPeriods(day) {
-    const d0 = new Date(day); d0.setHours(0, 0, 0, 0);
+    const d0 = tzDayStart(day, areaTz());
     const d1 = new Date(d0.getTime() + 86400000);
     const out = [], STEP = 5 * 60000, t0 = d0.getTime() - 2 * 3600000;
     const alt = [];

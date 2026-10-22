@@ -172,10 +172,10 @@
       const px = (x.when - now) / (24 * H) * W, py = y(x.high ? 1 : 0);
       mk("circle", { cx: px, cy: py, r: 3, fill: "#1d6fd6" });
       const tx = mk("text", { x: Math.min(Math.max(px, 18), W - 18), y: x.high ? py - 5 : py + 13, "text-anchor": "middle", "font-size": 9, fill: "currentColor" });
-      tx.textContent = (x.high ? "H " : "L ") + x.when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(" ", "").toLowerCase();
+      tx.textContent = (x.high ? "H " : "L ") + tzClock(x.when, tzFor(s.lat, s.lng)).replace(" ", "").toLowerCase();
     });
     [0, 6, 12, 18, 24].forEach(h => { const tx = mk("text", { x: Math.min(Math.max(h / 24 * W, 10), W - 10), y: Ht - 6, "text-anchor": "middle", "font-size": 9, fill: "currentColor", opacity: 0.7 });
-      tx.textContent = h ? new Date(now + h * H).toLocaleTimeString([], { hour: "numeric" }).replace(" ", "").toLowerCase() : "now"; });
+      tx.textContent = h ? tzHourLabel(new Date(now + h * H), tzFor(s.lat, s.lng)).replace(/^(\d+)([ap])m$/, "$1$2m") : "now"; });
     card.appendChild(el("div", "chart-sub", tot ? `Next 24 hours · green = the tide stages where you've caught the most here (${tot} fish with tide info)` : "Next 24 hours · log catches here and the best tide stages will light up green"));
     card.appendChild(svg);
     if (tot) { const bs = Object.entries(share).sort((a, b) => b[1] - a[1])[0]; card.appendChild(el("div", "chart-sub", `Best stage here so far: ${bs[0]} (${Math.round(100 * bs[1] / tot)}% of fish). Station: ${st.name}.`)); }
