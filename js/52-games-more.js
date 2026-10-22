@@ -97,8 +97,21 @@
   const GF_LICENCES = ["cc0", "cc-by", "cc-by-sa"];
   const GF_URL = "https://api.inaturalist.org/v1/observations?taxon_id=47178&place_id=21&quality_grade=research&photos=true" +
     "&photo_license=" + GF_LICENCES.join(",") + "&order_by=votes&per_page=200";
-  let gfPhotos = null, gfBusy = false, gfErr = null;   // gfPhotos = [{ id, name (ours), inat, photo, credit, url }]
-  const gfFish = () => SEASONS.filter(f => !f.far && !/\brun\b/i.test(f.name));
+  // US plan step 7: outside Florida the fish are that region's Seasons cards (seasonList, js/05) and iNaturalist is asked for US photos,
+  // the ones near the place on screen first (GF_NEAR_KM), then the rest of the country. In Florida nothing changes.
+  const GF_US_URL = "https://api.inaturalist.org/v1/observations?taxon_id=47178&place_id=1&quality_grade=research&photos=true" +
+    "&photo_license=" + GF_LICENCES.join(",") + "&order_by=votes&per_page=200";
+  const GF_NEAR_KM = 400;
+  let gfPhotos = null, gfBusy = false, gfErr = null, gfAt = null;   // gfPhotos = [{ id, name (ours), inat, photo, credit, url, near }]; gfAt = whose photos they are
+  // Where the games are: Florida (null) or { state, lat, lng } for the place on screen outside Florida
+  function gfWhere() {
+    const i = typeof rulesInfo === "function" ? rulesInfo() : null;
+    if (!i || !i.outside || !i.state) return null;
+    const a = typeof area !== "undefined" ? area : null;
+    return { state: i.state, lat: +(a ? a.lat : LAT), lng: +(a ? a.lng : LNG) };
+  }
+  const gfAtKey = w => w ? w.state : "FL";
+  const gfFish = () => (typeof seasonList === "function" ? seasonList() : SEASONS).filter(f => !f.far && !/\brun\b/i.test(f.name));
   // An iNaturalist observation → one of our Seasons fish (or null); only photos whose own licence allows reuse
   function gfFromObs(o) {
     const nm = o && o.taxon && (o.taxon.preferred_common_name || o.taxon.name); if (!nm) return null;
@@ -108,15 +121,22 @@
     return { id: o.id, name: f.name, inat: cap(nm), photo: ph.url.replace("/square.", "/medium."), credit: ph.attribution || "iNaturalist user", url: o.uri || `https://www.inaturalist.org/observations/${o.id}` };
   }
   async function gfLoad(force) {
-    const day = gamesDay();
-    if (!force) { try { const c = JSON.parse(localStorage.getItem("fm-guess-photos") || "null"); if (c && c.day === day && Array.isArray(c.list) && c.list.length) { gfPhotos = c.list; if (playSub === "games" && (gamesScreen === "guess" || gamesScreen === "list")) renderGames(); return; } } catch (e) { /* none */ } }
+    const day = gamesDay(), w = gfWhere(), at = gfAtKey(w);
+    if (!force) { try { const c = JSON.parse(localStorage.getItem("fm-guess-photos") || "null"); if (c && c.day === day && (c.at || "FL") === at && Array.isArray(c.list) && c.list.length) { gfPhotos = c.list; gfAt = at; if (playSub === "games" && (gamesScreen === "guess" || gamesScreen === "list")) renderGames(); return; } } catch (e) { /* none */ } }
     if (gfBusy) return; gfBusy = true; gfErr = null;
     try {
-      const res = await fetch(GF_URL); if (!res.ok) throw new Error("iNaturalist answered " + res.status);
-      const data = await res.json();
-      gfPhotos = (data.results || []).map(gfFromObs).filter(Boolean).sort((a, b) => a.id - b.id);
+      const ask = async url => { const res = await fetch(url); if (!res.ok) throw new Error("iNaturalist answered " + res.status); return (await res.json()).results || []; };
+      if (!w) gfPhotos = (await ask(GF_URL)).map(gfFromObs).filter(Boolean).sort((a, b) => a.id - b.id);
+      else {
+        // near you first; the whole country only fills in when the nearby photos cover fewer than 5 kinds of fish
+        const near = (await ask(`${GF_US_URL}&lat=${w.lat.toFixed(2)}&lng=${w.lng.toFixed(2)}&radius=${GF_NEAR_KM}`)).map(gfFromObs).filter(Boolean).map(p => Object.assign(p, { near: true }));
+        let far = [];
+        if (new Set(near.map(p => p.name)).size < G_N) { try { far = (await ask(GF_US_URL)).map(gfFromObs).filter(Boolean).filter(p => !near.some(n => n.id === p.id)).map(p => Object.assign(p, { near: false })); } catch (e) { if (!near.length) throw e; } }
+        gfPhotos = near.concat(far).sort((a, b) => a.id - b.id);
+      }
+      gfAt = at;
       if (!gfPhotos.length) throw new Error("no photos");
-      try { localStorage.setItem("fm-guess-photos", JSON.stringify({ day, list: gfPhotos })); } catch (e) { /* storage full */ }
+      try { localStorage.setItem("fm-guess-photos", JSON.stringify(w ? { day, at, list: gfPhotos } : { day, list: gfPhotos })); } catch (e) { /* storage full */ }
     } catch (e) { gfErr = "Couldn't load today's photos. Check your connection and try again."; if (!gfPhotos || !gfPhotos.length) gfPhotos = null; }
     gfBusy = false;
     if (playSub === "games" && (gamesScreen === "guess" || gamesScreen === "list")) renderGames();
@@ -126,7 +146,7 @@
     const rand = krRand("guess-" + day), fish = gfFish(), out = [], used = new Set();
     const pool = (photos || []).slice().sort((a, b) => String(a.id).localeCompare(String(b.id)));
     for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-    pool.sort((a, b) => (b.app ? 1 : 0) - (a.app ? 1 : 0));   // members' photos first; iNaturalist only fills a gap
+    pool.sort((a, b) => (b.app ? 1 : 0) - (a.app ? 1 : 0) || (b.near ? 1 : 0) - (a.near ? 1 : 0));   // members' photos first; iNaturalist only fills a gap (near you before far away)
     for (const p of pool) {
       if (out.length >= G_N) break;
       if (used.has(p.name)) continue;
@@ -152,6 +172,7 @@
     if (!gpReady()) { gpLoad(); return null; }
     const app = gfApp();
     if (new Set(app.map(x => x.name)).size >= G_N) return gfPick(day, app);
+    if (gfAt !== null && gfAt !== gfAtKey(gfWhere())) { gfPhotos = null; gfErr = null; gfAt = null; }   // the place on screen moved to another state
     if (!gfPhotos && !gfErr) { gfLoad(); return null; }
     return gfPick(day, app.concat(gfPhotos || []));
   }
@@ -221,7 +242,7 @@
       list.appendChild(li);
     });
     box.appendChild(list);
-    box.appendChild(el("div", "spot-meta kr-fresh", qs.every(q => q.app) ? "Photos: members' 🌎 Public catches." : "Photos: members' 🌎 Public catches, plus research-grade iNaturalist sightings in Florida shared under open licences."));
+    box.appendChild(el("div", "spot-meta kr-fresh", qs.every(q => q.app) ? "Photos: members' 🌎 Public catches." : qs.some(q => q.near !== undefined) ? "Photos: members' 🌎 Public catches, plus research-grade iNaturalist sightings in the United States (near you first) shared under open licences." : "Photos: members' 🌎 Public catches, plus research-grade iNaturalist sightings in Florida shared under open licences."));
     gEndBack(box);
   }
 
@@ -357,7 +378,8 @@
   // The month's card: 3 fish in season from shore this month + 5 tasks, shuffled, FREE in the middle
   function bgCard(month) {
     const rand = krRand("bingo-" + month), m = +month.slice(5, 7) - 1;
-    const fish = gfFish().filter(f => f.group !== "fresh" && f.shore && f.shore[m] >= 2).sort((a, b) => a.name.localeCompare(b.name));
+    const out = !!gfWhere();   // outside Florida: the region's cards (gfFish), freshwater fish too (most of the country fishes lakes and rivers)
+    const fish = gfFish().filter(f => (out || f.group !== "fresh") && f.shore && f.shore[m] >= 2).sort((a, b) => a.name.localeCompare(b.name));
     const take = (list, n) => { const a = list.slice(), r = []; while (a.length && r.length < n) r.push(a.splice(Math.floor(rand() * a.length), 1)[0]); return r; };
     const fishSq = take(fish, 3).map(f => ({ id: "fish:" + f.name, icon: "🎣", label: "Catch " + f.name.replace(/\s*\(.*\)$/, ""), ok: x => x.catches.some(c => seasonFor(c.species) === f) }));
     const sq = take(BG_TASKS, 8 - fishSq.length).concat(fishSq);

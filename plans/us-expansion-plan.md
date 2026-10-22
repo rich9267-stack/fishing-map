@@ -60,7 +60,7 @@ code: research → `fish_rules` rows with `verified_on` → Richard spot-checks 
 **Richard (Oct 21): build rules together with the expansion, not after the lawyer review; the double-check disclaimer is the protection.**
 No change to terms.html / privacy.html wording; the lawyer review later looks at it as planned.
 
-**Step 7 — The extras.** Guess the fish uses US photos (iNaturalist place = United States) with a "near you" bias; bingo uses
+**Step 7 — The extras.** ✅ built v170 (Guess the fish US photos near you first, bingo = region's cards, dashed 🚫 outlines from NOAA's national list outside Florida; test182). Left: lake depth / public lakes for other states. Guess the fish uses US photos (iNaturalist place = United States) with a "near you" bias; bingo uses
 the region's seasons; lake depth / public lakes for the few states with free map servers; red tide stays Florida/Gulf.
 
 ## Risks

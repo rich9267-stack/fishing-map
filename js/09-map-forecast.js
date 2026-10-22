@@ -1532,6 +1532,10 @@
     reef: { url: "https://gis.myfwc.com/mapping/rest/services/Open_Data/Artificial_Reef_Locations_in_Florida/MapServer/12/query", minZoom: 9,
             fields: "Name,MatDescrip,Depth,Relief,County,DeployDate,DDate,Tonnage", color: "#0e9aa7", label: "artificial reefs" },
     zoneUrls: ["https://services1.arcgis.com/eGSDp8lpKe5izqVc/ArcGIS/rest/services/Marine_Protected_Areas__MPAIs_/FeatureServer/0/query"],   // (the old NOAA backup server was shut down)
+    // US plan step 7: outside Florida the same kind of list comes from NOAA's own national copy (same column names); Florida's rows are
+    // left out of it so Florida keeps showing exactly what the list above shows
+    zoneUsUrl: "https://services2.arcgis.com/C8EMgrsFcRFL6LrL/arcgis/rest/services/NOAA_MPA_Inventory_2023/FeatureServer/0/query",
+    zoneUsWhere: encodeURIComponent("State IS NULL OR State NOT LIKE '%FL%'"),
     zoneMinZoom: 8
   };
   const mxOn = { chart: false, reef: false, zone: false };
@@ -1541,7 +1545,8 @@
 
   function mxNote() {
     const parts = Object.keys(mxMsg).filter(k => mxOn[k] && mxMsg[k]).map(k => mxMsg[k]);
-    if (mxOn.zone) parts.push("Protected zones: solid red = no fishing, orange = closed to the public, dashed = other rules apply (parks, refuges…). A guide only — always check current FWC / NOAA rules before you fish.");
+    if (mxOn.zone) { const i = typeof rulesInfo === "function" ? rulesInfo() : null, who = i && i.outside && i.state && typeof agencyShort === "function" ? agencyShort(i.state) : "FWC";
+      parts.push(`Protected zones: solid red = no fishing, orange = closed to the public, dashed = other rules apply (parks, refuges…). A guide only — always check current ${who} / NOAA rules before you fish.`); }
     if (mxOn.chart) parts.push("Chart: NOAA — not for navigation.");
     const n = $("mx-note");
     n.hidden = !parts.length; n.textContent = parts.join(" ");
@@ -1586,8 +1591,8 @@
     const b = map.getBounds();
     return `${b.getWest().toFixed(4)},${b.getSouth().toFixed(4)},${b.getEast().toFixed(4)},${b.getNorth().toFixed(4)}`;
   }
-  function mxQueryUrl(base, fields, geomType, extra) {
-    return `${base}?where=1%3D1&geometry=${mxBounds()}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects` +
+  function mxQueryUrl(base, fields, geomType, extra, where) {
+    return `${base}?where=${where || "1%3D1"}&geometry=${mxBounds()}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects` +
       `&outFields=${encodeURIComponent(fields)}&returnGeometry=true&outSR=4326&f=${geomType}${extra || ""}`;
   }
 
@@ -1618,6 +1623,22 @@
     mxNote();
   }
 
+  // Does the view on screen reach a state other than Florida? (middle + 4 corners; open sea and other countries don't count)
+  function mxZoneNeedsUs() {
+    if (typeof stateOf !== "function") return false;
+    const b = map.getBounds(), c = b.getCenter();
+    return [[c.lat, c.lng], [b.getNorth(), b.getWest()], [b.getNorth(), b.getEast()], [b.getSouth(), b.getWest()], [b.getSouth(), b.getEast()]]
+      .some(([la, ln]) => { const st = stateOf(la, ln); return !!st && st !== "FL"; });
+  }
+  // One list's dashed areas in this view: the features, or null when that server didn't answer
+  async function mxZoneGet(base, simplify, where) {
+    try {
+      const r = await fetch(mxQueryUrl(base, "*", "geojson", simplify + "&resultRecordCount=300", where));
+      if (!r.ok) return null;
+      const d = await r.json();
+      return d.error || !Array.isArray(d.features) ? null : d.features;
+    } catch (e) { return null; }
+  }
   async function mxLoadZones() {
     const seq = ++mxSeq.zone;
     if (mxLayers.zone) { map.removeLayer(mxLayers.zone); mxLayers.zone = null; }
@@ -1625,23 +1646,23 @@
     if (map.getZoom() < MX.zoneMinZoom) { mxMsg.zone = "Zoom in a little to see protected zones."; mxNote(); if (typeof znDraw === "function") znDraw(); return; }
     mxMsg.zone = "Loading protected zones…"; mxNote();
     const simplify = "&maxAllowableOffset=" + (360 / (256 * Math.pow(2, map.getZoom()))).toFixed(6);
-    for (const base of MX.zoneUrls) {
-      try {
-        const r = await fetch(mxQueryUrl(base, "*", "geojson", simplify + "&resultRecordCount=300"));
-        if (!r.ok) continue;
-        const d = await r.json();
-        if (seq !== mxSeq.zone || !mxOn.zone) return;
-        if (d.error || !Array.isArray(d.features)) continue;
-        const layer = L.geoJSON(d, { style: { color: "#c0392b", weight: 2, fillColor: "#c0392b", fillOpacity: 0.12, dashArray: "6 4" },
-          onEachFeature: (f, l) => { l.options.a11y = "Protected zone: " + ((f.properties && (f.properties.NAME || f.properties.Name || f.properties.SITE_NAME)) || "details"); l.bindPopup(() => zonePopup(f.properties || {})); } });
-        layer.addTo(map); mxLayers.zone = layer;
-        if (typeof znDraw === "function") znDraw();   // js/33: the closed areas in solid colour, on top
-        mxMsg.zone = d.features.length ? "" : "No protected zones in this view.";
-        mxNote(); return;
-      } catch (e) { /* try the next source */ }
+    const us = mxZoneNeedsUs();   // a view that stays in Florida asks only Florida's list, exactly as before
+    const [fl, rest] = await Promise.all([
+      (async () => { for (const base of MX.zoneUrls) { const f = await mxZoneGet(base, simplify); if (f) return f; } return null; })(),
+      us ? mxZoneGet(MX.zoneUsUrl, simplify, MX.zoneUsWhere) : Promise.resolve(null)
+    ]);
+    if (seq !== mxSeq.zone || !mxOn.zone) return;
+    if (fl || rest) {
+      const d = { type: "FeatureCollection", features: (fl || []).concat(rest || []) };
+      const layer = L.geoJSON(d, { style: { color: "#c0392b", weight: 2, fillColor: "#c0392b", fillOpacity: 0.12, dashArray: "6 4" },
+        onEachFeature: (f, l) => { l.options.a11y = "Protected zone: " + ((f.properties && (f.properties.NAME || f.properties.Name || f.properties.SITE_NAME || f.properties.Site_Name)) || "details"); l.bindPopup(() => zonePopup(f.properties || {})); } });
+      layer.addTo(map); mxLayers.zone = layer;
+      if (typeof znDraw === "function") znDraw();   // js/33: the closed areas in solid colour, on top
+      mxMsg.zone = d.features.length ? "" : "No protected zones in this view.";
+      mxNote(); return;
     }
     if (typeof znDraw === "function") znDraw();   // the saved closed areas still show
-    if (seq === mxSeq.zone) mxMsg.zone = typeof zn !== "undefined" && zn.rows.length ? "Couldn't load the state's full zone list right now — showing the main closed areas only." : "Couldn't load protected zones right now — try again later.";
+    mxMsg.zone = typeof zn !== "undefined" && zn.rows.length ? "Couldn't load the state's full zone list right now — showing the main closed areas only." : "Couldn't load protected zones right now — try again later.";
     mxNote();
   }
   // The zone lists name their columns differently, so look for the usual ones.

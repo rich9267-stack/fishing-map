@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-22j", title: "🎮 Games and 🚫 zones outside Florida", items: [
+      "Outside Florida, Guess the fish now uses that region's fish, with iNaturalist photos from near you first (then the rest of the US), and Fishing bingo uses your region's Seasons fish — lakes and rivers count too. In Florida both games are unchanged.",
+      "The map's 🚫 Protected zones layer now shows the dashed \"other rules apply\" outlines (sanctuaries, refuges, reserves) in other states too, from NOAA's national list. Tap one to see its fishing rules. Florida looks the same as before."
+    ] },
     { id: "2026-10-22i", title: "🚫 No-fishing zones and ✅ ramps everywhere", items: [
       "The no-fishing zones check now covers the whole continental US: about 160 more no-take and closed areas from NOAA's national list (California's marine reserves, Puget Sound, Maine refuges and more). Spots, Boat mode and Quick catch warn you the same way as in Florida.",
       "Outside Florida, the ✅ Official public spots map layer now shows boat ramps and piers from OpenStreetMap for the part of the map on your screen. Tap a pin to see how sure we are it is public — it is a volunteer map, so look before you go. Florida is unchanged."
