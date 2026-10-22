@@ -43,6 +43,7 @@ All three make a small model file (about 3–20 MB) that can sit on our GitHub P
 - Keep a small record of **when** each model was made and **how many** photos it used. Don't keep which photos, so there's no list of people.
 
 ## Questions for the lawyer review
+_(Also copied into plans/lawyer-accountant-packet.md, the one file to send.)_
 1. May we use opted-in members' Friends/Public catch photos (and the fish name they typed) to train our own fish ID model? Is the current "Help improve Fish ID" box wording enough consent, or what must it say?
 2. Does training in the owner's browser (Option A: photos held in memory, nothing saved) count as **copying** the photos? Is it allowed?
 3. May training **copy** photos temporarily to an outside service (Google Colab, Option C, or Teachable Machine, Option B) if they're deleted right after? What must the privacy page say about that?

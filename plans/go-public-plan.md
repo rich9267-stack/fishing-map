@@ -1,6 +1,8 @@
 # Go-public plan — full team meeting (Oct 19, 2026)
 _Chaired by the Manager. All 12 roles seated (Product = CEO + Designer; Support/Community = Marketing + Writer). Planning only: nothing was built, no file or database was changed. Not a lawyer, not a CPA._
 
+**Lawyer/accountant questions from this meeting are now collected, with everything built since, in plans/lawyer-accountant-packet.md. Send that one.**
+
 **Read for this meeting:** CLAUDE.md, docs/security.md, plans/step9-open-questions.md, plans/database-change-rule.md, docs/roadmap.md, docs/parked_ideas.md, plus terms.html, privacy.html and the progress log.
 
 **Facts:** v140 live, invite-only, $0 budget. New job Oct 27, first pay ~late Nov. Lawyer + accountant review waits for that pay. Security checklist done. Members 18+. No privacy promise may be broken.
