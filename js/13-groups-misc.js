@@ -503,6 +503,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-22m", title: "✅ Only public ramps and piers outside Florida", items: [
+      "Outside Florida, ✅ Official public spots and Find new water now show only boat ramps and piers that the map clearly marks as public — a park, public access, a city, county, state or federal place, or tagged public / fishing. Docks behind houses, HOA, club, condo and \"private\" places are left out, and so is anything we can't be sure about. Florida looks exactly the same."
+    ] },
     { id: "2026-10-22l", title: "〰 Lake depth and 🏞 public lakes in more states", items: [
       "〰 Depth lines now show lake depths (in blue) in Minnesota, Michigan, Indiana, Nebraska, New Jersey, Massachusetts, New Hampshire, North Dakota, West Virginia and Washington — from each state's own lake surveys. Zoom in on a lake and tap near a line to read its depth.",
       "🏞 Public lakes now also shows the state's public fishing water in North Carolina, West Virginia, Virginia, Kentucky, New Jersey, Minnesota, Michigan, Indiana, Nebraska, Montana and New Mexico. Tap one for directions or + Add to my spots. Florida is unchanged."

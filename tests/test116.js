@@ -239,7 +239,7 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
   const tamp = J("officialSuggestions()");
   need(tamp.find(g => g.name === "Bayshore Kayak Launch").label === "Hand launch (kayak)", "a hand-launch ramp is labelled as a kayak launch");
   // the OpenStreetMap service being down does not hide the official spots
-  w.__overpassFail = true; w.localStorage.removeItem("fm-suggestions-v3");
+  w.__overpassFail = true; w.localStorage.removeItem("fm-suggestions-v4");
   await w.eval("loadSuggestions()");
   await wait(200);
   need(!/Couldn't load suggestions/.test(listText()), "Overpass down: no error shown while official spots exist");

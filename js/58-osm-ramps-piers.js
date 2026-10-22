@@ -3,9 +3,10 @@
 // the ✅ Official public spots layer (js/37) is on and the map shows somewhere outside Florida, the app asks OpenStreetMap (the free Overpass API,
 // same as Find new water) for the boat ramps and piers in the part of the map ON SCREEN only. Nothing goes into our database.
 // Florida stays exactly as before: places inside Florida are dropped, and a view that is all Florida (or open sea) asks nothing.
+// Only places OpenStreetMap shows as clearly public and open are kept (osmClearlyPublic, js/09) — when unsure, left out.
 // Each answer is kept on this phone for a week (the last OSMOL.keep views), so panning back or going offline still shows them.
 // The tap card says where it comes from (OpenStreetMap, a volunteer map — not an official list) and how sure we are it is public (TRUST, js/09).
-const OSMOL = { key: "fm-osm-ol-v1", age: 7 * 86400000, keep: 8, maxDeg: 1.2, pad: 0.1, boxes: [], read: false, loading: null, failAt: 0, note: "" };
+const OSMOL = { key: "fm-osm-ol-v2", age: 7 * 86400000, keep: 8, maxDeg: 1.2, pad: 0.1, boxes: [], read: false, loading: null, failAt: 0, note: "" };
 
 function osmOlRead() {
   OSMOL.read = true;
@@ -26,11 +27,11 @@ const osmOlHas = (b, s, w, n, e) => b.s <= s && b.w <= w && b.n >= n && b.e >= e
 
 // An OpenStreetMap element → a place shaped like an official spot (source "osm"), or null (private, not a ramp/pier, or in Florida)
 function osmOlPlace(el) {
-  const g = typeof osmToSpot === "function" ? osmToSpot(el) : null;   // js/09: skips private/customers-only places and backyard docks
+  const g = typeof osmToSpot === "function" ? osmToSpot(el) : null;   // js/09: outside Florida only clearly public, open places (osmClearlyPublic)
   if (!g || (g.kind !== "ramp" && g.kind !== "pier") || /\bprivate\b/i.test(g.name)) return null;   // e.g. "Boat Ramp - Private"
   const st = typeof stateOf === "function" ? stateOf(g.lat, g.lng) : null;
   if (!st || st === "FL") return null;   // Florida keeps its official lists only
-  return { id: null, key: "osm/" + g.key, source: "osm", trust: g.trust, name: g.name, kind: g.kind, lat: g.lat, lng: g.lng, state: st, county: null, water_type: null, details: {} };
+  return { id: null, key: "osm/" + g.key, source: "osm", trust: g.trust, via: g.via, name: g.name, kind: g.kind, lat: g.lat, lng: g.lng, state: st, county: null, water_type: null, details: {} };
 }
 
 // Load the ramps and piers for the view (a Leaflet LatLngBounds). Resolves true when new places arrived.

@@ -87,7 +87,7 @@ const Z = zctx.api;
       }
     };
     vm.createContext(c);
-    vm.runInContext(cut(t09, "  function osmToSpot(e) {", "  async function loadSuggestions") + "\n" + o58 + "\nthis.api = { osmOlLoad, osmOlItems, osmOlNote, OSMOL };", c);
+    vm.runInContext(cut(t09, "  const OSM_PUBLIC_WORDS", "  async function loadSuggestions") + "\n" + o58 + "\nthis.api = { osmOlLoad, osmOlItems, osmOlNote, OSMOL };", c);
     return c.api;
   };
   const view = (s, w, n, e) => ({ getSouth: () => s, getWest: () => w, getNorth: () => n, getEast: () => e });
@@ -102,11 +102,11 @@ const Z = zctx.api;
   ok(await p === true && fetches.length === 1 && /overpass-api\.de/.test(fetches[0].url), "a Georgia view asks Overpass once");
   ok(fetches[0].body.includes("(31.80,-81.40,32.30,-80.80)") && /leisure"="slipway"/.test(fetches[0].body) && /man_made"="pier"\]\["name"\]/.test(fetches[0].body) && !/man_made"="pier"\]\(/.test(fetches[0].body), "only the view on screen (plus a small margin) is asked for: " + fetches[0].body.match(/\(([-\d.,]+)\)/)[1]);
   const items = O.osmOlItems(), names = items.map(o => o.name).sort();
-  ok(items.length === 3 && names.join("|") === "Boat ramp (unnamed)|Savannah River Ramp|Tybee Pier", "kept: public ramp, fishing pier, unnamed ramp (" + names.join(", ") + ")");
+  ok(items.length === 2 && names.join("|") === "Savannah River Ramp|Tybee Pier", "kept: public ramp, fishing pier; an unnamed untagged ramp is left out since v174 (" + names.join(", ") + ")");
   ok(!names.includes("A Florida ramp"), "a place inside Florida is dropped (Florida keeps its official lists)");
   ok(!names.includes("Boat Ramp - Private"), "a ramp named 'Private' is dropped");
   ok(items.every(o => o.source === "osm" && o.id === null && /^osm\//.test(o.key) && (o.kind === "ramp" || o.kind === "pier") && o.state === "GA"), "each place: source 'osm', no database id, kind ramp/pier, its state");
-  ok(items.find(o => o.name === "Savannah River Ramp").trust === "public" && items.find(o => o.name === "Boat ramp (unnamed)").trust === "unclear", "trust comes from the OpenStreetMap tags (public / check access)");
+  ok(items.every(o => o.trust === "public"), "only clearly public places are kept (test186 has the details)");
   ok(O.osmOlNote() === "", "done: no note");
 
   ok(await O.osmOlLoad(ga) === false && await O.osmOlLoad(view(31.95, -81.2, 32.1, -81.0)) === false && fetches.length === 1, "the same view (or a smaller one inside it) is not asked again");
@@ -116,12 +116,12 @@ const Z = zctx.api;
   fetchMode = "fail";
   ok(await O.osmOlLoad(view(33.0, -80.0, 33.3, -79.6)) === false && fetches.length === 3 && /Couldn't reach OpenStreetMap/.test(O.osmOlNote()), "no signal: a plain message, nothing breaks");
   ok(await O.osmOlLoad(view(33.0, -80.0, 33.3, -79.6)) === false && fetches.length === 3, "after a failure it waits before asking again");
-  ok(O.osmOlItems().length === 3, "what the phone already had is still there");
+  ok(O.osmOlItems().length === 2, "what the phone already had is still there");
 
-  const saved = JSON.parse(ostore["fm-osm-ol-v1"]);
+  const saved = JSON.parse(ostore["fm-osm-ol-v2"]);
   ok(saved.boxes.length === 2 && saved.boxes.every(b => isFinite(b.t) && Array.isArray(b.items)), "answers are kept on the phone (works offline next time)");
   const O2 = mkCtx();
-  ok(O2.osmOlItems().length === 3 && await O2.osmOlLoad(ga) === false && fetches.length === 3, "a fresh start uses the phone's copy without asking");
+  ok(O2.osmOlItems().length === 2 && await O2.osmOlLoad(ga) === false && fetches.length === 3, "a fresh start uses the phone's copy without asking");
 
   // ---------- 4) js/37 hooks: Florida path untouched ----------
   ok(/\(officialSpots \|\| \[\]\)\.concat\(osm\)/.test(o37) && /typeof osmOlItems === "function"/.test(o37), "the map layer draws OpenStreetMap places next to the official ones");

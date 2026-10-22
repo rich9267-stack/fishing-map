@@ -1058,7 +1058,7 @@
   });
 
   // ---- Suggested spots (OpenStreetMap via the free Overpass API) ----
-  const SUGG_KEY = "fm-suggestions-v3";
+  const SUGG_KEY = "fm-suggestions-v4";   // v4: stricter outside Florida (old copies may hold private places)
   let suggAnchor = null; // where suggestions are centred: "Near me", else the middle of your spots, else Pompano
   function suggCenter() {
     if (suggAnchor) return suggAnchor;
@@ -1077,15 +1077,37 @@
   const SUGG_RADIUS_MI = 30;   // official spots farther than this from the centre are left for when you go there
   let suggestions = null, suggError = null, suggShowAll = false, suggLayer = null, suggOnMap = false;
 
+  // Outside Florida (Richard, Oct 22): only places OpenStreetMap shows as clearly public and open — when unsure, leave it out (backyard docks
+  // and house ramps were showing). Gives "public" (tagged public / fishing) or "name" (its name, owner or operator says park / public / agency), else null.
+  // Florida keeps the older, looser rules in osmToSpot exactly as before.
+  const OSM_PUBLIC_WORDS = /\b(public|park|state|county|city|town|village|municipal|national|federal|wildlife|access area|recreation area|fishing pier|corps of engineers|forest service|dnr|department|authority)\b/i;
+  const OSM_PRIVATE_WORDS = /\b(private|residents?|members?|hoa|homeowners?|association|condo(minium)?s?|apartments?|club|estates?|subdivision|owners?)\b/i;
+  function osmClearlyPublic(t) {
+    if (t.disused === "yes" || t.abandoned === "yes" || t.fishing === "no" || /^(closed|off)$/.test(t.opening_hours || "")) return null;   // not open
+    if (OSM_PRIVATE_WORDS.test([t.name, t.operator, t.owner].filter(Boolean).join(" · "))) return null;   // "Boat Ramp - Private", "… HOA", "Yacht Club"
+    const open = /^(yes|public|permissive)$/.test(t.access || "");
+    if (t.access && !open) return null;   // private, no, customers, destination, permit, unknown…
+    if (/^(private|no|customers)$/.test(t.boat || "")) return null;
+    if (!open && (t.ownership === "private" || /^(private|business|commercial)$/.test(t["operator:type"] || ""))) return null;
+    if (open || t.fishing === "yes" || t.leisure === "fishing") return "public";
+    if (/^(public|government|national|state|county|municipal|federal)$/.test(t.ownership || t["operator:type"] || "")) return "name";
+    return OSM_PUBLIC_WORDS.test([t.name, t.operator, t.owner].filter(Boolean).join(" · ")) ? "name" : null;
+  }
+
   function osmToSpot(e) {
     const t = e.tags || {};
     const lat = e.lat != null ? e.lat : e.center && e.center.lat;
     const lng = e.lon != null ? e.lon : e.center && e.center.lon;
     if (lat == null || lng == null) return null;
     if (/^(private|no|customers)$/.test(t.access || "")) return null;
+    // outside Florida: the strict check (a place out at sea follows where you are looking)
+    let st = typeof stateOf === "function" ? stateOf(lat, lng) : null;
+    if (!st && typeof suggCenter === "function" && typeof stateOf === "function") { const c = suggCenter(); st = stateOf(c.lat, c.lng); }
+    const strict = !!st && st !== "FL", sure = strict ? osmClearlyPublic(t) : null;
+    if (strict && !sure) return null;
     const publicish = !!t.name || t.fishing === "yes" || t.leisure === "fishing" || /^(yes|public|permissive)$/.test(t.access || "");
     const tagged = t.fishing === "yes" || t.leisure === "fishing" || /^(yes|public|permissive)$/.test(t.access || "");
-    const trust = tagged ? "public" : t.name ? "likely" : "unclear";
+    const trust = strict ? "public" : tagged ? "public" : t.name ? "likely" : "unclear";
     let kind;
     if (t.leisure === "slipway") kind = "ramp";
     else if (/^(breakwater|groyne)$/.test(t.man_made || "")) kind = "jetty";
@@ -1095,7 +1117,9 @@
     else return null;
     if (kind === "jetty" && !t.name) return null; // unnamed seawall rocks aren't useful suggestions
     const label = { pier: "Pier", ramp: "Boat ramp", jetty: "Jetty", bridge: "Bridge", dock: "Fishing spot" }[kind];
-    return { key: e.type + "/" + e.id, name: t.name || `${label} (unnamed)`, kind, label, trust, lat: +lat.toFixed(5), lng: +lng.toFixed(5) };
+    const g = { key: e.type + "/" + e.id, name: t.name || `${label} (unnamed)`, kind, label, trust, lat: +lat.toFixed(5), lng: +lng.toFixed(5) };
+    if (sure === "name") g.via = "name";   // public by its name / owner, not by a tag (the tap card says so)
+    return g;
   }
 
   async function loadSuggestions() {
@@ -1138,9 +1162,10 @@
     official: { badge: "✅ Official", note: "On Florida's official public boat-ramp or parks list (FWC / FL DEP), so you are allowed to use it." },
     public: { badge: "✅ Public", note: "Tagged as public or as a fishing spot on OpenStreetMap." },
     likely: { badge: "🟡 Likely", note: "Has a name, but nobody tagged whether it is open to the public." },
-    unclear: { badge: "⚠ Check access", note: "No name or access tag on the map — it could be private. Look before you go." }
+    unclear: { badge: "⚠ Check access", note: "No name or access tag on the map — it could be private. Look before you go." },
+    name: { badge: "✅ Public", note: "Its name or who runs it says it is public (a park, public access, or a city, county, state or federal agency) on OpenStreetMap." }
   };
-  const trustOf = g => TRUST[g.trust] || TRUST.unclear;
+  const trustOf = g => g.trust === "public" && g.via === "name" ? TRUST.name : TRUST[g.trust] || TRUST.unclear;
   const suggSourceName = g => g.trust === "official" ? (OFFICIAL_SOURCE[g.src] || "Florida's official public spots list") : "OpenStreetMap";
   // "Not interested" and "Want to try" follow you to every device: they live in your private table suggestion_picks (setup/55, only you can
   // see it). This phone keeps a copy so it works offline; a change made offline waits in a small queue until the next time we can reach the database.
