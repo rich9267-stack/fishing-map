@@ -20,14 +20,14 @@ const ROWS = [
 ];
 let CUR = { tags: ["atlantic"], label: "Georgia", outside: true, state: "GA" };
 const code = [
-  "const STATE_NAMES = { GA: 'Georgia', AL: 'Alabama', SC: 'South Carolina', NC: 'North Carolina', TX: 'Texas' };",
+  "const STATE_NAMES = { GA: 'Georgia', AL: 'Alabama', SC: 'South Carolina', NC: 'North Carolina', OH: 'Ohio' };",
   "const me = {}, db = { from: () => ({ select: () => ({ eq: async () => ({ data: ROWS }) }) }) }; const renderSeasons = null;",
   "const rulesInfo = () => CUR;",
   read("js/54-state-agencies.js"),
   cut(t10, "  let fishRules = [];", "  // Admin: edit the rules table"),
   cut(s31, "  // Seasons cards: closed dates", "  // The chips under the month"),
   cut(s05, "  // US plan step 4: the Seasons list", "  const mmdd"),
-  "const SEASONS = ['FL'], SE_STATES = ['GA', 'AL', 'SC', 'NC', 'MS'], SEASONS_SE = ['SE'];",
+  "const SEASONS = ['FL'], SE_STATES = ['GA', 'AL', 'SC', 'NC', 'MS'], SEASONS_SE = ['SE'], GULF_STATES = ['LA', 'TX'], SEASONS_GULF = ['GULF'];",
   "return { loadRules, keeperCheck, ruleFor, stateRuleFor, seasonView, seasonList, stateRulesGate, get fishRules() { return fishRules; }, get stateRules() { return stateRules; }, setInfo: i => { CUR = i; } };"
 ].join("\n");
 const S = new Function("ROWS", "CUR", code.replace("const rulesInfo = () => CUR;", "let CURX = CUR; const rulesInfo = () => CURX;").replace("setInfo: i => { CUR = i; }", "setInfo: i => { CURX = i; }"))(ROWS, CUR);
@@ -59,7 +59,7 @@ const S = new Function("ROWS", "CUR", code.replace("const rulesInfo = () => CUR;
   // honest gaps
   const gap = ga("Tarpon", 40);
   ok("Georgia fish with no row → \"We don't have a Georgia rule for this fish yet\" + buttons", gap.level === "info" && /We don't have a Georgia rule for this fish yet/.test(gap.text) && gap.gate.links.length === 2);
-  ok("a state with no rows at all keeps the old message", /We don't have Texas rules yet/.test(ga("Redfish", 20, null, "TX").text));
+  ok("a state with no rows at all keeps the old message", /We don't have Ohio rules yet/.test(ga("Redfish", 20, null, "OH").text));
   ok("Georgia rows are not used in Alabama", /We don't have a Alabama rule|We don't have Alabama rules yet|Alabama/.test(ga("Largemouth bass", 13, null, "AL").text) && !/Rule for Georgia/.test(ga("Largemouth bass", 13, null, "AL").text));
 
   // Seasons cards
@@ -72,8 +72,8 @@ const S = new Function("ROWS", "CUR", code.replace("const rulesInfo = () => CUR;
   ok("Alabama flounder card carries the closed window", JSON.stringify(vf.closed) === '[["11-01","11-30"]]');
   S.setInfo({ tags: ["atlantic"], label: "Georgia", outside: true, state: "GA" });
   ok("a Georgia card with no row says We don't have…", /We don't have a Georgia rule for this fish yet/.test(S.seasonView({ name: "Tarpon", match: ["tarpon"] }).rule));
-  S.setInfo({ tags: ["atlantic"], label: "Texas", outside: true, state: "TX" });
-  ok("Texas still says no rules yet", /We don't have Texas rules yet/.test(S.seasonView({ name: "Redfish", match: ["redfish"] }).rule));
+  S.setInfo({ tags: ["atlantic"], label: "Ohio", outside: true, state: "OH" });
+  ok("Ohio still says no rules yet", /We don't have Ohio rules yet/.test(S.seasonView({ name: "Redfish", match: ["redfish"] }).rule));
   S.setInfo(FL);
   const same = { name: "Snook", match: ["snook"], rule: "x" };
   ok("Florida card: Florida rule line and closed dates", S.seasonView(same).closed.length === 2 && /1 per person/.test(S.seasonView(same).rule));
@@ -81,7 +81,7 @@ const S = new Function("ROWS", "CUR", code.replace("const rulesInfo = () => CUR;
   // which card list
   S.setInfo(FL); ok("Florida → the Florida cards", S.seasonList()[0] === "FL");
   S.setInfo(GA); ok("Georgia → the Southeast cards", S.seasonList()[0] === "SE");
-  S.setInfo({ outside: true, state: "TX" }); ok("Texas → still the Florida cards (until the Gulf step)", S.seasonList()[0] === "FL");
+  S.setInfo({ outside: true, state: "OH" }); ok("Ohio → still the Florida cards (until its region is built)", S.seasonList()[0] === "FL");
   S.setInfo({ outside: true, state: null }); ok("abroad → the Florida cards", S.seasonList()[0] === "FL");
 
   // the Southeast cards themselves

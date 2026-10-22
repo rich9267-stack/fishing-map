@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-21d", title: "🛢 Texas and Louisiana", items: [
+      "Fishing in Texas or Louisiana? The Seasons tab now has Gulf fish: redfish, speckled trout, flounder, black drum, sheepshead, tarpon, kingfish, bass, crappie and catfish.",
+      "Texas size and bag rules are in for those fish (each shows the date we checked it). Louisiana size and bag rules are in too, and for fish without a rule the app says so and links the agency."
+    ] },
     { id: "2026-10-21c", title: "⚖️ Better weight guesses", items: [
       "When you log only a length, the ≈ weight now comes from published fish studies for each kind of fish, so it is closer than before.",
       "Your earlier ≈ weights were updated to the new guesses. Weights you typed in yourself were not changed.",

@@ -495,10 +495,14 @@
     return { pen: 0, text: "" };
   }
   let seaMonth = new Date().getMonth(), seaGroup = "";
-  // US plan step 4: the Seasons list for the place on screen: the Southeast cards (js/55) in GA / AL / SC / NC / MS, else the Florida cards
+  // US plan step 4: the Seasons list for the place on screen: the Southeast cards (js/55) in GA / AL / SC / NC / MS, the Gulf cards in LA / TX, else the Florida cards
   function seasonList() {
     const i = typeof rulesInfo === "function" ? rulesInfo() : null;
-    return i && i.outside && typeof SEASONS_SE !== "undefined" && SE_STATES.includes(i.state) ? SEASONS_SE : SEASONS;
+    if (i && i.outside && typeof SEASONS_SE !== "undefined") {
+      if (SE_STATES.includes(i.state)) return SEASONS_SE;
+      if (GULF_STATES.includes(i.state)) return SEASONS_GULF;   // Louisiana, Texas (js/55)
+    }
+    return SEASONS;
   }
 
   const mmdd = d => `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
