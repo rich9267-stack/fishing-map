@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-22e", title: "🌾 Kansas to West Virginia", items: [
+      "Fishing in Kansas, Nebraska, the Dakotas, Oklahoma, Arkansas, Kentucky, Tennessee or West Virginia? The Seasons tab now has fish for those waters: largemouth, smallmouth and spotted bass, walleye and sauger, pike, muskie, crappie, white bass and stripers, catfish, trout, perch, sunfish and paddlefish.",
+      "Size, bag and closed-date rules are in for South Dakota, North Dakota, Oklahoma, Arkansas, Kentucky, Tennessee and West Virginia, each with the date we checked it. Kansas and Nebraska rules are not in yet: the app says so and points you to the state agency."
+    ] },
     { id: "2026-10-22d", title: "🌽 Ohio to Missouri", items: [
       "Fishing in Ohio, Michigan, Indiana, Illinois, Wisconsin, Minnesota, Iowa or Missouri? The Seasons tab now has fish for those waters: bass, walleye, pike, muskie, trout, salmon and steelhead, perch, crappie, sunfish, white bass and catfish.",
       "Size, bag and closed-date rules are in for the main fish in each state, each with the date we checked it. Where a rule changes by month or by lake, the stricter number shows and the note has the rest, so always check your lake."
