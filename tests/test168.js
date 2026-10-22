@@ -27,7 +27,7 @@ const code = [
   cut(t10, "  let fishRules = [];", "  // Admin: edit the rules table"),
   cut(s31, "  // Seasons cards: closed dates", "  // The chips under the month"),
   cut(s05, "  // US plan step 4: the Seasons list", "  const mmdd"),
-  "const SEASONS = ['FL'], SE_STATES = ['GA', 'AL', 'SC', 'NC', 'MS'], SEASONS_SE = ['SE'], GULF_STATES = ['LA', 'TX'], SEASONS_GULF = ['GULF'];",
+  "const SEASONS = ['FL'], SE_STATES = ['GA', 'AL', 'SC', 'NC', 'MS'], SEASONS_SE = ['SE'], GULF_STATES = ['LA', 'TX'], SEASONS_GULF = ['GULF'], MIDATL_STATES = ['VA', 'MD', 'DE', 'NJ', 'PA', 'DC'], SEASONS_MIDATL = ['MIDATL'];",
   "return { loadRules, keeperCheck, ruleFor, stateRuleFor, seasonView, seasonList, stateRulesGate, get fishRules() { return fishRules; }, get stateRules() { return stateRules; }, setInfo: i => { CUR = i; } };"
 ].join("\n");
 const S = new Function("ROWS", "CUR", code.replace("const rulesInfo = () => CUR;", "let CURX = CUR; const rulesInfo = () => CURX;").replace("setInfo: i => { CUR = i; }", "setInfo: i => { CURX = i; }"))(ROWS, CUR);

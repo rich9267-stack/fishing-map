@@ -41,7 +41,7 @@ becomes "your area". Satellite water temp box widened to the US coasts. *No wron
 **Step 3 — Weight guesses for US fish. ✅ mostly built early (v154, Oct 21); left: "yellowtail" by state.** Build docs/weight-data.md section D (adds b per fish + ~50 US fish, fixes name
 clashes like "trout" and "yellowtail" using the state from step 1).
 
-**Step 4 — US fish list, then seasons + rules together, one region at a time.** **Gulf: Texas ✅ built v158 (setup/95; Louisiana setup/96 from the LDWF handbook).** **Southeast ✅ built v157 (js/55 SEASONS_SE, setup/94 rows for GA/AL/SC/NC/MS; pattern for the next regions: add a cards array + a states list in seasonList(), insert rows with `regions={XX}`).** Add the US fish (bass, walleye, pike, trout, salmon, stripers, fluke…)
+**Step 4 — US fish list, then seasons + rules together, one region at a time.** **Mid-Atlantic ✅ built v160 (setup/98).** **Gulf: Texas ✅ built v158 (setup/95; Louisiana setup/96 from the LDWF handbook).** **Southeast ✅ built v157 (js/55 SEASONS_SE, setup/94 rows for GA/AL/SC/NC/MS; pattern for the next regions: add a cards array + a states list in seasonList(), insert rows with `regions={XX}`).** Add the US fish (bass, walleye, pike, trout, salmon, stripers, fluke…)
 to the species list, Fish ID hints and fish drawings' fallback. Seasons by 8 broad regions (Northeast, Mid-Atlantic,
 Southeast, Gulf, Great Lakes/Midwest, Plains/South-Central, Mountain West, Pacific) — Researcher work, one region per session.
   Each region session also adds that region's states' rules (step 6 work), so a region is "done" only when its seasons AND rules are in.

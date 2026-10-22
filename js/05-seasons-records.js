@@ -495,12 +495,13 @@
     return { pen: 0, text: "" };
   }
   let seaMonth = new Date().getMonth(), seaGroup = "";
-  // US plan step 4: the Seasons list for the place on screen: the Southeast cards (js/55) in GA / AL / SC / NC / MS, the Gulf cards in LA / TX, else the Florida cards
+  // US plan step 4: the Seasons list for the place on screen: the Southeast cards (js/55) in GA / AL / SC / NC / MS, the Gulf cards in LA / TX, the Mid-Atlantic cards in VA / MD / DE / NJ / PA / DC, else the Florida cards
   function seasonList() {
     const i = typeof rulesInfo === "function" ? rulesInfo() : null;
     if (i && i.outside && typeof SEASONS_SE !== "undefined") {
       if (SE_STATES.includes(i.state)) return SEASONS_SE;
       if (GULF_STATES.includes(i.state)) return SEASONS_GULF;   // Louisiana, Texas (js/55)
+      if (MIDATL_STATES.includes(i.state)) return SEASONS_MIDATL;   // Virginia, Maryland, Delaware, New Jersey, Pennsylvania, D.C. (js/55)
     }
     return SEASONS;
   }

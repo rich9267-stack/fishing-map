@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-22b", title: "🦀 Virginia to New Jersey", items: [
+      "Fishing in Virginia, Maryland, Delaware, New Jersey, Pennsylvania or D.C.? The Seasons tab now has fish for those waters: striped bass, fluke, black sea bass, tautog, bluefish, bass, walleye, trout and more.",
+      "Size, bag and closed-date rules are in for the main fish in each state (each shows the date we checked it and the agency to confirm with). Where a rule changes by water or by month, the stricter number shows and the note explains the rest."
+    ] },
     { id: "2026-10-22a", title: "🧠 Help improve Fish ID", items: [
       "New optional box in Settings → Your data. Tick it and photos from your Friends and Public catches, with the fish name you saved, can help train our own Fish ID someday.",
       "It is off until you tick it. Private catches are never used. Untick it, or delete a catch or your account, and those photos are out."
