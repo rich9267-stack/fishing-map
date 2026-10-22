@@ -1,101 +1,204 @@
 #!/bin/sh
 # Runs every check against ../index.html. Usage: cd tests && npm install (first time only) && sh run-all.sh
+# Runs 8 checks at a time (JOBS=1 sh run-all.sh = one at a time). Output of each check: /tmp/<name>.out
+# New check = add one line to the list at the bottom:   test186
+#   or with a label, settings and a time limit:          test34|test34 (admin)|ST=admin|150
 cd "$(dirname "$0")" || exit 1
-fail=0
-for t in test27 test28 test29 test30 test31 test32 test33 test35 test36 test37 test38 test39 test40 test41 test42 test43 test44 test45 test46 test47 test48 test49 test50 test51 test52 test53 test54 test55 test56 test57 test58 test59 test60 test61 test62 test63 test64 test65 test66 test67 test68 test69 test70 test71 test72 test73 test74 test75 test76 test77 test78 test79 test80 test81 test82 test83 test84 test85 test86 test87 test88 test89 test90 test91 test92 test93 test94 test95 test96 test97 test98 test99 test100 test101 test102 test103 test104 test105 test106 test107 test108 test109 test110 test112 test117 test125 test126 test127; do
-  if timeout 90 node $t.js > "/tmp/$t.out" 2>&1; then echo "ok   $t"; else echo "FAIL $t (see /tmp/$t.out)"; fail=1; fi
-done
-if node morning-score.test.mjs > /tmp/morning-score.out 2>&1; then echo "ok   morning-score"; else echo "FAIL morning-score (see /tmp/morning-score.out)"; fail=1; fi
-if node morning-tides.test.mjs > /tmp/morning-tides.out 2>&1; then echo "ok   morning-tides"; else echo "FAIL morning-tides (see /tmp/morning-tides.out)"; fail=1; fi
-for st in admin none pending blocked error; do
-  if ST=$st timeout 90 node test34.js > "/tmp/test34-$st.out" 2>&1; then echo "ok   test34 ($st)"; else echo "FAIL test34 ($st)"; fail=1; fi
-done
-for st in admin approved; do
-  if ST=$st timeout 90 node test111.js > "/tmp/test111-$st.out" 2>&1; then echo "ok   test111 ($st)"; else echo "FAIL test111 ($st)"; fail=1; fi
-done
-for m in fresh home away; do
-  case $m in fresh) e="X=1";; home) e="HOME_SET=1";; away) e="HOME_SET=1 GPS=tampa";; esac
-  if env $e timeout 90 node test113.js > "/tmp/test113-$m.out" 2>&1; then echo "ok   test113 ($m)"; else echo "FAIL test113 ($m)"; fail=1; fi
-done
-for m in fresh home away; do
-  case $m in fresh) e="X=1";; home) e="HOME_SET=1";; away) e="HOME_SET=1 GPS=tampa";; esac
-  if env $e timeout 90 node test114.js > "/tmp/test114-$m.out" 2>&1; then echo "ok   test114 ($m)"; else echo "FAIL test114 ($m)"; fail=1; fi
-done
-for m in fresh away tampa fortmyers; do
-  case $m in fresh) e="X=1";; away) e="HOME_SET=1 GPS=tampa";; tampa) e="HOME_AT=tampa";; fortmyers) e="HOME_AT=fortmyers";; esac
-  if env $e timeout 90 node test115.js > "/tmp/test115-$m.out" 2>&1; then echo "ok   test115 ($m)"; else echo "FAIL test115 ($m)"; fail=1; fi
-done
-for m in fresh home away; do
-  case $m in fresh) e="X=1";; home) e="HOME_SET=1";; away) e="HOME_SET=1 GPS=tampa";; esac
-  if env $e timeout 90 node test116.js > "/tmp/test116-$m.out" 2>&1; then echo "ok   test116 ($m)"; else echo "FAIL test116 ($m)"; fail=1; fi
-done
-for m in pompano tampa clear down; do
-  case $m in pompano) e="X=1";; tampa) e="HOME_SET=1 GPS=tampa";; clear) e="FWC_MODE=clear";; down) e="FWC_DOWN=1";; esac
-  if env $e timeout 90 node test118.js > "/tmp/test118-$m.out" 2>&1; then echo "ok   test118 ($m)"; else echo "FAIL test118 ($m)"; fail=1; fi
-done
-if timeout 90 node test119.js > /tmp/test119.out 2>&1; then echo "ok   test119"; else echo "FAIL test119"; fail=1; fi
-if timeout 90 node test120.js > /tmp/test120.out 2>&1; then echo "ok   test120"; else echo "FAIL test120"; fail=1; fi
-if timeout 90 node test121.js > /tmp/test121.out 2>&1; then echo "ok   test121"; else echo "FAIL test121"; fail=1; fi
-if timeout 90 node test122.js > /tmp/test122.out 2>&1; then echo "ok   test122"; else echo "FAIL test122"; fail=1; fi
-if timeout 90 node test123.js > /tmp/test123.out 2>&1; then echo "ok   test123"; else echo "FAIL test123"; fail=1; fi
-if DEL_ADMIN=1 timeout 90 node test101.js > /tmp/test101-admin.out 2>&1; then echo "ok   test101 (admin)"; else echo "FAIL test101 (admin)"; fail=1; fi
-if timeout 90 node test124.js > /tmp/test124.out 2>&1; then echo "ok   test124 (admin)"; else echo "FAIL test124 (admin)"; fail=1; fi
-if ST=approved timeout 90 node test124.js > /tmp/test124-member.out 2>&1; then echo "ok   test124 (member)"; else echo "FAIL test124 (member)"; fail=1; fi
-if timeout 90 node test128.js > /tmp/test128.out 2>&1; then echo "ok   test128 (Eastern phone)"; else echo "FAIL test128 (Eastern phone)"; fail=1; fi
-if TZ=America/Chicago timeout 90 node test128.js > /tmp/test128-central.out 2>&1; then echo "ok   test128 (Central phone)"; else echo "FAIL test128 (Central phone)"; fail=1; fi
-if timeout 90 node test129.js > /tmp/test129.out 2>&1; then echo "ok   test129"; else echo "FAIL test129"; fail=1; fi
-if timeout 90 node test130.js > /tmp/test130.out 2>&1; then echo "ok   test130"; else echo "FAIL test130 (see /tmp/test130.out)"; fail=1; fi
-if timeout 90 node test131.js > /tmp/test131.out 2>&1; then echo "ok   test131"; else echo "FAIL test131 (see /tmp/test131.out)"; fail=1; fi
-if timeout 90 node test132.js > /tmp/test132.out 2>&1; then echo "ok   test132"; else echo "FAIL test132 (see /tmp/test132.out)"; fail=1; fi
-if timeout 90 node test133.js > /tmp/test133.out 2>&1; then echo "ok   test133"; else echo "FAIL test133 (see /tmp/test133.out)"; fail=1; fi
-if timeout 90 node test134.js > /tmp/test134.out 2>&1; then echo "ok   test134"; else echo "FAIL test134 (see /tmp/test134.out)"; fail=1; fi
-if timeout 90 node test135.js > /tmp/test135.out 2>&1; then echo "ok   test135"; else echo "FAIL test135 (see /tmp/test135.out)"; fail=1; fi
-if timeout 90 node test136.js > /tmp/test136.out 2>&1; then echo "ok   test136"; else echo "FAIL test136 (see /tmp/test136.out)"; fail=1; fi
-if timeout 90 node test137.js > /tmp/test137.out 2>&1; then echo "ok   test137"; else echo "FAIL test137 (see /tmp/test137.out)"; fail=1; fi
-if timeout 90 node test138.js > /tmp/test138.out 2>&1; then echo "ok   test138"; else echo "FAIL test138 (see /tmp/test138.out)"; fail=1; fi
-if timeout 90 node test139.js > /tmp/test139.out 2>&1; then echo "ok   test139"; else echo "FAIL test139 (see /tmp/test139.out)"; fail=1; fi
-if timeout 90 node test140.js > /tmp/test140.out 2>&1; then echo "ok   test140"; else echo "FAIL test140 (see /tmp/test140.out)"; fail=1; fi
-if timeout 90 node test141.js > /tmp/test141.out 2>&1; then echo "ok   test141"; else echo "FAIL test141 (see /tmp/test141.out)"; fail=1; fi
-if timeout 90 node test142.js > /tmp/test142.out 2>&1; then echo "ok   test142"; else echo "FAIL test142 (see /tmp/test142.out)"; fail=1; fi
-if timeout 90 node test143.js > /tmp/test143.out 2>&1; then echo "ok   test143"; else echo "FAIL test143 (see /tmp/test143.out)"; fail=1; fi
-if timeout 90 node test144.js > /tmp/test144.out 2>&1; then echo "ok   test144"; else echo "FAIL test144 (see /tmp/test144.out)"; fail=1; fi
-if timeout 90 node test145.js > /tmp/test145.out 2>&1; then echo "ok   test145"; else echo "FAIL test145 (see /tmp/test145.out)"; fail=1; fi
-if timeout 90 node test146.js > /tmp/test146.out 2>&1; then echo "ok   test146"; else echo "FAIL test146 (see /tmp/test146.out)"; fail=1; fi
-if timeout 90 node test147.js > /tmp/test147.out 2>&1; then echo "ok   test147"; else echo "FAIL test147 (see /tmp/test147.out)"; fail=1; fi
-if timeout 90 node test149.js > /tmp/test149.out 2>&1; then echo "ok   test149"; else echo "FAIL test149 (see /tmp/test149.out)"; fail=1; fi
-if timeout 90 node test151.js > /tmp/test151.out 2>&1; then echo "ok   test151"; else echo "FAIL test151 (see /tmp/test151.out)"; fail=1; fi
-if timeout 90 node test152.js > /tmp/test152.out 2>&1; then echo "ok   test152"; else echo "FAIL test152 (see /tmp/test152.out)"; fail=1; fi
-if timeout 90 node test153.js > /tmp/test153.out 2>&1; then echo "ok   test153"; else echo "FAIL test153 (see /tmp/test153.out)"; fail=1; fi
-if timeout 90 node test154.js > /tmp/test154.out 2>&1; then echo "ok   test154"; else echo "FAIL test154 (see /tmp/test154.out)"; fail=1; fi
-if timeout 90 node test155.js > /tmp/test155.out 2>&1; then echo "ok   test155"; else echo "FAIL test155 (see /tmp/test155.out)"; fail=1; fi
-if timeout 90 node test156.js > /tmp/test156.out 2>&1; then echo "ok   test156"; else echo "FAIL test156 (see /tmp/test156.out)"; fail=1; fi
-if timeout 90 node test157.js > /tmp/test157.out 2>&1; then echo "ok   test157"; else echo "FAIL test157 (see /tmp/test157.out)"; fail=1; fi
-if timeout 90 node test158.js > /tmp/test158.out 2>&1; then echo "ok   test158"; else echo "FAIL test158 (see /tmp/test158.out)"; fail=1; fi
-if timeout 90 node test159.js > /tmp/test159.out 2>&1; then echo "ok   test159"; else echo "FAIL test159 (see /tmp/test159.out)"; fail=1; fi
-if timeout 90 node test160.js > /tmp/test160.out 2>&1; then echo "ok   test160"; else echo "FAIL test160 (see /tmp/test160.out)"; fail=1; fi
-if timeout 90 node test161.js > /tmp/test161.out 2>&1; then echo "ok   test161"; else echo "FAIL test161 (see /tmp/test161.out)"; fail=1; fi
-if timeout 90 node test162.js > /tmp/test162.out 2>&1; then echo "ok   test162"; else echo "FAIL test162 (see /tmp/test162.out)"; fail=1; fi
-if timeout 150 node test163.js > /tmp/test163.out 2>&1; then echo "ok   test163"; else echo "FAIL test163 (see /tmp/test163.out)"; fail=1; fi
-if timeout 150 node test164.js > /tmp/test164.out 2>&1; then echo "ok   test164"; else echo "FAIL test164 (see /tmp/test164.out)"; fail=1; fi
-if timeout 150 node test165.js > /tmp/test165.out 2>&1; then echo "ok   test165"; else echo "FAIL test165 (see /tmp/test165.out)"; fail=1; fi
-if timeout 90 node test166.js > /tmp/test166.out 2>&1; then echo "ok   test166"; else echo "FAIL test166 (see /tmp/test166.out)"; fail=1; fi
-if timeout 90 node test167.js > /tmp/test167.out 2>&1; then echo "ok   test167"; else echo "FAIL test167 (see /tmp/test167.out)"; fail=1; fi
-if timeout 90 node test168.js > /tmp/test168.out 2>&1; then echo "ok   test168"; else echo "FAIL test168 (see /tmp/test168.out)"; fail=1; fi
-if timeout 90 node test169.js > /tmp/test169.out 2>&1; then echo "ok   test169"; else echo "FAIL test169 (see /tmp/test169.out)"; fail=1; fi
-if timeout 90 node test170.js > /tmp/test170.out 2>&1; then echo "ok   test170"; else echo "FAIL test170 (see /tmp/test170.out)"; fail=1; fi
-if timeout 90 node test171.js > /tmp/test171.out 2>&1; then echo "ok   test171"; else echo "FAIL test171 (see /tmp/test171.out)"; fail=1; fi
-if timeout 90 node test172.js > /tmp/test172.out 2>&1; then echo "ok   test172"; else echo "FAIL test172 (see /tmp/test172.out)"; fail=1; fi
-if timeout 90 node test173.js > /tmp/test173.out 2>&1; then echo "ok   test173"; else echo "FAIL test173 (see /tmp/test173.out)"; fail=1; fi
-if timeout 90 node test175.js > /tmp/test175.out 2>&1; then echo "ok   test175"; else echo "FAIL test175 (see /tmp/test175.out)"; fail=1; fi
-if timeout 90 node test176.js > /tmp/test176.out 2>&1; then echo "ok   test176"; else echo "FAIL test176 (see /tmp/test176.out)"; fail=1; fi
-if timeout 90 node test177.js > /tmp/test177.out 2>&1; then echo "ok   test177"; else echo "FAIL test177 (see /tmp/test177.out)"; fail=1; fi
-if timeout 90 node test178.js > /tmp/test178.out 2>&1; then echo "ok   test178"; else echo "FAIL test178 (see /tmp/test178.out)"; fail=1; fi
-if timeout 90 node test179.js > /tmp/test179.out 2>&1; then echo "ok   test179"; else echo "FAIL test179 (see /tmp/test179.out)"; fail=1; fi
-if timeout 90 node test180.js > /tmp/test180.out 2>&1; then echo "ok   test180"; else echo "FAIL test180 (see /tmp/test180.out)"; fail=1; fi
-if timeout 90 node test181.js > /tmp/test181.out 2>&1; then echo "ok   test181"; else echo "FAIL test181 (see /tmp/test181.out)"; fail=1; fi
-if timeout 90 node test182.js > /tmp/test182.out 2>&1; then echo "ok   test182"; else echo "FAIL test182 (see /tmp/test182.out)"; fail=1; fi
-if timeout 90 node test183.js > /tmp/test183.out 2>&1; then echo "ok   test183"; else echo "FAIL test183 (see /tmp/test183.out)"; fail=1; fi
-if timeout 90 node test184.js > /tmp/test184.out 2>&1; then echo "ok   test184"; else echo "FAIL test184 (see /tmp/test184.out)"; fail=1; fi
-if timeout 90 node test185.js > /tmp/test185.out 2>&1; then echo "ok   test185"; else echo "FAIL test185 (see /tmp/test185.out)"; fail=1; fi
-[ $fail = 0 ] && echo "ALL OK" || echo "SOME FAILED"
-exit $fail
+
+if [ "$1" = "--one" ]; then   # runs one line of the list (called by xargs below)
+  IFS='|' read -r f label env to <<LINE
+$2
+LINE
+  case $f in *.*) ;; *) f="$f.js";; esac
+  [ -n "$label" ] || label="${f%%.*}"
+  out="/tmp/$(printf '%s' "$label" | sed 's/ (/-/; s/)//; s/ /-/g').out"
+  if env $env timeout "${to:-90}" node "$f" > "$out" 2>&1; then echo "ok   $label"; else echo "FAIL $label (see $out)"; fi > "$3"
+  exit 0
+fi
+
+res=$(mktemp -d)
+sed -n '/^__LIST__$/,$p' "$0" | sed '1d; /^$/d' | awk '{ printf "%04d\t%s\n", NR, $0 }' |
+  xargs -d '\n' -P "${JOBS:-8}" -I{} sh -c 'n="${1%%	*}"; sh "$0" --one "${1#*	}" "$2/$n"' "$0" {} "$res"
+cat "$res"/*
+if grep -q '^FAIL' "$res"/*; then rm -rf "$res"; echo "SOME FAILED"; exit 1; fi
+rm -rf "$res"; echo "ALL OK"; exit 0
+
+__LIST__
+test27
+test28
+test29
+test30
+test31
+test32
+test33
+test35
+test36
+test37
+test38
+test39
+test40
+test41
+test42
+test43
+test44
+test45
+test46
+test47
+test48
+test49
+test50
+test51
+test52
+test53
+test54
+test55
+test56
+test57
+test58
+test59
+test60
+test61
+test62
+test63
+test64
+test65
+test66
+test67
+test68
+test69
+test70
+test71
+test72
+test73
+test74
+test75
+test76
+test77
+test78
+test79
+test80
+test81
+test82
+test83
+test84
+test85
+test86
+test87
+test88
+test89
+test90
+test91
+test92
+test93
+test94
+test95
+test96
+test97
+test98
+test99
+test100
+test101
+test102
+test103
+test104
+test105
+test106
+test107
+test108
+test109
+test110
+test112
+test117
+test125
+test126
+test127
+morning-score.test.mjs|morning-score
+morning-tides.test.mjs|morning-tides
+test34|test34 (admin)|ST=admin
+test34|test34 (none)|ST=none
+test34|test34 (pending)|ST=pending
+test34|test34 (blocked)|ST=blocked
+test34|test34 (error)|ST=error
+test111|test111 (admin)|ST=admin
+test111|test111 (approved)|ST=approved
+test113|test113 (fresh)|X=1
+test113|test113 (home)|HOME_SET=1
+test113|test113 (away)|HOME_SET=1 GPS=tampa
+test114|test114 (fresh)|X=1
+test114|test114 (home)|HOME_SET=1
+test114|test114 (away)|HOME_SET=1 GPS=tampa
+test115|test115 (fresh)|X=1
+test115|test115 (away)|HOME_SET=1 GPS=tampa
+test115|test115 (tampa)|HOME_AT=tampa
+test115|test115 (fortmyers)|HOME_AT=fortmyers
+test116|test116 (fresh)|X=1
+test116|test116 (home)|HOME_SET=1
+test116|test116 (away)|HOME_SET=1 GPS=tampa
+test118|test118 (pompano)|X=1
+test118|test118 (tampa)|HOME_SET=1 GPS=tampa
+test118|test118 (clear)|FWC_MODE=clear
+test118|test118 (down)|FWC_DOWN=1
+test119
+test120
+test121
+test122
+test123
+test101|test101 (admin)|DEL_ADMIN=1
+test124|test124 (admin)|
+test124|test124 (member)|ST=approved
+test128|test128 (Eastern phone)|
+test128|test128 (Central phone)|TZ=America/Chicago
+test129
+test130
+test131
+test132
+test133
+test134
+test135
+test136
+test137
+test138
+test139
+test140
+test141
+test142
+test143
+test144
+test145
+test146
+test147
+test149
+test151
+test152
+test153
+test154
+test155
+test156
+test157
+test158
+test159
+test160
+test161
+test162
+test163|test163||150
+test164|test164||150
+test165|test165||150
+test166
+test167
+test168
+test169
+test170
+test171
+test172
+test173
+test175
+test176
+test177
+test178
+test179
+test180
+test181
+test182
+test183
+test184
+test185

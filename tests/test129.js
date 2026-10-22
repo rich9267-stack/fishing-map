@@ -169,7 +169,7 @@ function boot(o) {
   ok(sw.includes('"./js/36-tutorials.js"'), "works offline (in the service worker list)");
   ok(read("js/11-accounts-social.js").includes("tutLoadMine()"), "sign-in loads what this person has seen");
   ok((read("js/06-catching.js").match(/tutPhotoTip\(\)/g) || []).length === 2, "photo tip hooked into Quick catch and the full catch form");
-  ok(runall.includes("test129.js"), "this test is in run-all.sh");
+  ok(/^test129$/m.test(runall), "this test is in run-all.sh");
   const dbKeys = (/screen_key in \(([^)]*)\)/.exec(sql)[1].match(/'[a-z-]+'/g) || []).map(s => s.slice(1, -1));
   ok(dbKeys.join() === keys.filter(k => k !== "games").join(), "the database accepts exactly these 8 keys (🎮 Games is remembered on the phone only)");
   ok(/references auth\.users\(id\) on delete cascade/.test(sql) && /for select using \(public\.is_member\(\) and user_id = auth\.uid\(\)\)/.test(sql) && !/for update|for delete/.test(sql), "own rows only; deleted with the account; no update/delete rights");
