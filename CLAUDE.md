@@ -12,7 +12,7 @@ Owner: Richard (Pompano Beach, no programming experience). Plain language, small
 - Token saving: keep replies short (what changed + how to check on the phone). After every finished feature, end with a ready-to-paste prompt for a NEW session for the next item.
 - Keep this file and README.md short.
 
-## Now (Oct 21, v158 built; details of every version in docs/feature_notes.md and docs/build_history.md)
+## Now (Oct 22, v159 built; details of every version in docs/feature_notes.md and docs/build_history.md)
 **State:** the app is invite-only. Everything planned so far is built: UX v2, host pages, Gulf + Keys + Atlantic + Panhandle data, red tide, regional rules, protected zones, official public spots layer, tutorials, color palettes, delete my account (setup/54 applied), admin controls (plans/admin-controls-plan.md; powers, log, undo, warnings, hide, fix official places, locked coin corrections), draft terms.html + required 'I agree / 18+' box + one-time Terms banner (setup/89), security hardening (docs/security.md; setup/67 and 90 applied; CAPTCHA, Confirm email, 2-step all done).
 **Dropped on purpose (Oct 18):** private-spot view, reported-chat review, monthly totals, delete-a-person's-data (would break privacy promises). Unused database pieces were left in place (plans/step9-open-questions.md; safest = change nothing).
 **POSTPONED until Richard is paid (~late Nov 2026):** lawyer/accountant review of terms.html and privacy.html. Keep the app invite-only (no strangers) until then. After review: update the texts, bump TERMS_VERSION in js/49 so members re-agree.
@@ -21,5 +21,6 @@ Owner: Richard (Pompano Beach, no programming experience). Plain language, small
 **Weights (v154, setup/93):** weight-from-length per fish with a growth number b (docs/weight-data.md); ≈ catches re-estimated.
 **Next: continental US** — plans/us-expansion-plan.md (approved Oct 21; steps 1–2 done (v155 `stateOf` js/53; v156 js/54 agencies + "We don't have <State> rules yet"); step 4 Southeast (GA AL SC NC MS) built v157 (js/55 cards, 33 rule rows in setup/94 — **apply setup/94 in the SQL Editor after v157 is live**); Gulf (LA, TX) built v158: Texas rules in setup/95 — **apply setup/95 in the SQL Editor after v158 is live**; Louisiana rules in setup/96 (from the LDWF handbook PDF) — **apply setup/96 too**; next = step 4 Mid-Atlantic, then the other regions; rules built with each region).
 **On hold:** tank artist work (tank step 9; paid style packs hidden) until Richard says go; SFWMD gate data. Settled: page tournaments pay no prizes / no Hall of Fame; no per-person caps.
+**Fish ID training (v159, setup/97):** opt-in box in Settings → Your data built; the list for step 2 is the owner-only `fishid_training_list()`; keeping photos after deletion waits for the lawyer review.
 **Known small leftovers:** phone alerts about new page requests go to every admin; a report keeps up to 200 letters of the reported message for admins.
 **Every database change:** follow plans/database-change-rule.md. After adding a function, check no 'anon'/PUBLIC execute grants remain (docs/security.md).
