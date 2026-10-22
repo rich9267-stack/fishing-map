@@ -30,6 +30,8 @@
     n.hidden = !depOn;
     if (!depOn) { n.textContent = ""; return; }
     const z = map ? map.getZoom() : 0, parts = [];
+    const us = z >= DEP.coast.minZoom && typeof uslDepthNote === "function" ? uslDepthNote(z) : null;   // another state in the middle of the map (js/59)
+    if (us) { n.textContent = [depMsg, us].filter(Boolean).join(" "); return; }
     if (depMsg) parts.push(depMsg);
     if (z < DEP.coast.minZoom) parts.push("Zoom in to see depth lines.");
     else if (z < DEP.lake.minZoom) parts.push("〰 Ocean depth lines on (3, 6, 13, 20, 33, 66, 98 ft…). Zoom in on a lake to see its 1-ft lines, where FWC has surveyed it.");
@@ -54,28 +56,31 @@
         return d.features.map(f => Math.abs(Number((f.attributes || {})[def.field]))).filter(v => isFinite(v) && v > 0);
       } catch (e) { return null; }
     };
-    const [lake, coast] = await Promise.all([ask(DEP.lake), ask(DEP.coast)]);
+    const [lake, coast, us] = await Promise.all([ask(DEP.lake), ask(DEP.coast), typeof uslDepthAsk === "function" ? uslDepthAsk(box, z) : { vals: [], who: "" }]);   // us: other states' lakes (js/59)
     if (seq !== depSeq || !depOn) return;
     const fmt = v => (v >= 10 ? Math.round(v) : +v.toFixed(1)) + " ft";
-    let text;
-    if (lake && lake.length) { const s = [...new Set(lake)].sort((x, y) => x - y); text = `〰 Lake depth line: ≈ ${s.length > 1 ? fmt(s[0]) + " – " + fmt(s[s.length - 1]) : fmt(s[0])}`; }
+    let text, credit = "FWC depth lines · a guide only, not for navigation";
+    if (us && us.vals.length) { const s = [...new Set(us.vals.map(v => Math.round(v * 10) / 10))].sort((x, y) => x - y); text = `〰 Lake depth line: ≈ ${s.length > 1 ? fmt(s[0]) + " – " + fmt(s[s.length - 1]) : fmt(s[0])}`; credit = `${us.who} depth lines · a guide only, not for navigation`; }
+    else if (lake && lake.length) { const s = [...new Set(lake)].sort((x, y) => x - y); text = `〰 Lake depth line: ≈ ${s.length > 1 ? fmt(s[0]) + " – " + fmt(s[s.length - 1]) : fmt(s[0])}`; }
     else if (coast && coast.length) { const s = [...new Set(coast)].sort((x, y) => x - y); text = `〰 Depth line: ≈ ${s.length > 1 ? fmt(s[0]) + " – " + fmt(s[s.length - 1]) : fmt(s[0])}`; }
-    else if (lake === null || coast === null) text = "Couldn't read the depth right now — try again.";
+    else if (lake === null || coast === null || us === null) text = "Couldn't read the depth right now — try again.";
     else return;   // no line near the tap: say nothing
-    const pop = document.createElement("div"); pop.appendChild(el("div", "pop-name", text)); pop.appendChild(el("div", "pop-meta", "FWC depth lines · a guide only, not for navigation"));
+    const pop = document.createElement("div"); pop.appendChild(el("div", "pop-name", text)); pop.appendChild(el("div", "pop-meta", credit));
     L.popup({ autoPan: false }).setLatLng(ll).setContent(pop).openOn(map);
   }
 
   function setDepOn(on) {
     depOn = on;
     const btn = $("mx-depth"); if (btn) { btn.classList.toggle("on", on); btn.setAttribute("aria-pressed", String(on)); }
-    if (!on) { depSeq++; ["coast", "lake"].forEach(k => { if (map && depLayers[k]) map.removeLayer(depLayers[k]); }); depNote(); return; }
+    if (!on) { depSeq++; ["coast", "lake"].forEach(k => { if (map && depLayers[k]) map.removeLayer(depLayers[k]); }); if (typeof uslDepthOff === "function") uslDepthOff(); depNote(); return; }
     initMap(); if (!map) return;
     depLayers.coast = depLayers.coast || depTileLayer(DEP.coast, { opacity: 0.8 });
     depLayers.lake = depLayers.lake || depTileLayer(DEP.lake, { opacity: 0.95 });
     depLayers.coast.addTo(map); depLayers.lake.addTo(map);
-    if (!map._depBound) { map._depBound = true; map.on("zoomend", depNote); map.on("click", e => depTap(e.latlng)); }
+    if (!map._depBound) { map._depBound = true; map.on("zoomend", depNote); map.on("click", e => depTap(e.latlng));
+      let t = null; map.on("moveend", () => { clearTimeout(t); t = setTimeout(() => { if (depOn && typeof uslDepthDraw === "function") { uslDepthDraw(); depNote(); } }, 400); }); }   // other states' lakes (js/59)
     depMsg = ""; depBad = 0; depOk = 0;
+    if (typeof uslDepthDraw === "function") uslDepthDraw();
     depNote();
   }
   (function depSetup() { const b = $("mx-depth"); if (b) b.addEventListener("click", () => setDepOn(!depOn)); })();

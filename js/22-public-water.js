@@ -67,13 +67,13 @@
     $("f-type").value = "shore";
     $("f-water").value = "freshwater";
     if ($("f-access")) $("f-access").value = "yes";
-    if ($("f-notes") && !$("f-notes").value) $("f-notes").value = g.att
+    if ($("f-notes") && !$("f-notes").value) $("f-notes").value = g.note || (g.att
       ? `FWC fish attractor${g.water ? " in " + g.water : ""}${g.material ? " (" + g.material + ")" : ""} — usually needs a boat or kayak.`
-      : "FWC Fish Management Area — stocked and managed by the state. Special rules may apply: " + PW.rulesUrl;
+      : "FWC Fish Management Area — stocked and managed by the state. Special rules may apply: " + PW.rulesUrl);   // g.note: another state's water (js/59)
     pickedLoc = { lat: g.lat, lng: g.lng };
-    $("loc-text").textContent = g.att ? "Set ✓ (the attractor)" : "Set ✓ (middle of the lake — move it to where you fish)";
+    $("loc-text").textContent = g.point ? "Set ✓ (the site)" : g.att ? "Set ✓ (the attractor)" : "Set ✓ (middle of the lake — move it to where you fish)";
     $("form-msg").className = "msg";
-    $("form-msg").textContent = g.att ? "Check the details, then save." : "The pin is the middle of the lake — tap 📍 to move it to the bank or pier you fish from, then save.";
+    $("form-msg").textContent = g.att || g.point ? "Check the details, then save." : "The pin is the middle of the lake — tap 📍 to move it to the bank or pier you fish from, then save.";
     $("spots-card").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -113,6 +113,7 @@
     pwLoadAttractors();
   }
   async function pwLoadAttractors() {
+    if (typeof uslWaterLoad === "function") uslWaterLoad();   // other states' public fishing water (js/59)
     const seq = ++pwAttSeq;
     if (pwAttLayer) { map.removeLayer(pwAttLayer); pwAttLayer = null; }
     if (map.getZoom() < PW.attMinZoom) { pwAttMsg = "Zoom in to see FWC fish attractors (brush piles) inside lakes."; pwNote(); return; }
@@ -145,12 +146,13 @@
   function pwNote() {
     const n = $("pw-note"); if (!n) return;
     n.hidden = !pwOn;
-    n.textContent = pwOn ? [pwFmaErr || (pwFma ? `🏞 ${pwFma.length} public lakes from FWC (green).` : "Loading FWC public lakes…"), pwAttMsg].filter(Boolean).join(" ") : "";
+    const us = typeof uslWaterMsg !== "undefined" && uslWaterMsg && typeof rulesInfo === "function" && rulesInfo().outside ? uslWaterMsg : "";   // another state in the middle of the map: only its water (js/59)
+    n.textContent = pwOn && us ? us : pwOn ? [pwFmaErr || (pwFma ? `🏞 ${pwFma.length} public lakes from FWC (green).` : "Loading FWC public lakes…"), pwAttMsg, typeof uslWaterMsg !== "undefined" ? uslWaterMsg : ""].filter(Boolean).join(" ") : "";
   }
   function setPwOn(on) {
     pwOn = on;
     const btn = $("mx-water"); if (btn) { btn.classList.toggle("on", on); btn.setAttribute("aria-pressed", String(on)); }
-    if (!on) { pwAttSeq++; if (map && pwLayer) map.removeLayer(pwLayer); if (map && pwAttLayer) { map.removeLayer(pwAttLayer); pwAttLayer = null; } pwNote(); return; }
+    if (!on) { pwAttSeq++; if (typeof uslWaterOff === "function") uslWaterOff(); if (map && pwLayer) map.removeLayer(pwLayer); if (map && pwAttLayer) { map.removeLayer(pwAttLayer); pwAttLayer = null; } pwNote(); return; }
     initMap(); if (!map) return;
     if (!map._pwBound) { map._pwBound = true; let t = null; map.on("moveend", () => { clearTimeout(t); t = setTimeout(() => { if (pwOn) pwLoadAttractors(); }, 400); }); }
     pwNote();
