@@ -25,10 +25,11 @@ const ROWS = parseRows(sql).concat([
   { species: "Redfish (red drum)", match: ["redfish", "red drum"], regions: null, min_in: 18, max_in: 27, measure: "total", one_over: false, bag: "2 per boat", release_only: false, closed: null, open_only: null, note: null, verified_on: new Date().toISOString().slice(0, 10), active: true }
 ]);
 const code = [
-  "const STATE_NAMES = { VA: 'Virginia', MD: 'Maryland', DE: 'Delaware', NJ: 'New Jersey', PA: 'Pennsylvania', DC: 'Washington, D.C.', OR: 'Oregon', KS: 'Kansas' };",
+  "const STATE_NAMES = { VA: 'Virginia', MD: 'Maryland', DE: 'Delaware', NJ: 'New Jersey', PA: 'Pennsylvania', DC: 'Washington, D.C.', OR: 'Oregon', KS: 'Kansas', ZZ: 'Testland' };",
   "const me = {}, db = { from: () => ({ select: () => ({ eq: async () => ({ data: ROWS }) }) }) }; const renderSeasons = null;",
   "let CURX = null; const rulesInfo = () => CURX;",
   read("js/54-state-agencies.js"),
+  "STATE_AGENCIES.ZZ = ['Testland Fish Dept.', 'Testland Fish', 'https://example.test/rules', 'https://example.test/licence'];   // a made-up place with no rows (every real state now has some)",
   cut(t10, "  let fishRules = [];", "  // Admin: edit the rules table"),
   cut(s31, "  // Seasons cards: closed dates", "  // The chips under the month"),
   cut(s05, "  // US plan step 4: the Seasons list", "  const mmdd"),
@@ -83,7 +84,7 @@ const chk = (st, sp, len, d) => S.keeperCheck(sp, len, day(d || "2026-10-21"), i
   ok("D.C. striped bass (no row) → We don't have a Washington, D.C. rule for this fish yet + buttons", gap.level === "info" && /We don't have a Washington, D\.C\. rule for this fish yet/.test(gap.text) && gap.gate.links.length === 2);
   ok("Delaware walleye (no row) → gap message", /We don't have a Delaware rule for this fish yet/.test(chk("DE", "Walleye", 20).text));
   ok("New Jersey spotted seatrout (no row) → gap message", /We don't have a New Jersey rule for this fish yet/.test(chk("NJ", "Spotted seatrout", 16).text));
-  ok("Kansas (no rows) still says no rules yet", /We don't have Kansas rules yet/.test(chk("KS", "Walleye", 20).text));
+  ok("a made-up place (no rows) still says no rules yet", /We don't have Testland rules yet/.test(chk("ZZ", "Walleye", 20).text));
   ok("Virginia rows are not used in Maryland", !/Virginia/.test(chk("MD", "Cobia", 45).text));
 
   // Seasons cards

@@ -1,4 +1,4 @@
-// test176: Plains / South-Central (SD, ND, OK, AR, KY, TN, WV rows; Kansas and Nebraska are honest gaps, Oregon still Florida cards): state rows, keeper check, closed / open-only dates, Seasons cards, SQL file (US plan step 4)
+// test176: Plains / South-Central (SD, ND, OK, AR, KY, TN, WV rows; Kansas and Nebraska had no rows here (now in setup/106), Oregon still Florida cards): state rows, keeper check, closed / open-only dates, Seasons cards, SQL file (US plan step 4)
 const fs = require("fs");
 const read = f => fs.readFileSync(__dirname + "/../" + f, "utf8");
 let bad = 0; const ok = (n, c) => { console.log((c ? "ok   " : "FAIL ") + n); if (!c) bad++; };
@@ -25,10 +25,11 @@ const ROWS = parseRows(sql).concat([
   { species: "Redfish (red drum)", match: ["redfish", "red drum"], regions: null, min_in: 18, max_in: 27, measure: "total", one_over: false, bag: "2 per boat", release_only: false, closed: null, open_only: null, note: null, verified_on: new Date().toISOString().slice(0, 10), active: true }
 ]);
 const code = [
-  "const STATE_NAMES = { SD: 'South Dakota', ND: 'North Dakota', OK: 'Oklahoma', AR: 'Arkansas', KY: 'Kentucky', TN: 'Tennessee', WV: 'West Virginia', KS: 'Kansas', NE: 'Nebraska', OR: 'Oregon' };",
+  "const STATE_NAMES = { SD: 'South Dakota', ND: 'North Dakota', OK: 'Oklahoma', AR: 'Arkansas', KY: 'Kentucky', TN: 'Tennessee', WV: 'West Virginia', KS: 'Kansas', NE: 'Nebraska', OR: 'Oregon', ZZ: 'Testland' };",
   "const me = {}, db = { from: () => ({ select: () => ({ eq: async () => ({ data: ROWS }) }) }) }; const renderSeasons = null;",
   "let CURX = null; const rulesInfo = () => CURX;",
   read("js/54-state-agencies.js"),
+  "STATE_AGENCIES.ZZ = ['Testland Fish Dept.', 'Testland Fish', 'https://example.test/rules', 'https://example.test/licence'];   // a made-up place with no rows (every real state now has some)",
   cut(t10, "  let fishRules = [];", "  // Admin: edit the rules table"),
   cut(s31, "  // Seasons cards: closed dates", "  // The chips under the month"),
   cut(s05, "  // US plan step 4: the Seasons list", "  const mmdd"),
@@ -92,9 +93,9 @@ const STATES = [["SD", 10], ["ND", 11], ["OK", 10], ["AR", 12], ["KY", 16], ["TN
   ok("West Virginia names West Virginia, not Virginia's agency or Florida", /West Virginia/.test(chk("WV", "Walleye", 15).text) && !/FWC|Florida/.test(chk("WV", "Walleye", 15).text));
 
   // honest gaps
-  ok("Kansas says no rules yet", /We don't have Kansas rules yet/.test(chk("KS", "Walleye", 20).text));
-  ok("Nebraska says no rules yet", /We don't have Nebraska rules yet/.test(chk("NE", "Walleye", 20).text));
-  ok("Kansas (no rows) says no rules yet", /We don't have Kansas rules yet/.test(chk("KS", "Walleye", 20).text));
+  ok("a made-up place says no rules yet", /We don't have Testland rules yet/.test(chk("ZZ", "Walleye", 20).text));
+  ok("Nebraska (no rows in setup/102) says no rules yet", /We don't have Nebraska rules yet/.test(chk("NE", "Walleye", 20).text));
+  ok("a made-up place (no rows) says no rules yet", /We don't have Testland rules yet/.test(chk("ZZ", "Walleye", 20).text));
   ok("West Virginia northern pike (no row) → gap message", /We don't have an? West Virginia rule for this fish yet/.test(chk("WV", "Northern pike", 25).text));
   ok("Kentucky bluegill (no row) → gap message", /We don't have an? Kentucky rule for this fish yet/.test(chk("KY", "Bluegill", 6).text));
   ok("a Tennessee rule is never used in Kentucky", !/Tennessee/.test(chk("KY", "Walleye", 19).text));
@@ -103,8 +104,8 @@ const STATES = [["SD", 10], ["ND", 11], ["OK", 10], ["AR", 12], ["KY", 16], ["TN
   S.setInfo(inf("TN"));
   const v = S.seasonView({ name: "Walleye & sauger", match: ["walleye", "sauger", "saugeye"] });
   ok("Tennessee walleye card shows the rule and the checked date", /Tennessee/.test(v.rule) && /checked 2026-10-22/.test(v.rule));
-  S.setInfo(inf("KS"));
-  ok("a Kansas card says We don't have…", /We don't have Kansas rules yet/.test(S.seasonView({ name: "Walleye & sauger", match: ["walleye"] }).rule));
+  S.setInfo(inf("ZZ"));
+  ok("a made-up place's card says We don't have…", /We don't have Testland rules yet/.test(S.seasonView({ name: "Walleye & sauger", match: ["walleye"] }).rule));
   ["KS", "NE", "SD", "ND", "OK", "AR", "KY", "TN", "WV"].forEach(c => { S.setInfo(inf(c)); ok(c + " → the Plains cards", S.seasonList()[0] === "PLAINS"); });
   ["OH", "MN", "MO"].forEach(c => { S.setInfo(inf(c)); ok(c + " → still the Great Lakes cards", S.seasonList()[0] === "GL"); });
   S.setInfo(inf("VA")); ok("Virginia → still the Mid-Atlantic cards", S.seasonList()[0] === "MIDATL");

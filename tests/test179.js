@@ -1,4 +1,4 @@
-// test179: Pacific (WA, OR, CA rows; Kansas is the honest gap): state rows, keeper check, closed dates, slots, ocean fish, Seasons cards, SQL file (US plan step 4)
+// test179: Pacific (WA, OR, CA rows; a made-up place "ZZ" is the honest gap): state rows, keeper check, closed dates, slots, ocean fish, Seasons cards, SQL file (US plan step 4)
 const fs = require("fs");
 const read = f => fs.readFileSync(__dirname + "/../" + f, "utf8");
 let bad = 0; const ok = (n, c) => { console.log((c ? "ok   " : "FAIL ") + n); if (!c) bad++; };
@@ -25,10 +25,11 @@ const ROWS = parseRows(sql).concat([
   { species: "Redfish (red drum)", match: ["redfish", "red drum"], regions: null, min_in: 18, max_in: 27, measure: "total", one_over: false, bag: "2 per boat", release_only: false, closed: null, open_only: null, note: null, verified_on: new Date().toISOString().slice(0, 10), active: true }
 ]);
 const code = [
-  "const STATE_NAMES = { WA: 'Washington', OR: 'Oregon', CA: 'California', KS: 'Kansas', MT: 'Montana', GA: 'Georgia' };",
+  "const STATE_NAMES = { WA: 'Washington', OR: 'Oregon', CA: 'California', KS: 'Kansas', MT: 'Montana', GA: 'Georgia', ZZ: 'Testland' };",
   "const me = {}, db = { from: () => ({ select: () => ({ eq: async () => ({ data: ROWS }) }) }) }; const renderSeasons = null;",
   "let CURX = null; const rulesInfo = () => CURX;",
   read("js/54-state-agencies.js"),
+  "STATE_AGENCIES.ZZ = ['Testland Fish Dept.', 'Testland Fish', 'https://example.test/rules', 'https://example.test/licence'];   // a made-up place with no rows (every real state now has some)",
   cut(t10, "  let fishRules = [];", "  // Admin: edit the rules table"),
   cut(s31, "  // Seasons cards: closed dates", "  // The chips under the month"),
   cut(s05, "  // US plan step 4: the Seasons list", "  const mmdd"),
@@ -96,15 +97,15 @@ const PAC = ["WA", "OR", "CA"];
   ok("a crab gets no size check (shell widths don't fit)", /We don't have an? California rule for this fish yet/.test(chk("CA", "Dungeness crab", 6).text));
 
   // honest gaps
-  ok("Kansas (no rows) says no rules yet", /We don't have Kansas rules yet/.test(chk("KS", "Walleye", 20).text));
+  ok("a made-up place (no rows) says no rules yet", /We don't have Testland rules yet/.test(chk("ZZ", "Walleye", 20).text));
   ok("an Oregon rule is never used in Washington", !/Oregon/.test(chk("WA", "Walleye", 19).text));
 
   // Seasons cards
   S.setInfo(inf("CA"));
   const v = S.seasonView({ name: "Lingcod", match: ["lingcod"] });
   ok("California lingcod card shows the rule and the checked date", /California/.test(v.rule) && /checked 2026-10-22/.test(v.rule));
-  S.setInfo(inf("KS"));
-  ok("a Kansas card says We don't have…", /We don't have Kansas rules yet/.test(S.seasonView({ name: "Walleye", match: ["walleye"] }).rule));
+  S.setInfo(inf("ZZ"));
+  ok("a made-up place's card says We don't have…", /We don't have Testland rules yet/.test(S.seasonView({ name: "Walleye", match: ["walleye"] }).rule));
   PAC.forEach(c => { S.setInfo(inf(c)); ok(c + " → the Pacific cards", S.seasonList()[0] === "PAC"); });
   S.setInfo(inf("MT")); ok("Montana → still the Mountain West cards", S.seasonList()[0] === "MW");
   S.setInfo(inf("KS")); ok("Kansas → still the Plains cards", S.seasonList()[0] === "PLAINS");

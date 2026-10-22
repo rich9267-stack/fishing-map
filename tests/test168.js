@@ -20,10 +20,11 @@ const ROWS = [
 ];
 let CUR = { tags: ["atlantic"], label: "Georgia", outside: true, state: "GA" };
 const code = [
-  "const STATE_NAMES = { GA: 'Georgia', AL: 'Alabama', SC: 'South Carolina', NC: 'North Carolina', OR: 'Oregon', KS: 'Kansas' };",
+  "const STATE_NAMES = { GA: 'Georgia', AL: 'Alabama', SC: 'South Carolina', NC: 'North Carolina', OR: 'Oregon', KS: 'Kansas', ZZ: 'Testland' };",
   "const me = {}, db = { from: () => ({ select: () => ({ eq: async () => ({ data: ROWS }) }) }) }; const renderSeasons = null;",
   "const rulesInfo = () => CUR;",
   read("js/54-state-agencies.js"),
+  "STATE_AGENCIES.ZZ = ['Testland Fish Dept.', 'Testland Fish', 'https://example.test/rules', 'https://example.test/licence'];   // a made-up place with no rows (every real state now has some)",
   cut(t10, "  let fishRules = [];", "  // Admin: edit the rules table"),
   cut(s31, "  // Seasons cards: closed dates", "  // The chips under the month"),
   cut(s05, "  // US plan step 4: the Seasons list", "  const mmdd"),
@@ -59,7 +60,7 @@ const S = new Function("ROWS", "CUR", code.replace("const rulesInfo = () => CUR;
   // honest gaps
   const gap = ga("Tarpon", 40);
   ok("Georgia fish with no row → \"We don't have a Georgia rule for this fish yet\" + buttons", gap.level === "info" && /We don't have a Georgia rule for this fish yet/.test(gap.text) && gap.gate.links.length === 2);
-  ok("a state with no rows at all keeps the old message", /We don't have Kansas rules yet/.test(ga("Redfish", 20, null, "KS").text));
+  ok("a state with no rows at all keeps the old message", /We don't have Testland rules yet/.test(ga("Redfish", 20, null, "ZZ").text));
   ok("Georgia rows are not used in Alabama", /We don't have a Alabama rule|We don't have Alabama rules yet|Alabama/.test(ga("Largemouth bass", 13, null, "AL").text) && !/Rule for Georgia/.test(ga("Largemouth bass", 13, null, "AL").text));
 
   // Seasons cards
@@ -72,8 +73,8 @@ const S = new Function("ROWS", "CUR", code.replace("const rulesInfo = () => CUR;
   ok("Alabama flounder card carries the closed window", JSON.stringify(vf.closed) === '[["11-01","11-30"]]');
   S.setInfo({ tags: ["atlantic"], label: "Georgia", outside: true, state: "GA" });
   ok("a Georgia card with no row says We don't have…", /We don't have a Georgia rule for this fish yet/.test(S.seasonView({ name: "Tarpon", match: ["tarpon"] }).rule));
-  S.setInfo({ tags: ["atlantic"], label: "Kansas", outside: true, state: "KS" });
-  ok("Kansas (no rows) still says no rules yet", /We don't have Kansas rules yet/.test(S.seasonView({ name: "Redfish", match: ["redfish"] }).rule));
+  S.setInfo({ tags: ["atlantic"], label: "Testland", outside: true, state: "ZZ" });
+  ok("a made-up place (no rows) still says no rules yet", /We don't have Testland rules yet/.test(S.seasonView({ name: "Redfish", match: ["redfish"] }).rule));
   S.setInfo(FL);
   const same = { name: "Snook", match: ["snook"], rule: "x" };
   ok("Florida card: Florida rule line and closed dates", S.seasonView(same).closed.length === 2 && /1 per person/.test(S.seasonView(same).rule));

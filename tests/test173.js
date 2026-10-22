@@ -25,10 +25,11 @@ const ROWS = parseRows(sql).concat([
   { species: "Redfish (red drum)", match: ["redfish", "red drum"], regions: null, min_in: 18, max_in: 27, measure: "total", one_over: false, bag: "2 per boat", release_only: false, closed: null, open_only: null, note: null, verified_on: new Date().toISOString().slice(0, 10), active: true }
 ]);
 const code = [
-  "const STATE_NAMES = { OH: 'Ohio', MI: 'Michigan', IN: 'Indiana', IL: 'Illinois', WI: 'Wisconsin', MN: 'Minnesota', IA: 'Iowa', MO: 'Missouri', OR: 'Oregon', KS: 'Kansas' };",
+  "const STATE_NAMES = { OH: 'Ohio', MI: 'Michigan', IN: 'Indiana', IL: 'Illinois', WI: 'Wisconsin', MN: 'Minnesota', IA: 'Iowa', MO: 'Missouri', OR: 'Oregon', KS: 'Kansas', ZZ: 'Testland' };",
   "const me = {}, db = { from: () => ({ select: () => ({ eq: async () => ({ data: ROWS }) }) }) }; const renderSeasons = null;",
   "let CURX = null; const rulesInfo = () => CURX;",
   read("js/54-state-agencies.js"),
+  "STATE_AGENCIES.ZZ = ['Testland Fish Dept.', 'Testland Fish', 'https://example.test/rules', 'https://example.test/licence'];   // a made-up place with no rows (every real state now has some)",
   cut(t10, "  let fishRules = [];", "  // Admin: edit the rules table"),
   cut(s31, "  // Seasons cards: closed dates", "  // The chips under the month"),
   cut(s05, "  // US plan step 4: the Seasons list", "  const mmdd"),
@@ -90,7 +91,7 @@ const chk = (st, sp, len, d) => S.keeperCheck(sp, len, day(d || "2026-10-21"), i
   ok("Missouri has separate channel, blue and flathead catfish rows", ["Channel catfish", "Blue catfish", "Flathead catfish"].every(f => /Missouri/.test(chk("MO", f, 20).text)));
 
   // honest gaps
-  ok("Kansas (no rows) still says no rules yet", /We don't have Kansas rules yet/.test(chk("KS", "Walleye", 20).text));
+  ok("a made-up place (no rows) still says no rules yet", /We don't have Testland rules yet/.test(chk("ZZ", "Walleye", 20).text));
   ok("Ohio bluegill (no row) → gap message", /We don't have an? Ohio rule for this fish yet/.test(chk("OH", "Bluegill", 6).text));
   ok("Illinois yellow perch (no row) → gap message", /We don't have an? Illinois rule for this fish yet/.test(chk("IL", "Yellow perch", 6).text));
   ok("Michigan / Wisconsin trout (no row) → gap message", /We don't have a/.test(chk("MI", "Rainbow trout", 12).text) && /We don't have a/.test(chk("WI", "Brown trout", 12).text));
@@ -101,8 +102,8 @@ const chk = (st, sp, len, d) => S.keeperCheck(sp, len, day(d || "2026-10-21"), i
   S.setInfo(inf("MN"));
   const v = S.seasonView({ name: "Walleye", match: ["walleye", "saugeye"] });
   ok("Minnesota walleye card shows the rule, the date, with the closed window", /Minnesota/.test(v.rule) && /checked 2026-10-21/.test(v.rule) && JSON.stringify(v.closed) === '[["02-23","05-14"]]');
-  S.setInfo(inf("KS"));
-  ok("a Kansas card says We don't have…", /We don't have Kansas rules yet/.test(S.seasonView({ name: "Walleye", match: ["walleye"] }).rule));
+  S.setInfo(inf("ZZ"));
+  ok("a made-up place's card says We don't have…", /We don't have Testland rules yet/.test(S.seasonView({ name: "Walleye", match: ["walleye"] }).rule));
   ["OH", "MI", "IN", "IL", "WI", "MN", "IA", "MO"].forEach(c => { S.setInfo(inf(c)); ok(c + " → the Great Lakes cards", S.seasonList()[0] === "GL"); });
   ["NY", "CT", "VT"].forEach(c => { S.setInfo(inf(c)); ok(c + " → still the Northeast cards", S.seasonList()[0] === "NE"); });
   ["VA", "PA"].forEach(c => { S.setInfo(inf(c)); ok(c + " → still the Mid-Atlantic cards", S.seasonList()[0] === "MIDATL"); });

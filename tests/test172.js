@@ -25,10 +25,11 @@ const ROWS = parseRows(sql).concat([
   { species: "Redfish (red drum)", match: ["redfish", "red drum"], regions: null, min_in: 18, max_in: 27, measure: "total", one_over: false, bag: "2 per boat", release_only: false, closed: null, open_only: null, note: null, verified_on: new Date().toISOString().slice(0, 10), active: true }
 ]);
 const code = [
-  "const STATE_NAMES = { NY: 'New York', CT: 'Connecticut', RI: 'Rhode Island', MA: 'Massachusetts', NH: 'New Hampshire', VT: 'Vermont', ME: 'Maine', OR: 'Oregon', KS: 'Kansas' };",
+  "const STATE_NAMES = { NY: 'New York', CT: 'Connecticut', RI: 'Rhode Island', MA: 'Massachusetts', NH: 'New Hampshire', VT: 'Vermont', ME: 'Maine', OR: 'Oregon', KS: 'Kansas', ZZ: 'Testland' };",
   "const me = {}, db = { from: () => ({ select: () => ({ eq: async () => ({ data: ROWS }) }) }) }; const renderSeasons = null;",
   "let CURX = null; const rulesInfo = () => CURX;",
   read("js/54-state-agencies.js"),
+  "STATE_AGENCIES.ZZ = ['Testland Fish Dept.', 'Testland Fish', 'https://example.test/rules', 'https://example.test/licence'];   // a made-up place with no rows (every real state now has some)",
   cut(t10, "  let fishRules = [];", "  // Admin: edit the rules table"),
   cut(s31, "  // Seasons cards: closed dates", "  // The chips under the month"),
   cut(s05, "  // US plan step 4: the Seasons list", "  const mmdd"),
@@ -86,12 +87,12 @@ const chk = (st, sp, len, d) => S.keeperCheck(sp, len, day(d || "2026-10-21"), i
 
   // honest gaps: nothing could be read for these, so no rule is shown
   const gap = chk("MA", "Striped bass", 29);
-  ok("Massachusetts striped bass (no rows at all) → We don't have Massachusetts rules yet + buttons", gap.level === "info" && /We don't have Massachusetts rules yet/.test(gap.text) && gap.gate.links.length === 2);
-  ok("Rhode Island fluke (no rows) → gap message", /We don't have Rhode Island rules yet/.test(chk("RI", "Fluke", 20).text));
-  ok("Maine striped bass (no rows) → gap message", /We don't have Maine rules yet/.test(chk("ME", "Striped bass", 29).text));
+  ok("Massachusetts striped bass (no rows in setup/99) → We don't have Massachusetts rules yet + buttons", gap.level === "info" && /We don't have Massachusetts rules yet/.test(gap.text) && gap.gate.links.length === 2);
+  ok("Rhode Island fluke (no rows in setup/99) → gap message", /We don't have Rhode Island rules yet/.test(chk("RI", "Fluke", 20).text));
+  ok("Maine striped bass (no rows in setup/99) → gap message", /We don't have Maine rules yet/.test(chk("ME", "Striped bass", 29).text));
   ok("New Hampshire striped bass (no row) → gap message", /We don't have a New Hampshire rule for this fish yet/.test(chk("NH", "Striped bass", 29).text));
   ok("Vermont catfish (no row) → gap message", /We don't have a Vermont rule for this fish yet/.test(chk("VT", "Channel catfish", 20).text));
-  ok("Kansas (no rows) still says no rules yet", /We don't have Kansas rules yet/.test(chk("KS", "Walleye", 20).text));
+  ok("a made-up place (no rows) still says no rules yet", /We don't have Testland rules yet/.test(chk("ZZ", "Walleye", 20).text));
   ok("New York rows are not used in Connecticut", !/New York/.test(chk("CT", "Walleye", 19).text));
   ok("Mid-Atlantic still its own (Virginia red drum uses a Virginia row only if loaded, never a Northeast one)", !/New York|Connecticut|Vermont/.test(chk("VA", "Red drum", 22).text));
 
@@ -100,7 +101,7 @@ const chk = (st, sp, len, d) => S.keeperCheck(sp, len, day(d || "2026-10-21"), i
   const v = S.seasonView({ name: "Black sea bass", match: ["black sea bass", "sea bass"] });
   ok("New York black sea bass card shows the rule, the date and New York DEC, with the closed window", /New York: 16″/.test(v.rule) && /New York DEC/.test(v.rule) && JSON.stringify(v.closed) === '[["01-01","05-15"]]');
   S.setInfo(inf("MA"));
-  ok("a Massachusetts card with no rows says We don't have…", /We don't have Massachusetts rules yet/.test(S.seasonView({ name: "Black sea bass", match: ["black sea bass"] }).rule));
+  ok("a Massachusetts card with no rows in setup/99 says We don't have…", /We don't have Massachusetts rules yet/.test(S.seasonView({ name: "Black sea bass", match: ["black sea bass"] }).rule));
   ["NY", "CT", "RI", "MA", "NH", "VT", "ME"].forEach(c => { S.setInfo(inf(c)); ok(c + " → the Northeast cards", S.seasonList()[0] === "NE"); });
   ["VA", "MD", "DE", "NJ", "PA", "DC"].forEach(c => { S.setInfo(inf(c)); ok(c + " → still the Mid-Atlantic cards", S.seasonList()[0] === "MIDATL"); });
   S.setInfo(inf("GA")); ok("Georgia → the Southeast cards (unchanged)", S.seasonList()[0] === "SE");
