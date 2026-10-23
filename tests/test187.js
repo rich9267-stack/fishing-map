@@ -107,7 +107,7 @@ vm.runInContext(cut(s02, "  const localWxCache", "  // ---- Water temperature --
 
   // ---------- 6) shown in the app ----------
   const hist = read("docs/build_history.md"), wn = read("js/13-groups-misc.js");
-  ok(/time zone/i.test(wn.slice(wn.indexOf("WHATS_NEW"), wn.indexOf("WHATS_NEW") + 2500)), "What's new mentions time zones");
+  ok(/time zone/i.test(wn.slice(wn.indexOf("WHATS_NEW"), wn.indexOf("WHATS_NEW") + 7000)), "What's new mentions time zones");
   ok(/v175/.test(hist), "build history has v175");
   console.log(bad ? `\n${bad} FAILED` : "\nALL OK");
   process.exit(bad ? 1 : 0);

@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-22r", title: "📚 Learn page (first piece: fishing rules for any state)", items: [
+      "New 📚 Learn card on Home. Pick any state (it starts on the one you are in; 📍 Here brings you back) and read that state’s fishing rules: size, bag and closed seasons for each fish we have, the date each rule was checked, and links to the state’s wildlife agency and fishing licence.",
+      "It also tells you how many closed (no-fishing) areas we have for the state. Always a guide only — confirm with the agency. Fish, rigs, bait & lures, knots and state info are coming next."
+    ] },
     { id: "2026-10-22q", title: "ℹ️ Special fishing rules note", items: [
       "A spot inside an area where fishing is restricted but not banned (like the Florida Keys National Marine Sanctuary) now shows an ℹ️ note: “special fishing rules may apply”. Tap it for the rule and who manages the area. It shows on spot cards, Home, Plan a trip and Find new water.",
       "Areas where fishing is banned still show the red 🚫 warning. These outlines are rough (about a mile), so always read the area's rules."

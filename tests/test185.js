@@ -144,7 +144,7 @@ const FWC = /gis\.myfwc\.com/;
   }
   // ---------- 7) wiring + every source ----------
   const html = read("index.html"), sw = read("sw.js"), wn = read("js/13-groups-misc.js");
-  ok(/<script src="js\/59-us-lakes\.js\?v=\d+"><\/script>(\s*<script src="js\/6[01]-[a-z-]+\.js\?v=\d+"><\/script>)*\s*<script src="js\/99-boot\.js/.test(html) && /"\.\/js\/59-us-lakes\.js"/.test(sw), "js/59 is loaded before boot and saved for offline");
+  ok(/<script src="js\/59-us-lakes\.js\?v=\d+"><\/script>(\s*<script src="js\/6[0-9]-[a-z-]+\.js\?v=\d+"><\/script>)*\s*<script src="js\/99-boot\.js/.test(html) && /"\.\/js\/59-us-lakes\.js"/.test(sw), "js/59 is loaded before boot and saved for offline");
   const hosts = [...new Set((n59.match(/https:\/\/[a-z0-9.-]+/g) || []).filter(h => !/google\.com/.test(h)))], csp = (/connect-src 'self'([^;"]*)/.exec(html) || [])[1] || "";
   ok(hosts.every(h => csp.split(/\s+/).includes(h)), "every state server is in the Content-Security-Policy");
   const cfg = {}; vm.createContext(cfg); vm.runInContext(n59 + "\nthis.D = USL_DEPTH; this.W = USL_WATER;", cfg);

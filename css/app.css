@@ -1173,3 +1173,18 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
 .fir-preview input[type="text"] { width: 100%; margin: 6px 0; }
 .fir-ready { margin: 10px 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
 .fir-verdict { font-weight: 700; margin: 4px 0; }
+  /* 📚 Learn (js/62) */
+  .learn-card { display: block; width: 100%; text-align: left; font: inherit; color: var(--text); cursor: pointer; min-height: 44px; }
+  .learn-card-t { display: block; font-weight: 700; }
+  .learn-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .learn-select { flex: 1; min-height: 44px; font: inherit; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+  .learn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .learn-tile { appearance: none; font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 10px; min-height: 44px; text-align: left; cursor: pointer; }
+  .learn-tile.on { border-color: var(--accent, #1976d2); font-weight: 700; }
+  .learn-tile.soon { color: var(--muted); }
+  .learn-soon { display: block; font-size: .72rem; font-weight: 400; }
+  .learn-h { font-size: 1.15rem; margin: 6px 0; }
+  .learn-h2 { font-size: 1rem; margin: 14px 0 4px; }
+  .learn-list { margin-top: 8px; }
+  .learn-rule { padding: 8px 0; border-top: 1px solid var(--line); }
+  .learn-fish { font-weight: 700; }
