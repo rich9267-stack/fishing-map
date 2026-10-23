@@ -80,7 +80,7 @@ const tick = () => new Promise(r => setTimeout(r, 5));
 
   // wiring
   const sw = read("sw.js"), src = read("js/62-learn.js");
-  ok(sw.includes("learn\\/(fish|knots|rigs)"), "sw.js keeps data/learn/fish.json on the phone");
+  ok(sw.includes("learn\\/(fish|knots|rigs|bait)"), "sw.js keeps data/learn/fish.json on the phone");
   ok(/official sources/.test(read("js/13-groups-misc.js")), "What's new mentions the official sources");
   ok(/v183/.test(read("docs/build_history.md")), "build history has v183");
   ok(!/\.from\(/.test(src), "no database call in js/62");

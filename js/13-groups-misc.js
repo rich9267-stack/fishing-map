@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-23d", title: "🎣 Learn: Bait & lures", items: [
+      "In 📚 Learn, tap 🎣 Bait & lures to see baits and lures (live shrimp, live baitfish, jigs, spoons and more). Every line comes from an official FWC page and has a link to it, plus the date we checked.",
+      "A bait or lure is only listed when an official page names it. Tap a fish under a card to open that fish."
+    ] },
     { id: "2026-10-23c", title: "🐟 Fish cards now come from official sources", items: [
       "The long fish cards in 📚 Learn now use facts from the Florida Fish & Wildlife (FWC) species profiles, NOAA Fisheries, the Minnesota DNR and the USGS. Each card ends with a link to its source and the date we checked it.",
       "If the official page does not say something (for example baits), the card leaves it out instead of guessing. Handling advice for saltwater fish is from FWC. Knots and rigs are still our own general advice and say so."

@@ -77,12 +77,12 @@ const tick = () => new Promise(r => setTimeout(r, 10));
   A.LN.tile = "rigs"; A.LN.rigOpen = "Texas rig"; A.renderLearn();
   find(n => /All rigs/.test(n.textContent) && n.tag === "button").handlers.click();
   ok(A.LN.rigOpen === null && all(n => n.className === "learn-fishrow").length === 8, "‹ All rigs returns to the list");
-  ok(all(n => /learn-tile/.test(n.className)).filter(t => /soon/.test(t.className)).length === 2, "Rules, Fish, Rigs and Knots work; two tiles still say Coming soon");
+  ok(all(n => /learn-tile/.test(n.className)).filter(t => /soon/.test(t.className)).length === 1, "Rules, Fish, Rigs, Bait and Knots work; one tile still says Coming soon");
 
   A.LN.rigs = null; A.LN.rigsLoading = false; failRigs = true; A.renderLearn(); await tick();
   ok(/could not load/.test(text()), "if the file can't be read, an honest message");
 
-  ok(read("sw.js").includes("learn\\/(fish|knots|rigs)"), "sw.js keeps data/learn/rigs.json on the phone");
+  ok(read("sw.js").includes("learn\\/(fish|knots|rigs|bait)"), "sw.js keeps data/learn/rigs.json on the phone");
   ok(/2026-10-23b/.test(read("js/13-groups-misc.js")) && /Learn: Rigs/.test(read("js/13-groups-misc.js")), "What's new mentions the rigs");
   ok(/v182/.test(read("docs/build_history.md")), "build history has v182");
   ok(!/\.from\(/.test(read("js/62-learn.js")), "no database call in js/62");

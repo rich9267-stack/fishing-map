@@ -220,7 +220,7 @@ function lnKnotsPanel() {
 // knot card) and fish cards' rig names tap through to the rig when a rig's `find` words are in the name. Plain text; `picture`/`credit` hidden until filled.
 LN.rigs = null; LN.rigsErr = false; LN.rigsQ = ""; LN.rigOpen = null;
 function lnRigsLoad() {
-  if (LN.rigs || LN.rigsLoading) return;
+  if (LN.rigs || LN.rigsLoading || LN.rigsErr) return;   // (after a failure, a fish card must not keep asking)
   LN.rigsLoading = true;
   fetch("data/learn/rigs.json").then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
     .then(j => { if (!j || !Array.isArray(j.rigs)) throw new Error("bad"); LN.rigs = j.rigs; })
@@ -294,6 +294,70 @@ function lnRigsPanel() {
   return box;
 }
 
+// ---- 🎣 Bait & lures (step 5): a searchable list and a card per bait or lure, from data/learn/bait.json. Every line carries a [n] pointing at the official page
+// it came from (listed under the card with the checked date); the fish that name it are taps into their fish cards.
+LN.bait = null; LN.baitSrc = {}; LN.baitT = ""; LN.baitErr = false; LN.baitQ = ""; LN.baitOpen = null;
+function lnBaitLoad() {
+  if (LN.bait || LN.baitLoading) return;
+  LN.baitLoading = true;
+  fetch("data/learn/bait.json").then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
+    .then(j => { if (!j || !Array.isArray(j.bait)) throw new Error("bad"); LN.baitSrc = j.sources || {}; LN.baitT = j.t || ""; LN.bait = j.bait; })
+    .catch(() => { LN.baitErr = true; })
+    .then(() => { LN.baitLoading = false; const v = $("view-learn"); if (v && !v.hidden && LN.tile === "bait") renderLearn(); });
+}
+function lnBaitPick(box) {
+  const q = LN.baitQ.trim().toLowerCase();
+  const hits = (LN.bait || []).filter(b => !q || [b.name].concat(b.aka || []).some(w => String(w).toLowerCase().includes(q)));
+  box.textContent = "";
+  if (!hits.length) { box.appendChild(el("div", "spot-meta", "No bait or lure matches “" + LN.baitQ.trim() + "”.")); return; }
+  hits.forEach(b => {
+    const r = el("button", "learn-fishrow", (b.kind === "lure" ? "🎣 " : "🪱 ") + b.name); r.type = "button";
+    r.addEventListener("click", () => { LN.baitOpen = b.name; renderLearn(); window.scrollTo({ top: 0 }); });
+    box.appendChild(r);
+  });
+}
+function lnBaitCard(b) {
+  const box = el("div", "learn-fishcard");
+  const back = el("button", "btn ghost small", "‹ All baits & lures"); back.type = "button";
+  back.addEventListener("click", () => { LN.baitOpen = null; renderLearn(); });
+  box.appendChild(back);
+  box.appendChild(el("h2", "learn-h", (b.kind === "lure" ? "🎣 " : "🪱 ") + b.name));
+  box.appendChild(el("div", "spot-meta", b.kind === "lure" ? "Lure (artificial)" : "Bait"));
+  const used = [];   // source keys in the order first used → [1], [2] …
+  box.appendChild(el("h3", "learn-h2", "What the official pages say"));
+  const u = el("ul", "learn-ul");
+  (b.facts || []).forEach(f => {
+    if (used.indexOf(f.s) < 0) used.push(f.s);
+    u.appendChild(el("li", null, f.t + " [" + (used.indexOf(f.s) + 1) + "]"));
+  });
+  box.appendChild(u);
+  if (b.fish && b.fish.length) {
+    box.appendChild(el("h3", "learn-h2", "🐟 Fish that name it"));
+    b.fish.forEach(n => {
+      const l = el("button", "learn-link", n + " ›"); l.type = "button";
+      l.addEventListener("click", () => { LN.tile = "fish"; LN.fishOpen = n; renderLearn(); window.scrollTo({ top: 0 }); });
+      box.appendChild(l);
+    });
+  }
+  used.forEach((k, i) => lnSourceLine(box, "[" + (i + 1) + "]", LN.baitSrc[k], LN.baitT));
+  box.appendChild(el("div", "spot-meta", "Not a rule. Check the state's rules on bait, hooks and gear before you fish."));
+  return box;
+}
+function lnBaitPanel() {
+  const box = el("div", "learn-fishpanel");
+  if (LN.baitErr) { box.appendChild(el("div", "spot-meta", "The bait and lure cards could not load. Check your connection and try again.")); return box; }
+  if (!LN.bait) { lnBaitLoad(); box.appendChild(el("div", "spot-meta", "Loading the baits and lures…")); return box; }
+  const open = LN.baitOpen && LN.bait.find(b => b.name === LN.baitOpen);
+  if (open) { box.appendChild(lnBaitCard(open)); return box; }
+  box.appendChild(el("h2", "learn-h", "Bait & lures"));
+  box.appendChild(el("div", "spot-meta", "Only baits and lures that an official page names are listed, each with its source."));
+  const inp = el("input", "learn-search"); inp.type = "search"; inp.placeholder = "Search baits and lures"; inp.value = LN.baitQ; inp.setAttribute("aria-label", "Search baits and lures");
+  const list = el("div", "learn-fishlist");
+  inp.addEventListener("input", () => { LN.baitQ = inp.value; lnBaitPick(list); });
+  box.appendChild(inp); box.appendChild(list); lnBaitPick(list);
+  return box;
+}
+
 // no rules of any state on the phone yet (not signed in yet, or still loading)
 const lnNoRulesAtAll = () => (typeof fishRules === "undefined" || !fishRules.length) && (typeof stateRules === "undefined" || !stateRules.length);
 // are the rules still being asked for? (js/10 loadRules runs once signed in)
@@ -320,9 +384,9 @@ function renderLearn() {
   // tiles
   const grid = el("div", "learn-grid");
   LN_TILES.forEach(([k, ico, label]) => {
-    const b = el("button", "learn-tile" + (k === LN.tile ? " on" : "") + (k === "rules" || k === "fish" || k === "knots" || k === "rigs" ? "" : " soon"), ico + " " + label); b.type = "button"; b.dataset.tile = k;
-    if (k !== "rules" && k !== "fish" && k !== "knots" && k !== "rigs") b.appendChild(el("span", "learn-soon", "Coming soon"));
-    b.addEventListener("click", () => { LN.tile = k; if (k === "fish") LN.fishOpen = null; if (k === "knots") LN.knotOpen = null; if (k === "rigs") LN.rigOpen = null; renderLearn(); });
+    const b = el("button", "learn-tile" + (k === LN.tile ? " on" : "") + (k === "rules" || k === "fish" || k === "knots" || k === "rigs" || k === "bait" ? "" : " soon"), ico + " " + label); b.type = "button"; b.dataset.tile = k;
+    if (k !== "rules" && k !== "fish" && k !== "knots" && k !== "rigs" && k !== "bait") b.appendChild(el("span", "learn-soon", "Coming soon"));
+    b.addEventListener("click", () => { LN.tile = k; if (k === "bait") LN.baitOpen = null; if (k === "fish") LN.fishOpen = null; if (k === "knots") LN.knotOpen = null; if (k === "rigs") LN.rigOpen = null; renderLearn(); });
     grid.appendChild(b);
   });
   body.appendChild(grid);
@@ -336,9 +400,11 @@ function renderLearn() {
     body.appendChild(lnKnotsPanel());
   } else if (LN.tile === "rigs") {
     body.appendChild(lnRigsPanel());
+  } else if (LN.tile === "bait") {
+    body.appendChild(lnBaitPanel());
   } else {
     const t = LN_TILES.find(x => x[0] === LN.tile);
-    body.appendChild(el("div", "spot-meta", t[1] + " " + t[2] + " is coming soon. Rules, Fish, Rigs and Knots are ready now."));
+    body.appendChild(el("div", "spot-meta", t[1] + " " + t[2] + " is coming soon. Rules, Fish, Rigs, Bait & lures and Knots are ready now."));
   }
 }
 function openLearn() { LN.st = lnHere(); LN.tile = "rules"; showView("learn"); window.scrollTo({ top: 0 }); }
