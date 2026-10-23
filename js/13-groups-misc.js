@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-23a", title: "🪢 Learn: Knots", items: [
+      "In 📚 Learn, tap 🪢 Knots for 8 starter knots (Palomar, improved clinch, uni, loop knot, Albright, double uni, nail knot, blood knot). Search by name, then follow the numbered steps. Pictures are coming later.",
+      "General advice only — practise with a spare piece of line before you need it."
+    ] },
     { id: "2026-10-22s", title: "🐟 Learn: Fish cards", items: [
       "In 📚 Learn, tap 🐟 Fish for a list of fish you can search by name. Each long card shows that fish’s size, bag and closed season for the state you picked, plus where it lives, habits, best time and tide, baits, rigs, tips, look-alikes and how to release it.",
       "Sizes and bag limits come only from our rules list; the rest is general advice, marked as such. Always confirm with the state agency."

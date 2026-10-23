@@ -152,6 +152,61 @@ function lnFishPanel(st) {
   return box;
 }
 
+// ---- 🪢 Knots (step 3): a searchable list and a step-by-step card per knot, from data/learn/knots.json. Plain text for now;
+// each card has a spot for a picture + credit line (`picture`, `credit`) that stays hidden until a licensed diagram is added.
+LN.knots = null; LN.knotsErr = false; LN.knotsQ = ""; LN.knotOpen = null;
+function lnKnotsLoad() {
+  if (LN.knots || LN.knotsLoading) return;
+  LN.knotsLoading = true;
+  fetch("data/learn/knots.json").then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
+    .then(j => { if (!j || !Array.isArray(j.knots)) throw new Error("bad"); LN.knots = j.knots; })
+    .catch(() => { LN.knotsErr = true; })
+    .then(() => { LN.knotsLoading = false; const v = $("view-learn"); if (v && !v.hidden && LN.tile === "knots") renderLearn(); });
+}
+function lnKnotPick(box) {
+  const q = LN.knotsQ.trim().toLowerCase();
+  const hits = (LN.knots || []).filter(k => !q || [k.name].concat(k.aka || []).some(w => String(w).toLowerCase().includes(q)));
+  box.textContent = "";
+  if (!hits.length) { box.appendChild(el("div", "spot-meta", "No knot matches “" + LN.knotsQ.trim() + "”.")); return; }
+  hits.forEach(k => {
+    const b = el("button", "learn-fishrow", "🪢 " + k.name); b.type = "button";
+    b.addEventListener("click", () => { LN.knotOpen = k.name; renderLearn(); window.scrollTo({ top: 0 }); });
+    box.appendChild(b);
+  });
+}
+function lnKnotCard(k) {
+  const box = el("div", "learn-fishcard");
+  const back = el("button", "btn ghost small", "‹ All knots"); back.type = "button";
+  back.addEventListener("click", () => { LN.knotOpen = null; renderLearn(); });
+  box.appendChild(back);
+  box.appendChild(el("h2", "learn-h", "🪢 " + k.name));
+  if (k.picture && /^(https?:\/\/|data\/)/.test(k.picture)) {
+    const fig = el("div", "learn-fig"), img = el("img"); img.src = k.picture; img.alt = k.name + " knot diagram"; img.loading = "lazy"; fig.appendChild(img);
+    if (k.credit) fig.appendChild(el("div", "spot-meta", "Picture: " + k.credit));
+    box.appendChild(fig);
+  }
+  box.appendChild(el("div", null, k.what));
+  box.appendChild(el("h3", "learn-h2", "🎣 When to use it")); box.appendChild(el("div", null, k.use));
+  box.appendChild(el("h3", "learn-h2", "Steps"));
+  const ol = el("ol", "learn-ul"); (k.steps || []).forEach(s => ol.appendChild(el("li", null, s))); box.appendChild(ol);
+  if (k.tip) { box.appendChild(el("h3", "learn-h2", "💡 Tip")); box.appendChild(el("div", null, k.tip)); }
+  box.appendChild(el("div", "spot-meta", "Practise with a spare piece of line before you need it. Wet the knot before you pull it tight."));
+  return box;
+}
+function lnKnotsPanel() {
+  const box = el("div", "learn-fishpanel");
+  if (LN.knotsErr) { box.appendChild(el("div", "spot-meta", "The knot cards could not load. Check your connection and try again.")); return box; }
+  if (!LN.knots) { lnKnotsLoad(); box.appendChild(el("div", "spot-meta", "Loading the knots…")); return box; }
+  const open = LN.knotOpen && LN.knots.find(k => k.name === LN.knotOpen);
+  if (open) { box.appendChild(lnKnotCard(open)); return box; }
+  box.appendChild(el("h2", "learn-h", "Knots"));
+  const inp = el("input", "learn-search"); inp.type = "search"; inp.placeholder = "Search knots by name"; inp.value = LN.knotsQ; inp.setAttribute("aria-label", "Search knots");
+  const list = el("div", "learn-fishlist");
+  inp.addEventListener("input", () => { LN.knotsQ = inp.value; lnKnotPick(list); });
+  box.appendChild(inp); box.appendChild(list); lnKnotPick(list);
+  return box;
+}
+
 // no rules of any state on the phone yet (not signed in yet, or still loading)
 const lnNoRulesAtAll = () => (typeof fishRules === "undefined" || !fishRules.length) && (typeof stateRules === "undefined" || !stateRules.length);
 // are the rules still being asked for? (js/10 loadRules runs once signed in)
@@ -178,9 +233,9 @@ function renderLearn() {
   // tiles
   const grid = el("div", "learn-grid");
   LN_TILES.forEach(([k, ico, label]) => {
-    const b = el("button", "learn-tile" + (k === LN.tile ? " on" : "") + (k === "rules" || k === "fish" ? "" : " soon"), ico + " " + label); b.type = "button"; b.dataset.tile = k;
-    if (k !== "rules" && k !== "fish") b.appendChild(el("span", "learn-soon", "Coming soon"));
-    b.addEventListener("click", () => { LN.tile = k; if (k === "fish") LN.fishOpen = null; renderLearn(); });
+    const b = el("button", "learn-tile" + (k === LN.tile ? " on" : "") + (k === "rules" || k === "fish" || k === "knots" ? "" : " soon"), ico + " " + label); b.type = "button"; b.dataset.tile = k;
+    if (k !== "rules" && k !== "fish" && k !== "knots") b.appendChild(el("span", "learn-soon", "Coming soon"));
+    b.addEventListener("click", () => { LN.tile = k; if (k === "fish") LN.fishOpen = null; if (k === "knots") LN.knotOpen = null; renderLearn(); });
     grid.appendChild(b);
   });
   body.appendChild(grid);
@@ -190,9 +245,11 @@ function renderLearn() {
   } else if (LN.tile === "fish") {
     body.appendChild(lnFishPanel(st));
     if (LN.fishOpen && LN.fish && lnNoRulesAtAll()) lnWaiting();   // rules not here yet: asked for once, the page redraws itself
+  } else if (LN.tile === "knots") {
+    body.appendChild(lnKnotsPanel());
   } else {
     const t = LN_TILES.find(x => x[0] === LN.tile);
-    body.appendChild(el("div", "spot-meta", t[1] + " " + t[2] + " is coming soon. Rules and Fish are ready now."));
+    body.appendChild(el("div", "spot-meta", t[1] + " " + t[2] + " is coming soon. Rules, Fish and Knots are ready now."));
   }
 }
 function openLearn() { LN.st = lnHere(); LN.tile = "rules"; showView("learn"); window.scrollTo({ top: 0 }); }
