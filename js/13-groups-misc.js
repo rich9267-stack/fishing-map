@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-23g", title: "💬 Learn: general advice fills the gaps", items: [
+      "Fish cards now have a “General advice” block for what the official page does not say (where it lives, best time, baits, rigs, tips, look-alikes). It is labelled as written for this app, not from the official source.",
+      "Bait & lures has 12 more cards (plastic worms, crankbaits, nightcrawlers, chum and more) marked “general advice”. Cards with a source link still come from official pages. Size, bag and season still only come from the rules."
+    ] },
     { id: "2026-10-23f", title: "🔎 Learn: one search for everything", items: [
       "At the top of 📚 Learn, “Search all of Learn” finds fish, rigs, baits & lures and knots by name or nickname. Tap a result to open its card.",
       "A fish card now lists the bait & lure cards that name it, and a rig card lists the fish cards that point to it."

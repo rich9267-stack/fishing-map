@@ -37,11 +37,13 @@ const tick = () => new Promise(r => setTimeout(r, 10));
 process.on("unhandledRejection", e => { console.log("FAIL crashed: " + (e && e.stack || e)); process.exit(1); });
 (async () => {
   const bait =baitJson.bait, src = baitJson.sources, fishNames = fishJson.fish.map(f => f.name);
-  ok(bait.length >= 10 && bait.every(b => b.name && /^(bait|lure)$/.test(b.kind) && b.facts.length >= 1), "data/learn/bait.json: " + bait.length + " baits and lures, each with at least one sourced line");
-  ok(bait.every(b => b.facts.every(f => f.t && src[f.s] && /^https:\/\/(myfwc\.com|www\.fisheries\.noaa\.gov|www\.dnr\.state\.mn\.us|nas\.er\.usgs\.gov)\//.test(src[f.s].url))), "every line points at an official source (https link on an agency site)");
+  const official = bait.filter(b => !b.general), general = bait.filter(b => b.general);
+  ok(official.length >= 10 && bait.every(b => b.name && /^(bait|lure)$/.test(b.kind)) && official.every(b => b.facts.length >= 1), "data/learn/bait.json: " + official.length + " cards from official pages, each with at least one sourced line");
+  ok(general.length >= 8 && general.every(b => b.lines && b.lines.length >= 2 && !b.facts), general.length + " general-advice cards, kept apart (lines, no source marks)");
+  ok(official.every(b => b.facts.every(f => f.t && src[f.s] && /^https:\/\/(myfwc\.com|www\.fisheries\.noaa\.gov|www\.dnr\.state\.mn\.us|nas\.er\.usgs\.gov)\//.test(src[f.s].url))), "every line points at an official source (https link on an agency site)");
   ok(bait.every(b => b.fish.every(n => fishNames.includes(n))), "every fish named under a card is a real fish card");
   ok(/^\d{4}-\d\d-\d\d$/.test(baitJson.t), "the file has its checked date");
-  ok(bait.every(b => !/(per person|per day|bag limit|minimum size|slot limit)/i.test(b.facts.map(f => f.t).join(" "))), "no bag or size limits (those only come from the rules data)");
+  ok(bait.every(b => !/(per person|per day|bag limit|minimum size|slot limit)/i.test((b.facts ? b.facts.map(f => f.t) : b.lines).join(" "))), "no bag or size limits (those only come from the rules data)");
 
   A.LN.st = "TX"; A.LN.tile = "bait"; A.renderLearn();
   ok(/Loading the baits/.test(text()) && fetched.length === 1 && fetched[0] === "data/learn/bait.json", "Bait tile asks for the file once and says Loading");
@@ -65,6 +67,12 @@ process.on("unhandledRejection", e => { console.log("FAIL crashed: " + (e && e.s
   ok(A.LN.baitOpen === null && all(n => n.className === "learn-fishrow").length === bait.length, "‹ All baits & lures returns to the list");
   ok(all(n => /learn-tile/.test(n.className)).filter(t => /soon/.test(t.className)).length === 0, "all six tiles work; none says Coming soon");
 
+  // a general-advice card says so and shows no source marks
+  A.LN.tile = "bait"; A.LN.baitOpen = "Plastic worms"; A.renderLearn();
+  ok(/General advice, not from an official source/.test(text()) && !/What the official pages say/.test(text()) && !/[1]/.test(text()) && all(n => n.tag === "a").length === 0, "a general card is labelled as general advice, with no source link or [n] marks");
+  A.LN.baitQ = ""; A.LN.baitOpen = null; A.renderLearn();
+  const rows = all(n => n.className === "learn-fishrow").map(n => n.textContent);
+  ok(rows.some(x => /Plastic worms · general advice/.test(x)) && rows.some(x => /^🪱 Live shrimp$/.test(x.trim())), "the list marks general cards; official cards carry no mark");
   A.LN.bait = null; A.LN.baitLoading = false; failBait = true; A.renderLearn(); await tick();
   ok(/could not load/.test(text()), "if the file can't be read, an honest message");
 

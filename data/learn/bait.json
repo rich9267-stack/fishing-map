@@ -1,127 +1,742 @@
 {
   "t": "2026-10-23",
-  "note": "Every line comes from an official page named under the card (FWC Saltwater Fishing Tips or an FWC species profile). A bait or lure is only listed when one of those pages names it; wording is shortened, not changed in meaning.",
+  "note": "Cards without \"general\" come from the official page named under them (FWC Saltwater Fishing Tips or an FWC species profile); wording is shortened, not changed in meaning. Cards marked \"general\" are general advice written for this app, not from an official source, and say so on screen.",
   "sources": {
-    "tips": { "label": "FWC Saltwater Fishing Tips", "url": "https://myfwc.com/fishing/saltwater/recreational/how-to-fish/" },
-    "snook": { "label": "FWC species profile: Snook", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/snook/snook/" },
-    "tarpon": { "label": "FWC species profile: Tarpon", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/tarpon/tarpon/" },
-    "redfish": { "label": "FWC species profile: Red Drum", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/drums/red-drum/" },
-    "trout": { "label": "FWC species profile: Spotted Seatrout", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/drums/spotted-seatrout/" },
-    "sheepshead": { "label": "FWC species profile: Sheepshead", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/porgy/sheepshead/" },
-    "blackdrum": { "label": "FWC species profile: Black Drum", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/drums/black-drum/" },
-    "spanish": { "label": "FWC species profile: Spanish Mackerel", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/mackerel/spanish-mackerel/" },
-    "mahi": { "label": "FWC species profile: Dolphinfish", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/dolphinfish/" },
-    "king": { "label": "FWC species profile: King Mackerel", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/mackerel/king-mackerel/" },
-    "cobia": { "label": "FWC species profile: Cobia", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/cobia/" },
-    "redsnapper": { "label": "FWC species profile: Red Snapper", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/snapper/red-snapper/" },
-    "gag": { "label": "FWC species profile: Gag Grouper", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/grouper/gag-grouper/" },
-    "amberjack": { "label": "FWC species profile: Greater Amberjack", "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/jacks/greater-amberjack/" },
-    "bluegill": { "label": "FWC species profile: Bluegill", "url": "https://myfwc.com/wildlifehabitats/profiles/freshwater/bluegill/" },
-    "crappie": { "label": "FWC species profile: Black Crappie", "url": "https://myfwc.com/wildlifehabitats/profiles/freshwater/black-crappie/" },
-    "catfish": { "label": "FWC species profile: Channel Catfish", "url": "https://myfwc.com/wildlifehabitats/profiles/freshwater/channel-catfish/" }
+    "tips": {
+      "label": "FWC Saltwater Fishing Tips",
+      "url": "https://myfwc.com/fishing/saltwater/recreational/how-to-fish/"
+    },
+    "snook": {
+      "label": "FWC species profile: Snook",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/snook/snook/"
+    },
+    "tarpon": {
+      "label": "FWC species profile: Tarpon",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/tarpon/tarpon/"
+    },
+    "redfish": {
+      "label": "FWC species profile: Red Drum",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/drums/red-drum/"
+    },
+    "trout": {
+      "label": "FWC species profile: Spotted Seatrout",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/drums/spotted-seatrout/"
+    },
+    "sheepshead": {
+      "label": "FWC species profile: Sheepshead",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/porgy/sheepshead/"
+    },
+    "blackdrum": {
+      "label": "FWC species profile: Black Drum",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/drums/black-drum/"
+    },
+    "spanish": {
+      "label": "FWC species profile: Spanish Mackerel",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/mackerel/spanish-mackerel/"
+    },
+    "mahi": {
+      "label": "FWC species profile: Dolphinfish",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/dolphinfish/"
+    },
+    "king": {
+      "label": "FWC species profile: King Mackerel",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/mackerel/king-mackerel/"
+    },
+    "cobia": {
+      "label": "FWC species profile: Cobia",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/cobia/"
+    },
+    "redsnapper": {
+      "label": "FWC species profile: Red Snapper",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/snapper/red-snapper/"
+    },
+    "gag": {
+      "label": "FWC species profile: Gag Grouper",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/grouper/gag-grouper/"
+    },
+    "amberjack": {
+      "label": "FWC species profile: Greater Amberjack",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/saltwater/jacks/greater-amberjack/"
+    },
+    "bluegill": {
+      "label": "FWC species profile: Bluegill",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/freshwater/bluegill/"
+    },
+    "crappie": {
+      "label": "FWC species profile: Black Crappie",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/freshwater/black-crappie/"
+    },
+    "catfish": {
+      "label": "FWC species profile: Channel Catfish",
+      "url": "https://myfwc.com/wildlifehabitats/profiles/freshwater/channel-catfish/"
+    }
   },
   "bait": [
-    { "name": "Live shrimp", "kind": "bait", "aka": ["shrimp"], "fish": ["Redfish (red drum)", "Spotted seatrout", "Sheepshead", "Black drum", "Snook", "Channel catfish"],
+    {
+      "name": "Live shrimp",
+      "kind": "bait",
+      "aka": [
+        "shrimp"
+      ],
+      "fish": [
+        "Redfish (red drum)",
+        "Spotted seatrout",
+        "Sheepshead",
+        "Black drum",
+        "Snook",
+        "Channel catfish"
+      ],
       "facts": [
-        { "t": "Red drum (redfish): live shrimp.", "s": "redfish" },
-        { "t": "Spotted seatrout: live shrimp, or small pinfish or pigfish (grunts), free-lined near the bottom to draw trout out of grass-bed holes.", "s": "trout" },
-        { "t": "Sheepshead: live shrimp, sand fleas or fiddler crabs.", "s": "sheepshead" },
-        { "t": "Black drum: cut bait, shrimp, sand fleas or blue crabs.", "s": "blackdrum" },
-        { "t": "Snook: live pinfish, small mullet, shrimp or sardines.", "s": "snook" },
-        { "t": "Channel catfish: strong-smelling baits such as chicken liver or gizzards, shrimp, cut mullet and commercial stinkbaits.", "s": "catfish" },
-        { "t": "From a pier: use a weighted rig with natural bait such as shrimp to catch a variety of species off the bottom.", "s": "tips" }
-      ] },
-    { "name": "Live baitfish", "kind": "bait", "aka": ["pinfish", "pigfish", "mullet", "pogies", "sardines", "herring", "blue runners", "killifish", "mud minnows"], "fish": ["Snook", "Redfish (red drum)", "Spotted seatrout", "Kingfish (king mackerel)", "Greater amberjack", "Cobia", "Gag grouper"],
+        {
+          "t": "Red drum (redfish): live shrimp.",
+          "s": "redfish"
+        },
+        {
+          "t": "Spotted seatrout: live shrimp, or small pinfish or pigfish (grunts), free-lined near the bottom to draw trout out of grass-bed holes.",
+          "s": "trout"
+        },
+        {
+          "t": "Sheepshead: live shrimp, sand fleas or fiddler crabs.",
+          "s": "sheepshead"
+        },
+        {
+          "t": "Black drum: cut bait, shrimp, sand fleas or blue crabs.",
+          "s": "blackdrum"
+        },
+        {
+          "t": "Snook: live pinfish, small mullet, shrimp or sardines.",
+          "s": "snook"
+        },
+        {
+          "t": "Channel catfish: strong-smelling baits such as chicken liver or gizzards, shrimp, cut mullet and commercial stinkbaits.",
+          "s": "catfish"
+        },
+        {
+          "t": "From a pier: use a weighted rig with natural bait such as shrimp to catch a variety of species off the bottom.",
+          "s": "tips"
+        }
+      ]
+    },
+    {
+      "name": "Live baitfish",
+      "kind": "bait",
+      "aka": [
+        "pinfish",
+        "pigfish",
+        "mullet",
+        "pogies",
+        "sardines",
+        "herring",
+        "blue runners",
+        "killifish",
+        "mud minnows"
+      ],
+      "fish": [
+        "Snook",
+        "Redfish (red drum)",
+        "Spotted seatrout",
+        "Kingfish (king mackerel)",
+        "Greater amberjack",
+        "Cobia",
+        "Gag grouper"
+      ],
       "facts": [
-        { "t": "Snook: live pinfish, small mullet, shrimp or sardines.", "s": "snook" },
-        { "t": "Red drum (redfish): crabs, mullet, pinfish and killifish (mud minnows).", "s": "redfish" },
-        { "t": "Spotted seatrout: small pinfish or pigfish (grunts), free-lined near the bottom.", "s": "trout" },
-        { "t": "King mackerel: live pogies, herring, Spanish sardine, ballyhoo or mullet.", "s": "king" },
-        { "t": "Greater amberjack: almost any lively baitfish: blue runners, pinfish, pigfish, grunts, cigar minnows, sand perch.", "s": "amberjack" },
-        { "t": "Cobia: live crabs and small fish.", "s": "cobia" },
-        { "t": "Gag grouper: live fish, or dead cut or whole bait.", "s": "gag" },
-        { "t": "Slowly trolling live baits has proven a favorite method for many Florida anglers.", "s": "tips" }
-      ] },
-    { "name": "Cut and whole dead bait", "kind": "bait", "aka": ["cut bait", "dead bait", "cut mullet"], "fish": ["Black drum", "Gag grouper", "Channel catfish"],
+        {
+          "t": "Snook: live pinfish, small mullet, shrimp or sardines.",
+          "s": "snook"
+        },
+        {
+          "t": "Red drum (redfish): crabs, mullet, pinfish and killifish (mud minnows).",
+          "s": "redfish"
+        },
+        {
+          "t": "Spotted seatrout: small pinfish or pigfish (grunts), free-lined near the bottom.",
+          "s": "trout"
+        },
+        {
+          "t": "King mackerel: live pogies, herring, Spanish sardine, ballyhoo or mullet.",
+          "s": "king"
+        },
+        {
+          "t": "Greater amberjack: almost any lively baitfish: blue runners, pinfish, pigfish, grunts, cigar minnows, sand perch.",
+          "s": "amberjack"
+        },
+        {
+          "t": "Cobia: live crabs and small fish.",
+          "s": "cobia"
+        },
+        {
+          "t": "Gag grouper: live fish, or dead cut or whole bait.",
+          "s": "gag"
+        },
+        {
+          "t": "Slowly trolling live baits has proven a favorite method for many Florida anglers.",
+          "s": "tips"
+        }
+      ]
+    },
+    {
+      "name": "Cut and whole dead bait",
+      "kind": "bait",
+      "aka": [
+        "cut bait",
+        "dead bait",
+        "cut mullet"
+      ],
+      "fish": [
+        "Black drum",
+        "Gag grouper",
+        "Channel catfish"
+      ],
       "facts": [
-        { "t": "Black drum: cut bait, shrimp, sand fleas or blue crabs.", "s": "blackdrum" },
-        { "t": "Gag grouper: live fish, or dead cut or whole bait; fished near the bottom with heavy tackle.", "s": "gag" },
-        { "t": "Channel catfish: cut mullet is named among the strong-smelling baits.", "s": "catfish" },
-        { "t": "In Florida, anchoring offshore and dropping live or cut bait to the bottom is a popular method for many desirable species.", "s": "tips" }
-      ] },
-    { "name": "Crabs and sand fleas", "kind": "bait", "aka": ["fiddler crabs", "blue crabs", "sand fleas"], "fish": ["Redfish (red drum)", "Sheepshead", "Black drum", "Cobia"],
+        {
+          "t": "Black drum: cut bait, shrimp, sand fleas or blue crabs.",
+          "s": "blackdrum"
+        },
+        {
+          "t": "Gag grouper: live fish, or dead cut or whole bait; fished near the bottom with heavy tackle.",
+          "s": "gag"
+        },
+        {
+          "t": "Channel catfish: cut mullet is named among the strong-smelling baits.",
+          "s": "catfish"
+        },
+        {
+          "t": "In Florida, anchoring offshore and dropping live or cut bait to the bottom is a popular method for many desirable species.",
+          "s": "tips"
+        }
+      ]
+    },
+    {
+      "name": "Crabs and sand fleas",
+      "kind": "bait",
+      "aka": [
+        "fiddler crabs",
+        "blue crabs",
+        "sand fleas"
+      ],
+      "fish": [
+        "Redfish (red drum)",
+        "Sheepshead",
+        "Black drum",
+        "Cobia"
+      ],
       "facts": [
-        { "t": "Red drum (redfish): crabs, mullet, pinfish and killifish (mud minnows).", "s": "redfish" },
-        { "t": "Sheepshead: live shrimp, sand fleas or fiddler crabs, on a small hook fished on the bottom.", "s": "sheepshead" },
-        { "t": "Black drum: cut bait, shrimp, sand fleas or blue crabs.", "s": "blackdrum" },
-        { "t": "Cobia: live crabs and small fish.", "s": "cobia" }
-      ] },
-    { "name": "Ballyhoo", "kind": "bait", "aka": ["natural trolling bait"], "fish": ["Mahi (dolphin)", "Kingfish (king mackerel)"],
+        {
+          "t": "Red drum (redfish): crabs, mullet, pinfish and killifish (mud minnows).",
+          "s": "redfish"
+        },
+        {
+          "t": "Sheepshead: live shrimp, sand fleas or fiddler crabs, on a small hook fished on the bottom.",
+          "s": "sheepshead"
+        },
+        {
+          "t": "Black drum: cut bait, shrimp, sand fleas or blue crabs.",
+          "s": "blackdrum"
+        },
+        {
+          "t": "Cobia: live crabs and small fish.",
+          "s": "cobia"
+        }
+      ]
+    },
+    {
+      "name": "Ballyhoo",
+      "kind": "bait",
+      "aka": [
+        "natural trolling bait"
+      ],
+      "fish": [
+        "Mahi (dolphin)",
+        "Kingfish (king mackerel)"
+      ],
       "facts": [
-        { "t": "Dolphinfish (mahi): natural baits such as ballyhoo.", "s": "mahi" },
-        { "t": "Dolphinfish (mahi): trolled ballyhoo on #7 or #8 steel wire with a 7/0 or 8/0 hook.", "s": "mahi" },
-        { "t": "King mackerel: live pogies, herring, Spanish sardine, ballyhoo or mullet.", "s": "king" }
-      ] },
-    { "name": "Worms and crickets", "kind": "bait", "aka": ["live worms", "crickets", "grubs"], "fish": ["Bluegill"],
+        {
+          "t": "Dolphinfish (mahi): natural baits such as ballyhoo.",
+          "s": "mahi"
+        },
+        {
+          "t": "Dolphinfish (mahi): trolled ballyhoo on #7 or #8 steel wire with a 7/0 or 8/0 hook.",
+          "s": "mahi"
+        },
+        {
+          "t": "King mackerel: live pogies, herring, Spanish sardine, ballyhoo or mullet.",
+          "s": "king"
+        }
+      ]
+    },
+    {
+      "name": "Worms and crickets",
+      "kind": "bait",
+      "aka": [
+        "live worms",
+        "crickets",
+        "grubs"
+      ],
+      "fish": [
+        "Bluegill"
+      ],
       "facts": [
-        { "t": "Bluegill: live worms or crickets, fished on the bottom or under a float.", "s": "bluegill" },
-        { "t": "Bluegill on the beds: crickets, grubs, sand maggots or grass shrimp.", "s": "bluegill" },
-        { "t": "Bluegill rig: a small #6 or #8 hook with a split shot about 6 inches up the line.", "s": "bluegill" }
-      ] },
-    { "name": "Minnows and grass shrimp", "kind": "bait", "aka": ["Missouri minnows", "grass shrimp"], "fish": ["Black crappie", "Bluegill"],
+        {
+          "t": "Bluegill: live worms or crickets, fished on the bottom or under a float.",
+          "s": "bluegill"
+        },
+        {
+          "t": "Bluegill on the beds: crickets, grubs, sand maggots or grass shrimp.",
+          "s": "bluegill"
+        },
+        {
+          "t": "Bluegill rig: a small #6 or #8 hook with a split shot about 6 inches up the line.",
+          "s": "bluegill"
+        }
+      ]
+    },
+    {
+      "name": "Minnows and grass shrimp",
+      "kind": "bait",
+      "aka": [
+        "Missouri minnows",
+        "grass shrimp"
+      ],
+      "fish": [
+        "Black crappie",
+        "Bluegill"
+      ],
       "facts": [
-        { "t": "Black crappie: Missouri minnows or grass shrimp below a float, on a #4 hook with a small split shot.", "s": "crappie" },
-        { "t": "Bluegill on the beds: crickets, grubs, sand maggots or grass shrimp.", "s": "bluegill" }
-      ] },
-    { "name": "Stinkbait and liver", "kind": "bait", "aka": ["chicken liver", "gizzards", "stinkbait"], "fish": ["Channel catfish"],
+        {
+          "t": "Black crappie: Missouri minnows or grass shrimp below a float, on a #4 hook with a small split shot.",
+          "s": "crappie"
+        },
+        {
+          "t": "Bluegill on the beds: crickets, grubs, sand maggots or grass shrimp.",
+          "s": "bluegill"
+        }
+      ]
+    },
+    {
+      "name": "Stinkbait and liver",
+      "kind": "bait",
+      "aka": [
+        "chicken liver",
+        "gizzards",
+        "stinkbait"
+      ],
+      "fish": [
+        "Channel catfish"
+      ],
       "facts": [
-        { "t": "Channel catfish: strong-smelling baits such as chicken liver or gizzards, shrimp, cut mullet and commercial stinkbaits.", "s": "catfish" },
-        { "t": "Channel catfish rig: a sturdy #2 to #4 hook and a heavy split shot sinker, fished near the bottom.", "s": "catfish" }
-      ] },
-    { "name": "Jigs", "kind": "lure", "aka": ["soft-bodied jigs", "bucktails", "Hal-flies", "jigging"], "fish": ["Redfish (red drum)", "Spotted seatrout", "Red snapper", "Spanish mackerel", "Black crappie"],
+        {
+          "t": "Channel catfish: strong-smelling baits such as chicken liver or gizzards, shrimp, cut mullet and commercial stinkbaits.",
+          "s": "catfish"
+        },
+        {
+          "t": "Channel catfish rig: a sturdy #2 to #4 hook and a heavy split shot sinker, fished near the bottom.",
+          "s": "catfish"
+        }
+      ]
+    },
+    {
+      "name": "Jigs",
+      "kind": "lure",
+      "aka": [
+        "soft-bodied jigs",
+        "bucktails",
+        "Hal-flies",
+        "jigging"
+      ],
+      "fish": [
+        "Redfish (red drum)",
+        "Spotted seatrout",
+        "Red snapper",
+        "Spanish mackerel",
+        "Black crappie"
+      ],
       "facts": [
-        { "t": "Jigging is one of the oldest and most popular fishing techniques and gives the appearance of an injured fish.", "s": "tips" },
-        { "t": "To jig, cast out and let your jig sink to the bottom. Snap or flick your rod sideways or up and down, then let the jig sink back to the bottom.", "s": "tips" },
-        { "t": "Jigging is a popular inshore and offshore method that can lead to success with many different species.", "s": "tips" },
-        { "t": "Red drum (redfish): soft-bodied jigs, spoons and topwater plugs.", "s": "redfish" },
-        { "t": "Spotted seatrout: soft-bodied jigs, topwater poppers and spoons.", "s": "trout" },
-        { "t": "Red snapper: soft-bodied jigs, bucktails and spoons.", "s": "redsnapper" },
-        { "t": "Spanish mackerel: small shiny spoons, dusters or jigs, trolled or cast.", "s": "spanish" },
-        { "t": "Black crappie: a bright 1/16 to 1/8 oz jig or Hal-flies when they move inshore to spawn.", "s": "crappie" }
-      ] },
-    { "name": "Spoons", "kind": "lure", "aka": ["shiny spoons", "dusters"], "fish": ["Redfish (red drum)", "Spotted seatrout", "Red snapper", "Spanish mackerel", "Mahi (dolphin)"],
+        {
+          "t": "Jigging is one of the oldest and most popular fishing techniques and gives the appearance of an injured fish.",
+          "s": "tips"
+        },
+        {
+          "t": "To jig, cast out and let your jig sink to the bottom. Snap or flick your rod sideways or up and down, then let the jig sink back to the bottom.",
+          "s": "tips"
+        },
+        {
+          "t": "Jigging is a popular inshore and offshore method that can lead to success with many different species.",
+          "s": "tips"
+        },
+        {
+          "t": "Red drum (redfish): soft-bodied jigs, spoons and topwater plugs.",
+          "s": "redfish"
+        },
+        {
+          "t": "Spotted seatrout: soft-bodied jigs, topwater poppers and spoons.",
+          "s": "trout"
+        },
+        {
+          "t": "Red snapper: soft-bodied jigs, bucktails and spoons.",
+          "s": "redsnapper"
+        },
+        {
+          "t": "Spanish mackerel: small shiny spoons, dusters or jigs, trolled or cast.",
+          "s": "spanish"
+        },
+        {
+          "t": "Black crappie: a bright 1/16 to 1/8 oz jig or Hal-flies when they move inshore to spawn.",
+          "s": "crappie"
+        }
+      ]
+    },
+    {
+      "name": "Spoons",
+      "kind": "lure",
+      "aka": [
+        "shiny spoons",
+        "dusters"
+      ],
+      "fish": [
+        "Redfish (red drum)",
+        "Spotted seatrout",
+        "Red snapper",
+        "Spanish mackerel",
+        "Mahi (dolphin)"
+      ],
       "facts": [
-        { "t": "Red drum (redfish): soft-bodied jigs, spoons and topwater plugs.", "s": "redfish" },
-        { "t": "Spotted seatrout: soft-bodied jigs, topwater poppers and spoons.", "s": "trout" },
-        { "t": "Red snapper: soft-bodied jigs, bucktails and spoons.", "s": "redsnapper" },
-        { "t": "Spanish mackerel: small shiny spoons, dusters or jigs, trolled or cast.", "s": "spanish" },
-        { "t": "Dolphinfish (mahi): artificial lures, feathers or spoons.", "s": "mahi" }
-      ] },
-    { "name": "Topwater plugs", "kind": "lure", "aka": ["poppers", "surface plugs"], "fish": ["Redfish (red drum)", "Spotted seatrout"],
+        {
+          "t": "Red drum (redfish): soft-bodied jigs, spoons and topwater plugs.",
+          "s": "redfish"
+        },
+        {
+          "t": "Spotted seatrout: soft-bodied jigs, topwater poppers and spoons.",
+          "s": "trout"
+        },
+        {
+          "t": "Red snapper: soft-bodied jigs, bucktails and spoons.",
+          "s": "redsnapper"
+        },
+        {
+          "t": "Spanish mackerel: small shiny spoons, dusters or jigs, trolled or cast.",
+          "s": "spanish"
+        },
+        {
+          "t": "Dolphinfish (mahi): artificial lures, feathers or spoons.",
+          "s": "mahi"
+        }
+      ]
+    },
+    {
+      "name": "Topwater plugs",
+      "kind": "lure",
+      "aka": [
+        "poppers",
+        "surface plugs"
+      ],
+      "fish": [
+        "Redfish (red drum)",
+        "Spotted seatrout"
+      ],
       "facts": [
-        { "t": "Red drum (redfish): soft-bodied jigs, spoons and topwater plugs.", "s": "redfish" },
-        { "t": "Spotted seatrout: soft-bodied jigs, topwater poppers and spoons.", "s": "trout" }
-      ] },
-    { "name": "Trolling plugs and flashy lures", "kind": "lure", "aka": ["sub-surface lures", "plugs", "trolling"], "fish": ["Kingfish (king mackerel)", "Mahi (dolphin)", "Spanish mackerel"],
+        {
+          "t": "Red drum (redfish): soft-bodied jigs, spoons and topwater plugs.",
+          "s": "redfish"
+        },
+        {
+          "t": "Spotted seatrout: soft-bodied jigs, topwater poppers and spoons.",
+          "s": "trout"
+        }
+      ]
+    },
+    {
+      "name": "Trolling plugs and flashy lures",
+      "kind": "lure",
+      "aka": [
+        "sub-surface lures",
+        "plugs",
+        "trolling"
+      ],
+      "fish": [
+        "Kingfish (king mackerel)",
+        "Mahi (dolphin)",
+        "Spanish mackerel"
+      ],
       "facts": [
-        { "t": "Trolling is a popular fishing technique which can be done with live bait or artificial lures and requires a boat.", "s": "tips" },
-        { "t": "King mackerel: flashy sub-surface lures or large fish-like plugs.", "s": "king" },
-        { "t": "Dolphinfish (mahi): artificial lures, feathers or spoons.", "s": "mahi" },
-        { "t": "Spanish mackerel: small shiny spoons, dusters or jigs, trolled or cast.", "s": "spanish" }
-      ] },
-    { "name": "Flies and feathers", "kind": "lure", "aka": ["streamers", "fly fishing"], "fish": ["Tarpon", "Mahi (dolphin)"],
+        {
+          "t": "Trolling is a popular fishing technique which can be done with live bait or artificial lures and requires a boat.",
+          "s": "tips"
+        },
+        {
+          "t": "King mackerel: flashy sub-surface lures or large fish-like plugs.",
+          "s": "king"
+        },
+        {
+          "t": "Dolphinfish (mahi): artificial lures, feathers or spoons.",
+          "s": "mahi"
+        },
+        {
+          "t": "Spanish mackerel: small shiny spoons, dusters or jigs, trolled or cast.",
+          "s": "spanish"
+        }
+      ]
+    },
+    {
+      "name": "Flies and feathers",
+      "kind": "lure",
+      "aka": [
+        "streamers",
+        "fly fishing"
+      ],
+      "fish": [
+        "Tarpon",
+        "Mahi (dolphin)"
+      ],
       "facts": [
-        { "t": "Tarpon: flies, streamers, lures, jigs, and live or dead bait (tackle depends on the bait, the place and the size of the fish).", "s": "tarpon" },
-        { "t": "Dolphinfish (mahi): artificial lures, feathers or spoons.", "s": "mahi" }
-      ] },
-    { "name": "Beetle spin", "kind": "lure", "aka": ["spinner", "beetle spinner"], "fish": ["Bluegill"],
+        {
+          "t": "Tarpon: flies, streamers, lures, jigs, and live or dead bait (tackle depends on the bait, the place and the size of the fish).",
+          "s": "tarpon"
+        },
+        {
+          "t": "Dolphinfish (mahi): artificial lures, feathers or spoons.",
+          "s": "mahi"
+        }
+      ]
+    },
+    {
+      "name": "Beetle spin",
+      "kind": "lure",
+      "aka": [
+        "spinner",
+        "beetle spinner"
+      ],
+      "fish": [
+        "Bluegill"
+      ],
       "facts": [
-        { "t": "Bluegill: a 1/8 oz beetle spin with a white or chartreuse body on ultralight tackle.", "s": "bluegill" }
-      ] },
-    { "name": "Sabiki rig", "kind": "bait", "aka": ["sabiki", "bait rig"], "fish": [],
+        {
+          "t": "Bluegill: a 1/8 oz beetle spin with a white or chartreuse body on ultralight tackle.",
+          "s": "bluegill"
+        }
+      ]
+    },
+    {
+      "name": "Sabiki rig",
+      "kind": "bait",
+      "aka": [
+        "sabiki",
+        "bait rig"
+      ],
+      "fish": [],
       "facts": [
-        { "t": "If using a sabiki from a pier, drop your line into the water; do not cast.", "s": "tips" },
-        { "t": "Keep bait and harvested fish covered and out of reach of birds, and dispose of scraps and unused bait where birds can't get it.", "s": "tips" }
-      ] }
+        {
+          "t": "If using a sabiki from a pier, drop your line into the water; do not cast.",
+          "s": "tips"
+        },
+        {
+          "t": "Keep bait and harvested fish covered and out of reach of birds, and dispose of scraps and unused bait where birds can't get it.",
+          "s": "tips"
+        }
+      ]
+    },
+    {
+      "name": "Plastic worms",
+      "kind": "lure",
+      "aka": [
+        "soft plastic worm",
+        "rubber worm"
+      ],
+      "fish": [
+        "Largemouth bass"
+      ],
+      "general": true,
+      "lines": [
+        "A soft plastic worm is a classic bass lure.",
+        "It is often fished on a Texas rig, Carolina rig or drop-shot rig, so the hook is hidden and the worm moves slowly on the bottom.",
+        "Fish it slowly near weeds, docks and fallen trees."
+      ]
+    },
+    {
+      "name": "Crankbaits",
+      "kind": "lure",
+      "aka": [
+        "plugs",
+        "diving plugs"
+      ],
+      "fish": [
+        "Largemouth bass",
+        "Walleye",
+        "Striped bass"
+      ],
+      "general": true,
+      "lines": [
+        "A crankbait is a hard lure with a lip that makes it dive when you reel.",
+        "A bigger lip dives deeper. Cast it, reel steadily, and bump it off cover or the bottom."
+      ]
+    },
+    {
+      "name": "Spinnerbaits",
+      "kind": "lure",
+      "aka": [
+        "spinner bait"
+      ],
+      "fish": [
+        "Largemouth bass"
+      ],
+      "general": true,
+      "lines": [
+        "A spinnerbait has a skirted head and one or two spinning blades on a wire arm.",
+        "It is often reeled steadily past weeds, docks and wood, because the wire arm helps keep the hook from snagging."
+      ]
+    },
+    {
+      "name": "Swimbaits",
+      "kind": "lure",
+      "aka": [
+        "soft swimbait",
+        "paddle tail"
+      ],
+      "fish": [
+        "Largemouth bass",
+        "Striped bass"
+      ],
+      "general": true,
+      "lines": [
+        "A swimbait is a soft or hard lure shaped like a small fish.",
+        "A paddle tail swims with a steady reel; fish it at the depth where the fish are."
+      ]
+    },
+    {
+      "name": "Topwater frogs",
+      "kind": "lure",
+      "aka": [
+        "frog",
+        "hollow-body frog"
+      ],
+      "fish": [
+        "Largemouth bass"
+      ],
+      "general": true,
+      "lines": [
+        "A hollow-body frog floats and is worked over thick weeds and lily pads, where other lures snag.",
+        "Bass often hit it from underneath, so give a short pause before you set the hook."
+      ]
+    },
+    {
+      "name": "Nightcrawlers",
+      "kind": "bait",
+      "aka": [
+        "earthworms",
+        "worms"
+      ],
+      "fish": [
+        "Bluegill",
+        "Channel catfish",
+        "Rainbow trout",
+        "Walleye"
+      ],
+      "general": true,
+      "lines": [
+        "Nightcrawlers are large worms sold at bait shops.",
+        "Thread one on a hook and fish it on the bottom or under a bobber. Many freshwater fish will take one."
+      ]
+    },
+    {
+      "name": "Salmon eggs",
+      "kind": "bait",
+      "aka": [
+        "eggs",
+        "trout eggs"
+      ],
+      "fish": [
+        "Rainbow trout"
+      ],
+      "general": true,
+      "lines": [
+        "Salmon eggs are a common trout bait.",
+        "Use a small hook and light line, and let the bait drift through pools or settle near the bottom."
+      ]
+    },
+    {
+      "name": "Corn and dough baits",
+      "kind": "bait",
+      "aka": [
+        "dough bait",
+        "sweet corn"
+      ],
+      "fish": [
+        "Rainbow trout",
+        "Channel catfish"
+      ],
+      "general": true,
+      "lines": [
+        "Canned corn and dough-type baits are cheap, easy baits for stocked trout and catfish.",
+        "Mold the dough around a small hook or put a few kernels on it."
+      ]
+    },
+    {
+      "name": "Squid",
+      "kind": "bait",
+      "aka": [
+        "cut squid",
+        "squid strips"
+      ],
+      "fish": [
+        "Red snapper",
+        "Mangrove snapper"
+      ],
+      "general": true,
+      "lines": [
+        "A strip of squid is a tough cut bait that stays on the hook.",
+        "Fish it on the bottom for snapper and other bottom fish."
+      ]
+    },
+    {
+      "name": "Chum",
+      "kind": "bait",
+      "aka": [
+        "chumming",
+        "chum slick"
+      ],
+      "fish": [
+        "Yellowtail snapper",
+        "Mangrove snapper",
+        "Spanish mackerel",
+        "Bluefish"
+      ],
+      "general": true,
+      "lines": [
+        "Chum is bait or ground fish put in the water to bring fish to your spot.",
+        "Drift your hook with a small piece of the same bait in the chum so it looks like part of the meal."
+      ]
+    },
+    {
+      "name": "Leeches",
+      "kind": "bait",
+      "aka": [
+        "live leeches"
+      ],
+      "fish": [
+        "Walleye"
+      ],
+      "general": true,
+      "lines": [
+        "Leeches are a common live bait for walleye in northern waters.",
+        "Fish one on a jig or a slow-moving rig near the bottom."
+      ]
+    },
+    {
+      "name": "Eels",
+      "kind": "bait",
+      "aka": [
+        "live eels",
+        "eel"
+      ],
+      "fish": [
+        "Striped bass",
+        "Cobia"
+      ],
+      "general": true,
+      "lines": [
+        "A live eel is a large bait for big fish such as striped bass and cobia.",
+        "Use a strong leader and a hook sized for the bait."
+      ]
+    }
   ]
 }

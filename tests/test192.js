@@ -41,6 +41,9 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   ok(fish.every(f => f.source && /^https:\/\//.test(f.source.url) && f.source.label && (f.appearance || f.habitat || (f.habits || []).length)) && fishJson.handling && fishJson.handling.points.length >= 5 && /^https:\/\//.test(fishJson.handling.source.url), "every card names its official source (https link) and has facts from it; handling advice has its own source");
   ok(fish.every(f => !/\d+\s*(inch|in\b|"|per person|per day)/i.test((f.tips || []).join(" "))), "no size or bag numbers are typed into the tips (limits only come from the rules data)");
   ok(new Set(fish.map(f => f.name)).size === fish.length, "no fish listed twice");
+  const gen = f => (f.general ? [].concat(f.general.size || "", f.general.range || "", f.general.when || "", f.general.habitat || "", f.general.baits || [], f.general.rigs || [], f.general.tips || [], f.general.lookalikes || []).join(" ") : "");
+  ok(fish.every(f => f.general) && fish.every(f => !/(per person|per day|bag limit|minimum size|slot limit|d+s*(inch|in|lb|pound))/i.test(gen(f))), "every card has a separate general block with no sizes, bags or seasons typed in");
+  ok(fish.every(f => !f.general || Object.keys(f.general).every(k => !f[k] || (Array.isArray(f[k]) && !f[k].length))), "a general block only fills what the official page left out (never repeats a section)");
 
   // open the Fish tile in Texas
   A.LN.st = "TX"; A.LN.tile = "fish"; A.renderLearn();
@@ -62,6 +65,7 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   ok(/confirm with Texas Parks & Wildlife/.test(text()) && /Checked Oct 15, 2026/.test(text()), "guide-only line names the Texas agency, with the checked date");
   ok(/not a rule/.test(text()) && /What it looks like/.test(text()) && /Habitat/.test(text()) && /Best baits/.test(text()) && /Rigs that work/.test(text()) && /Look-alikes/.test(text()) && /Release & handling/.test(text()) && /wet your hands/.test(text()), "general sections are labelled as not rules, with handling advice for saltwater fish");
   ok(/Source:\s+FWC species profile: Red Drum/.test(text()) && /checked Oct 23, 2026/.test(text()) && !!find(n => n.tag === "a" && /myfwc\.com\/wildlifehabitats\/profiles\/saltwater\/drums\/red-drum/.test(n.href)), "the card ends with its official source link and the date it was checked");
+  ok(/General advice, not from the official source/.test(text()) && /Written for this app from general fishing knowledge/.test(text()), "the general block is labelled as not from the official source");
   ok(!!find(n => n.className === "fishsvg"), "the fish picture (tank art) is shown when the app has it");
 
   // same fish, other states
