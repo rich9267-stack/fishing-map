@@ -73,7 +73,8 @@ let calls = [], answers = {}, mode = "ok", stateAt = () => "GA";
 const store = {};
 const c61 = { console, Math, isFinite, Array, Object, Set, Promise, Date, JSON, RegExp, String, Number, URLSearchParams, parseInt, setTimeout,
   stateOf: (la, ln) => stateAt(la, ln), localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = v; } },
-  fetch: async url => { calls.push(url); if (mode === "down") throw new Error("offline"); if (mode === "bad") return { ok: true, json: async () => ({ error: { code: 500 } }) };
+  fetch: async url => { if (/data\/ramps\//.test(url)) return { ok: false, status: 404 };   // (v177 saved lists: test189; here they are not published, so the live path is tested)
+    calls.push(url); if (mode === "down") throw new Error("offline"); if (mode === "bad") return { ok: true, json: async () => ({ error: { code: 500 } }) };
     const st = Object.keys(c61.api.STATE_RAMPS).find(k => url.startsWith(c61.api.STATE_RAMPS[k].url + "/query?")); return { ok: true, json: async () => answers[st] || { features: [] } }; } };
 vm.createContext(c61);
 vm.runInContext(src61 + "\nthis.api = { STATE_RAMPS, stPlace, stLoad, stItems, outsideItems, outsideLoad, outsideNote, STR };", c61);

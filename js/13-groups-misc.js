@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-22p", title: "⚡ Faster official ramps outside Florida", items: [
+      "Official ramps from the 35 state lists now load almost at once: each state's list is saved in the app itself instead of waiting on the state's website. Same ramps, same rules (public and open only), same agency credit on the card.",
+      "If a list ever can't be read, the app asks the state's website like before."
+    ] },
     { id: "2026-10-22o", title: "✅ Official ramps in 35 states + tide stations everywhere", items: [
       "✅ Official public spots now show boat ramps straight from the state wildlife / natural-resources agency lists in 35 states (Maine to Texas, Washington and Oregon, and most states in between). Only ramps the agency lists as public and open are shown; closed, private, club and marina ramps are left out. Tap a pin to see which agency it comes from.",
       "States without a list we could use (like Pennsylvania, Illinois and California) keep the OpenStreetMap ramps, still only the clearly public ones. Florida looks exactly the same.",

@@ -179,7 +179,32 @@ const STATE_RAMPS = {
     hand: a => /hand carry|slide/i.test(a.launch_type || ""), info: a => ({ water: stT(a.waterway_name), owner: stT(a.manager) }), county: a => stT(a.county) }
 };
 
-const STR = { key: "fm-st-ramps-v1", age: 7 * 86400000, keep: 12, maxDeg: 1.2, pad: 0.1, boxes: [], read: false, loading: {}, failAt: {}, note: "" };
+const STR = { key: "fm-st-ramps-v1", age: 7 * 86400000, keep: 12, maxDeg: 1.2, pad: 0.1, boxes: [], read: false, loading: {}, failAt: {}, note: "", snap: {}, snapLoading: {} };
+
+// Fast path: data/ramps/<ST>.json = that agency's whole public + open list, saved in the app's own files by tools/make-ramp-snapshots.js (same rules as below).
+// One small file per state, kept on the phone by sw.js. If it can't be read (not published yet, offline first time) the live agency server below is asked as before.
+function stFromSnap(st, r) {
+  const c = STATE_RAMPS[st];
+  return { id: null, key: "st/" + st + "/" + r.la.toFixed(5) + "," + r.ln.toFixed(5), source: "state-ramp", trust: "official", credit: c.credit, name: r.n, kind: r.k || "ramp",
+    lat: r.la, lng: r.ln, state: st, county: r.c || null, water_type: null, details: r.d || {} };
+}
+function stSnapLoad(st) {
+  if (STR.snap[st] !== undefined) return Promise.resolve(false);
+  if (STR.snapLoading[st]) return STR.snapLoading[st];
+  STR.snapLoading[st] = (async () => {
+    try {
+      const res = await fetch("data/ramps/" + st + ".json");
+      if (!res.ok) throw new Error("http " + res.status);
+      const j = await res.json();
+      if (!j || !Array.isArray(j.items)) throw new Error("bad file");
+      const seen = new Set();
+      STR.snap[st] = j.items.filter(r => r && r.n && isFinite(r.la) && isFinite(r.ln)).map(r => stFromSnap(st, r)).filter(p => !seen.has(p.key) && seen.add(p.key));
+      return true;
+    } catch (err) { STR.snap[st] = false; return false; }   // false = use the live server for this state
+    finally { delete STR.snapLoading[st]; }
+  })();
+  return STR.snapLoading[st];
+}
 function stRead() {
   STR.read = true;
   try { const j = JSON.parse(localStorage.getItem(STR.key) || "null"); if (j && Array.isArray(j.boxes)) STR.boxes = j.boxes.filter(b => b && STATE_RAMPS[b.st] && Array.isArray(b.items) && isFinite(b.t)); } catch (e) { /* no copy yet */ }
@@ -222,40 +247,47 @@ function stLoad(bounds) {
   const states = stStatesIn(s, w, n, e);
   if (!states.length) return Promise.resolve(false);
   if (n - s > STR.maxDeg || e - w > STR.maxDeg) return Promise.resolve(false);   // (js/58 already says "zoom in a little")
+  // 1) the saved list for each state (fast); 2) a state whose saved list can not be read goes to its live agency server
+  return Promise.all(states.map(st => stSnapLoad(st))).then(f => {
+    const live = states.filter(st => STR.snap[st] === false).map(st => stLive(st, s, w, n, e));
+    return Promise.all(live).then(a => f.concat(a).some(Boolean));
+  });
+}
+// One state's live agency server, for the view (a box rounded to 0.05° with a 0.1° margin). Resolves true when new places arrived.
+function stLive(st, s, w, n, e) {
+  if (STR.boxes.some(b => b.st === st && Date.now() - b.t < STR.age && stHas(b, s, w, n, e))) return Promise.resolve(false);
   const r = (v, up) => (up ? Math.ceil(v * 20 - 1e-9) : Math.floor(v * 20 + 1e-9)) / 20;   // round out to 0.05° so small pans reuse the same answer
   const box = { s: r(s - STR.pad, false), w: r(w - STR.pad, false), n: r(n + STR.pad, true), e: r(e + STR.pad, true) };
-  const jobs = states.filter(st => !STR.boxes.some(b => b.st === st && Date.now() - b.t < STR.age && stHas(b, s, w, n, e))).map(st => {
-    if (STR.loading[st]) return STR.loading[st].then(() => false);   // same state already being asked: the view is covered by then (usually)
-    if (STR.failAt[st] && Date.now() - STR.failAt[st] < 120000) { STR.note = "Couldn't reach the " + STATE_RAMPS[st].credit + " — try again in a minute."; return Promise.resolve(false); }
-    const c = STATE_RAMPS[st];
-    const qs = new URLSearchParams({ where: "1=1", geometry: [box.w, box.s, box.e, box.n].map(v => v.toFixed(2)).join(","), geometryType: "esriGeometryEnvelope", inSR: "4326", spatialRel: "esriSpatialRelIntersects",
-      outFields: c.f, returnGeometry: "true", outSR: "4326", resultRecordCount: "2000", f: "json" });
-    STR.loading[st] = (async () => {
-      try {
-        const res = await fetch(c.url + "/query?" + qs.toString());
-        if (!res.ok) throw new Error("http " + res.status);
-        const data = await res.json();
-        if (data.error || !Array.isArray(data.features)) throw new Error("bad answer");
-        const seen = new Set(), items = data.features.map(f => stPlace(st, f)).filter(x => x && !seen.has(x.key) && seen.add(x.key));
-        const b = { st, s: box.s, w: box.w, n: box.n, e: box.e, t: Date.now(), items };
-        STR.boxes = STR.boxes.filter(o => !(o.st === st && stHas(b, o.s, o.w, o.n, o.e))).concat([b]).slice(-STR.keep);
-        stSave();
-        STR.failAt[st] = 0;
-        return true;
-      } catch (err) {
-        STR.failAt[st] = Date.now(); STR.note = "Couldn't reach the " + c.credit + " — try again in a minute.";
-        return false;   // what this phone already holds is still drawn
-      } finally { delete STR.loading[st]; }
-    })();
-    return STR.loading[st];
-  });
-  return Promise.all(jobs).then(a => a.some(Boolean));
+  if (STR.loading[st]) return STR.loading[st].then(() => false);   // same state already being asked: the view is covered by then (usually)
+  if (STR.failAt[st] && Date.now() - STR.failAt[st] < 120000) { STR.note = "Couldn't reach the " + STATE_RAMPS[st].credit + " — try again in a minute."; return Promise.resolve(false); }
+  const c = STATE_RAMPS[st];
+  const qs = new URLSearchParams({ where: "1=1", geometry: [box.w, box.s, box.e, box.n].map(v => v.toFixed(2)).join(","), geometryType: "esriGeometryEnvelope", inSR: "4326", spatialRel: "esriSpatialRelIntersects",
+    outFields: c.f, returnGeometry: "true", outSR: "4326", resultRecordCount: "2000", f: "json" });
+  STR.loading[st] = (async () => {
+    try {
+      const res = await fetch(c.url + "/query?" + qs.toString());
+      if (!res.ok) throw new Error("http " + res.status);
+      const data = await res.json();
+      if (data.error || !Array.isArray(data.features)) throw new Error("bad answer");
+      const seen = new Set(), items = data.features.map(f => stPlace(st, f)).filter(x => x && !seen.has(x.key) && seen.add(x.key));
+      const b = { st, s: box.s, w: box.w, n: box.n, e: box.e, t: Date.now(), items };
+      STR.boxes = STR.boxes.filter(o => !(o.st === st && stHas(b, o.s, o.w, o.n, o.e))).concat([b]).slice(-STR.keep);
+      stSave();
+      STR.failAt[st] = 0;
+      return true;
+    } catch (err) {
+      STR.failAt[st] = Date.now(); STR.note = "Couldn't reach the " + c.credit + " — try again in a minute.";
+      return false;   // what this phone already holds is still drawn
+    } finally { delete STR.loading[st]; }
+  })();
+  return STR.loading[st];
 }
 
 // Every agency place this phone holds (older copies included, so it works offline)
 function stItems() {
   if (!STR.read) stRead();
   const seen = new Set(), all = [];
+  Object.keys(STR.snap).forEach(st => (STR.snap[st] || []).forEach(o => { if (!seen.has(o.key)) { seen.add(o.key); all.push(o); } }));
   STR.boxes.forEach(b => b.items.forEach(o => { if (!seen.has(o.key)) { seen.add(o.key); all.push(o); } }));
   return all;
 }
