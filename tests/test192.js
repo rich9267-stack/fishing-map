@@ -39,7 +39,7 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   const fish = fishJson.fish;
   ok(fish.length >= 20 && fish.every(f => f.name && Array.isArray(f.match) && f.match.length && /^(salt|fresh)$/.test(f.kind)), "data/learn/fish.json: " + fish.length + " fish, each with a name, match words and salt/fresh");
   const withSrc = fish.filter(f => f.source), noSrc = fish.filter(f => !f.source);
-  ok(withSrc.length >= 55 && withSrc.every(f => /^https:\/\//.test(f.source.url) && f.source.label && (f.appearance || f.habitat || f.range || (f.habits || []).length)) && fishJson.handling && fishJson.handling.points.length >= 5 && /^https:\/\//.test(fishJson.handling.source.url), "every card names its official source (https link) and has facts from it; handling advice has its own source");
+  ok(withSrc.length >= 75 && withSrc.every(f => /^https:\/\//.test(f.source.url) && f.source.label && (f.appearance || f.habitat || f.range || (f.habits || []).length)) && fishJson.handling && fishJson.handling.points.length >= 5 && /^https:\/\//.test(fishJson.handling.source.url), "every card names its official source (https link) and has facts from it; handling advice has its own source");
   ok(fish.every(f => !/\d+\s*(inch|in\b|"|per person|per day)/i.test((f.tips || []).join(" "))), "no size or bag numbers are typed into the tips (limits only come from the rules data)");
   ok(noSrc.length >= 1 && noSrc.every(f => f.general && Object.keys(f.general).length >= 4 && !f.appearance && !f.habitat && !(f.baits || []).length), noSrc.length + " fish with no official page are general-advice only (no official fields, no source line)");
   ok(new Set(fish.map(f => f.name)).size === fish.length, "no fish listed twice");
@@ -59,6 +59,7 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   const rows = all(n => n.className === "learn-fishrow").map(n => n.textContent);
   ok(rows.length === 2 && rows.some(x => /Redfish/.test(x)) && rows.some(x => /Black drum/.test(x)), "searching drum finds Redfish (red drum) and Black drum");
   search.value = "zzz"; search.handlers.input(); ok(/No fish matches/.test(text()), "no match says so");
+  search.value = "peacock"; search.handlers.input(); ok(all(n => n.className === "learn-fishrow").some(n => /Peacock bass/.test(n.textContent)), "a freshwater newcomer (peacock) is found");
   search.value = "dolphin"; search.handlers.input(); ok(all(n => n.className === "learn-fishrow").some(n => /Mahi/.test(n.textContent)), "a nickname (dolphin) finds Mahi");
 
   // open Redfish in Texas
