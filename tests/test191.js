@@ -42,7 +42,7 @@ A.renderLearn();   // (showView draws it in the real app)
 ok(A.LN.st === "FL" && /Florida fishing rules/.test(text()), "starts on the state you are in (Florida)");
 const sel = select();
 ok(sel && sel.children.length === 49 && sel.children.some(o => o.value === "DC") && sel.children.some(o => o.value === "TX") && sel.children.filter(o => o.selected).map(o => o.value).join() === "FL", "the picker lists 48 states + DC with Florida chosen");
-ok(tiles().length === 6 && tiles().filter(t => /soon/.test(t.className)).length === 5 && !/soon/.test(tiles()[0].className), "six tiles; only Rules works, five say Coming soon");
+ok(tiles().length === 6 && tiles().filter(t => /soon/.test(t.className)).length === 4 && !/soon/.test(tiles()[0].className), "six tiles; Rules and Fish work, four say Coming soon");
 ok(/Snook/.test(text()) && /28″–33″/.test(text()) && /1 per person/.test(text()) && /Closed Dec 15 – Jan 31, Jun 1 – Aug 31/.test(text()), "Florida lists its rules, with sizes, bag and closed seasons");
 ok(/A guide only — confirm with FWC before keeping a fish/.test(text()) && /Checked Oct 15, 2026/.test(text()), "'guide only — confirm with FWC' and the checked date");
 ok(!/Redfish|Walleye/.test(text()), "no other state's rules mixed in");

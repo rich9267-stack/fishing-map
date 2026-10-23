@@ -1188,3 +1188,8 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
   .learn-list { margin-top: 8px; }
   .learn-rule { padding: 8px 0; border-top: 1px solid var(--line); }
   .learn-fish { font-weight: 700; }
+  .learn-search { width: 100%; box-sizing: border-box; min-height: 44px; font: inherit; padding: 6px 10px; margin: 6px 0; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+  .learn-fishrow { display: block; width: 100%; text-align: left; appearance: none; font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; margin: 4px 0; cursor: pointer; }
+  .learn-fishhero { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+  .learn-fishrules { border: 1px solid var(--line); border-radius: 10px; padding: 4px 10px 10px; margin: 6px 0; }
+  .learn-ul { margin: 4px 0 4px 18px; padding: 0; }

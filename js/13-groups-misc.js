@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-22s", title: "🐟 Learn: Fish cards", items: [
+      "In 📚 Learn, tap 🐟 Fish for a list of fish you can search by name. Each long card shows that fish’s size, bag and closed season for the state you picked, plus where it lives, habits, best time and tide, baits, rigs, tips, look-alikes and how to release it.",
+      "Sizes and bag limits come only from our rules list; the rest is general advice, marked as such. Always confirm with the state agency."
+    ] },
     { id: "2026-10-22r", title: "📚 Learn page (first piece: fishing rules for any state)", items: [
       "New 📚 Learn card on Home. Pick any state (it starts on the one you are in; 📍 Here brings you back) and read that state’s fishing rules: size, bag and closed seasons for each fish we have, the date each rule was checked, and links to the state’s wildlife agency and fishing licence.",
       "It also tells you how many closed (no-fishing) areas we have for the state. Always a guide only — confirm with the agency. Fish, rigs, bait & lures, knots and state info are coming next."
