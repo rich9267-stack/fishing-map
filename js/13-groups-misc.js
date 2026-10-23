@@ -503,6 +503,14 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-23c", title: "🐟 Fish cards now come from official sources", items: [
+      "The long fish cards in 📚 Learn now use facts from the Florida Fish & Wildlife (FWC) species profiles, NOAA Fisheries, the Minnesota DNR and the USGS. Each card ends with a link to its source and the date we checked it.",
+      "If the official page does not say something (for example baits), the card leaves it out instead of guessing. Handling advice for saltwater fish is from FWC. Knots and rigs are still our own general advice and say so."
+    ] },
+    { id: "2026-10-23b", title: "🪝 Learn: Rigs", items: [
+      "In 📚 Learn, tap 🪝 Rigs for 8 starter rigs (Carolina, Texas, drop-shot, fish-finder, pompano, knocker, free-line live bait, popping cork). Each card lists what you need and the steps, and its knot is a tap that opens the knot card.",
+      "On a fish card, a rig name with › opens that rig. General advice only."
+    ] },
     { id: "2026-10-23a", title: "🪢 Learn: Knots", items: [
       "In 📚 Learn, tap 🪢 Knots for 8 starter knots (Palomar, improved clinch, uni, loop knot, Albright, double uni, nail knot, blood knot). Search by name, then follow the numbered steps. Pictures are coming later.",
       "General advice only — practise with a spare piece of line before you need it."

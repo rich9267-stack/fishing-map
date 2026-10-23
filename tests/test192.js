@@ -38,8 +38,8 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   // the data file on disk
   const fish = fishJson.fish;
   ok(fish.length >= 20 && fish.every(f => f.name && Array.isArray(f.match) && f.match.length && /^(salt|fresh)$/.test(f.kind)), "data/learn/fish.json: " + fish.length + " fish, each with a name, match words and salt/fresh");
-  ok(fish.every(f => f.range && f.habits && f.when && f.baits.length && f.rigs.length && f.tips.length >= 3 && f.tips.length <= 5 && f.lookalikes && f.release), "every card has range, habits, time/tide, baits, rigs, 3-5 tips, look-alikes and release tips");
-  ok(fish.every(f => !/\d+\s*(inch|in\b|"|per person|per day)/i.test(f.tips.join(" "))), "no size or bag numbers are typed into the tips (limits only come from the rules data)");
+  ok(fish.every(f => f.source && /^https:\/\//.test(f.source.url) && f.source.label && (f.appearance || f.habitat || (f.habits || []).length)) && fishJson.handling && fishJson.handling.points.length >= 5 && /^https:\/\//.test(fishJson.handling.source.url), "every card names its official source (https link) and has facts from it; handling advice has its own source");
+  ok(fish.every(f => !/\d+\s*(inch|in\b|"|per person|per day)/i.test((f.tips || []).join(" "))), "no size or bag numbers are typed into the tips (limits only come from the rules data)");
   ok(new Set(fish.map(f => f.name)).size === fish.length, "no fish listed twice");
 
   // open the Fish tile in Texas
@@ -60,7 +60,8 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   all(n => n.className === "learn-fishrow").find(n => /Redfish/.test(n.textContent)).handlers.click();
   ok(/Texas rules/.test(text()) && /20″–28″ total length/.test(text()) && /3 per person/.test(text()) && !/16″|18″–27″/.test(text()), "Redfish card in Texas shows Texas size and bag only");
   ok(/confirm with Texas Parks & Wildlife/.test(text()) && /Checked Oct 15, 2026/.test(text()), "guide-only line names the Texas agency, with the checked date");
-  ok(/not rules/.test(text()) && /Where it lives/.test(text()) && /Best baits/.test(text()) && /Rigs that work/.test(text()) && /Look-alikes/.test(text()) && /Release & handling/.test(text()) && /Best time/.test(text()), "general-advice sections are labelled as not rules");
+  ok(/not a rule/.test(text()) && /What it looks like/.test(text()) && /Habitat/.test(text()) && /Best baits/.test(text()) && /Rigs that work/.test(text()) && /Look-alikes/.test(text()) && /Release & handling/.test(text()) && /wet your hands/.test(text()), "general sections are labelled as not rules, with handling advice for saltwater fish");
+  ok(/Source:\s+FWC species profile: Red Drum/.test(text()) && /checked Oct 23, 2026/.test(text()) && !!find(n => n.tag === "a" && /myfwc\.com\/wildlifehabitats\/profiles\/saltwater\/drums\/red-drum/.test(n.href)), "the card ends with its official source link and the date it was checked");
   ok(!!find(n => n.className === "fishsvg"), "the fish picture (tank art) is shown when the app has it");
 
   // same fish, other states
@@ -79,9 +80,9 @@ const tick = () => new Promise(r => setTimeout(r, 5));
 
   // wiring
   const sw = read("sw.js"), src = read("js/62-learn.js");
-  ok(/learn\\\/\(fish\|knots\)/.test(sw), "sw.js keeps data/learn/fish.json on the phone");
-  ok(/Fish cards/.test(read("js/13-groups-misc.js")), "What's new mentions the fish cards");
-  ok(/v180/.test(read("docs/build_history.md")), "build history has v180");
+  ok(sw.includes("learn\\/(fish|knots|rigs)"), "sw.js keeps data/learn/fish.json on the phone");
+  ok(/official sources/.test(read("js/13-groups-misc.js")), "What's new mentions the official sources");
+  ok(/v183/.test(read("docs/build_history.md")), "build history has v183");
   ok(!/\.from\(/.test(src), "no database call in js/62");
   console.log(bad ? `\n${bad} FAILED` : "\nALL OK"); process.exit(bad ? 1 : 0);
 })();

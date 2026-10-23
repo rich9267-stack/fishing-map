@@ -77,7 +77,7 @@ function lnFishLoad() {
   if (LN.fish || LN.fishLoading) return;
   LN.fishLoading = true;
   fetch("data/learn/fish.json").then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
-    .then(j => { if (!j || !Array.isArray(j.fish)) throw new Error("bad"); LN.fish = j.fish; })
+    .then(j => { if (!j || !Array.isArray(j.fish)) throw new Error("bad"); LN.fish = j.fish; LN.fishT = j.t || ""; LN.fishHandling = j.handling || null; })
     .catch(() => { LN.fishErr = true; })
     .then(() => { LN.fishLoading = false; const v = $("view-learn"); if (v && !v.hidden && LN.tile === "fish") renderLearn(); });
 }
@@ -119,6 +119,13 @@ function lnFishRuleBlock(f, st) {
   b.appendChild(el("div", "spot-meta", "A guide only — confirm with " + short + " before keeping a fish."));
   return b;
 }
+// "Source: <name> ↗ · checked <date>" under a card (https links only)
+function lnSourceLine(box, lead, src, t) {
+  if (!src || !/^https?:\/\//.test(src.url || "")) return;
+  const d = el("div", "spot-meta", lead + " "); const a = el("a", null, src.label + " ↗"); a.href = src.url; a.target = "_blank"; a.rel = "noopener"; d.appendChild(a);
+  if (t) d.appendChild(el("span", null, " · checked " + lnDate(t)));
+  box.appendChild(d);
+}
 function lnFishCard(f, st) {
   const box = el("div", "learn-fishcard");
   const back = el("button", "btn ghost small", "‹ All fish"); back.type = "button";
@@ -129,13 +136,15 @@ function lnFishCard(f, st) {
   hero.appendChild(el("h2", "learn-h", f.name));
   box.appendChild(hero);
   box.appendChild(lnFishRuleBlock(f, st));
-  const tipsHead = el("div", "spot-meta", "💡 The rest of this card is general fishing advice, not rules.");
-  box.appendChild(tipsHead);
+  box.appendChild(el("div", "spot-meta", "ℹ️ The rest of this card is general information from the official source linked at the bottom. It is not a rule."));
   const sec = (h, text) => { if (!text) return; box.appendChild(el("h3", "learn-h2", h)); box.appendChild(el("div", null, text)); };
   const list = (h, a) => { if (!a || !a.length) return; box.appendChild(el("h3", "learn-h2", h)); const u = el("ul", "learn-ul"); a.forEach(x => u.appendChild(el("li", null, x))); box.appendChild(u); };
-  sec("📍 Where it lives", f.range); sec("🔎 Habits", f.habits); sec("🕑 Best time & tide", f.when);
-  list("🪱 Best baits & lures", f.baits); list("🪝 Rigs that work", f.rigs); list("💡 Tips", f.tips);
-  sec("👀 Look-alikes", f.lookalikes); sec("💧 Release & handling", f.release);
+  sec("👀 What it looks like", f.appearance); sec("📏 Size", f.size); sec("📍 Where it lives", f.range); sec("🌊 Habitat", f.habitat);
+  list("🔎 Habits", f.habits); sec("🕑 Best time & tide", f.when);
+  list("🪱 Best baits & lures", f.baits); lnRigList(box, f.rigs); list("💡 Tips", f.tips);
+  sec("🔀 Look-alikes", f.lookalikes);
+  if (f.kind === "salt" && LN.fishHandling) { list("💧 Release & handling", LN.fishHandling.points); const hs = LN.fishHandling.source; if (hs) lnSourceLine(box, "Handling advice from", hs, LN.fishT); }
+  if (f.source) lnSourceLine(box, "Source:", f.source, LN.fishT);
   return box;
 }
 function lnFishPanel(st) {
@@ -190,7 +199,7 @@ function lnKnotCard(k) {
   box.appendChild(el("h3", "learn-h2", "Steps"));
   const ol = el("ol", "learn-ul"); (k.steps || []).forEach(s => ol.appendChild(el("li", null, s))); box.appendChild(ol);
   if (k.tip) { box.appendChild(el("h3", "learn-h2", "💡 Tip")); box.appendChild(el("div", null, k.tip)); }
-  box.appendChild(el("div", "spot-meta", "Practise with a spare piece of line before you need it. Wet the knot before you pull it tight."));
+  box.appendChild(el("div", "spot-meta", "General advice written for this app, not yet checked against an official source. Practise with a spare piece of line before you need it. Wet the knot before you pull it tight."));
   return box;
 }
 function lnKnotsPanel() {
@@ -204,6 +213,84 @@ function lnKnotsPanel() {
   const list = el("div", "learn-fishlist");
   inp.addEventListener("input", () => { LN.knotsQ = inp.value; lnKnotPick(list); });
   box.appendChild(inp); box.appendChild(list); lnKnotPick(list);
+  return box;
+}
+
+// ---- 🪝 Rigs (step 4): a searchable list and a step-by-step card per rig, from data/learn/rigs.json. Each card names its knot (a tap opens that
+// knot card) and fish cards' rig names tap through to the rig when a rig's `find` words are in the name. Plain text; `picture`/`credit` hidden until filled.
+LN.rigs = null; LN.rigsErr = false; LN.rigsQ = ""; LN.rigOpen = null;
+function lnRigsLoad() {
+  if (LN.rigs || LN.rigsLoading) return;
+  LN.rigsLoading = true;
+  fetch("data/learn/rigs.json").then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
+    .then(j => { if (!j || !Array.isArray(j.rigs)) throw new Error("bad"); LN.rigs = j.rigs; })
+    .catch(() => { LN.rigsErr = true; })
+    .then(() => { LN.rigsLoading = false; const v = $("view-learn"); if (v && !v.hidden && (LN.tile === "rigs" || (LN.tile === "fish" && LN.fishOpen))) renderLearn(); });
+}
+const lnRigFor = text => { const t = String(text).toLowerCase(); return (LN.rigs || []).find(r => (r.find || []).some(w => t.includes(String(w).toLowerCase()))) || null; };
+const lnOpenRig = name => { LN.tile = "rigs"; LN.rigOpen = name; renderLearn(); window.scrollTo({ top: 0 }); };
+// the "Rigs that work" list on a fish card: a rig we have a card for becomes a tap
+function lnRigList(box, rigs) {
+  if (!rigs || !rigs.length) return;
+  lnRigsLoad();
+  box.appendChild(el("h3", "learn-h2", "🪝 Rigs that work"));
+  const u = el("ul", "learn-ul");
+  rigs.forEach(x => {
+    const li = el("li"), r = lnRigFor(x);
+    if (r) { const b = el("button", "learn-link", x + " ›"); b.type = "button"; b.addEventListener("click", () => lnOpenRig(r.name)); li.appendChild(b); }
+    else li.textContent = x;
+    u.appendChild(li);
+  });
+  box.appendChild(u);
+}
+function lnRigPick(box) {
+  const q = LN.rigsQ.trim().toLowerCase();
+  const hits = (LN.rigs || []).filter(r => !q || [r.name].concat(r.aka || []).some(w => String(w).toLowerCase().includes(q)));
+  box.textContent = "";
+  if (!hits.length) { box.appendChild(el("div", "spot-meta", "No rig matches “" + LN.rigsQ.trim() + "”.")); return; }
+  hits.forEach(r => {
+    const b = el("button", "learn-fishrow", "🪝 " + r.name); b.type = "button";
+    b.addEventListener("click", () => { LN.rigOpen = r.name; renderLearn(); window.scrollTo({ top: 0 }); });
+    box.appendChild(b);
+  });
+}
+function lnRigCard(r) {
+  const box = el("div", "learn-fishcard");
+  const back = el("button", "btn ghost small", "‹ All rigs"); back.type = "button";
+  back.addEventListener("click", () => { LN.rigOpen = null; renderLearn(); });
+  box.appendChild(back);
+  box.appendChild(el("h2", "learn-h", "🪝 " + r.name));
+  if (r.picture && /^(https?:\/\/|data\/)/.test(r.picture)) {
+    const fig = el("div", "learn-fig"), img = el("img"); img.src = r.picture; img.alt = r.name + " diagram"; img.loading = "lazy"; fig.appendChild(img);
+    if (r.credit) fig.appendChild(el("div", "spot-meta", "Picture: " + r.credit));
+    box.appendChild(fig);
+  }
+  box.appendChild(el("div", null, r.what));
+  box.appendChild(el("h3", "learn-h2", "🎣 When to use it")); box.appendChild(el("div", null, r.use));
+  if (r.need && r.need.length) { box.appendChild(el("h3", "learn-h2", "🧰 What you need")); const u = el("ul", "learn-ul"); r.need.forEach(x => u.appendChild(el("li", null, x))); box.appendChild(u); }
+  box.appendChild(el("h3", "learn-h2", "Steps"));
+  const ol = el("ol", "learn-ul"); (r.steps || []).forEach(s => ol.appendChild(el("li", null, s))); box.appendChild(ol);
+  if (r.knot) {
+    box.appendChild(el("h3", "learn-h2", "🪢 Knot to use"));
+    const b = el("button", "learn-link", r.knot + " ›"); b.type = "button";
+    b.addEventListener("click", () => { LN.tile = "knots"; LN.knotOpen = r.knot; renderLearn(); window.scrollTo({ top: 0 }); });
+    box.appendChild(b);
+  }
+  if (r.tip) { box.appendChild(el("h3", "learn-h2", "💡 Tip")); box.appendChild(el("div", null, r.tip)); }
+  box.appendChild(el("div", "spot-meta", "General advice written for this app, not yet checked against an official source. Check the state's rules on hooks, gear and bait before you fish."));
+  return box;
+}
+function lnRigsPanel() {
+  const box = el("div", "learn-fishpanel");
+  if (LN.rigsErr) { box.appendChild(el("div", "spot-meta", "The rig cards could not load. Check your connection and try again.")); return box; }
+  if (!LN.rigs) { lnRigsLoad(); box.appendChild(el("div", "spot-meta", "Loading the rigs…")); return box; }
+  const open = LN.rigOpen && LN.rigs.find(r => r.name === LN.rigOpen);
+  if (open) { box.appendChild(lnRigCard(open)); return box; }
+  box.appendChild(el("h2", "learn-h", "Rigs"));
+  const inp = el("input", "learn-search"); inp.type = "search"; inp.placeholder = "Search rigs by name"; inp.value = LN.rigsQ; inp.setAttribute("aria-label", "Search rigs");
+  const list = el("div", "learn-fishlist");
+  inp.addEventListener("input", () => { LN.rigsQ = inp.value; lnRigPick(list); });
+  box.appendChild(inp); box.appendChild(list); lnRigPick(list);
   return box;
 }
 
@@ -233,9 +320,9 @@ function renderLearn() {
   // tiles
   const grid = el("div", "learn-grid");
   LN_TILES.forEach(([k, ico, label]) => {
-    const b = el("button", "learn-tile" + (k === LN.tile ? " on" : "") + (k === "rules" || k === "fish" || k === "knots" ? "" : " soon"), ico + " " + label); b.type = "button"; b.dataset.tile = k;
-    if (k !== "rules" && k !== "fish" && k !== "knots") b.appendChild(el("span", "learn-soon", "Coming soon"));
-    b.addEventListener("click", () => { LN.tile = k; if (k === "fish") LN.fishOpen = null; if (k === "knots") LN.knotOpen = null; renderLearn(); });
+    const b = el("button", "learn-tile" + (k === LN.tile ? " on" : "") + (k === "rules" || k === "fish" || k === "knots" || k === "rigs" ? "" : " soon"), ico + " " + label); b.type = "button"; b.dataset.tile = k;
+    if (k !== "rules" && k !== "fish" && k !== "knots" && k !== "rigs") b.appendChild(el("span", "learn-soon", "Coming soon"));
+    b.addEventListener("click", () => { LN.tile = k; if (k === "fish") LN.fishOpen = null; if (k === "knots") LN.knotOpen = null; if (k === "rigs") LN.rigOpen = null; renderLearn(); });
     grid.appendChild(b);
   });
   body.appendChild(grid);
@@ -247,9 +334,11 @@ function renderLearn() {
     if (LN.fishOpen && LN.fish && lnNoRulesAtAll()) lnWaiting();   // rules not here yet: asked for once, the page redraws itself
   } else if (LN.tile === "knots") {
     body.appendChild(lnKnotsPanel());
+  } else if (LN.tile === "rigs") {
+    body.appendChild(lnRigsPanel());
   } else {
     const t = LN_TILES.find(x => x[0] === LN.tile);
-    body.appendChild(el("div", "spot-meta", t[1] + " " + t[2] + " is coming soon. Rules, Fish and Knots are ready now."));
+    body.appendChild(el("div", "spot-meta", t[1] + " " + t[2] + " is coming soon. Rules, Fish, Rigs and Knots are ready now."));
   }
 }
 function openLearn() { LN.st = lnHere(); LN.tile = "rules"; showView("learn"); window.scrollTo({ top: 0 }); }

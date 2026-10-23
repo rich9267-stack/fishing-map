@@ -60,12 +60,12 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   find(n => /All knots/.test(n.textContent) && n.tag === "button").handlers.click();
   ok(A.LN.knotOpen === null && all(n => n.className === "learn-fishrow").length === 8, "‹ All knots returns to the list");
   const tiles = all(n => /learn-tile/.test(n.className));
-  ok(tiles.filter(t => /soon/.test(t.className)).length === 3, "Rules, Fish and Knots work; three tiles still say Coming soon");
+  ok(tiles.filter(t => /soon/.test(t.className)).length === 2, "Rules, Fish, Rigs and Knots work; two tiles still say Coming soon");
 
   A.LN.knots = null; A.LN.knotsLoading = false; failFetch = true; A.renderLearn(); await tick();
   ok(/could not load/.test(text()), "if the file can't be read, an honest message");
 
-  ok(/learn\\\/\(fish\|knots\)/.test(read("sw.js")), "sw.js keeps data/learn/knots.json on the phone");
+  ok(read("sw.js").includes("learn\\/(fish|knots|rigs)"), "sw.js keeps data/learn/knots.json on the phone");
   ok(/Knots/.test(read("js/13-groups-misc.js").slice(0, 60000)) && /2026-10-23a/.test(read("js/13-groups-misc.js")), "What's new mentions the knots");
   ok(/v181/.test(read("docs/build_history.md")), "build history has v181");
   ok(!/\.from\(/.test(read("js/62-learn.js")), "no database call in js/62");
