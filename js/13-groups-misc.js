@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-23i", title: "🐟 24 more fish cards", items: [
+      "📚 Learn → Fish has 24 more saltwater fish, including mullet, whiting, triggerfish, spadefish, blue runner, little tunny, catfish, pinfish, five kinds of shark, sand seatrout, black and red grouper, scamp and lionfish.",
+      "Twenty-one use an official FWC page (source link and date on the card). Grunts, bar jack and gulf toadfish had no official page we could read, so they are marked “general advice” and show no source."
+    ] },
     { id: "2026-10-23h", title: "🐟 15 more fish cards", items: [
       "📚 Learn → Fish has 15 more saltwater fish: crevalle jack, goliath grouper, tripletail, permit, great barracuda, wahoo, mutton, lane and cubera snapper, hogfish, blackfin and yellowfin tuna, sailfish, bonefish and ladyfish.",
       "Thirteen use an official FWC page (source link and date on the card). Bonefish and ladyfish had no official page we could read, so they are marked “general advice” and show no source."

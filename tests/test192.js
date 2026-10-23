@@ -39,13 +39,14 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   const fish = fishJson.fish;
   ok(fish.length >= 20 && fish.every(f => f.name && Array.isArray(f.match) && f.match.length && /^(salt|fresh)$/.test(f.kind)), "data/learn/fish.json: " + fish.length + " fish, each with a name, match words and salt/fresh");
   const withSrc = fish.filter(f => f.source), noSrc = fish.filter(f => !f.source);
-  ok(withSrc.length >= 35 && withSrc.every(f => /^https:\/\//.test(f.source.url) && f.source.label && (f.appearance || f.habitat || f.range || (f.habits || []).length)) && fishJson.handling && fishJson.handling.points.length >= 5 && /^https:\/\//.test(fishJson.handling.source.url), "every card names its official source (https link) and has facts from it; handling advice has its own source");
+  ok(withSrc.length >= 55 && withSrc.every(f => /^https:\/\//.test(f.source.url) && f.source.label && (f.appearance || f.habitat || f.range || (f.habits || []).length)) && fishJson.handling && fishJson.handling.points.length >= 5 && /^https:\/\//.test(fishJson.handling.source.url), "every card names its official source (https link) and has facts from it; handling advice has its own source");
   ok(fish.every(f => !/\d+\s*(inch|in\b|"|per person|per day)/i.test((f.tips || []).join(" "))), "no size or bag numbers are typed into the tips (limits only come from the rules data)");
   ok(noSrc.length >= 1 && noSrc.every(f => f.general && Object.keys(f.general).length >= 4 && !f.appearance && !f.habitat && !(f.baits || []).length), noSrc.length + " fish with no official page are general-advice only (no official fields, no source line)");
   ok(new Set(fish.map(f => f.name)).size === fish.length, "no fish listed twice");
   const gen = f => (f.general ? [].concat(f.general.size || "", f.general.range || "", f.general.when || "", f.general.habitat || "", f.general.baits || [], f.general.rigs || [], f.general.tips || [], f.general.lookalikes || []).join(" ") : "");
   ok(fish.every(f => f.general) && fish.every(f => !/(per person|per day|bag limit|minimum size|slot limit|d+s*(inch|in|lb|pound))/i.test(gen(f))), "every card has a separate general block with no sizes, bags or seasons typed in");
-  ok(fish.every(f => !f.general || Object.keys(f.general).every(k => !f[k] || (Array.isArray(f[k]) && !f[k].length))), "a general block only fills what the official page left out (never repeats a section)");
+  const LISTS = ["habits", "baits", "rigs", "tips"];
+  ok(fish.every(f => !f.general || Object.keys(f.general).every(k => LISTS.includes(k) || !f[k])), "a general block never repeats a single-text section the official page gave (extra tips, baits and rigs are added in their own labelled block)");
 
   // open the Fish tile in Texas
   A.LN.st = "TX"; A.LN.tile = "fish"; A.renderLearn();

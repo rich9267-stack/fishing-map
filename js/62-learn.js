@@ -144,7 +144,7 @@ function lnFishCard(f, st) {
   list("🪱 Best baits & lures", f.baits); lnBaitLinks(box, f); lnRigList(box, f.rigs); list("💡 Tips", f.tips);
   sec("🔀 Look-alikes", f.lookalikes);
   lnFishGeneral(box, f);
-  if (f.kind === "salt" && LN.fishHandling) { list("💧 Release & handling", LN.fishHandling.points); const hs = LN.fishHandling.source; if (hs) lnSourceLine(box, "Handling advice from", hs, LN.fishT); }
+  if (f.kind === "salt" && LN.fishHandling && !f.nohandling) { list("💧 Release & handling", LN.fishHandling.points); const hs = LN.fishHandling.source; if (hs) lnSourceLine(box, "Handling advice from", hs, LN.fishT); }
   if (f.source) lnSourceLine(box, "Source:", f.source, LN.fishT);
   return box;
 }
