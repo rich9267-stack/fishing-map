@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-23h", title: "🐟 15 more fish cards", items: [
+      "📚 Learn → Fish has 15 more saltwater fish: crevalle jack, goliath grouper, tripletail, permit, great barracuda, wahoo, mutton, lane and cubera snapper, hogfish, blackfin and yellowfin tuna, sailfish, bonefish and ladyfish.",
+      "Thirteen use an official FWC page (source link and date on the card). Bonefish and ladyfish had no official page we could read, so they are marked “general advice” and show no source."
+    ] },
     { id: "2026-10-23g", title: "💬 Learn: general advice fills the gaps", items: [
       "Fish cards now have a “General advice” block for what the official page does not say (where it lives, best time, baits, rigs, tips, look-alikes). It is labelled as written for this app, not from the official source.",
       "Bait & lures has 12 more cards (plastic worms, crankbaits, nightcrawlers, chum and more) marked “general advice”. Cards with a source link still come from official pages. Size, bag and season still only come from the rules."

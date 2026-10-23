@@ -96,7 +96,7 @@ function lnFishPick(box) {
     const g = hits.filter(f => f.kind === k); if (!g.length) return;
     box.appendChild(el("h3", "learn-h2", label));
     g.forEach(f => {
-      const b = el("button", "learn-fishrow", f.name); b.type = "button";
+      const b = el("button", "learn-fishrow", f.name + (f.source ? "" : " · general advice")); b.type = "button";
       b.addEventListener("click", () => { LN.fishOpen = f.name; renderLearn(); window.scrollTo({ top: 0 }); });
       box.appendChild(b);
     });
@@ -136,7 +136,7 @@ function lnFishCard(f, st) {
   hero.appendChild(el("h2", "learn-h", f.name));
   box.appendChild(hero);
   box.appendChild(lnFishRuleBlock(f, st));
-  box.appendChild(el("div", "spot-meta", "ℹ️ The rest of this card is general information from the official source linked at the bottom. It is not a rule."));
+  box.appendChild(el("div", "spot-meta", f.source ? "ℹ️ The rest of this card is general information from the official source linked at the bottom. It is not a rule." : "ℹ️ No official fish page was found for this fish, so everything below is general advice written for this app. It is not a rule."));
   const sec = (h, text) => { if (!text) return; box.appendChild(el("h3", "learn-h2", h)); box.appendChild(el("div", null, text)); };
   const list = (h, a) => { if (!a || !a.length) return; box.appendChild(el("h3", "learn-h2", h)); const u = el("ul", "learn-ul"); a.forEach(x => u.appendChild(el("li", null, x))); box.appendChild(u); };
   sec("👀 What it looks like", f.appearance); sec("📏 Size", f.size); sec("📍 Where it lives", f.range); sec("🌊 Habitat", f.habitat);
@@ -153,11 +153,11 @@ function lnFishGeneral(box, f) {
   const g = f.general; if (!g) return;
   const h = el("h3", "learn-h2", "💬 General advice, not from the official source");
   box.appendChild(h);
-  box.appendChild(el("div", "spot-meta", "Written for this app from general fishing knowledge. The official page above does not say these things, so treat them as tips, not facts."));
+  box.appendChild(el("div", "spot-meta", f.source ? "Written for this app from general fishing knowledge. The official page above does not say these things, so treat them as tips, not facts." : "Written for this app from general fishing knowledge. We found no official page for this fish, so treat these as tips, not facts."));
   const sec = (t, x) => { if (!x) return; box.appendChild(el("div", "learn-fish", t)); box.appendChild(el("div", null, x)); };
   const list = (t, a) => { if (!a || !a.length) return; box.appendChild(el("div", "learn-fish", t)); const u = el("ul", "learn-ul"); a.forEach(x => u.appendChild(el("li", null, x))); box.appendChild(u); };
-  sec("📏 Size", g.size); sec("🌊 Habitat", g.habitat); sec("📍 Where it lives", g.range); sec("🕑 Best time & tide", g.when);
-  list("🪱 Baits & lures", g.baits);
+  sec("👀 What it looks like", g.appearance); sec("📏 Size", g.size); sec("🌊 Habitat", g.habitat); sec("📍 Where it lives", g.range); sec("🕑 Best time & tide", g.when);
+  list("🔎 Habits", g.habits); list("🪱 Baits & lures", g.baits);
   if (g.rigs && g.rigs.length) { box.appendChild(el("div", "learn-fish", "🪝 Rigs")); const u = el("ul", "learn-ul"); g.rigs.forEach(x => { const li = el("li"), r = lnRigFor(x); if (r) { const b = el("button", "learn-link", x + " ›"); b.type = "button"; b.addEventListener("click", () => lnOpenRig(r.name)); li.appendChild(b); } else li.textContent = x; u.appendChild(li); }); box.appendChild(u); lnRigsLoad(); }
   list("💡 Tips", g.tips); sec("🔀 Look-alikes", g.lookalikes);
 }

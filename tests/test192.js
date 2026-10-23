@@ -38,8 +38,10 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   // the data file on disk
   const fish = fishJson.fish;
   ok(fish.length >= 20 && fish.every(f => f.name && Array.isArray(f.match) && f.match.length && /^(salt|fresh)$/.test(f.kind)), "data/learn/fish.json: " + fish.length + " fish, each with a name, match words and salt/fresh");
-  ok(fish.every(f => f.source && /^https:\/\//.test(f.source.url) && f.source.label && (f.appearance || f.habitat || (f.habits || []).length)) && fishJson.handling && fishJson.handling.points.length >= 5 && /^https:\/\//.test(fishJson.handling.source.url), "every card names its official source (https link) and has facts from it; handling advice has its own source");
+  const withSrc = fish.filter(f => f.source), noSrc = fish.filter(f => !f.source);
+  ok(withSrc.length >= 35 && withSrc.every(f => /^https:\/\//.test(f.source.url) && f.source.label && (f.appearance || f.habitat || f.range || (f.habits || []).length)) && fishJson.handling && fishJson.handling.points.length >= 5 && /^https:\/\//.test(fishJson.handling.source.url), "every card names its official source (https link) and has facts from it; handling advice has its own source");
   ok(fish.every(f => !/\d+\s*(inch|in\b|"|per person|per day)/i.test((f.tips || []).join(" "))), "no size or bag numbers are typed into the tips (limits only come from the rules data)");
+  ok(noSrc.length >= 1 && noSrc.every(f => f.general && Object.keys(f.general).length >= 4 && !f.appearance && !f.habitat && !(f.baits || []).length), noSrc.length + " fish with no official page are general-advice only (no official fields, no source line)");
   ok(new Set(fish.map(f => f.name)).size === fish.length, "no fish listed twice");
   const gen = f => (f.general ? [].concat(f.general.size || "", f.general.range || "", f.general.when || "", f.general.habitat || "", f.general.baits || [], f.general.rigs || [], f.general.tips || [], f.general.lookalikes || []).join(" ") : "");
   ok(fish.every(f => f.general) && fish.every(f => !/(per person|per day|bag limit|minimum size|slot limit|d+s*(inch|in|lb|pound))/i.test(gen(f))), "every card has a separate general block with no sizes, bags or seasons typed in");
@@ -68,6 +70,13 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   ok(/General advice, not from the official source/.test(text()) && /Written for this app from general fishing knowledge/.test(text()), "the general block is labelled as not from the official source");
   ok(!!find(n => n.className === "fishsvg"), "the fish picture (tank art) is shown when the app has it");
 
+  // a fish with no official page
+  A.LN.st = "FL"; A.LN.fishOpen = "Bonefish"; A.renderLearn();
+  ok(/No official fish page was found/.test(text()) && /General advice, not from the official source/.test(text()) && !/Source:/.test(text()) && !find(n => n.tag === "a" && /wildlifehabitats/.test(n.href)), "a general-only card says so and shows no source link");
+  A.LN.fishOpen = null; A.renderLearn();
+  ok(all(n => n.className === "learn-fishrow").some(n => /Bonefish · general advice/.test(n.textContent)) && all(n => n.className === "learn-fishrow").some(n => n.textContent === "Wahoo"), "the list marks general-only fish; fish with a source carry no mark");
+
+  A.LN.fishOpen = "Redfish (red drum)";
   // same fish, other states
   A.LN.st = "FL"; A.renderLearn();
   ok(/18″–27″/.test(text()) && /16″–26″/.test(text()) && /Atlantic coast/.test(text()) && /Gulf coast/.test(text()), "Florida shows both coasts' red drum rows");
