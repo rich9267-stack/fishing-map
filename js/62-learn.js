@@ -74,12 +74,12 @@ function lnRulesPanel(st) {
 // The card's size / bag / season come ONLY from the rules rows of the chosen state (same rows as the Rules tile); everything else is marked as a general tip.
 LN.fish = null; LN.fishErr = false; LN.fishQ = ""; LN.fishOpen = null;
 function lnFishLoad() {
-  if (LN.fish || LN.fishLoading) return;
+  if (LN.fish || LN.fishLoading || LN.fishErr) return;
   LN.fishLoading = true;
   fetch("data/learn/fish.json").then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
     .then(j => { if (!j || !Array.isArray(j.fish)) throw new Error("bad"); LN.fish = j.fish; LN.fishT = j.t || ""; LN.fishHandling = j.handling || null; })
     .catch(() => { LN.fishErr = true; })
-    .then(() => { LN.fishLoading = false; const v = $("view-learn"); if (v && !v.hidden && LN.tile === "fish") renderLearn(); });
+    .then(() => { LN.fishLoading = false; const v = $("view-learn"); if (v && !v.hidden && lnShowsData()) renderLearn(); });
 }
 const lnWords = f => [f.name].concat(f.match || []).map(w => String(w).toLowerCase());
 // the state's rule rows that are about this fish (a card word equals a rule word, or is a whole word in the rule's fish name)
@@ -141,7 +141,7 @@ function lnFishCard(f, st) {
   const list = (h, a) => { if (!a || !a.length) return; box.appendChild(el("h3", "learn-h2", h)); const u = el("ul", "learn-ul"); a.forEach(x => u.appendChild(el("li", null, x))); box.appendChild(u); };
   sec("👀 What it looks like", f.appearance); sec("📏 Size", f.size); sec("📍 Where it lives", f.range); sec("🌊 Habitat", f.habitat);
   list("🔎 Habits", f.habits); sec("🕑 Best time & tide", f.when);
-  list("🪱 Best baits & lures", f.baits); lnRigList(box, f.rigs); list("💡 Tips", f.tips);
+  list("🪱 Best baits & lures", f.baits); lnBaitLinks(box, f); lnRigList(box, f.rigs); list("💡 Tips", f.tips);
   sec("🔀 Look-alikes", f.lookalikes);
   if (f.kind === "salt" && LN.fishHandling) { list("💧 Release & handling", LN.fishHandling.points); const hs = LN.fishHandling.source; if (hs) lnSourceLine(box, "Handling advice from", hs, LN.fishT); }
   if (f.source) lnSourceLine(box, "Source:", f.source, LN.fishT);
@@ -165,12 +165,12 @@ function lnFishPanel(st) {
 // each card has a spot for a picture + credit line (`picture`, `credit`) that stays hidden until a licensed diagram is added.
 LN.knots = null; LN.knotsErr = false; LN.knotsQ = ""; LN.knotOpen = null;
 function lnKnotsLoad() {
-  if (LN.knots || LN.knotsLoading) return;
+  if (LN.knots || LN.knotsLoading || LN.knotsErr) return;
   LN.knotsLoading = true;
   fetch("data/learn/knots.json").then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
     .then(j => { if (!j || !Array.isArray(j.knots)) throw new Error("bad"); LN.knots = j.knots; })
     .catch(() => { LN.knotsErr = true; })
-    .then(() => { LN.knotsLoading = false; const v = $("view-learn"); if (v && !v.hidden && LN.tile === "knots") renderLearn(); });
+    .then(() => { LN.knotsLoading = false; const v = $("view-learn"); if (v && !v.hidden && lnShowsData()) renderLearn(); });
 }
 function lnKnotPick(box) {
   const q = LN.knotsQ.trim().toLowerCase();
@@ -225,7 +225,7 @@ function lnRigsLoad() {
   fetch("data/learn/rigs.json").then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
     .then(j => { if (!j || !Array.isArray(j.rigs)) throw new Error("bad"); LN.rigs = j.rigs; })
     .catch(() => { LN.rigsErr = true; })
-    .then(() => { LN.rigsLoading = false; const v = $("view-learn"); if (v && !v.hidden && (LN.tile === "rigs" || (LN.tile === "fish" && LN.fishOpen))) renderLearn(); });
+    .then(() => { LN.rigsLoading = false; const v = $("view-learn"); if (v && !v.hidden && lnShowsData()) renderLearn(); });
 }
 const lnRigFor = text => { const t = String(text).toLowerCase(); return (LN.rigs || []).find(r => (r.find || []).some(w => t.includes(String(w).toLowerCase()))) || null; };
 const lnOpenRig = name => { LN.tile = "rigs"; LN.rigOpen = name; renderLearn(); window.scrollTo({ top: 0 }); };
@@ -276,6 +276,7 @@ function lnRigCard(r) {
     b.addEventListener("click", () => { LN.tile = "knots"; LN.knotOpen = r.knot; renderLearn(); window.scrollTo({ top: 0 }); });
     box.appendChild(b);
   }
+  lnFishLinks(box, r);
   if (r.tip) { box.appendChild(el("h3", "learn-h2", "💡 Tip")); box.appendChild(el("div", null, r.tip)); }
   box.appendChild(el("div", "spot-meta", "General advice written for this app, not yet checked against an official source. Check the state's rules on hooks, gear and bait before you fish."));
   return box;
@@ -298,12 +299,12 @@ function lnRigsPanel() {
 // it came from (listed under the card with the checked date); the fish that name it are taps into their fish cards.
 LN.bait = null; LN.baitSrc = {}; LN.baitT = ""; LN.baitErr = false; LN.baitQ = ""; LN.baitOpen = null;
 function lnBaitLoad() {
-  if (LN.bait || LN.baitLoading) return;
+  if (LN.bait || LN.baitLoading || LN.baitErr) return;
   LN.baitLoading = true;
   fetch("data/learn/bait.json").then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
     .then(j => { if (!j || !Array.isArray(j.bait)) throw new Error("bad"); LN.baitSrc = j.sources || {}; LN.baitT = j.t || ""; LN.bait = j.bait; })
     .catch(() => { LN.baitErr = true; })
-    .then(() => { LN.baitLoading = false; const v = $("view-learn"); if (v && !v.hidden && LN.tile === "bait") renderLearn(); });
+    .then(() => { LN.baitLoading = false; const v = $("view-learn"); if (v && !v.hidden && lnShowsData()) renderLearn(); });
 }
 function lnBaitPick(box) {
   const q = LN.baitQ.trim().toLowerCase();
@@ -414,6 +415,57 @@ function lnInfoPanel(st) {
   return box;
 }
 
+// ---- 🔎 Search across Learn + cross-links (step 7). The box at the top finds fish, rigs, baits & lures and knots by name or nickname in the four
+// data files (asked for on the first search); a tapped result opens that card in its tile. Cross-links only repeat what the data already says:
+// a fish card lists the bait cards whose `fish` names it; a rig card lists the fish cards whose rig lines point at that rig.
+const lnShowsData = () => !!LN.gq || ["fish", "knots", "rigs", "bait"].indexOf(LN.tile) >= 0;
+LN.gq = "";
+function lnHits(q) {
+  q = String(q || "").trim().toLowerCase();
+  if (q.length < 2) return [];
+  const has = ws => ws.some(w => String(w).toLowerCase().includes(q)), out = [];
+  (LN.fish || []).forEach(f => { if (has(lnWords(f))) out.push(["fish", "🐟", "Fish", f.name]); });
+  (LN.rigs || []).forEach(r => { if (has([r.name].concat(r.aka || []))) out.push(["rigs", "🪝", "Rig", r.name]); });
+  (LN.bait || []).forEach(b => { if (has([b.name].concat(b.aka || []))) out.push(["bait", b.kind === "lure" ? "🎣" : "🪱", b.kind === "lure" ? "Lure" : "Bait", b.name]); });
+  (LN.knots || []).forEach(k => { if (has([k.name].concat(k.aka || []))) out.push(["knots", "🪢", "Knot", k.name]); });
+  return out.slice(0, 40);
+}
+const LN_OPEN = { fish: "fishOpen", rigs: "rigOpen", bait: "baitOpen", knots: "knotOpen" };
+function lnGo(tile, name) {
+  LN.gq = ""; LN.tile = tile; LN[LN_OPEN[tile]] = name;
+  renderLearn(); window.scrollTo({ top: 0 });
+}
+function lnSearchFill(box) {
+  box.textContent = "";
+  if (LN.gq.trim().length < 2) return;
+  lnFishLoad(); lnKnotsLoad(); lnRigsLoad(); lnBaitLoad();
+  const loading = LN.fishLoading || LN.knotsLoading || LN.rigsLoading || LN.baitLoading, hits = lnHits(LN.gq);
+  hits.forEach(([tile, ico, kind, name]) => {
+    const b = el("button", "learn-fishrow", ico + " " + name + " · " + kind); b.type = "button";
+    b.addEventListener("click", () => lnGo(tile, name));
+    box.appendChild(b);
+  });
+  if (!hits.length) box.appendChild(el("div", "spot-meta", loading ? "Searching…" : "Nothing matches “" + LN.gq.trim() + "”."));
+  else if (loading) box.appendChild(el("div", "spot-meta", "Still loading more cards…"));
+  if (LN.fishErr || LN.knotsErr || LN.rigsErr || LN.baitErr) box.appendChild(el("div", "spot-meta", "Some cards could not load, so the search is missing them."));
+}
+// on a fish card: the bait / lure cards that name this fish
+function lnBaitLinks(box, f) {
+  lnBaitLoad();
+  const hits = (LN.bait || []).filter(b => (b.fish || []).indexOf(f.name) >= 0);
+  if (!hits.length) return;
+  box.appendChild(el("h3", "learn-h2", "🎣 Bait & lure cards that name it"));
+  hits.forEach(b => { const l = el("button", "learn-link", b.name + " ›"); l.type = "button"; l.addEventListener("click", () => lnGo("bait", b.name)); box.appendChild(l); });
+}
+// on a rig card: the fish cards whose rig lines point at this rig
+function lnFishLinks(box, r) {
+  lnFishLoad();
+  const hits = (LN.fish || []).filter(f => (f.rigs || []).some(x => lnRigFor(x) === r));
+  if (!hits.length) return;
+  box.appendChild(el("h3", "learn-h2", "🐟 Fish cards that name it"));
+  hits.forEach(f => { const l = el("button", "learn-link", f.name + " ›"); l.type = "button"; l.addEventListener("click", () => lnGo("fish", f.name)); box.appendChild(l); });
+}
+
 // no rules of any state on the phone yet (not signed in yet, or still loading)
 const lnNoRulesAtAll = () => (typeof fishRules === "undefined" || !fishRules.length) && (typeof stateRules === "undefined" || !stateRules.length);
 // are the rules still being asked for? (js/10 loadRules runs once signed in)
@@ -437,6 +489,11 @@ function renderLearn() {
   const here = el("button", "btn ghost small", "📍 Here"); here.type = "button"; here.title = "Back to the state you are in";
   here.addEventListener("click", () => { LN.st = lnHere(); renderLearn(); });
   bar.appendChild(sel); bar.appendChild(here); body.appendChild(bar);
+  // search across fish, rigs, baits & lures and knots
+  const gs = el("input", "learn-search"); gs.type = "search"; gs.placeholder = "Search all of Learn (fish, rigs, baits, knots)"; gs.value = LN.gq; gs.setAttribute("aria-label", "Search all of Learn");
+  const gres = el("div", "learn-fishlist");
+  gs.addEventListener("input", () => { LN.gq = gs.value; lnSearchFill(gres); });
+  body.appendChild(gs); body.appendChild(gres); lnSearchFill(gres);
   // tiles
   const grid = el("div", "learn-grid");
   LN_TILES.forEach(([k, ico, label]) => {
@@ -465,7 +522,7 @@ function renderLearn() {
     body.appendChild(el("div", "spot-meta", t[1] + " " + t[2] + " is coming soon. All six tiles are ready now."));
   }
 }
-function openLearn() { LN.st = lnHere(); LN.tile = "rules"; showView("learn"); window.scrollTo({ top: 0 }); }
+function openLearn() { LN.st = lnHere(); LN.tile = "rules"; LN.gq = ""; showView("learn"); window.scrollTo({ top: 0 }); }
 
 (function learnSetup() {
   const c = $("learn-card"), back = $("learn-back");

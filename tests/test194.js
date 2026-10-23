@@ -47,7 +47,7 @@ const tick = () => new Promise(r => setTimeout(r, 10));
   ok(/Loading the rigs/.test(text()) && fetched.length === 1 && fetched[0] === "data/learn/rigs.json", "Rigs tile asks for the rigs file once and says Loading");
   await tick();
   ok(all(n => n.className === "learn-fishrow").length === 8, "one row per rig");
-  const search = find(n => n.tag === "input");
+  const search = all(n => n.tag === "input").pop();
   search.value = "carolina"; search.handlers.input(); ok(all(n => n.className === "learn-fishrow").length === 1, "searching carolina finds one rig");
   search.value = "fish finder"; search.handlers.input(); ok(all(n => n.className === "learn-fishrow").some(n => /Fish-finder/.test(n.textContent)), "a nickname finds the rig");
   search.value = "zzz"; search.handlers.input(); ok(/No rig matches/.test(text()), "no match says so");

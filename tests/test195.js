@@ -47,7 +47,7 @@ process.on("unhandledRejection", e => { console.log("FAIL crashed: " + (e && e.s
   ok(/Loading the baits/.test(text()) && fetched.length === 1 && fetched[0] === "data/learn/bait.json", "Bait tile asks for the file once and says Loading");
   await tick();
   ok(all(n => n.className === "learn-fishrow").length === bait.length, "one row per bait or lure");
-  const search = find(n => n.tag === "input");
+  const search = all(n => n.tag === "input").pop();
   search.value = "pinfish"; search.handlers.input(); ok(all(n => n.className === "learn-fishrow").some(n => /Live baitfish/.test(n.textContent)), "a nickname (pinfish) finds Live baitfish");
   search.value = "zzz"; search.handlers.input(); ok(/No bait or lure matches/.test(text()), "no match says so");
   search.value = ""; search.handlers.input();

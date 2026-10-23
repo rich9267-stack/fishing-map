@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-23f", title: "🔎 Learn: one search for everything", items: [
+      "At the top of 📚 Learn, “Search all of Learn” finds fish, rigs, baits & lures and knots by name or nickname. Tap a result to open its card.",
+      "A fish card now lists the bait & lure cards that name it, and a rig card lists the fish cards that point to it."
+    ] },
     { id: "2026-10-23e", title: "📍 Learn: State info", items: [
       "In 📚 Learn, tap 📍 State info for the chosen state: its fish & wildlife agency with rules and licence links, how many rules we have on file and when they were checked, the agency's boat-ramp count, and the NOAA tide and water-temperature stations built into the app.",
       "Each item shows its source and the date we checked it. Anything we have no official source for is left out."

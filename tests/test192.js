@@ -48,7 +48,7 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   await tick();
   ok(A.LN.fish && A.LN.fish.length === fish.length && /Saltwater/.test(text()) && /Freshwater/.test(text()), "the list appears, split into saltwater and freshwater");
   ok(all(n => n.className === "learn-fishrow").length === fish.length, "one row per fish");
-  const search = find(n => n.tag === "input");
+  const search = all(n => n.tag === "input").pop();
   search.value = "drum"; search.handlers.input();
   const rows = all(n => n.className === "learn-fishrow").map(n => n.textContent);
   ok(rows.length === 2 && rows.some(x => /Redfish/.test(x)) && rows.some(x => /Black drum/.test(x)), "searching drum finds Redfish (red drum) and Black drum");

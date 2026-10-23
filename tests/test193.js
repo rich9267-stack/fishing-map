@@ -45,7 +45,7 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   ok(/Loading the knots/.test(text()) && fetched.length === 1 && fetched[0] === "data/learn/knots.json", "Knots tile asks for the knots file once and says Loading");
   await tick();
   ok(all(n => n.className === "learn-fishrow").length === 8, "one row per knot");
-  const search = find(n => n.tag === "input");
+  const search = all(n => n.tag === "input").pop();
   search.value = "clinch"; search.handlers.input();
   ok(all(n => n.className === "learn-fishrow").length === 1, "searching clinch finds one knot");
   search.value = "rapala"; search.handlers.input();
