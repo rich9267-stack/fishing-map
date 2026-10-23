@@ -34,7 +34,7 @@ const tick = () => new Promise(r => setTimeout(r, 10));
   A.LN.st = "TX"; A.LN.tile = "info"; A.renderLearn();
   ok(/Texas info/.test(text()) && /Texas Parks & Wildlife Department/.test(text()), "Texas info names the agency");
   const links = all(n => n.tag === "a").map(a => a.href);
-  ok(links.some(h => /tpwd\.texas\.gov\/fishboat/.test(h)) && links.some(h => /tpwd\.texas\.gov\/licenses/.test(h)) && /Source:/.test(text()) && /checked Oct 21, 2026/.test(text()), "rules + licence links and a source line with its checked date");
+  ok(links.some(h => /tpwd\.texas\.gov\/fishboat/.test(h)) && links.some(h => /tpwd\.texas\.gov\/.*licenses/.test(h)) && /Source:/.test(text()) && /checked Oct 23, 2026/.test(text()), "rules + licence links and a source line with its checked date");
   ok(/Rules on file/.test(text()) && /1 fish, checked Oct 15, 2026/.test(text()), "rules on file are counted from the real rows, with their checked date");
   await tick();
   ok(fetched.length === 1 && fetched[0] === "data/ramps/TX.json" && /3 public, open ramps/.test(text()) && /Test Texas ramp list/.test(text()) && /checked Oct 23, 2026/.test(text()), "ramp count and credit come from the state's ramp file, with its date");

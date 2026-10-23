@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-23k", title: "🔧 Learn: fixed links and 3 more fish", items: [
+      "State agency links that had moved or stopped working (about 15 states) now go to the agency's current fishing and licence pages.",
+      "Fish has three more cards from official pages: knobbed porgy, red porgy and rock hind. A few general-advice lines were corrected."
+    ] },
     { id: "2026-10-23j", title: "🐟 22 more freshwater fish cards", items: [
       "📚 Learn → Fish has 22 more freshwater fish: white, blue and flathead catfish, bullheads, gar, oscar, peacock bass, tilapia, Mayan cichlid, walking catfish, clown knifefish and more.",
       "Sixteen use an official page (FWC or USGS) with a source link and date on the card. Six had no official page we could read (bullseye snakehead, flat, snail and spotted bullhead, headwater catfish, longnose gar), so they are marked “general advice” and show no source."

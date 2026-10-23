@@ -380,9 +380,9 @@ function lnBaitPanel() {
 }
 
 // ---- 📍 State info (step 6): only what the app already holds for the chosen state, each item with its source and checked date:
-// the agency and its two links (js/54, "links checked Oct 21 2026"), the rules on file (js/10 rows), the agency's boat-ramp list (data/ramps, js/61),
+// the agency and its two links (js/54, links rechecked Oct 23 2026), the rules on file (js/10 rows), the agency's boat-ramp list (data/ramps, js/61),
 // NOAA tide / water-temperature stations (js/60, fetched Oct 22 2026). No local tips: nothing official to copy them from yet.
-const LN_AGENCY_T = "2026-10-21", LN_NOAA_T = "2026-10-22";
+const LN_AGENCY_T = "2026-10-23", LN_NOAA_T = "2026-10-22";
 LN.ramps = {};   // state → { n, t } once data/ramps/<ST>.json is read, false when the state has no such file
 function lnRampsLoad(st) {
   if (LN.ramps[st] !== undefined || LN.rampsLoading === st) return;

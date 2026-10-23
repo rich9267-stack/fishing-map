@@ -54,7 +54,7 @@ ok(/Redfish/.test(text()) && /20″–28″ total length/.test(text()) && /3 per
 ok(/A guide only — confirm with Texas Parks & Wildlife before keeping a fish/.test(text()), "'guide only — confirm with' names the Texas agency");
 ok(/Checked Jun 1, 2026 – Oct 15, 2026/.test(text()) && /older than 90 days/.test(text()), "newest/oldest check dates, and the 90-day warning on the old rule");
 const l = links().map(a => a.href);
-ok(l.includes("https://tpwd.texas.gov/fishboat/fish/") && l.includes("https://tpwd.texas.gov/licenses/") && l.includes("https://example.org/rule"), "Texas agency rules + licence links and each rule's source link");
+ok(l.includes("https://tpwd.texas.gov/fishboat/fish/") && l.includes("https://tpwd.texas.gov/business/licenses/online_sales/") && l.includes("https://example.org/rule"), "Texas agency rules + licence links and each rule's source link");
 ok(/2 no-fishing or closed areas in Texas are on our map/.test(text()) && /may not be on the list/.test(text()), "the closed-areas note counts Texas's areas (2) and says the list is not complete");
 ok(zonesAsked > 0, "the closed-area list is asked for");
 
