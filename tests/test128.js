@@ -73,7 +73,7 @@ const code = [
   fn(S01, "ymdUtc", true), fn(S01, "parseNoaa"),
   line(S06, /^ *const pad2 = .*$/m), line(S06, /^ *const ymdDash = .*$/m), line(S06, /^ *const ymdDashUtc = .*$/m, true),
   fn(S06, "compass"), fn(S06, "tideStageAt"), fn(S06, "weatherAt"),
-  fn(S02, "miles"), arr(S02, "WT_STATIONS"),
+  fn(S02, "miles"), arr(S02, "WT_STATIONS"), line(S02, /^ *const wtAll = .*$/m),
   line(S02, /^ *const WT_RANGE = .*$/m), line(S02, /^ *const WT_STATION_MI = .*$/m), line(S02, /^ *const okTemp = .*$/m),
   fn(S02, "wtSourceFor"), fn(S02, "waterTempAt"),
   "this.api = { tideStageAt, weatherAt, waterTempAt };"

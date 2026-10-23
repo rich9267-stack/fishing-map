@@ -55,7 +55,7 @@
       spot_type: OFFICIAL_KINDS[o.kind] || "dock",
       water_type: o.water_type || (st && st.dist != null && st.dist < 1.5 ? "saltwater" : "brackish"),
       public_access: osm && o.trust !== "public" ? "unsure" : "yes", added_by: me.name, lat: o.lat, lng: o.lng, is_private: true, visibility: "private",
-      notes: `Added from the official spots map layer (${suggSourceName(g)}). Check the water type before you rely on it.`
+      notes: `Added from the official spots map layer (${o.credit || suggSourceName(g)}). Check the water type before you rely on it.`
     };
     const { data, error } = await db.from("spots").insert(row).select("*").single();
     if (error) throw error;
@@ -129,7 +129,7 @@
     fillZone();
     const wait = typeof zonesEnsure === "function" ? zonesEnsure() : null;
     if (wait && wait.then) wait.then(fillZone, () => {});
-    box.appendChild(el("div", "pop-meta", "Source: " + (OL_CREDIT[o.source] || OFFICIAL_SOURCE[o.source] || "Florida's official public spots list")));
+    box.appendChild(el("div", "pop-meta", "Source: " + (OL_CREDIT[o.source] || o.credit || OFFICIAL_SOURCE[o.source] || "Florida's official public spots list")));
     box.appendChild(el("div", "pop-meta ol-check", "Check before you go — reference only, not for navigation."));
     box.appendChild(olButtons(o));
     return box;
@@ -141,7 +141,7 @@
     if (!map || !OL.on) return;
     olClear();
     const box = map.getBounds().pad(0.1), c = map.getCenter();
-    const osm = typeof osmOlItems === "function" ? osmOlItems() : [], note = typeof osmOlNote === "function" ? osmOlNote() : "";   // js/58 (outside Florida only)
+    const osm = typeof outsideItems === "function" ? outsideItems() : typeof osmOlItems === "function" ? osmOlItems() : [], note = typeof outsideNote === "function" ? outsideNote() : typeof osmOlNote === "function" ? osmOlNote() : "";   // js/61 + js/58 (outside Florida only)
     const inView = (officialSpots || []).concat(osm).filter(o => o.lat != null && o.lng != null && box.contains([o.lat, o.lng]));
     let list = inView.filter(o => OL.show[olGroup(o)]);   // the filter buttons
     let capped = false;
@@ -168,7 +168,7 @@
     if (map.getZoom() < OL.minZoom) { olClear(); olSay("Zoom in to see official spots."); return; }
     const b = map.getBounds(), c = map.getCenter();
     // outside Florida: ramps and piers from OpenStreetMap for this view (js/58; asks nothing for an all-Florida view), fetched while the cells load
-    const osmWait = typeof osmOlLoad === "function" ? osmOlLoad(b) : null;
+    const osmWait = typeof outsideLoad === "function" ? outsideLoad(b) : typeof osmOlLoad === "function" ? osmOlLoad(b) : null;
     const keys = officialCellsAround(c, (b.getNorth() - b.getSouth()) / 2, (b.getEast() - b.getWest()) / 2);
     const midDist = k => { const [i, j] = k.split(",").map(Number); return miles(c.lat, c.lng, (i + 0.5) * OFFICIAL_CELL, (j + 0.5) * OFFICIAL_CELL); };
     const near = keys.sort((a, z) => midDist(a) - midDist(z)).slice(0, OFFICIAL_MAX_CELLS);   // never more squares than the phone keeps
@@ -182,9 +182,9 @@
     }
     OL.skipped = skipped; olDraw(skipped);
     if (osmWait) {
-      const said = osmOlNote(), changed = await osmWait;
+      const said = outsideNote(), changed = await osmWait;
       if (seq !== OL.seq || !OL.on) return;
-      if (changed || osmOlNote() !== said) olDraw(skipped);   // an all-Florida view: nothing new, same (empty) note, so nothing is redrawn
+      if (changed || outsideNote() !== said) olDraw(skipped);   // an all-Florida view: nothing new, same (empty) note, so nothing is redrawn
     }
   }
 

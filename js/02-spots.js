@@ -495,7 +495,7 @@
       .then(d => {
         const list = (d.stationList || d.stations || []).map(x => ({ id: String(x.stationId || x.id), name: x.stationName || x.commonName || x.name, lat: +x.lat, lng: +(x.lon != null ? x.lon : x.lng) }))
           .filter(x => x.id && isFinite(x.lat) && isFinite(x.lng) && !/^TEC/.test(x.id));
-        const known = new Set(TIDE_STATIONS.concat(extraStations).map(t => t.id));
+        const known = new Set(tideAll().map(t => t.id));
         const add = list.filter(x => !known.has(x.id));
         if (!add.length) return;
         extraStations = extraStations.concat(add).slice(-300);
@@ -505,11 +505,15 @@
       }).catch(() => { stationLookups[key] = Date.now(); });   // couldn't reach NOAA: allow another try after a minute
   }
 
+  // Florida's built-in list + every other coastal state (js/60, loaded later, so looked up when needed) + stations asked of NOAA on this phone
+  const tideAll = () => TIDE_STATIONS.concat(typeof TIDE_STATIONS_US !== "undefined" ? TIDE_STATIONS_US : [], extraStations);
+  const wtAll = () => (typeof WT_STATIONS_US !== "undefined" ? WT_STATIONS.concat(WT_STATIONS_US) : WT_STATIONS);
+
   // The tide station a spot uses (Hillsboro for spots without a location)
   function stationFor(s) {
-    if (!hasLoc(s)) return { ...(TIDE_STATIONS.concat(extraStations).find(t => t.id === STATION) || TIDE_STATIONS.find(t => t.id === "8722859")), dist: null };
+    if (!hasLoc(s)) return { ...(tideAll().find(t => t.id === STATION) || TIDE_STATIONS.find(t => t.id === "8722859")), dist: null };
     let best = null;
-    TIDE_STATIONS.concat(extraStations).forEach(t => {
+    tideAll().forEach(t => {
       const d = miles(s.lat, s.lng, t.lat, t.lng);
       if (!best || d < best.dist) best = { ...t, dist: d };
     });
@@ -662,19 +666,19 @@
     { id: "8729210", name: "Panama City Beach", lat: 30.2138, lng: -85.8786 },                 // Gulf pier
     { id: "8729840", name: "Pensacola", lat: 30.4044, lng: -87.2112, mi: 10 }                  // Pensacola Bay
   ];
-  const WT_RANGE = [45, 96];            // anything outside this is a bad reading (shallow Gulf / Florida Bay water really does reach 93–95°F in July–August)
+  const WT_RANGE = [30, 96];            // anything outside this is a bad reading (cold bays up north really do read 30s; shallow Gulf / Florida Bay water really does reach 93–95°F in July–August)
   const WT_STATION_MI = 20;             // use a station only if it's this close
   const okTemp = v => typeof v === "number" && isFinite(v) && v >= WT_RANGE[0] && v <= WT_RANGE[1];
 
   // The nearest station that is close enough to speak for this spot (or null → the ocean model / satellite is used)
   function wtSourceFor(lat, lng) {
-    const st = WT_STATIONS.map(t => ({ ...t, dist: miles(lat, lng, t.lat, t.lng) }))
+    const st = wtAll().map(t => ({ ...t, dist: miles(lat, lng, t.lat, t.lng) }))
       .filter(t => t.dist <= (t.mi || WT_STATION_MI)).sort((a, b) => a.dist - b.dist)[0];
     return st || null;
   }
   // The n nearest stations within maxMi (for the "comparison" readings on the weather card)
   function wtNearest(lat, lng, n, maxMi) {
-    return WT_STATIONS.map(t => ({ ...t, dist: miles(lat, lng, t.lat, t.lng) }))
+    return wtAll().map(t => ({ ...t, dist: miles(lat, lng, t.lat, t.lng) }))
       .filter(t => t.dist <= maxMi).sort((a, b) => a.dist - b.dist).slice(0, n);
   }
   // Last resort for shallow bays the ocean model leaves blank: NOAA's 1 km satellite map (MUR — the same one as the 🛰 layer).

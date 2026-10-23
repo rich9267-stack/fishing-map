@@ -503,6 +503,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-22o", title: "✅ Official ramps in 35 states + tide stations everywhere", items: [
+      "✅ Official public spots now show boat ramps straight from the state wildlife / natural-resources agency lists in 35 states (Maine to Texas, Washington and Oregon, and most states in between). Only ramps the agency lists as public and open are shown; closed, private, club and marina ramps are left out. Tap a pin to see which agency it comes from.",
+      "States without a list we could use (like Pennsylvania, Illinois and California) keep the OpenStreetMap ramps, still only the clearly public ones. Florida looks exactly the same.",
+      "Every coastal state now has its tide stations and water-temperature stations built in, so tides and water temperature load faster and from the closest station. Cold-water readings (30s °F up north) are no longer thrown out."
+    ] },
     { id: "2026-10-22n", title: "🕒 Times use the spot's own time zone", items: [
       "Tide times, the hour-by-hour forecast, sunrise and sunset, the moon and the weather now follow the clock where the spot is — Central, Mountain, Pacific (Arizona has no daylight saving) — not the clock on your phone. Looking at a Texas or California spot from Florida shows its own time.",
       "Florida looks exactly the same (the Panhandle west of the Apalachicola River uses Central time, like the people there)."

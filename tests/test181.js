@@ -125,7 +125,7 @@ const Z = zctx.api;
 
   // ---------- 4) js/37 hooks: Florida path untouched ----------
   ok(/\(officialSpots \|\| \[\]\)\.concat\(osm\)/.test(o37) && /typeof osmOlItems === "function"/.test(o37), "the map layer draws OpenStreetMap places next to the official ones");
-  ok(/const osmWait = typeof osmOlLoad === "function" \? osmOlLoad\(b\) : null;/.test(o37) && /if \(changed \|\| osmOlNote\(\) !== said\) olDraw\(skipped\);/.test(o37), "fetched with the view; an all-Florida view is not redrawn a second time");
+  ok(/const osmWait = typeof outsideLoad === "function" \? outsideLoad\(b\) : typeof osmOlLoad === "function" \? osmOlLoad\(b\) : null;/.test(o37) && /if \(changed \|\| outsideNote\(\) !== said\) olDraw\(skipped\);/.test(o37), "fetched with the view; an all-Florida view is not redrawn a second time");
   ok(/osm: "OpenStreetMap \(a volunteer map, not an official list\)/.test(o37) && /o\.source === "osm" && typeof trustOf === "function" \? trustOf\(o\)\.badge \+ " · " : "✅ "/.test(o37), "OpenStreetMap cards say where they come from and show the trust badge; official ones keep ✅");
   ok(/public_access: osm && o\.trust !== "public" \? "unsure" : "yes"/.test(o37), "saving an unsure OpenStreetMap place marks it 'unsure', official places stay 'yes'");
   ok(/note \|\| "No official spots in this view\."/.test(o37) && /else olSay\(note\);/.test(o37), "Florida messages unchanged (the note is empty there)");

@@ -173,7 +173,7 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
   need(nn(26.24, -80.10) === "Lake Worth Pier | Virginia Key", "Pompano compares with Lake Worth Pier and Virginia Key (as before): " + nn(26.24, -80.10));
   need(/^St\. Petersburg \| Port Manatee$/.test(nn(27.77, -82.63)), "Tampa compares with St. Petersburg and Port Manatee: " + nn(27.77, -82.63));
   need(nn(30.8, -83.5) === "", "nothing within 60 miles of the Georgia line near Valdosta → no comparison (Pensacola has its own station since v115)");
-  need(w.eval("okTemp(95)") === true && w.eval("okTemp(96.5)") === false && w.eval("okTemp(44)") === false, "believable range is 45–96°F");
+  need(w.eval("okTemp(95)") === true && w.eval("okTemp(96.5)") === false && w.eval("okTemp(29)") === false && w.eval("okTemp(35)") === true, "believable range is 30–96°F (v176: cold northern water)");
 
   // ---- C. what you actually get (fake NOAA / ocean model / satellite) ----
   const wtn = async (lat, lng) => { try { return await w.eval(`waterTempNow(${lat}, ${lng})`); } catch (e) { return { error: e.message }; } };
