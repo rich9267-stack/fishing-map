@@ -57,7 +57,7 @@ const bounds = (s, w, n, e) => ({ getSouth: () => s, getWest: () => w, getNorth:
   });
   ok(good && total > 15000, "every file is valid (name + place inside the USA): " + total + " places" + (why ? " — " + why : ""));
   const sw = read("sw.js"), s61 = src61;
-  ok(/data\\\/ramps/.test(sw) && /DATA_CACHE/.test(sw) && /k !== DATA_CACHE/.test(sw), "sw.js keeps the saved lists on the phone (and keeps them across updates)");
+  ok(/data\\\/\(ramps/.test(sw) && /DATA_CACHE/.test(sw) && /k !== DATA_CACHE/.test(sw), "sw.js keeps the saved lists on the phone (and keeps them across updates)");
   ok(fs.existsSync(path.join(root, "tools", "make-ramp-snapshots.js")), "the list-making script is in the project (tools/)");
   ok(/hist/.test("hist") && /v177/.test(read("docs/build_history.md")), "build history has v177");
   console.log(bad ? `\n${bad} FAILED` : "\nALL OK");

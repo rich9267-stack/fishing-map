@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-22q", title: "ℹ️ Special fishing rules note", items: [
+      "A spot inside an area where fishing is restricted but not banned (like the Florida Keys National Marine Sanctuary) now shows an ℹ️ note: “special fishing rules may apply”. Tap it for the rule and who manages the area. It shows on spot cards, Home, Plan a trip and Find new water.",
+      "Areas where fishing is banned still show the red 🚫 warning. These outlines are rough (about a mile), so always read the area's rules."
+    ] },
     { id: "2026-10-22p", title: "⚡ Faster official ramps outside Florida", items: [
       "Official ramps from the 35 state lists now load almost at once: each state's list is saved in the app itself instead of waiting on the state's website. Same ramps, same rules (public and open only), same agency credit on the card.",
       "If a list ever can't be read, the app asks the state's website like before."

@@ -17,6 +17,7 @@ After the US expansion (done v173): make the national map trustworthy and useful
 - Oct 22 — **Time zones checked across the whole country**, not just the Panhandle.
 - Oct 22 — **Official ramp lists: go nationwide now** (all states that publish one), not one state at a time — the app goes public nationwide.
 - Oct 22 — **New 📚 Learn page wanted** (Richard): rules for any state (not just where you are), fish info, state/local info, rigs, bait, lures, knots. Designer plans it before anything is built.
+- Oct 22 — **Learn page decisions (Richard):** start with Rules for any state; lives in ⋯ More or a Home card (pick when building); knot/rig pictures from free licensed sources (credit kept, packet line); fish cards long (range, habits, tips too). Design note still to write.
 - Oct 22 — Lawyer packet lines for national features are batched until the national maps work is done (running list kept by Claude).
 - Earlier decisions (Oct 15–18: wording, tutorials, backups, admin controls, credits, UTC tide times, depth "enough for now") are recorded in docs/build_history.md and plans/admin-controls-plan.md; none reopened.
 
@@ -25,7 +26,7 @@ After the US expansion (done v173): make the national map trustworthy and useful
 2. **Richard: finish the outside-Florida phone checklist** (the rest of it) and list anything else that looked off.
 3. **Engineer: time zones across the country.** Weather and the water-temperature backup still ask for Eastern time (js/02 `America/New_York`); games use the New York day on purpose. Check every place a time is shown for a spot in Central, Mountain, Pacific and Arizona (no daylight saving). **Built v175 (test187); waiting for Richard's phone check.**
 4. ~~Researcher → Engineer: nationwide official ramp lists + NOAA station lists~~ **Built v176 (test188); waiting for Richard's phone check.** 35 states have agency ramp lists (js/61); PA (server down), IL, CO, KS, OK, ND, SD, MS, AZ, NV, WY, CA, DC stay on OpenStreetMap — look again for those later. 1,864 tide + 145 water-temperature stations built in (js/60).
-5. **Designer: 📚 Learn page plan** (rules for any state, fish info, state/local info, rigs/bait/lures/knots). Plan only first.
+5. **Designer: 📚 Learn page plan** (decisions above; write the design note next) (rules for any state, fish info, state/local info, rigs/bait/lures/knots). Plan only first.
 
 ## Later
 - Kansas reservoir depth maps (one map per reservoir; few anglers there yet). Wisconsin / Connecticut / Tennessee depth: no free source found.

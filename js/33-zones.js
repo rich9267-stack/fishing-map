@@ -9,6 +9,9 @@
   // ~600 KB in all; each row has a `state`). Florida rows and Florida wording are unchanged; other states' cards name that state's agency.
   const ZN = { key: "fm-zones-v2", age: 7 * 86400000, nearMi: 0.5 };
   const zn = { rows: [], t: 0, read: false, loading: null, layer: null, open: {} };
+// v178: the softer ℹ️ "special fishing rules apply" areas (NOAA Marine Protected Areas where recreational fishing is restricted but not banned, e.g. the Florida Keys
+// sanctuary). One file kept with the app (data/zones-rules.json, made by tools/make-rules-zones.js, outlines rough to about a mile). Level "rules"; never beats a no-fishing area.
+const zr = { rows: [], loading: null, done: false, failAt: 0 };
 
   // ---- shape tests (flat maths is plenty at this size) ----
   function znRingHas(ring, lng, lat) {
@@ -50,26 +53,37 @@
     const lim = nearMi == null ? ZN.nearMi : nearMi;
     if (!isFinite(lat) || !isFinite(lng)) return { inside: null, near: null };
     const padLat = lim / 69, padLng = lim / (69.17 * Math.max(0.2, Math.cos(lat * Math.PI / 180)));
-    let inside = null, near = null;
-    for (const r of rows) {
+    let inside = null, near = null, rules = null;
+    for (const r of (rows === zn.rows ? zn.rows.concat(zr.rows) : rows)) {
       if (lat < r.min_lat - padLat || lat > r.max_lat + padLat || lng < r.min_lng - padLng || lng > r.max_lng + padLng) continue;
+      if (r.level === "rules") { if (znGeomHas(r.geom, lng, lat) && (!rules || znSize(r) < znSize(rules))) rules = r; continue; }   // soft areas: inside only, no "near"
       if (znGeomHas(r.geom, lng, lat)) { if (!inside || znSize(r) < znSize(inside)) inside = r; continue; }
       const mi = znEdgeMi(r.geom, lat, lng);
       if (mi <= lim && (!near || mi < near.mi)) near = { row: r, mi };
     }
-    return { inside, near: inside ? null : near };
+    return { inside, near: inside ? null : near, rules: inside || near ? null : rules };
   }
 
   // ---- words ----
-  const znWhat = r => r.level === "no_entry" ? "closed to the public" : "fishing is not allowed";
+  const znWhat = r => r.level === "rules" ? "special fishing rules" : r.level === "no_entry" ? "closed to the public" : "fishing is not allowed";
   function znLine(hit) {
     if (hit.inside) return "🚫 " + hit.inside.name + " — " + znWhat(hit.inside);
     if (hit.near) return "⚠️ " + (typeof fmtDist === "function" ? fmtDist(hit.near.mi) : hit.near.mi.toFixed(1) + " mi") + " from " + hit.near.row.name + " (" + znWhat(hit.near.row) + ")";
+    if (hit.rules) return "ℹ️ " + hit.rules.name + " — special fishing rules may apply";
     return "";
   }
   function znDetails(r) {
     const box = el("div", "zone-more");
     box.appendChild(el("div", null, r.name));
+    if (r.level === "rules") {
+      box.appendChild(el("div", null, "Special fishing rules may apply here: " + (r.rule || "fishing is restricted") + "."));
+      box.appendChild(el("div", "spot-meta", "This outline is rough (about a mile). Read the area's rules before you fish."));
+      if (r.protection) box.appendChild(el("div", "spot-meta", "Protection level: " + r.protection));
+      if (r.agency) box.appendChild(el("div", "spot-meta", "Managed by: " + r.agency));
+      if (r.url && /^https?:\/\//.test(r.url)) { const a = el("a", "spot-meta", "More about this area ↗"); a.href = r.url; a.target = "_blank"; a.rel = "noopener"; box.appendChild(a); }
+      box.appendChild(el("div", "spot-meta", "Source: NOAA's national Marine Protected Areas inventory. A guide only — not legal advice."));
+      return box;
+    }
     box.appendChild(el("div", null, r.level === "no_entry" ? "Closed to the public (no entry)." : "No fishing: commercial and recreational fishing are prohibited."));
     if (r.protection) box.appendChild(el("div", "spot-meta", "Protection level: " + r.protection));
     if (r.agency) box.appendChild(el("div", "spot-meta", "Managed by: " + r.agency));
@@ -87,7 +101,24 @@
     try { localStorage.removeItem("fm-zones-v1"); } catch (e) { /* fine */ }   // the Florida-only copy: the national list replaces it
     try { const j = JSON.parse(localStorage.getItem(ZN.key) || "null"); if (j && Array.isArray(j.rows)) { zn.rows = j.rows; zn.t = j.t || 0; } } catch (e) { /* no copy yet */ }
   }
+  function zrEnsure() {
+    if (zr.done || zr.loading || !me) return;
+    if (zr.failAt && Date.now() - zr.failAt < 300000) return;
+    zr.loading = (async () => {
+      try {
+        const res = await fetch("data/zones-rules.json");
+        if (!res.ok) throw new Error("http " + res.status);
+        const j = await res.json();
+        if (!j || !Array.isArray(j.items)) throw new Error("bad file");
+        zr.rows = j.items.filter(o => o && o.n && o.g && Array.isArray(o.b) && o.b.length === 4).map((o, i) => ({ id: "r" + i, name: o.n, level: "rules", rule: o.f, protection: o.p, agency: o.a, url: o.u, anchor: o.an, vessel: o.v, geom: o.g, min_lat: o.b[0], min_lng: o.b[1], max_lat: o.b[2], max_lng: o.b[3] }));
+        zr.done = true; zr.failAt = 0;
+        znChanged();
+      } catch (e) { zr.failAt = Date.now(); /* offline first time: asked again in 5 minutes */ }
+      finally { zr.loading = null; }
+    })();
+  }
   function zonesEnsure() {
+    zrEnsure();
     if (!zn.read) znCacheRead();
     if (!me || zn.loading) return zn.loading;
     if (zn.t && Date.now() - zn.t < ZN.age) return null;   // asked recently (even if the list came back empty): don't ask again on every redraw
@@ -122,8 +153,8 @@
     if (!s || s.lat == null || s.lng == null || s.is_exact === false) return null;
     zonesEnsure();
     const hit = zoneAt(+s.lat, +s.lng);
-    if (!hit.inside && !hit.near) return null;
-    const row = hit.inside || hit.near.row, key = (s.id || s.key || s.name) + ":" + row.id;
+    if (!hit.inside && !hit.near && !hit.rules) return null;
+    const row = hit.inside || (hit.near && hit.near.row) || hit.rules, key = (s.id || s.key || s.name) + ":" + row.id;
     const wrap = el("span", "zone-chip-wrap");
     const b = el("button", "chip zone-chip" + (hit.inside ? " in" : ""), znLine(hit)); b.type = "button";
     b.setAttribute("aria-expanded", String(!!zn.open[key]));
