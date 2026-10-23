@@ -358,6 +358,62 @@ function lnBaitPanel() {
   return box;
 }
 
+// ---- 📍 State info (step 6): only what the app already holds for the chosen state, each item with its source and checked date:
+// the agency and its two links (js/54, "links checked Oct 21 2026"), the rules on file (js/10 rows), the agency's boat-ramp list (data/ramps, js/61),
+// NOAA tide / water-temperature stations (js/60, fetched Oct 22 2026). No local tips: nothing official to copy them from yet.
+const LN_AGENCY_T = "2026-10-21", LN_NOAA_T = "2026-10-22";
+LN.ramps = {};   // state → { n, t } once data/ramps/<ST>.json is read, false when the state has no such file
+function lnRampsLoad(st) {
+  if (LN.ramps[st] !== undefined || LN.rampsLoading === st) return;
+  LN.rampsLoading = st;
+  fetch("data/ramps/" + st + ".json").then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
+    .then(j => { if (!j || !Array.isArray(j.items)) throw new Error("bad"); LN.ramps[st] = { n: j.items.length, t: j.t || "" }; })
+    .catch(() => { LN.ramps[st] = false; })
+    .then(() => { LN.rampsLoading = null; const v = $("view-learn"); if (v && !v.hidden && LN.tile === "info" && LN.st === st) renderLearn(); });
+}
+function lnInfoItem(box, title, line, lead, src, t) {
+  const it = el("div", "learn-rule");
+  it.appendChild(el("div", "learn-fish", title));
+  if (line) it.appendChild(el("div", null, line));
+  if (src) lnSourceLine(it, lead, src, t); else if (lead) it.appendChild(el("div", "spot-meta", lead));
+  box.appendChild(it);
+}
+function lnInfoPanel(st) {
+  const box = el("div", "learn-rules"), nm = STATE_NAMES[st] || st, ag = stateAgency(st);
+  box.appendChild(el("h2", "learn-h", nm + " info"));
+  box.appendChild(el("div", "spot-meta", "Only what this app holds or the agency publishes. Nothing here is written from general knowledge."));
+  const list = el("div", "learn-list");
+  if (ag) {
+    const it = el("div", "learn-rule");
+    it.appendChild(el("div", "learn-fish", "🏛 " + ag.name));
+    const links = el("div", "gate-links");
+    [[ag.short + " rules ↗", ag.rules], ["Fishing licence ↗", ag.license]].forEach(([t, u]) => { const a = el("a", "btn small", t); a.href = u; a.target = "_blank"; a.rel = "noopener"; a.style.textDecoration = "none"; links.appendChild(a); });
+    it.appendChild(links);
+    lnSourceLine(it, "Source:", { label: ag.short + " website", url: ag.rules }, LN_AGENCY_T);
+    list.appendChild(it);
+  } else lnInfoItem(list, "🏛 Agency", "We have no agency listed for " + nm + ".", "Check your state's fish & wildlife agency.");
+  const rows = lnRows(st);
+  if (rows.length) {
+    const dates = rows.map(r => r.verified_on).filter(Boolean).sort();
+    lnInfoItem(list, "📜 Rules on file", rows.length + " fish" + (dates.length ? ", checked " + (dates[0] === dates[dates.length - 1] ? lnDate(dates[0]) : lnDate(dates[0]) + " – " + lnDate(dates[dates.length - 1])) : ""), "Each rule links to its agency page in the Rules tile.");
+  } else lnInfoItem(list, "📜 Rules on file", "We have no " + nm + " rules yet.", "Use the agency link above.");
+  if (st === "FL") lnInfoItem(list, "✅ Official ramps and piers", "Florida's official ramp and pier lists (FWC and Florida DEP) are built into the app.", "Shown on the map as ✅ Official public spots.");
+  else if (typeof STATE_RAMPS !== "undefined" && STATE_RAMPS[st]) {
+    const r = LN.ramps[st];
+    if (r === undefined) { lnRampsLoad(st); lnInfoItem(list, "✅ Official boat ramps", "Loading…"); }
+    else if (r) lnInfoItem(list, "✅ Official boat ramps", r.n + " public, open ramps on the agency's list.", "Source: " + STATE_RAMPS[st].credit + " · checked " + lnDate(r.t));
+    else lnInfoItem(list, "✅ Official boat ramps", "The agency's list is asked for live when you view the map.", "Source: " + STATE_RAMPS[st].credit);
+  } else lnInfoItem(list, "✅ Official boat ramps", "We have no official agency ramp list for " + nm + ". The map shows OpenStreetMap ramps and piers (a community map, not official).");
+  if (typeof TIDE_STATIONS_US !== "undefined" && st !== "FL") {
+    const tn = TIDE_STATIONS_US.filter(s => s.state === st).length, wn = WT_STATIONS_US.filter(s => s.state === st).length;
+    if (tn || wn) lnInfoItem(list, "🌊 NOAA stations", tn + " tide and " + wn + " water-temperature stations built into the app.", "", { label: "NOAA CO-OPS station list", url: "https://tidesandcurrents.noaa.gov/" }, LN_NOAA_T);
+    else lnInfoItem(list, "🌊 NOAA stations", "No NOAA tide stations are built in for " + nm + " (inland state).");
+  }
+  box.appendChild(list);
+  box.appendChild(el("div", "spot-meta", "Closed areas for " + nm + " are in the Rules tile."));
+  return box;
+}
+
 // no rules of any state on the phone yet (not signed in yet, or still loading)
 const lnNoRulesAtAll = () => (typeof fishRules === "undefined" || !fishRules.length) && (typeof stateRules === "undefined" || !stateRules.length);
 // are the rules still being asked for? (js/10 loadRules runs once signed in)
@@ -384,8 +440,8 @@ function renderLearn() {
   // tiles
   const grid = el("div", "learn-grid");
   LN_TILES.forEach(([k, ico, label]) => {
-    const b = el("button", "learn-tile" + (k === LN.tile ? " on" : "") + (k === "rules" || k === "fish" || k === "knots" || k === "rigs" || k === "bait" ? "" : " soon"), ico + " " + label); b.type = "button"; b.dataset.tile = k;
-    if (k !== "rules" && k !== "fish" && k !== "knots" && k !== "rigs" && k !== "bait") b.appendChild(el("span", "learn-soon", "Coming soon"));
+    const b = el("button", "learn-tile" + (k === LN.tile ? " on" : "") + (k === "rules" || k === "fish" || k === "knots" || k === "rigs" || k === "bait" || k === "info" ? "" : " soon"), ico + " " + label); b.type = "button"; b.dataset.tile = k;
+    if (k !== "rules" && k !== "fish" && k !== "knots" && k !== "rigs" && k !== "bait" && k !== "info") b.appendChild(el("span", "learn-soon", "Coming soon"));
     b.addEventListener("click", () => { LN.tile = k; if (k === "bait") LN.baitOpen = null; if (k === "fish") LN.fishOpen = null; if (k === "knots") LN.knotOpen = null; if (k === "rigs") LN.rigOpen = null; renderLearn(); });
     grid.appendChild(b);
   });
@@ -400,11 +456,13 @@ function renderLearn() {
     body.appendChild(lnKnotsPanel());
   } else if (LN.tile === "rigs") {
     body.appendChild(lnRigsPanel());
+  } else if (LN.tile === "info") {
+    body.appendChild(lnInfoPanel(st));
   } else if (LN.tile === "bait") {
     body.appendChild(lnBaitPanel());
   } else {
     const t = LN_TILES.find(x => x[0] === LN.tile);
-    body.appendChild(el("div", "spot-meta", t[1] + " " + t[2] + " is coming soon. Rules, Fish, Rigs, Bait & lures and Knots are ready now."));
+    body.appendChild(el("div", "spot-meta", t[1] + " " + t[2] + " is coming soon. All six tiles are ready now."));
   }
 }
 function openLearn() { LN.st = lnHere(); LN.tile = "rules"; showView("learn"); window.scrollTo({ top: 0 }); }

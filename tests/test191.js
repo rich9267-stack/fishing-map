@@ -42,7 +42,7 @@ A.renderLearn();   // (showView draws it in the real app)
 ok(A.LN.st === "FL" && /Florida fishing rules/.test(text()), "starts on the state you are in (Florida)");
 const sel = select();
 ok(sel && sel.children.length === 49 && sel.children.some(o => o.value === "DC") && sel.children.some(o => o.value === "TX") && sel.children.filter(o => o.selected).map(o => o.value).join() === "FL", "the picker lists 48 states + DC with Florida chosen");
-ok(tiles().length === 6 && tiles().filter(t => /soon/.test(t.className)).length === 1 && !/soon/.test(tiles()[0].className), "six tiles; only State info says Coming soon");
+ok(tiles().length === 6 && tiles().filter(t => /soon/.test(t.className)).length === 0, "six tiles; none says Coming soon");
 ok(/Snook/.test(text()) && /28″–33″/.test(text()) && /1 per person/.test(text()) && /Closed Dec 15 – Jan 31, Jun 1 – Aug 31/.test(text()), "Florida lists its rules, with sizes, bag and closed seasons");
 ok(/A guide only — confirm with FWC before keeping a fish/.test(text()) && /Checked Oct 15, 2026/.test(text()), "'guide only — confirm with FWC' and the checked date");
 ok(!/Redfish|Walleye/.test(text()), "no other state's rules mixed in");
@@ -71,7 +71,7 @@ ok(A.LN.st === "FL", "📍 Here returns to the state you are in");
 ctx.LAT = 32.8; ctx.LNG = -96.8; ok(A.lnHere() === "TX", "…which follows the 'area now' (Dallas → Texas)");
 ctx.LAT = 0; ctx.LNG = 0; ok(A.lnHere() === "FL", "…and falls back to Florida when it can't tell");
 tiles()[5].handlers.click();
-ok(/State info is coming soon/.test(text()) && !/Redfish/.test(text()), "another tile says it is coming soon");
+ok(/ info/.test(text()) && /Official/.test(text()) && !/Redfish/.test(text()), "State info opens its own panel");
 
 // 5) rules not loaded yet → asked once, then the honest message
 A.setRules([], []); A.LN.loadedRules = false; A.LN.tile = "rules"; A.LN.st = "TX"; A.renderLearn();
@@ -90,6 +90,6 @@ const names = s => (s.match(/^(?:const|let|function|async function)\s+([A-Za-z_$
 const others = fs.readdirSync(path.join(root, "js")).filter(f => f.endsWith(".js") && !/^62-/.test(f)).map(f => read("js/" + f)).join("\n");
 const clash = names(read("js/62-learn.js")).filter(n => new RegExp("(?:^|[\\s;(])(?:const|let|var|function)\\s+" + n + "\\b").test(others));
 ok(clash.length === 0, "no top-level name in js/62 is also declared elsewhere" + (clash.length ? " (" + clash.join(", ") + ")" : ""));
-const wn = read("js/13-groups-misc.js"); ok(/Learn page/.test(wn.slice(wn.indexOf("WHATS_NEW"), wn.indexOf("WHATS_NEW") + 2500)), "What's new mentions the Learn page");
+const wn = read("js/13-groups-misc.js"); ok(/Learn page/.test(wn.slice(wn.indexOf("WHATS_NEW"), wn.indexOf("WHATS_NEW") + 14000)), "What's new mentions the Learn page");
 ok(/v179/.test(read("docs/build_history.md")), "build history has v179");
 console.log(bad ? `\n${bad} FAILED` : "\nALL OK"); process.exit(bad ? 1 : 0);

@@ -77,7 +77,7 @@ const tick = () => new Promise(r => setTimeout(r, 10));
   A.LN.tile = "rigs"; A.LN.rigOpen = "Texas rig"; A.renderLearn();
   find(n => /All rigs/.test(n.textContent) && n.tag === "button").handlers.click();
   ok(A.LN.rigOpen === null && all(n => n.className === "learn-fishrow").length === 8, "‹ All rigs returns to the list");
-  ok(all(n => /learn-tile/.test(n.className)).filter(t => /soon/.test(t.className)).length === 1, "Rules, Fish, Rigs, Bait and Knots work; one tile still says Coming soon");
+  ok(all(n => /learn-tile/.test(n.className)).filter(t => /soon/.test(t.className)).length === 0, "all six tiles work; none says Coming soon");
 
   A.LN.rigs = null; A.LN.rigsLoading = false; failRigs = true; A.renderLearn(); await tick();
   ok(/could not load/.test(text()), "if the file can't be read, an honest message");

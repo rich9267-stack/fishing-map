@@ -60,7 +60,7 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   find(n => /All knots/.test(n.textContent) && n.tag === "button").handlers.click();
   ok(A.LN.knotOpen === null && all(n => n.className === "learn-fishrow").length === 8, "‹ All knots returns to the list");
   const tiles = all(n => /learn-tile/.test(n.className));
-  ok(tiles.filter(t => /soon/.test(t.className)).length === 1, "Rules, Fish, Rigs, Bait and Knots work; one tile still says Coming soon");
+  ok(tiles.filter(t => /soon/.test(t.className)).length === 0, "all six tiles work; none says Coming soon");
 
   A.LN.knots = null; A.LN.knotsLoading = false; failFetch = true; A.renderLearn(); await tick();
   ok(/could not load/.test(text()), "if the file can't be read, an honest message");

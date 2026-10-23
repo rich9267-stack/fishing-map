@@ -503,6 +503,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-23e", title: "📍 Learn: State info", items: [
+      "In 📚 Learn, tap 📍 State info for the chosen state: its fish & wildlife agency with rules and licence links, how many rules we have on file and when they were checked, the agency's boat-ramp count, and the NOAA tide and water-temperature stations built into the app.",
+      "Each item shows its source and the date we checked it. Anything we have no official source for is left out."
+    ] },
     { id: "2026-10-23d", title: "🎣 Learn: Bait & lures", items: [
       "In 📚 Learn, tap 🎣 Bait & lures to see baits and lures (live shrimp, live baitfish, jigs, spoons and more). Every line comes from an official FWC page and has a link to it, plus the date we checked.",
       "A bait or lure is only listed when an official page names it. Tap a fish under a card to open that fish."

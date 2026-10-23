@@ -63,7 +63,7 @@ process.on("unhandledRejection", e => { console.log("FAIL crashed: " + (e && e.s
   A.LN.tile = "bait"; A.renderLearn();
   find(n => /All baits/.test(n.textContent) && n.tag === "button").handlers.click();
   ok(A.LN.baitOpen === null && all(n => n.className === "learn-fishrow").length === bait.length, "‹ All baits & lures returns to the list");
-  ok(all(n => /learn-tile/.test(n.className)).filter(t => /soon/.test(t.className)).length === 1, "only State info still says Coming soon");
+  ok(all(n => /learn-tile/.test(n.className)).filter(t => /soon/.test(t.className)).length === 0, "all six tiles work; none says Coming soon");
 
   A.LN.bait = null; A.LN.baitLoading = false; failBait = true; A.renderLearn(); await tick();
   ok(/could not load/.test(text()), "if the file can't be read, an honest message");
