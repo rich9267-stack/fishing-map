@@ -503,6 +503,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-23l", title: "🐟 Mojarra fish card", items: [
+      "📚 Learn → Fish has a Mojarra card (the small silvery baitfish). We found no official page for it, so it is marked “general advice” and shows no source."
+    ] },
     { id: "2026-10-23k", title: "🔧 Learn: fixed links and 3 more fish", items: [
       "State agency links that had moved or stopped working (about 15 states) now go to the agency's current fishing and licence pages.",
       "Fish has three more cards from official pages: knobbed porgy, red porgy and rock hind. A few general-advice lines were corrected."
