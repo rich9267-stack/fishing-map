@@ -537,6 +537,7 @@
     }
     closeStaleSession();
     renderSessionBar(); renderBest(); renderInsights();
+    try { if (typeof renderPastTrips === "function") renderPastTrips(); } catch (e) { /* the Trips list is not on screen yet */ }
   }
 
   // "You're at Hillsboro — start a fishing trip here?" (only if location is already allowed, so it never nags)

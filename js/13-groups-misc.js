@@ -272,18 +272,28 @@
     pastTripsLoaded = true;
     renderPastTrips();
   }
+  // ▶ Start trip saves a "session", not a trip plan: my own finished ones are listed here too (a pseudo-plan with .solo), unless a planned trip I was on covers it
+  function soloTrips() {
+    if (!me) return [];
+    const since = Date.now() - 60 * 86400000;
+    return Object.values(typeof sessionsBySpot !== "undefined" ? sessionsBySpot : {}).flat()
+      .filter(x => x.ended_at && x.created_by === me.id && new Date(x.started_at).getTime() >= since)
+      .filter(x => !pastTrips.some(pl => pl.spot_id === x.spot_id && Math.abs(new Date(x.started_at) - new Date(pl.plan_at)) < 12 * 3600000))
+      .map(x => ({ id: x.id, spot_id: x.spot_id, plan_at: x.started_at, solo: x }));
+  }
   function renderPastTrips() {
     const card = $("feed-trips-card"), box = $("feed-trips-list"); if (!card) return;
+    const solo = soloTrips(), all = solo.length ? pastTrips.concat(solo).sort((a, b) => new Date(b.plan_at) - new Date(a.plan_at)) : pastTrips;
     box.innerHTML = ""; card.hidden = feedMode !== "circle" || comSub !== "trips" || !$("trip-review").hidden;
     if (!pastTripsLoaded) box.appendChild(el("div", "spot-meta", "Loading your trips…"));
-    else if (!pastTrips.length) box.appendChild(emptyBox("No past trips yet. Plan one from the Feed (“+ Plan a trip”) or tap ▶ Start trip on a spot — once it's over it shows up here.", "📅 Go to the Feed", () => { if (typeof comMark === "function") comMark("feed"); }));
-    pastTrips.forEach(pl => {
+    else if (!all.length) box.appendChild(emptyBox("No past trips yet. Plan one from the Feed (“+ Plan a trip”) or tap ▶ Start trip on a spot — once it's over it shows up here.", "📅 Go to the Feed", () => { if (typeof comMark === "function") comMark("feed"); }));
+    all.forEach(pl => {
       const spot = (spots || []).find(x => x.id === pl.spot_id);
       const it = el("div", "feed-item"); it.style.cursor = "pointer";
       const top = el("div", "feed-top");
       top.appendChild(el("span", "feed-what", planWhen(new Date(pl.plan_at))));
       top.appendChild(el("span", "feed-when", spot ? "📍 " + spot.name : ""));
-      it.appendChild(top); it.appendChild(el("div", "spot-meta", "Tap to review the catches from this trip"));
+      it.appendChild(top); it.appendChild(el("div", "spot-meta", pl.solo ? "Your own trip · tap to review your catches" : "Tap to review the catches from this trip"));
       it.addEventListener("click", () => openTripReview(pl));
       box.appendChild(it);
     });
@@ -295,21 +305,22 @@
     const spot = (spots || []).find(x => x.id === pl.spot_id);
     body.appendChild(el("div", "label", "📖 Trip review"));
     body.appendChild(el("b", null, `${planWhen(new Date(pl.plan_at))}${spot ? " · " + spot.name : ""}`));
-    body.appendChild(el("div", "spot-meta", "📍 Exact catch locations are only visible to the people on this trip, and only here. Private catches stay private. Counts catches from 1 hour before to 12 hours after the start, at this spot or within a mile."));
+    body.appendChild(el("div", "spot-meta", pl.solo ? "Your own trip: the catches you logged while it was running." : "📍 Exact catch locations are only visible to the people on this trip, and only here. Private catches stay private. Counts catches from 1 hour before to 12 hours after the start, at this spot or within a mile."));
     const cbox = el("div"); cbox.id = "trip-contests"; body.appendChild(cbox);
     const st = el("div", "spot-meta", "Loading…"); body.appendChild(st);
     const content = el("div"); body.appendChild(content);
-    body.appendChild(groupChatPanel("trip", pl.id));
-    tripContests(cbox, pl);
+    if (!pl.solo) { body.appendChild(groupChatPanel("trip", pl.id)); tripContests(cbox, pl); }
     $("trip-review").scrollIntoView({ behavior: "smooth", block: "start" });
-    const { data, error } = await db.rpc("trip_review", { p_plan: pl.id });
+    const { data, error } = pl.solo
+      ? { data: sessionCatches(pl.solo.id).map(c => ({ ...c, catch_id: c.id, user_id: me.id, lat: null, lng: null })), error: null }
+      : await db.rpc("trip_review", { p_plan: pl.id });
     if (tripOpen !== pl) return;
     if (error) { st.className = "msg err"; st.textContent = "Couldn't load the trip: " + error.message; return; }
     const rows = data || [];
     await ensureProfiles(rows.map(r => r.user_id));
     try { await loadPubPhotos(rows.map(r => ({ id: r.catch_id }))); } catch (e) { /* photos are a bonus */ }
     if (tripOpen !== pl) return;
-    if (!rows.length) { st.textContent = "No catches logged for this trip yet."; return; }
+    if (!rows.length) { st.textContent = pl.solo ? "No catches were logged during this trip." : "No catches logged for this trip yet."; return; }
     const fish = rows.reduce((n, r) => n + (r.how_many || 1), 0), people = [...new Set(rows.map(r => r.user_id))];
     st.textContent = `${fish} fish · ${rows.length} catch${rows.length === 1 ? "" : "es"} · ${people.length} angler${people.length === 1 ? "" : "s"}`;
     const nm = id => (me && id === me.id ? "You" : (profName(id) || ((planRsvps[pl.id] || []).find(x => x.user_id === id) || {}).name || "Someone"));
@@ -503,6 +514,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-23m", title: "📖 Your own trips show in Community → Trips", items: [
+      "A trip you start with ▶ Start trip and end now shows up under My past trips, even if you never planned it. Tap it to see the catches you logged during it.",
+      "Before, only planned trips were listed there, so a solo trip with catches showed an empty list."
+    ] },
     { id: "2026-10-23l", title: "🐟 Mojarra fish card", items: [
       "📚 Learn → Fish has a Mojarra card (the small silvery baitfish). We found no official page for it, so it is marked “general advice” and shows no source."
     ] },
