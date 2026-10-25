@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Community — Clean Social</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#0A6F91}a:hover{color:#08506A}
+.ib{width:44px;height:44px;border:0;background:transparent;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.nv{height:52px;border:0;background:transparent;color:#5B6470;font-family:inherit;font-size:10.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;text-decoration:none}
+.tab{height:44px;border:0;background:transparent;font-family:inherit;font-size:15px;color:#5B6470;padding:0;cursor:pointer}
+.act{height:40px;border:0;background:transparent;color:#5B6470;font-family:inherit;font-size:13px;display:flex;align-items:center;gap:6px;padding:0 6px;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; color: #111418; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; overflow: hidden; position: relative">
+
+<header style="padding: 50px 10px 0 16px; display: flex; align-items: center; justify-content: space-between">
+<h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em">Community</h1>
+<div style="display: flex; align-items: center">
+<button class="ib" aria-label="Search"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="#111418" stroke-width="1.8"></circle><path d="M15.5 15.5L21 21" stroke="#111418" stroke-width="1.8" stroke-linecap="round"></path></svg></button>
+<button class="ib" aria-label="Friends and groups"><svg width="23" height="23" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.5" fill="none" stroke="#111418" stroke-width="1.8"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0 M15.5 5.5a3 3 0 0 1 0 6 M17.5 14.5a5 5 0 0 1 4 5.5" fill="none" stroke="#111418" stroke-width="1.8" stroke-linecap="round"></path></svg></button>
+<button class="ib" aria-label="Messages"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H10l-4 3.5V16H4z" fill="none" stroke="#111418" stroke-width="1.8" stroke-linejoin="round"></path></svg></button>
+<a href="SocialProfile.dc.html" aria-label="Your profile" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; text-decoration: none"><span style="width: 32px; height: 32px; border-radius: 16px; background: #C7D3DB; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #3A4650">R</span></a>
+</div>
+</header>
+
+<div role="tablist" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 1px solid #E6E8EB">
+<button class="tab" role="tab" aria-selected="true" style="color: #111418; font-weight: 700; box-shadow: inset 0 -3px 0 #0A6F91">My circle</button>
+<button class="tab" role="tab" aria-selected="false">Public</button>
+</div>
+
+<div style="flex-grow: 1; overflow: hidden; display: flex; flex-direction: column">
+
+<section aria-label="Trips" style="padding: 12px 16px; border-bottom: 1px solid #E6E8EB; display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 12px; font-weight: 600; color: #5B6470">WHO'S GOING</span>
+<div style="display: flex; gap: 14px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px">
+<button aria-label="Plan a trip" style="width: 58px; height: 58px; border-radius: 29px; border: 1.5px dashed #9AA3AD; background: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="#5B6470" stroke-width="1.8" stroke-linecap="round"></path></svg></button>
+<span style="font-size: 11px; color: #5B6470">Plan a trip</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px">
+<div style="width: 58px; height: 58px; border-radius: 29px; border: 2.5px solid #0A6F91; padding: 2px; box-sizing: border-box"><div style="width: 100%; height: 100%; border-radius: 50%; background: #C7D3DB; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #3A4650">RI</div></div>
+<span style="font-size: 11px">Rico · Sat</span>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px">
+<div style="width: 58px; height: 58px; border-radius: 29px; border: 2.5px solid #0A6F91; padding: 2px; box-sizing: border-box"><div style="width: 100%; height: 100%; border-radius: 50%; background: #D8CFC4; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #4F463C">[F]</div></div>
+<span style="font-size: 11px">[Friend] · Sun</span>
+</div>
+</div>
+</section>
+
+<article style="padding: 12px 16px 6px 16px; display: flex; gap: 10px; border-bottom: 1px solid #E6E8EB">
+<a href="SocialProfile.dc.html" aria-label="Richard's profile" style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 20px; background: #C7D3DB; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #3A4650; text-decoration: none">R</a>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div style="font-size: 14px"><b>Richard</b> <span style="color: #5B6470">@shrimpdaddy · 2h</span></div>
+<button class="ib" aria-label="More options" style="width: 32px; height: 24px"><svg width="18" height="4" viewBox="0 0 18 4" aria-hidden="true"><circle cx="2" cy="2" r="1.6" fill="#5B6470"></circle><circle cx="9" cy="2" r="1.6" fill="#5B6470"></circle><circle cx="16" cy="2" r="1.6" fill="#5B6470"></circle></svg></button>
+</div>
+<span style="font-size: 15px; line-height: 1.35">Mangrove snapper, 4.5" · about 1 oz</span>
+<span style="font-size: 12px; color: #5B6470">Bitt's parents dock · frozen shrimp · outgoing · 84° water</span>
+<div style="height: 230px; border-radius: 14px; background: #D9DEE2; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #5B6470">[Catch photo]</div>
+<div style="display: flex; gap: 18px; margin-left: -6px">
+<button class="act" aria-label="Cheer, 1"><svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" fill="none" stroke="#5B6470" stroke-width="1.8" stroke-linejoin="round"></path></svg>1</button>
+<button class="act" aria-label="Comment"><svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H10l-4 3.5V16H4z" fill="none" stroke="#5B6470" stroke-width="1.8" stroke-linejoin="round"></path></svg></button>
+<button class="act" aria-label="Share"><svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 14v6h14v-6" fill="none" stroke="#5B6470" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</div>
+</div>
+</article>
+
+<article style="padding: 12px 16px 0 16px; display: flex; gap: 10px">
+<div style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 20px; background: #D8CFC4; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #4F463C">RI</div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 14px"><b>Rico</b> <span style="color: #5B6470">@[handle] · 5h</span></div>
+<span style="font-size: 15px; line-height: 1.35">[Friend's catch or trip post]</span>
+<div style="height: 120px; border-radius: 14px; background: #E3E7EA"></div>
+</div>
+</article>
+
+</div>
+
+<button aria-label="Log a catch" style="position: absolute; right: 16px; bottom: 92px; width: 56px; height: 56px; border: 0; border-radius: 28px; background: #0A6F91; box-shadow: 0 2px 8px rgba(17,20,24,0.25); display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M11 4v14M4 11h14" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"></path></svg></button>
+
+<nav aria-label="Main" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); padding: 0 4px 22px 4px; border-top: 1px solid #E6E8EB; background: #FFFFFF">
+<a class="nv" href="Main.dc.html"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5L12 3.5l8.5 7V20.5h-6v-6h-5v6h-6z" fill="none" stroke="#5B6470" stroke-width="1.8" stroke-linejoin="round"></path></svg>Home</a>
+<button class="nv"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5l6-3 6 3 6-3v14l-6 3-6-3-6 3z M9 3.5v14 M15 6.5v14" fill="none" stroke="#5B6470" stroke-width="1.8" stroke-linejoin="round"></path></svg>Map</button>
+<button class="nv"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="19" height="11" rx="5.5" fill="none" stroke="#5B6470" stroke-width="1.8"></rect><path d="M7.5 10.5v4M5.5 12.5h4" stroke="#5B6470" stroke-width="1.8" stroke-linecap="round"></path><circle cx="15.5" cy="11.5" r="1.1" fill="#5B6470"></circle><circle cx="17.5" cy="13.8" r="1.1" fill="#5B6470"></circle></svg>Play</button>
+<button class="nv"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v4.5a5 5 0 0 1-10 0z M7 6H4.5a3 3 0 0 0 3 4 M17 6h2.5a3 3 0 0 1-3 4 M12 13.5V17 M8.5 20.5h7 M9.5 17h5v3.5" fill="none" stroke="#5B6470" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"></path></svg>Compete</button>
+<a class="nv" href="Community.dc.html" aria-current="page" style="color: #111418; font-weight: 700"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.5" fill="#111418" stroke="#111418" stroke-width="1.8"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0 M15.5 5.5a3 3 0 0 1 0 6 M17.5 14.5a5 5 0 0 1 4 5.5" fill="none" stroke="#111418" stroke-width="1.8" stroke-linecap="round"></path></svg>Community</a>
+<button class="nv"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 20V11 M12 20V5 M18.5 20v-7 M3 20.5h18" fill="none" stroke="#5B6470" stroke-width="1.8" stroke-linecap="round"></path></svg>Stats</button>
+</nav>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

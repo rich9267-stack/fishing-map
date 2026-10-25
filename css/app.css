@@ -8,6 +8,16 @@
       --accent: #4fc3cc; --on-accent: #0d1a1f; --rising: #6fd28f; --falling: #f0a46a; --line: #23414a;
     }
   }
+  /* Clean Social theme tokens (redesign). New screens read these; skins can swap them later. */
+  :root {
+    --text-2: #5B6470; --line-strong: #CDD2D8; --section-gap: #F2F4F6;
+    --alert-bg: #FFF6E5; --alert-text: #6B4A00; --placeholder: #D9DEE2;
+    --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    --icon-stroke: 1.8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --text-2: #9db2ba; --line-strong: #3a5560; --section-gap: #0a1418; --alert-bg: #3a2c0a; --alert-text: #f3d9a0; --placeholder: #23414a; }
+  }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
