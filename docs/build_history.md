@@ -681,3 +681,5 @@ Legal check of the FWC ramp and FDEP parks/piers data: neither layer states a li
 **v203 (Oct 25):** Bottom bar on newer iPhones (17/18 Pro): the rounded screen corners cut the first and last label (Home, Stats). iPhone Home Screen app only: bottom minimum 22px → 26px and 16px side padding inside the bar (css --bn-safe block).
 
 **v204 (Oct 25):** Bottom bar corners again (iPhone 17/18 Pro screens are rounder than the first guess): Home Screen app only, bottom minimum 26px → 32px, side padding 16px → 28px.
+
+**v205 (Oct 25):** Me → Look → **Bottom bar room** (Normal / A bit more / More / Most), this phone only (localStorage fm-bar-room, js/35 `barApply`): adds --bn-add under and --bn-side at the sides of the bottom bar on top of the v204 iPhone Home Screen defaults (32px / 28px). Added because a screenshot cannot show how far a phone's rounded corners cut in, so each person can tune it. No database change.
