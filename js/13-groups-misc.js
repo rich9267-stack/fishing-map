@@ -526,6 +526,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-25e", title: "Your own Profile page", items: [
+      "Tap your picture (top right) and you now land on your Profile: your name, @handle, home waters, what you catch most, and counts of fish, trips and friends.",
+      "Under that are your best catches, a My tank shortcut, and tabs for your Catches (a photo grid), Spots, Trips and Badges.",
+      "Settings, alerts, privacy and everything else are one tap away on the Settings & edit button."
+    ] },
     { id: "2026-10-25d", title: "A cleaner Community screen", items: [
       "Community now has its own header with search, friends and groups, messages and your picture. Switch between My circle and Public with the two tabs.",
       "Who's going is a row of circles: tap + to plan a trip, tap a friend's circle to see their trip, tap Past trips for your old ones.",

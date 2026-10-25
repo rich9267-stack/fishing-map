@@ -706,7 +706,8 @@
     $("tab-compete").classList.toggle("on", which === "compete");
     if (which === "compete") { $("contests").hidden = false; if (typeof openContests === "function") openContests(); }
     document.body.classList.toggle("on-map", isMap);
-    document.body.classList.toggle("on-community", which === "feed");   // Community has its own header (js/64)
+    document.body.classList.toggle("on-community", which === "feed");
+    { const vp = $("view-profile"); if (vp) { vp.hidden = which !== "profile"; document.body.classList.toggle("on-profile", which === "profile"); if (which === "profile" && typeof renderMyProfile === "function") renderMyProfile(); } }   // 🪪 my Profile (js/65): opened from the top-right picture, no tab of its own   // Community has its own header (js/64)
     $("tab-seasons").classList.toggle("on", which === "seasons");
     if (which === "seasons") renderSeasons();
     $("view-feed").hidden = which !== "feed";
@@ -781,7 +782,8 @@
     const closeMe = () => { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); };
     mb.addEventListener("click", e => {
       e.stopPropagation();
-      if (typeof openMe === "function") { openMe(); return; }   // UX v2 step 4: your picture opens the Me page (js/27); the old dropdown is only a fallback
+      if (typeof openMyProfile === "function") { openMyProfile(); return; }   // redesign step 5: your picture opens your Profile (js/65); its "Settings & edit" button opens the Me page (js/27)
+      if (typeof openMe === "function") { openMe(); return; }   // UX v2 step 4: the Me page; the old dropdown is only a fallback
       mm.hidden = !mm.hidden; mb.setAttribute("aria-expanded", String(!mm.hidden));
     });
     mm.addEventListener("click", () => setTimeout(closeMe, 0));
