@@ -20,7 +20,8 @@
   }
   /* Room under the bottom bar for the phone's own home bar. On an iPhone Home Screen app the page runs under that bar but reports no safe area, so it gets a fixed minimum there. */
   :root { --bn-safe: env(safe-area-inset-bottom, 0px); }
-  @media (display-mode: standalone) { @supports (-webkit-touch-callout: none) { :root { --bn-safe: max(env(safe-area-inset-bottom, 0px), 22px); } } }
+  @media (display-mode: standalone) { @supports (-webkit-touch-callout: none) { :root { --bn-safe: max(env(safe-area-inset-bottom, 0px), 26px); }
+    #bnav .bnav-in { padding-left: max(env(safe-area-inset-left, 0px), 16px); padding-right: max(env(safe-area-inset-right, 0px), 16px); } } }   /* the rounded corners of newer iPhones cut into the first and last button */
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
