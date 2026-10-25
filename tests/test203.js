@@ -66,7 +66,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   w.eval('pfCoverPath = "u-sam/cover-old.jpg"'); await w.eval("pfSetCover(null)");
   const removed = w.__removed; check("removing the header image deletes the old file from the avatars bucket", !!removed && removed[0] === "avatars" && /cover-old/.test(removed[1][0]));
   const css = fs.readFileSync(require("path").join(__dirname, "../css/app.css"), "utf8");
-  check("room under the bottom bar is a variable with an iPhone Home Screen minimum", /--bn-safe: env\(safe-area-inset-bottom/.test(css) && /standalone[\s\S]{0,200}-webkit-touch-callout[\s\S]{0,200}32px/.test(css) && !/env\(safe-area-inset-bottom\)/.test(css.split("\n").filter(l => !/--bn-safe:/.test(l)).join("\n")));
+  check("room under the bottom bar is a variable with an iPhone Home Screen minimum", /--bn-safe: calc\(env\(safe-area-inset-bottom/.test(css) && /standalone[\s\S]{0,200}-webkit-touch-callout[\s\S]{0,200}32px/.test(css) && !/env\(safe-area-inset-bottom\)/.test(css.split("\n").filter(l => !/--bn-safe:/.test(l)).join("\n")));
   const room = d.querySelectorAll("#bar-room button");
   check("Bottom bar room setting has four choices, Normal on", room.length === 4 && room[0].classList.contains("on") && /Normal/.test(room[0].textContent));
   room[2].click(); const rs = d.documentElement.style;
