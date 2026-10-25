@@ -707,6 +707,7 @@
     if (which === "compete") { $("contests").hidden = false; if (typeof openContests === "function") openContests(); }
     document.body.classList.toggle("on-map", isMap);
     document.body.classList.toggle("on-community", which === "feed");
+    document.body.classList.toggle("on-page", ["tank", "compete", "insights", "seasons", "learn"].includes(which));   // Play / Compete / Stats / Learn have their own small header (js/66)
     { const vp = $("view-profile"); if (vp) { vp.hidden = which !== "profile"; document.body.classList.toggle("on-profile", which === "profile"); if (which === "profile" && typeof renderMyProfile === "function") renderMyProfile(); } }   // 🪪 my Profile (js/65): opened from the top-right picture, no tab of its own   // Community has its own header (js/64)
     $("tab-seasons").classList.toggle("on", which === "seasons");
     if (which === "seasons") renderSeasons();
