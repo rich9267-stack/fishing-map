@@ -8,11 +8,11 @@
   // ---- Bottom bar room (this phone only): extra space under the bottom bar and at its sides, for phones with very round corners ----
   const BAR_ROOM = [["Normal", 0, 0], ["A bit more", 8, 6], ["More", 16, 12], ["Most", 26, 20]];
   let barRoom = 0;
-  try { const v = +localStorage.getItem("fm-bar-room"); if (v >= 0 && v < BAR_ROOM.length) barRoom = v; } catch (e) { /* normal */ }
+  try { const v = +localStorage.getItem("fm-bar-room2"); if (v >= 0 && v < BAR_ROOM.length) barRoom = v; } catch (e) { /* normal */ }
   function barApply(i) {
     barRoom = i; const r = document.documentElement.style;
     r.setProperty("--bn-add", BAR_ROOM[i][1] + "px"); r.setProperty("--bn-side", BAR_ROOM[i][2] + "px");
-    try { localStorage.setItem("fm-bar-room", String(i)); } catch (e) { /* this phone only forgets */ }
+    try { localStorage.setItem("fm-bar-room2", String(i)); } catch (e) { /* this phone only forgets */ }
     const box = $("bar-room"); if (!box) return;
     box.innerHTML = "";
     BAR_ROOM.forEach((o, k) => {

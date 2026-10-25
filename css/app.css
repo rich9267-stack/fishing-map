@@ -22,8 +22,8 @@
   /* Me → Look → "Bottom bar room" adds --bn-add (under) and --bn-side (left and right) on top of this, per phone (js/35), because screenshots can't show how far each phone's rounded corners reach. */
   :root { --bn-safe: calc(env(safe-area-inset-bottom, 0px) + var(--bn-add, 0px)); }
   #bnav .bnav-in { padding-left: var(--bn-side, 0px); padding-right: var(--bn-side, 0px); }
-  @media (display-mode: standalone) { @supports (-webkit-touch-callout: none) { :root { --bn-safe: calc(max(env(safe-area-inset-bottom, 0px), 32px) + var(--bn-add, 0px)); }
-    #bnav .bnav-in { padding-left: calc(max(env(safe-area-inset-left, 0px), 28px) + var(--bn-side, 0px)); padding-right: calc(max(env(safe-area-inset-right, 0px), 28px) + var(--bn-side, 0px)); } } }   /* the rounded corners of newer iPhones cut into the first and last button */
+  @media (display-mode: standalone) { @supports (-webkit-touch-callout: none) { :root { --bn-safe: calc(max(env(safe-area-inset-bottom, 0px), 44px) + var(--bn-add, 0px)); }
+    #bnav .bnav-in { padding-left: calc(max(env(safe-area-inset-left, 0px), 37px) + var(--bn-side, 0px)); padding-right: calc(max(env(safe-area-inset-right, 0px), 37px) + var(--bn-side, 0px)); } } }   /* the rounded corners of newer iPhones cut into the first and last button */
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
