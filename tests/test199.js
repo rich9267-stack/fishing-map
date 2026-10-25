@@ -11,7 +11,9 @@ const ADMIN = process.env.DEL_ADMIN === "1";
 const SPOTS = [{ id: "s1", name: "Hillsboro Inlet", spot_type: "inlet", water_type: "saltwater", lat: 26.257, lng: -80.081, created_by: ME, public_access: "yes", tide_offset_min: 0 }];
 const T0 = Date.now() - 2 * 3600000, CATCHES = [{ id: "c1", spot_id: "s1", species: "Snook", how_many: 1, caught_at: new Date(T0 + 1800000).toISOString(), created_by: ME, length_in: 25, session_id: "ses1" },
   { id: "c2", spot_id: "s1", species: "Redfish", how_many: 2, caught_at: new Date(T0 + 3000000).toISOString(), created_by: ME, session_id: "ses1" }];
-const SESSIONS = [{ id: "ses1", spot_id: "s1", started_at: new Date(T0).toISOString(), ended_at: new Date(T0 + 5400000).toISOString(), created_by: ME, fish: 3 },
+const GEO = [{ catch_id: "c1", lat: 26.2575, lng: -80.0805, accuracy_m: 8 }];
+const SESSIONS = [{ id: "ses3", spot_id: "s1", started_at: new Date(T0 - 3 * 86400000).toISOString(), ended_at: new Date(T0 - 3 * 86400000 + 2700000).toISOString(), created_by: ME, fish: 0 },
+  { id: "ses1", spot_id: "s1", started_at: new Date(T0).toISOString(), ended_at: new Date(T0 + 5400000).toISOString(), created_by: ME, fish: 3 },
   { id: "ses2", spot_id: "s1", started_at: new Date(T0 - 86400000).toISOString(), ended_at: new Date(T0 - 86400000 + 3600000).toISOString(), created_by: "u-other", fish: 0 }];
 const ORDER = [], RPCS = [], REMOVED = [], STATE = { missing: false, fail: false, signedOut: false };
 const dom = new JSDOM(html, { runScripts: "dangerously", url: "https://example.org/", beforeParse(w) {
@@ -32,7 +34,7 @@ const dom = new JSDOM(html, { runScripts: "dangerously", url: "https://example.o
     storage: { from: b => ({ createSignedUrls: async () => ({ data: [] }), createSignedUrl: async () => ({ data: null }),
       list: async folder => ({ data: b === "avatars" && folder === ME ? [{ name: "me.jpg" }] : b === "group-avatars" && folder === "g1" ? [{ name: "pic.jpg" }] : [], error: null }),
       remove: async paths => { REMOVED.push([b, paths]); ORDER.push("remove:" + b); return { data: paths, error: null }; } }) },
-    from: t => ({ select: () => chain(t === "spots" || t === "spots_visible" ? SPOTS : t === "catches" ? CATCHES : t === "sessions" ? SESSIONS : t === "photos" ? [{ path: ME + "/a.jpg" }, { path: ME + "/b.jpg" }] : t === "groups" ? [{ id: "g1" }] : t === "profiles" ? [{ user_id: ME, handle: "sam", display_name: "Sam" }] : []),
+    from: t => ({ select: () => chain(t === "spots" || t === "spots_visible" ? SPOTS : t === "catches" ? CATCHES : t === "sessions" ? SESSIONS : t === "catch_geo" ? GEO : t === "photos" ? [{ path: ME + "/a.jpg" }, { path: ME + "/b.jpg" }] : t === "groups" ? [{ id: "g1" }] : t === "profiles" ? [{ user_id: ME, handle: "sam", display_name: "Sam" }] : []),
       delete: () => chain(null), insert: () => chain(null), upsert: () => Promise.resolve({ error: null }), update: () => chain(null) }) }) };
   w.fetch = async () => ({ ok: true, json: async () => ({ properties: {}, features: [], elements: [], results: [], predictions: [] }) });
 }});
@@ -49,15 +51,21 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   nav("community").click(); await wait(400);
   d.querySelector('#com-sw [data-sub="trips"]').click(); await wait(600);
   const list = $("feed-trips-list");
-  check("my finished Start-trip trip is listed (not the empty message)", !/No past trips yet/.test(list.textContent) && list.querySelectorAll(".feed-item").length === 1);
+  check("my two finished Start-trip trips are listed (not the empty message)", !/No past trips yet/.test(list.textContent) && list.querySelectorAll(".feed-item").length === 2);
   check("it says it is my own trip and the spot", /Your own trip/.test(list.textContent) && /Hillsboro Inlet/.test(list.textContent));
-  check("someone else's trip is not listed", list.querySelectorAll(".feed-item").length === 1);
-  list.querySelector(".feed-item").click(); await wait(600);
+  check("someone else's trip is not listed", !/Oct/.test("") && list.querySelectorAll(".feed-item").length === 2);
+  list.querySelector(".feed-item").click(); await wait(800);
   const rev = $("trip-review-body").textContent;
   check("opening it shows my two catches (3 fish)", shown("trip-review") && /3 fish · 2 catches · 1 angler/.test(rev) && /Snook/.test(rev) && /Redfish/.test(rev));
   check("solo review has no group chat or contests and says so", /Your own trip: the catches you logged/.test(rev) && !$("trip-review-body").querySelector(".group-chat") && !RPCS.some(r => r[0] === "trip_review"));
+  check("summary shows the times, length and counts", /🕑 .*(AM|PM) – .*(AM|PM) \(1\.5 hr\)/.test(rev));
+  check("map is there with the stamp note (1 of 2 catches)", !!$("trip-map") && /1 of 2 catches had a GPS stamp/.test(rev));
+  check("one catch dot + the spot pin on the map", $("trip-map").querySelectorAll(".leaflet-interactive").length >= 1);
   $("trip-review-back").click(); await wait(200);
-  check("Back returns to the list", $("trip-review").hidden && shown("feed-trips-card") && $("feed-trips-list").querySelectorAll(".feed-item").length === 1);
+  check("Back returns to the list", $("trip-review").hidden && shown("feed-trips-card") && $("feed-trips-list").querySelectorAll(".feed-item").length === 2);
+  const items = [...$("feed-trips-list").querySelectorAll(".feed-item")];
+  items[1].click(); await wait(600);
+  check("a trip with no catches says so and still shows its times", /No catches logged on this trip/.test($("trip-review-body").textContent) && /🕑/.test($("trip-review-body").textContent));
   console.log(good ? "OK" : "FAIL");
   process.exit(good ? 0 : 1);
 })();

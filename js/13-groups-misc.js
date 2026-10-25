@@ -306,26 +306,38 @@
     body.appendChild(el("div", "label", "📖 Trip review"));
     body.appendChild(el("b", null, `${planWhen(new Date(pl.plan_at))}${spot ? " · " + spot.name : ""}`));
     body.appendChild(el("div", "spot-meta", pl.solo ? "Your own trip: the catches you logged while it was running." : "📍 Exact catch locations are only visible to the people on this trip, and only here. Private catches stay private. Counts catches from 1 hour before to 12 hours after the start, at this spot or within a mile."));
+    if (pl.solo) {
+      const a = new Date(pl.solo.started_at), z = new Date(pl.solo.ended_at), hrs = Math.max(1 / 60, (z - a) / 3600000), tm = d => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      body.appendChild(el("div", "spot-meta", `🕑 ${tm(a)} – ${tm(z)} (${hrs < 1 ? Math.max(1, Math.round(hrs * 60)) + " min" : hrs.toFixed(1) + " hr"})`));
+    }
     const cbox = el("div"); cbox.id = "trip-contests"; body.appendChild(cbox);
     const st = el("div", "spot-meta", "Loading…"); body.appendChild(st);
     const content = el("div"); body.appendChild(content);
     if (!pl.solo) { body.appendChild(groupChatPanel("trip", pl.id)); tripContests(cbox, pl); }
     $("trip-review").scrollIntoView({ behavior: "smooth", block: "start" });
-    const { data, error } = pl.solo
-      ? { data: sessionCatches(pl.solo.id).map(c => ({ ...c, catch_id: c.id, user_id: me.id, lat: null, lng: null })), error: null }
-      : await db.rpc("trip_review", { p_plan: pl.id });
+    let stamped = 0;
+    const { data, error } = pl.solo ? await (async () => {
+      const mine = sessionCatches(pl.solo.id), geo = {};
+      try {
+        const g = mine.length ? await db.from("catch_geo").select("catch_id,lat,lng,accuracy_m").in("catch_id", mine.map(c => c.id)) : { data: [] };
+        (g.data || []).forEach(x => { if (x.lat != null && x.lng != null && !geo[x.catch_id]) geo[x.catch_id] = x; });
+      } catch (e) { /* no stamps: the list still works */ }
+      stamped = Object.keys(geo).length;
+      return { data: mine.map(c => ({ ...c, catch_id: c.id, user_id: me.id, lat: geo[c.id] ? geo[c.id].lat : null, lng: geo[c.id] ? geo[c.id].lng : null })), error: null };
+    })() : await db.rpc("trip_review", { p_plan: pl.id });
     if (tripOpen !== pl) return;
     if (error) { st.className = "msg err"; st.textContent = "Couldn't load the trip: " + error.message; return; }
     const rows = data || [];
     await ensureProfiles(rows.map(r => r.user_id));
     try { await loadPubPhotos(rows.map(r => ({ id: r.catch_id }))); } catch (e) { /* photos are a bonus */ }
     if (tripOpen !== pl) return;
-    if (!rows.length) { st.textContent = pl.solo ? "No catches were logged during this trip." : "No catches logged for this trip yet."; return; }
+    if (!rows.length) { st.textContent = pl.solo ? "No catches logged on this trip (a skunk still counts and helps the predictions)." : "No catches logged for this trip yet."; return; }
     const fish = rows.reduce((n, r) => n + (r.how_many || 1), 0), people = [...new Set(rows.map(r => r.user_id))];
     st.textContent = `${fish} fish · ${rows.length} catch${rows.length === 1 ? "" : "es"} · ${people.length} angler${people.length === 1 ? "" : "s"}`;
     const nm = id => (me && id === me.id ? "You" : (profName(id) || ((planRsvps[pl.id] || []).find(x => x.user_id === id) || {}).name || "Someone"));
     const geo = rows.filter(r => r.lat != null && r.lng != null);
-    if (geo.length) {
+    if (pl.solo) content.appendChild(el("div", "spot-meta", stamped === rows.length ? "📍 Every catch has a GPS stamp, shown as a dot on the map." : stamped ? `📍 ${stamped} of ${rows.length} catches had a GPS stamp (dots on the map). The rest are in the list below.` : "No GPS stamps for these catches, so the map shows only the spot. The catches are in the list below."));
+    if (geo.length || (pl.solo && hasLoc(spot))) {
       const mapDiv = el("div"); mapDiv.id = "trip-map"; mapDiv.style.cssText = "height:260px;border-radius:10px;margin:10px 0;border:1px solid var(--line)"; content.appendChild(mapDiv);
       try {
         if (tripMap) { tripMap.remove(); tripMap = null; }
@@ -515,7 +527,7 @@
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
     { id: "2026-10-23m", title: "📖 Your own trips show in Community → Trips", items: [
-      "A trip you start with ▶ Start trip and end now shows up under My past trips, even if you never planned it. Tap it to see the catches you logged during it.",
+      "A trip you start with ▶ Start trip and end now shows up under My past trips, even if you never planned it. Tap it to see when you fished, for how long, the catches you logged, and a map with the spot and a dot for each catch that has a GPS stamp.",
       "Before, only planned trips were listed there, so a solo trip with catches showed an empty list."
     ] },
     { id: "2026-10-23l", title: "🐟 Mojarra fish card", items: [
