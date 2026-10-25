@@ -66,7 +66,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   w.eval('pfCoverPath = "u-sam/cover-old.jpg"'); await w.eval("pfSetCover(null)");
   const removed = w.__removed; check("removing the header image deletes the old file from the avatars bucket", !!removed && removed[0] === "avatars" && /cover-old/.test(removed[1][0]));
   const css = fs.readFileSync(require("path").join(__dirname, "../css/app.css"), "utf8");
-  check("room under the bottom bar is a variable with an iPhone Home Screen minimum", /--bn-safe: env\(safe-area-inset-bottom/.test(css) && /standalone[\s\S]{0,200}-webkit-touch-callout[\s\S]{0,200}26px/.test(css) && !/env\(safe-area-inset-bottom\)/.test(css.split("\n").filter(l => !/--bn-safe:/.test(l)).join("\n")));
+  check("room under the bottom bar is a variable with an iPhone Home Screen minimum", /--bn-safe: env\(safe-area-inset-bottom/.test(css) && /standalone[\s\S]{0,200}-webkit-touch-callout[\s\S]{0,200}32px/.test(css) && !/env\(safe-area-inset-bottom\)/.test(css.split("\n").filter(l => !/--bn-safe:/.test(l)).join("\n")));
   $("pf-settings").click(); await wait(200);
   check("Settings & edit opens the Me page", !$("me-card").hidden);
   $("me-close").click(); await wait(100);
