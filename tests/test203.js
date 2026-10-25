@@ -66,7 +66,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   w.eval('pfCoverPath = "u-sam/cover-old.jpg"'); await w.eval("pfSetCover(null)");
   const removed = w.__removed; check("removing the header image deletes the old file from the avatars bucket", !!removed && removed[0] === "avatars" && /cover-old/.test(removed[1][0]));
   const css = fs.readFileSync(require("path").join(__dirname, "../css/app.css"), "utf8");
-  check("bottom bar room comes from --bn-safe / --bn-corner for iPhone Home Screen apps", /--bn-safe: env\(safe-area-inset-bottom/.test(css) && /standalone[\s\S]{0,200}-webkit-touch-callout[\s\S]{0,200}var\(--bn-corner\) \* \.84/.test(css) && /--bn-corner: 55px/.test(css) && !/--bn-add|--bn-side/.test(css));
+  check("iPhone Home Screen apps get fixed room under (52px) and beside (43px) the bottom bar", /--bn-safe: env\(safe-area-inset-bottom/.test(css) && /standalone[\s\S]{0,200}-webkit-touch-callout[\s\S]{0,200}52px[\s\S]{0,200}43px/.test(css) && !/--bn-corner|--bn-add|--bn-side/.test(css));
   check("the 'Bottom bar room' option is gone (the bar sizes itself)", !$("bar-room") && !/Bottom bar room/.test(d.getElementById("settings-card").textContent));
   $("pf-settings").click(); await wait(200);
   check("Settings & edit opens the Me page", !$("me-card").hidden);

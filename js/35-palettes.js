@@ -5,17 +5,6 @@
   const PALETTES = {"deepsea": {"name": "Deep Sea", "sw": ["#0F3B5A", "#13507A", "#1B998B", "#E3EEF4"]}, "bluefin": {"name": "Bluefin", "sw": ["#1A4FB0", "#1F5FD1", "#F2C14E", "#E3ECFB"]}, "seagrass": {"name": "Seagrass", "sw": ["#0F5E56", "#127369", "#7CB518", "#DFF2EE"]}, "mangrove": {"name": "Mangrove", "sw": ["#244F33", "#2E6B3F", "#8A9A2B", "#E4EEE2"]}, "basslake": {"name": "Bass Lake", "sw": ["#3F4F1F", "#4F6228", "#B5651D", "#ECEFDF"]}, "mahi": {"name": "Mahi", "sw": ["#16613A", "#1D7A4A", "#E3B505", "#E2F1E7"]}, "sunrise": {"name": "Sunrise", "sw": ["#C2531A", "#B44A12", "#E9A23B", "#FBEBDD"]}, "redfish": {"name": "Redfish", "sw": ["#7E2F17", "#9C3D1F", "#D9822B", "#F6E6DC"]}, "snapper": {"name": "Snapper Red", "sw": ["#A81F25", "#C0262D", "#F2A541", "#FBE4E4"]}, "reef": {"name": "Coral Reef", "sw": ["#9E2F4E", "#B23A5B", "#2BA3A0", "#F8E5EA"]}, "dusk": {"name": "Dusk Bite", "sw": ["#4A3275", "#5B3E8C", "#E07A5F", "#ECE6F5"]}, "sandbar": {"name": "Sandbar", "sw": ["#8C6A3A", "#7A5A2E", "#3E8E9E", "#F1E9DB"]}, "tarpon": {"name": "Tarpon Silver", "sw": ["#4A5966", "#3C4C5A", "#5E8CA8", "#E7EBEE"]}, "storm": {"name": "Storm Front", "sw": ["#2E3440", "#2E3440", "#E6C229", "#E6E8EC"]}, "nightbite": {"name": "Night Bite", "sw": ["#0B1014", "#182027", "#4FD1C5", "#F2B84B"], "dark": true}, "midnight": {"name": "Midnight Tide", "sw": ["#081020", "#131D33", "#7FB2FF", "#FF9F6B"], "dark": true}};
   const PAL_ORDER = ["deepsea", "bluefin", "seagrass", "mangrove", "basslake", "mahi", "sunrise", "redfish", "snapper", "reef", "dusk", "sandbar", "tarpon", "storm", "nightbite", "midnight"];
   const PAL_ORIGINAL = { name: "Original", sw: ["#0d1a1f", "#0b7079", "#4fc3cc", "#f4f7f8"] };
-  // ---- Bottom bar corner room: the bar keeps clear of the phone's round screen corners (css --bn-safe / --bn-corner) ----
-  // iPhones with a home bar: corner radius (points) by screen size. Unlisted screens: by height, newer bigger ones get the largest known radius.
-  (function barCorner() {
-    try {
-      if (!/iPhone/.test(navigator.userAgent) || !window.screen) return;
-      const w = Math.min(screen.width, screen.height), h = Math.max(screen.width, screen.height);
-      const known = { "375x812": 39, "414x896": 41, "390x844": 47, "428x926": 53, "393x852": 55, "430x932": 55, "402x874": 62, "440x956": 62 };
-      const r = h <= 740 ? 0 : known[w + "x" + h] != null ? known[w + "x" + h] : h >= 870 ? 62 : h >= 850 ? 55 : h >= 840 ? 47 : 39;   // 0 = an iPhone with a home button: square corners
-      document.documentElement.style.setProperty("--bn-corner", r + "px");
-    } catch (e) { /* the css default is used */ }
-  })();
   let palNow = "original";
   try { const k = localStorage.getItem("fm-palette"); if (k && PALETTES[k]) palNow = k; } catch (e) { /* default */ }
 
