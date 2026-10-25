@@ -526,6 +526,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-25g", title: "Header image on your Profile + bottom bar fix", items: [
+      "On your Profile, tap the camera on the cover to pick a header image (the trash button removes it). Only people who are allowed to see your profile can see it.",
+      "The bottom bar now leaves room for the iPhone home bar, so the button labels are no longer cut off."
+    ] },
     { id: "2026-10-25f", title: "Play, Compete and Stats match the new look", items: [
       "Each of these pages now has its own small header (title, search, help, your picture) instead of the big Fishing Map header, and the cards are flat sections instead of boxes inside boxes.",
       "Everything still works the same."

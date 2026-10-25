@@ -1,7 +1,29 @@
 // ---- My Profile screen, "Clean Social" look (redesign step 5; docs/fishing-map-redesign/DESIGN-HANDOFF.md) ----
 // Opens from the top-right picture (js/09 calls openMyProfile). "Settings & edit" opens the Me page that the picture used to open (openMe, js/27).
 // Everything here is read from what the app already holds about ME (my catches, spots, trips, badges, friends); nothing new is stored or sent.
-let pfTab = "catches", pfPrev = "list";
+let pfTab = "catches", pfPrev = "list", pfCoverPath = null;
+// Make the picked photo a 1200×480 header (centre crop, under 1 MB), upload it, remember its path; null = remove the header image
+async function pfSetCover(file) {
+  let path = null, blob = null;
+  if (file) {
+    let src;
+    try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+    catch (e) { src = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(file); }); }
+    const W = 1200, H = 480, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    const sw = src.width, sh = src.height, k = Math.max(W / sw, H / sh), dw = sw * k, dh = sh * k;
+    cv.getContext("2d").drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    for (const q of [0.85, 0.75, 0.65, 0.5]) { blob = await new Promise(r => cv.toBlob(r, "image/jpeg", q)); if (blob && blob.size < 900000) break; }
+    if (!blob) throw new Error("couldn't read that picture");
+    path = `${me.id}/cover-${newId()}.jpg`;
+    const { error: ue } = await db.storage.from("avatars").upload(path, blob, { contentType: "image/jpeg" });
+    if (ue) throw ue;
+  }
+  const { error } = await db.from("profile_extras").upsert({ user_id: me.id, cover_path: path }, { onConflict: "user_id" });
+  if (error) { if (path) db.storage.from("avatars").remove([path]); throw error; }
+  const old = pfCoverPath; pfCoverPath = path;
+  if (old && old !== path) { db.storage.from("avatars").remove([old]); delete avatarUrls["avatars" + old]; }   // tidy up the old header image
+  if (typeof ppMine !== "undefined" && ppMine) ppMine.cover_path = path;
+}
 function openMyProfile() {
   if (!me) return;
   const was = ["list", "map", "insights", "seasons", "tank", "feed", "compete", "learn"].find(k => { const v = $("view-" + k); return v && !v.hidden; });
@@ -19,7 +41,23 @@ function renderMyProfile() {
   if (x.accent) cover.style.setProperty("--pf-cover", x.accent);
   const back = el("button", "pf-back"); back.type = "button"; back.setAttribute("aria-label", "Back"); back.innerHTML = ic("arrowl");
   back.addEventListener("click", () => showView(pfPrev || "list"));
-  cover.appendChild(back); root.appendChild(cover);
+  cover.appendChild(back);
+  // header image: stored in the same private "avatars" bucket as my picture (file name starts with cover-), so it is seen by exactly the people who may see my profile
+  const cam = el("button", "pf-cover-btn"); cam.type = "button"; cam.id = "pf-cover-btn"; cam.setAttribute("aria-label", "Change header image"); cam.innerHTML = ic("camera");
+  const rm = el("button", "pf-cover-btn pf-cover-rm"); rm.type = "button"; rm.id = "pf-cover-rm"; rm.setAttribute("aria-label", "Remove header image"); rm.innerHTML = ic("trash"); rm.hidden = true;
+  const file = document.createElement("input"); file.type = "file"; file.accept = "image/*"; file.hidden = true; file.id = "pf-cover-file";
+  cam.addEventListener("click", () => file.click());
+  file.addEventListener("change", async () => {
+    const f = file.files && file.files[0]; file.value = ""; if (!f) return;
+    cam.disabled = true;
+    try { await pfSetCover(f); renderMyProfile(); toast("Header image saved ✓"); }
+    catch (e) { toast("Couldn't save that image: " + (e && e.message ? e.message : "try another one")); }
+    cam.disabled = false;
+  });
+  rm.addEventListener("click", async () => {
+    try { await pfSetCover(null); renderMyProfile(); } catch (e) { toast("Couldn't remove it: " + (e && e.message ? e.message : "try again")); }
+  });
+  cover.appendChild(rm); cover.appendChild(cam); cover.appendChild(file); root.appendChild(cover);
 
   const top = el("div", "pf-top");
   const av = el("div", "pf-av"); av.appendChild(avatarNode(null, name, 84, null)); top.appendChild(av);
@@ -36,8 +74,14 @@ function renderMyProfile() {
   (async () => {
     try {
       let e = (typeof ppMine !== "undefined" && ppMine) || null;
-      if (!e) { const r = await db.from("profile_extras").select("avatar_path,accent").eq("user_id", me.id).maybeSingle(); e = r && r.data; }
+      if (!e) { const r = await db.from("profile_extras").select("avatar_path,accent,cover_path").eq("user_id", me.id).maybeSingle(); e = r && r.data; }
+      if (e && e.cover_path === undefined) { const r2 = await db.from("profile_extras").select("cover_path").eq("user_id", me.id).maybeSingle(); if (r2 && r2.data) e = Object.assign({}, e, r2.data); }
       if (!e) return;
+      if (e.cover_path) {
+        pfCoverPath = e.cover_path; rm.hidden = false;
+        const cu = await avatarUrl(e.cover_path);
+        if (cu && cover.isConnected) { cover.style.backgroundImage = "url(\"" + cu + "\")"; cover.classList.add("has-img"); }
+      }
       if (e.accent && !cover.style.getPropertyValue("--pf-cover")) cover.style.setProperty("--pf-cover", e.accent);
       if (!e.avatar_path) return;
       const url = await avatarUrl(e.avatar_path);
