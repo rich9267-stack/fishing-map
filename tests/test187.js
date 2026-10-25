@@ -98,7 +98,7 @@ vm.runInContext(cut(s02, "  const localWxCache", "  // ---- Water temperature --
   ok(/clock\(r\.next\.when, tzFor\(s\.lat, s\.lng\)\)/.test(s02), "a spot's next-tide time shows on the spot's clock");
   ok(/tzClock\(x\.when, tzFor\(s\.lat, s\.lng\)\)/.test(s04) && /tzHourLabel\(new Date\(now \+ h \* H\), tzFor\(s\.lat, s\.lng\)\)/.test(s04), "the tide graph labels follow the spot's zone");
   ok(/tzHour\(y\.t, tz\) === h/.test(s09) && /tzDayKey\(x\.t, tz\)/.test(s09) && /DAYNAME\(d\.date, tz\)/.test(s09), "the forecast bar groups days and hours by the spot's zone");
-  ok(/Best around \$\{clock\(r\.best\.t, tzFor\(r\.s\.lat, r\.s\.lng\)\)\}/.test(s09), "Best spot today shows the spot's clock");
+  ok(/clock\(r\.best\.t, tzFor\(r\.s\.lat, r\.s\.lng\)\)/.test(s09), "Best spot today shows the spot's clock");
   ok(/clock\(current\.end, areaTz\(\)\)/.test(s09) && /clock\(p\.start, areaTz\(\)\)/.test(s09) && /tzDayStart\(day, areaTz\(\)\)/.test(s06), "moon / solunar times use the area's zone and day");
   ok(/clock\(nx\.when, tzFor\(here\.lat, here\.lng\)\)/.test(s10) && /clock\(at, tzFor\(here\.lat, here\.lng\)\)/.test(s10), "boat bar tide and sunset/sunrise use the boat's zone");
 

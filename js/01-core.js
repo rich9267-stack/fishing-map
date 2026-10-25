@@ -63,6 +63,7 @@
       const tides = data.predictions.map(p => ({
         when: parseNoaa(p.t), high: p.type === "H", ft: parseFloat(p.v)
       }));
+      window.homeTides = tides;   // the Home tide line (js/63) draws from these
       const now = new Date(), tz0 = areaTz();
       const next = tides.find(t => t.when > now);
 
@@ -108,6 +109,7 @@
         });
         days.appendChild(card);
       });
+      if (typeof homeCondRender === "function") homeCondRender();
     } catch (err) {
       stage.textContent = "Couldn't load tides right now";
       document.getElementById("next").textContent = "Check your connection and refresh the page.";

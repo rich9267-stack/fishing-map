@@ -345,21 +345,22 @@
       return;
     }
     ranked.slice(0, 5).forEach((r, i) => {
+      // Home look (js/63): number badge · name + ONE reason line · best time on the right. The longer detail is folded under "How it's ranked".
       const row = el("div", "best");
-      const top = el("div", "best-top");
-      const name = el("div");
-      name.appendChild(el("span", "best-rank", `${i + 1}.`));
-      name.appendChild(el("span", "best-name", r.s.name));
-      const rating = r.best.score > 1.2 ? ["strong", "Strong match"] : r.best.score > 0.4 ? ["", "Good match"] : ["", "Weak match"];
-      name.appendChild(el("span", "rating " + rating[0], rating[1]));
-      top.appendChild(name);
-      top.appendChild(el("span", "best-when", r.best.now ? "Best: now" : `Best around ${clock(r.best.t, tzFor(r.s.lat, r.s.lng))}`));
-      row.appendChild(top);
-      { const zr = typeof zoneRow === "function" ? zoneRow(r.s) : null; if (zr) row.appendChild(zr); }   // 🚫 flag only, the spot stays ranked (js/33)
-      row.appendChild(el("div", "best-why", r.best.reasons.length ? "✓ " + r.best.reasons.slice(0, 3).map(x => x.text).join(" · ") : "No strong pattern yet for these conditions"));
-      if (r.extra.notes.length) row.appendChild(el("div", "best-why", r.extra.notes.join(" · ")));
-      if (r.best.warn) row.appendChild(el("div", "best-why", r.best.warn));
-      row.appendChild(el("div", "spot-meta", "Based on " + r.basis));
+      row.appendChild(el("span", "best-rank", String(i + 1)));
+      const mid = el("div", "best-mid");
+      mid.appendChild(el("span", "best-name", r.s.name));
+      { const zr = typeof zoneRow === "function" ? zoneRow(r.s) : null; if (zr) mid.appendChild(zr); }   // 🚫 flag only, the spot stays ranked (js/33)
+      mid.appendChild(el("div", "best-why", r.best.reasons.length ? r.best.reasons.slice(0, 3).map(x => x.text).join(" · ") : "No strong pattern yet for these conditions"));
+      const more = el("div", "best-more");
+      const rating = r.best.score > 1.2 ? "Strong match" : r.best.score > 0.4 ? "Good match" : "Weak match";
+      more.appendChild(el("div", "best-why", rating));
+      if (r.extra.notes.length) more.appendChild(el("div", "best-why", r.extra.notes.join(" · ")));
+      if (r.best.warn) more.appendChild(el("div", "best-why", r.best.warn));
+      more.appendChild(el("div", "spot-meta", "Based on " + r.basis));
+      mid.appendChild(more);
+      row.appendChild(mid);
+      row.appendChild(el("span", "best-when" + (r.best.now ? " now" : ""), r.best.now ? "Now" : clock(r.best.t, tzFor(r.s.lat, r.s.lng))));
       box.appendChild(row);
     });
     if (skipped.length) box.appendChild(el("div", "spot-meta", `Not ranked yet (too few catches): ${skipped.map(s => s.name).join(", ")}`));

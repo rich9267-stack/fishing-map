@@ -526,6 +526,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-25c", title: "A cleaner Home screen", items: [
+      "Home now reads top to bottom: who is on the water (and Heading out), one line for alerts, tide and weather with a tide line, a single Start trip button, then Plan a trip, Learn and your best spots.",
+      "Weather and red tide alerts are now one tappable line (tap View for the full list). Best spots show a number, the reason, and the best time. Tap How it's ranked for the details."
+    ] },
     { id: "2026-10-25b", title: "New bottom bar and + button", items: [
       "The bottom bar is lighter now: grey line icons, and the tab you are on turns dark and bold with a filled icon.",
       "The round + button (log a catch) is a little smaller and sits just above the bar."

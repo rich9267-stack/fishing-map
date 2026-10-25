@@ -1207,3 +1207,94 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
   .learn-fig img { max-width: 100%; border-radius: 8px; }
   .learn-link { appearance: none; font: inherit; color: var(--accent, #1976d2); background: none; border: 0; padding: 6px 0; min-height: 36px; text-align: left; cursor: pointer; text-decoration: underline; }
   .learn-ul { margin: 4px 0 4px 18px; padding: 0; }
+
+  /* ---- Home, Clean Social look (redesign step 3, js/63-home.js). Colors come from the theme tokens at the top. ---- */
+  body > main { position: relative; }
+  main > h1:first-child { font-size: 22px; font-weight: 800; letter-spacing: -.01em; margin: 2px 0 0; line-height: 1.2; padding-right: 150px; }
+  #hdr-sub { font-size: 12px; color: var(--text-2); margin: 2px 0 12px; cursor: pointer; display: inline-block; min-height: 24px; }
+  #hdr-sub::after { content: " \25BE"; }
+  body:not(.on-map) .userbar { position: absolute; top: 2px; right: 16px; margin: 0; flex-wrap: nowrap; gap: 0; }
+  .userbar #who { display: none; }
+  .userbar-links { flex-wrap: nowrap; gap: 0 2px; align-items: center; }
+  .userbar-links .linkbtn { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.35rem; color: var(--text); padding: 0; }
+  .userbar-links .linkbtn.tut-help { font-size: 1.35rem; }
+  #me-avatar > div { width: 32px !important; height: 32px !important; }
+  #me-btn { min-width: 40px; }
+
+  #hn { margin: 0 -16px; }
+  .hn-sec { background: var(--card); padding: 14px 16px; border-bottom: 8px solid var(--section-gap); }
+  .hn-sec[hidden] { display: none; }
+  .hn-lab { font-size: 12px; color: var(--text-2); font-weight: 600; }
+  .hn-stories { display: flex; gap: 14px; overflow-x: auto; align-items: flex-start; scrollbar-width: none; }
+  .hn-stories::-webkit-scrollbar { display: none; }
+  .hn-story { appearance: none; background: transparent; border: 0; padding: 0; font: inherit; color: var(--text); display: flex; flex-direction: column; align-items: center; gap: 5px; flex: none; width: 72px; cursor: pointer; min-height: 44px; }
+  .hn-ring { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2.5px solid var(--accent); padding: 2px; }
+  .hn-ring > div { width: 100% !important; height: 100% !important; }
+  .hn-ring .ic { width: 24px; height: 24px; }
+  .hn-add .hn-ring { border-style: dashed; border-color: var(--line-strong); color: var(--text-2); }
+  .hn-add.on .hn-ring { border-style: solid; border-color: var(--accent); color: var(--accent); }
+  .hn-friend.late .hn-ring { border-color: #c0392b; }
+  .hn-story-l { font-size: 11.5px; font-weight: 600; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hn-water-t { margin-left: auto; align-self: center; text-align: right; flex: none; padding-left: 8px; }
+  .hn-water-t b { display: block; font-size: 13px; }
+  .hn-water-t span { font-size: 12px; color: var(--text-2); }
+
+  .hn-alerts-sec { padding: 0; background: var(--alert-bg); }
+  .hn-alerts { appearance: none; width: 100%; border: 0; background: transparent; color: var(--alert-text); font: inherit; font-size: 13.5px; display: flex; align-items: center; gap: 10px; text-align: left; padding: 11px 16px; min-height: 44px; cursor: pointer; }
+  .hn-alerts-i .ic { width: 20px; height: 20px; display: block; }
+  .hn-alerts-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hn-alerts-v { font-weight: 700; }
+  .hn-alerts-list { padding: 0 16px 12px; }
+  .hn-alerts-list[hidden] { display: none; }
+  .hn-alerts-list .wx-item { background: var(--card); }
+  #wx-banner[hidden], #rt-banner[hidden] { display: none; }
+
+  .hn-cond { appearance: none; width: 100%; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; padding: 0; cursor: pointer; display: block; }
+  .hn-cond-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .hn-big { font-size: 20px; font-weight: 800; margin-top: 1px; }
+  .hn-count { color: var(--accent); font-weight: 700; font-size: 14px; padding-top: 2px; white-space: nowrap; }
+  .hn-graph { width: 100%; height: auto; display: block; margin-top: 6px; }
+  .hn-line { font-size: 13.5px; color: var(--text-2); margin-top: 6px; min-height: 1.2em; }
+  .hn-line b { color: var(--text); }
+
+  .hn-loc { display: flex; align-items: center; gap: 12px; }
+  .hn-loc-i { color: var(--accent); flex: none; display: flex; }
+  .hn-loc-i .ic { width: 26px; height: 26px; }
+  .hn-loc-t { flex: 1; min-width: 0; }
+  .hn-loc-n { font-weight: 800; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hn-loc-x { appearance: none; background: transparent; border: 0; color: var(--text-2); min-width: 40px; min-height: 44px; padding: 0; cursor: pointer; }
+  .hn-loc-x[hidden] { display: none; }
+  .hn-loc-x .ic { width: 20px; height: 20px; }
+  .hn-start { flex: none; min-height: 44px; padding: 0 20px; border-radius: 22px; background: var(--accent); color: var(--on-accent); font-weight: 700; }
+
+  .hn-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hn-act { appearance: none; background: transparent; border: 1.5px solid var(--line-strong); border-radius: 12px; color: var(--text); font: inherit; display: flex; align-items: center; gap: 10px; padding: 10px 12px; text-align: left; min-height: 56px; cursor: pointer; }
+  .hn-act-i { color: var(--accent); display: flex; flex: none; }
+  .hn-act-i .ic { width: 24px; height: 24px; }
+  .hn-act-t b { display: block; font-size: 14px; }
+  .hn-act-t small { display: block; font-size: 11.5px; color: var(--text-2); line-height: 1.25; }
+
+  /* the old Home pieces now live in the new ones above; they stay in the page so every button and number keeps working */
+  #home-quick, #learn-card, #session-ask, #today-strip .strip-grid { display: none !important; }
+  #today-strip:has(#ts-retry[hidden]) { display: none; }
+  #today-strip { margin: 0 0 12px; }
+
+  /* Best spots today: flat section, number badge · name + one reason · time */
+  #best-card { border: 0; border-radius: 0; margin: 0 -16px; padding: 14px 16px 6px; background: var(--card); border-bottom: 8px solid var(--section-gap); position: relative; }
+  #best-card .label { font-size: 17px; font-weight: 800; text-transform: none; letter-spacing: 0; color: var(--text); }
+  .best-toggle .spot-chev, .best-peek { display: none !important; }
+  #best-card .best-how { position: absolute; right: 16px; top: 14px; min-height: 40px; font-size: 13px; color: var(--accent); font-weight: 600; margin-top: -4px; }
+  #best-body > .spot-meta, #best-body details.how { display: none; }
+  #best-card.how-open #best-body > .spot-meta, #best-card.how-open #best-body details.how { display: block; }
+  #best-card.how-open #best-body details.how > summary { display: none; }
+  #best-card.how-open #best-body details.how > .spot-meta { display: block; }
+  .best { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .best:last-child { border-bottom: 0; }
+  .best-rank { width: 40px; height: 40px; border-radius: 12px; background: var(--section-gap); color: var(--text); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; margin: 0; }
+  .best-mid { min-width: 0; }
+  .best-name { font-weight: 800; display: block; font-size: 15px; }
+  .best-why { font-size: 13px; color: var(--text-2); margin-top: 1px; }
+  .best-more { display: none; margin-top: 4px; }
+  #best-card.how-open .best-more { display: block; }
+  .best-when { font-size: 13px; color: var(--text-2); font-weight: 600; white-space: nowrap; }
+  .best-when.now { color: var(--accent); }
