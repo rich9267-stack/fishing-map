@@ -526,6 +526,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-25b", title: "New bottom bar and + button", items: [
+      "The bottom bar is lighter now: grey line icons, and the tab you are on turns dark and bold with a filled icon.",
+      "The round + button (log a catch) is a little smaller and sits just above the bar."
+    ] },
     { id: "2026-10-25a", title: "A cleaner look: line icons", items: [
       "The little pictures next to words (pins, fish, trophies, tabs and buttons) are now simple line icons instead of colorful emoji. Everything works the same; it just looks calmer and more consistent.",
       "Behind the scenes the app also got a shared set of colors so the next screens can match."

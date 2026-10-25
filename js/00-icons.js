@@ -164,7 +164,7 @@
     "🛡": "shield", "🧂": "salt", "🌈": "rainbow", "✂️": "scissors", "🔗": "link", "⌨️": "keyboard", "🚗": "car", "🗂": "folder", "⚖️": "scale", "↩️": "undo", "➡": "arrowr", "⬅": "arrowl",
     "🔴": ["!dot", "#d64545"], "🟢": ["!dot", "#2e9e5b"], "🟡": ["!dot", "#e0b020"], "🟠": ["!dot", "#e8832a"], "🔵": ["!dot", "#2f7fd6"], "⚪": ["!dot", "#c4cbd1"],
     "🥇": ["!medal", "#d4a017"], "🥈": ["!medal", "#9aa5ad"], "🥉": ["!medal", "#b0713a"],
-    "🌑": "!moon0", "🌒": "!moon1", "🌓": "!moon2", "🌔": "!moon3", "🌕": "!moonfull", "🌖": ["!moon3", "", 1], "🌗": ["!moon2", "", 1], "🌘": ["!moon1", "", 1]
+    "＋": "plus", "🌑": "!moon0", "🌒": "!moon1", "🌓": "!moon2", "🌔": "!moon3", "🌕": "!moonfull", "🌖": ["!moon3", "", 1], "🌗": ["!moon2", "", 1], "🌘": ["!moon1", "", 1]
   };
 
   const keys = Object.keys(ICON_MAP).sort((a, b) => b.length - a.length);
@@ -174,8 +174,11 @@
   const cls = v => "ei-" + nameOf(v).replace("!", "s-") + (Array.isArray(v) && v[2] ? " ei-flip" : "");
   const lookup = e => ICON_MAP[e] || ICON_MAP[e.replace(/️/g, "")] || ICON_MAP[e + "️"];
 
-  function svgUrl(name) {
-    const body = name[0] === "!" ? '<path fill="black" fill-rule="evenodd" d="' + ICON_SVG[name] + '"/>'
+  // Icons that show filled when their bottom-bar tab is the active one
+  const FILLED = { home: 1.8, map: 1.8, fish: 1.8, trophy: 1.8, users: 1.8, chart: 3.4 };
+  function svgUrl(name, filled) {
+    const body = filled ? '<path fill="' + (name === "chart" ? "none" : "black") + '" fill-rule="evenodd" stroke="black" stroke-width="' + FILLED[name] + '" stroke-linecap="round" stroke-linejoin="round" d="' + ICON_SVG[name] + '"/>'
+      : name[0] === "!" ? '<path fill="black" fill-rule="evenodd" d="' + ICON_SVG[name] + '"/>'
       : '<path fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="' + ICON_SVG[name] + '"/>';
     return 'url("data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' + body + "</svg>") + '")';
   }
@@ -187,7 +190,7 @@
     ".ei::before{content:'';position:absolute;inset:0;text-indent:0;background:var(--dc,currentColor);-webkit-mask:var(--i) center/contain no-repeat;mask:var(--i) center/contain no-repeat}" +
     ".ei-flip::before{transform:scaleX(-1)}";
   const done = new Set();   // each icon's rule is added the first time that icon is shown (keeps the style sheet small)
-  const addRule = v => { const n = nameOf(v); if (done.has(n)) return; done.add(n); st.appendChild(document.createTextNode("." + cls(v).split(" ")[0] + "{--i:" + svgUrl(n) + "}")); };
+  const addRule = v => { const n = nameOf(v); if (done.has(n)) return; done.add(n); const c = "." + cls(v).split(" ")[0]; st.appendChild(document.createTextNode(c + "{--i:" + svgUrl(n) + "}" + (FILLED[n] ? ".bnav-in .on " + c + "{--i:" + svgUrl(n, true) + "}" : ""))); };
   const st = document.createElement("style"); st.id = "icon-style"; st.textContent = css; document.head.appendChild(st);
 
   const SKIP = /^(SCRIPT|STYLE|TEXTAREA|OPTION|TITLE|NOSCRIPT|INPUT|SELECT)$/;
