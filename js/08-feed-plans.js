@@ -75,18 +75,27 @@
   }
   function feedCard(c, o) {
       const spot = (spots || []).find(x => x.id === c.spot_id);
-      const item = el("div", "feed-item");
+      // Clean Social look: avatar · (Name @handle · time … ⋯) · catch line · grey detail line · photo · cheer / comment / share
+      const item = el("div", "feed-item feed-post");
+      const nm = o.who || c.caught_by || "Someone", pid = c.created_by, mineCard = !!(me && pid === me.id);
+      const openWho = () => { if (o.onWho) o.onWho(); else if (pid && typeof showProfile === "function") showProfile(pid); };
+      const avN = typeof avatarNode === "function" ? avatarNode(null, nm, 40, null) : el("span", null, nm[0]);
+      let av;
+      if (!mineCard && pid) { av = el("button", "feed-av"); av.type = "button"; av.setAttribute("aria-label", "Open " + nm + "'s profile"); av.addEventListener("click", openWho); }
+      else av = el("span", "feed-av");
+      av.appendChild(avN); item.appendChild(av);
+      const body = el("div", "feed-body"); item.appendChild(body);
       const top = el("div", "feed-top");
-      const rest = `caught ${c.how_many > 1 ? c.how_many + " " : "a "}${c.species}` + sizeText(c);
-      if (o.who) {
-        const sp = el("span", "feed-what"), nm = el("button", "linkbtn", o.who); nm.type = "button";
-        nm.addEventListener("click", () => o.onWho && o.onWho());
-        sp.appendChild(nm); sp.appendChild(document.createTextNode(" " + rest)); top.appendChild(sp);
-      } else top.appendChild(el("span", "feed-what", `${c.caught_by || "Someone"} ${rest}`));
-      top.appendChild(el("span", "feed-when", feedWhen(new Date(c.caught_at))));
-      item.appendChild(top);
+      const whoLine = el("span", "feed-who");
+      if (!mineCard && pid) { const nb = el("button", "linkbtn feed-name", nm); nb.type = "button"; nb.addEventListener("click", openWho); whoLine.appendChild(nb); }
+      else whoLine.appendChild(el("b", "feed-name", nm));
+      { const pr = typeof profOf === "function" ? profOf(pid) : null; if (pr && pr.handle) whoLine.appendChild(el("span", "feed-handle", " @" + pr.handle)); }
+      whoLine.appendChild(el("span", "feed-when", " · " + feedWhen(new Date(c.caught_at))));
+      top.appendChild(whoLine);
+      body.appendChild(top);
+      body.appendChild(el("div", "feed-what", `${c.how_many > 1 ? c.how_many + " " : ""}${c.species}` + sizeText(c)));
       const place = o.place !== undefined ? o.place : (spot ? (spot.is_private ? "🔒 " : "📍 ") + spot.name : null);
-      item.appendChild(el("div", "spot-meta", [place,
+      body.appendChild(el("div", "spot-meta", [place,
         c.bait && `on ${c.bait}`, c.tide_stage && STAGE_LABEL[c.tide_stage], c.water_temp_f != null && `${Math.round(c.water_temp_f)}°F water`]
         .filter(Boolean).join(" · ") + (o.place === undefined && spot && spot.is_private ? " — private, only you see this" : "")));
       const ph = o.photos || (photosBySpot[c.spot_id] || []).filter(x => x.catch_id === c.id && photoUrls[x.path]);
@@ -94,26 +103,39 @@
         const img = document.createElement("img");
         img.className = "feed-photo"; img.src = picUrl(ph[0].path); img.alt = "Photo of the catch"; img.loading = "lazy";
         img.addEventListener("click", () => openViewer(ph[0]));
-        item.appendChild(img);
-        if (ph.length > 1) item.appendChild(thumbStrip(ph.slice(1)));
+        body.appendChild(img);
+        if (ph.length > 1) body.appendChild(thumbStrip(ph.slice(1)));
       }
-      if (c.notes) item.appendChild(el("div", "spot-meta", c.notes));
+      if (c.notes) body.appendChild(el("div", "spot-meta", c.notes));
       const reacts = feedReacts[c.id] || new Set(), cms = feedComments[c.id] || [];
       const mine = !!(me && reacts.has(me.id));
       const acts = el("div", "feed-actions");
-      const like = el("button", "btn ghost small" + (mine ? " on" : ""), `👍 ${reacts.size || ""}`.trim());
-      like.type = "button"; like.setAttribute("aria-pressed", mine);
+      const like = el("button", "btn ghost small feed-cheer" + (mine ? " on" : ""), `❤️ ${reacts.size || ""}`.trim());
+      like.type = "button"; like.setAttribute("aria-pressed", mine); like.setAttribute("aria-label", "Cheer this catch");
       like.addEventListener("click", () => toggleReact(c));
       const cbtn = el("button", "btn ghost small" + (feedOpen.has(c.id) ? " on" : ""), `💬 ${cms.length || ""}`.trim());
-      cbtn.type = "button";
+      cbtn.type = "button"; cbtn.setAttribute("aria-label", "Comments");
       cbtn.addEventListener("click", () => { feedOpen.has(c.id) ? feedOpen.delete(c.id) : feedOpen.add(c.id); redrawFeeds(); });
       acts.appendChild(like); acts.appendChild(cbtn);
-      if (o.report && me && c.created_by !== me.id) {
-        const rb = el("button", "linkbtn", "⚑ Report"); rb.type = "button"; rb.style.marginLeft = "auto";
-        rb.addEventListener("click", () => openReport({ type: "catch", id: c.id, userId: c.created_by, snippet: `${c.species} — ${c.caught_by || ""}`, label: `${c.caught_by || "this person"}'s ${c.species} catch` }));
-        acts.appendChild(rb);
+      // Share: only catches their owner set to 🌎 Public, and only the fish (no place, no photo) — nothing private leaves the app
+      if (c.visibility === "public") {
+        const sh = el("button", "btn ghost small feed-share", "📤"); sh.type = "button"; sh.setAttribute("aria-label", "Share this catch");
+        sh.addEventListener("click", async () => {
+          const text = `${nm} caught ${c.how_many > 1 ? c.how_many + " " : "a "}${c.species}${sizeText(c)} — Fishing Map`;
+          try { if (navigator.share) await navigator.share({ text }); else if (navigator.clipboard) { await navigator.clipboard.writeText(text); toast("Copied ✓"); } } catch (e) { /* cancelled */ }
+        });
+        acts.appendChild(sh);
       }
-      item.appendChild(acts);
+      if (o.report && me && c.created_by !== me.id) {
+        const more = el("button", "linkbtn feed-more", "⋯"); more.type = "button"; more.setAttribute("aria-label", "More"); more.setAttribute("aria-expanded", "false");
+        const menu = el("div", "feed-menu"); menu.hidden = true;
+        const rb = el("button", "linkbtn", "⚑ Report"); rb.type = "button";
+        rb.addEventListener("click", () => { menu.hidden = true; openReport({ type: "catch", id: c.id, userId: c.created_by, snippet: `${c.species} — ${c.caught_by || ""}`, label: `${c.caught_by || "this person"}'s ${c.species} catch` }); });
+        menu.appendChild(rb);
+        more.addEventListener("click", () => { menu.hidden = !menu.hidden; more.setAttribute("aria-expanded", String(!menu.hidden)); });
+        top.appendChild(more); body.appendChild(menu);
+      }
+      body.appendChild(acts);
       if (feedOpen.has(c.id)) {
         const wrap = el("div", "feed-cm");
         cms.forEach(cm => {
@@ -140,7 +162,7 @@
         form.appendChild(input); form.appendChild(go);
         form.addEventListener("submit", e => { e.preventDefault(); sendComment(c, input); });
         wrap.appendChild(form);
-        item.appendChild(wrap);
+        body.appendChild(wrap);
       }
       if (c.review_state === "blurred") markReview(item, false, c.id);
       return item;

@@ -526,6 +526,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-25d", title: "A cleaner Community screen", items: [
+      "Community now has its own header with search, friends and groups, messages and your picture. Switch between My circle and Public with the two tabs.",
+      "Who's going is a row of circles: tap + to plan a trip, tap a friend's circle to see their trip, tap Past trips for your old ones.",
+      "Catches are plain posts now: picture, name, the fish, a grey line with the details, the photo, then cheer, comment and share. Share only shows on catches their owner made Public, and it sends just the fish, never the place."
+    ] },
     { id: "2026-10-25c", title: "A cleaner Home screen", items: [
       "Home now reads top to bottom: who is on the water (and Heading out), one line for alerts, tide and weather with a tide line, a single Start trip button, then Plan a trip, Learn and your best spots.",
       "Weather and red tide alerts are now one tappable line (tap View for the full list). Best spots show a number, the reason, and the best time. Tap How it's ranked for the details."

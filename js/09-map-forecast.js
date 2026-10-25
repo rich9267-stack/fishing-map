@@ -706,6 +706,7 @@
     $("tab-compete").classList.toggle("on", which === "compete");
     if (which === "compete") { $("contests").hidden = false; if (typeof openContests === "function") openContests(); }
     document.body.classList.toggle("on-map", isMap);
+    document.body.classList.toggle("on-community", which === "feed");   // Community has its own header (js/64)
     $("tab-seasons").classList.toggle("on", which === "seasons");
     if (which === "seasons") renderSeasons();
     $("view-feed").hidden = which !== "feed";

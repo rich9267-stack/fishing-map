@@ -112,7 +112,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   // own catch has no report button
   const own = [...d.querySelectorAll("#pub-feed-list .feed-item")];
   // profile: report + block
-  item.querySelector(".feed-what button").click(); await wait(400);
+  item.querySelector("button.feed-name").click(); await wait(400);
   console.log("profile tools:", [...d.querySelectorAll("#pub-profile-body .linkbtn")].map(b => b.textContent).join(" / "));
   [...d.querySelectorAll("#pub-profile-body button")].find(b => b.textContent === "🚫 Block").click(); await wait(500);
   console.log("block rpc:", JSON.stringify(RPCS.filter(r => r[0] === "block_user")), "| blocks now:", JSON.stringify(BLOCKS.map(b => b.blocked)));

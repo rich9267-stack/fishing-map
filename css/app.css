@@ -1298,3 +1298,53 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
   #best-card.how-open .best-more { display: block; }
   .best-when { font-size: 13px; color: var(--text-2); font-weight: 600; white-space: nowrap; }
   .best-when.now { color: var(--accent); }
+
+  /* ---- Community, Clean Social look (redesign step 4, js/64-community.js + feedCard in js/08) ---- */
+  body.on-community { background: var(--card); }
+  body.on-community main > h1:first-child, body.on-community #hdr-sub, body.on-community .userbar { display: none; }
+  .cm-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin: 2px 0 8px; }
+  .cm-head .page-title { font-size: 22px; font-weight: 800; letter-spacing: -.01em; margin: 0; flex: 1; min-width: 0; }
+  .cm-icons { display: flex; align-items: center; flex: none; margin-right: -6px; }
+  .cm-ib { appearance: none; position: relative; background: transparent; border: 0; padding: 0; color: var(--text); min-width: 38px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .cm-ib .ic { width: 23px; height: 23px; }
+  .cm-ib .nav-badge { position: absolute; top: 4px; right: 0; margin: 0; }
+  .cm-me > div { width: 32px !important; height: 32px !important; }
+  .cm-me .nav-badge { right: -2px; }
+  #view-feed:has(#com-seg:not([hidden])) #com-sw { display: none; }
+
+  #com-seg { background: transparent; border-radius: 0; padding: 0; margin: 0 -16px 0; border-bottom: 1px solid var(--line); gap: 0; }
+  #com-seg button { border-radius: 0; min-height: 46px; background: transparent; color: var(--text-2); font-size: 15px; font-weight: 600; box-shadow: none; border-bottom: 3px solid transparent; }
+  #com-seg button.on { background: transparent; color: var(--text); font-weight: 800; box-shadow: none; border-bottom-color: var(--accent); }
+
+  #view-feed > .card { background: transparent; border: 0; border-radius: 0; padding: 0; margin: 0; box-shadow: none; }
+  #view-feed > #feed-plans-card { padding: 14px 16px 6px; border-bottom: 8px solid var(--section-gap); margin: 0 -16px !important; }
+  #feed-plans-card > .label, #feed-plans-card > .spot-meta { display: none; }
+  .cm-stories { padding-bottom: 6px; }
+  #plan-list { display: none; margin-top: 8px; }
+  #feed-plans-card.cm-open #plan-list { display: block; }
+  .cm-fold { display: none; min-height: 40px; color: var(--accent); font-weight: 600; }
+  #feed-plans-card.cm-open .cm-fold { display: block; }
+  #feed-circle-card, #pub-feed { margin-top: 0 !important; }
+  #feed-circle-card > .label, #feed-circle-card > .spot-meta, #pub-feed > .label { display: none; }
+  #pub-feed > .spot-meta { font-size: 12px; color: var(--text-2); margin: 10px 0 4px; }
+
+  .feed-post { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 0 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .feed-av { appearance: none; background: transparent; border: 0; padding: 0; width: 40px; height: 40px; display: block; cursor: pointer; border-radius: 50%; }
+  span.feed-av { cursor: default; }
+  .feed-body { min-width: 0; }
+  .feed-post .feed-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; min-height: 22px; }
+  .feed-who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; color: var(--text-2); }
+  .feed-name, button.feed-name { font-weight: 800; font-size: 15px; color: var(--text); padding: 0; min-height: 0; display: inline; background: none; border: 0; font-family: inherit; cursor: pointer; }
+  b.feed-name { cursor: default; }
+  .feed-handle, .feed-post .feed-when { font-size: 13px; color: var(--text-2); font-weight: 400; }
+  .feed-post .feed-what { font-size: 15px; font-weight: 600; margin-top: 2px; }
+  .feed-post .spot-meta { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+  .feed-post .feed-photo { border-radius: 14px; margin-top: 10px; max-height: 420px; }
+  .feed-post .feed-actions { margin-top: 4px; gap: 4px; align-items: center; }
+  .feed-post .feed-actions .btn { border: 0; background: transparent; padding: 0 14px 0 0; min-height: 44px; color: var(--text-2); font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+  .feed-post .feed-actions .btn.on { color: var(--accent); }
+  .feed-post .feed-actions .ei { width: 22px; height: 22px; }
+  .feed-more { min-width: 36px; min-height: 36px; font-size: 20px; color: var(--text-2); padding: 0; flex: none; }
+  .feed-menu { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 4px 8px; margin-top: 4px; display: inline-block; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+  .feed-menu[hidden] { display: none; }
+  .feed-post .feed-cm { margin-top: 4px; }
