@@ -19,11 +19,10 @@
     :root { --text-2: #9db2ba; --line-strong: #3a5560; --section-gap: #0a1418; --alert-bg: #3a2c0a; --alert-text: #f3d9a0; --placeholder: #23414a; }
   }
   /* Room under the bottom bar for the phone's own home bar. On an iPhone Home Screen app the page runs under that bar but reports no safe area, so it gets a fixed minimum there. */
-  /* Me → Look → "Bottom bar room" adds --bn-add (under) and --bn-side (left and right) on top of this, per phone (js/35), because screenshots can't show how far each phone's rounded corners reach. */
-  :root { --bn-safe: calc(env(safe-area-inset-bottom, 0px) + var(--bn-add, 0px)); }
-  #bnav .bnav-in { padding-left: var(--bn-side, 0px); padding-right: var(--bn-side, 0px); }
-  @media (display-mode: standalone) { @supports (-webkit-touch-callout: none) { :root { --bn-safe: calc(max(env(safe-area-inset-bottom, 0px), 44px) + var(--bn-add, 0px)); }
-    #bnav .bnav-in { padding-left: calc(max(env(safe-area-inset-left, 0px), 37px) + var(--bn-side, 0px)); padding-right: calc(max(env(safe-area-inset-right, 0px), 37px) + var(--bn-side, 0px)); } } }   /* the rounded corners of newer iPhones cut into the first and last button */
+  /* The bottom bar sizes itself to the phone. An iPhone Home Screen app runs under the home bar and reports no safe area, and its screen corners are round, so js/35 sets --bn-corner (the screen's corner radius, from its size) and the bar keeps clear of it. */
+  :root { --bn-safe: env(safe-area-inset-bottom, 0px); --bn-corner: 55px; }
+  @media (display-mode: standalone) { @supports (-webkit-touch-callout: none) { :root { --bn-safe: max(env(safe-area-inset-bottom, 0px), calc(var(--bn-corner) * .84)); }
+    #bnav .bnav-in { padding-left: max(env(safe-area-inset-left, 0px), calc(var(--bn-corner) * .69)); padding-right: max(env(safe-area-inset-right, 0px), calc(var(--bn-corner) * .69)); } } }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
@@ -1414,5 +1413,3 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
   .pf-cover-btn .ic { width: 20px; height: 20px; }
   .pf-cover-btn[hidden] { display: none; }
   .pf-cover-rm { right: 60px; }
-  #bar-room { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  #bar-room button { font-size: .82rem; padding: 0 2px; }

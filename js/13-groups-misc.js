@@ -526,8 +526,8 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
-    { id: "2026-10-25h", title: "Bottom bar room", items: [
-      "If your phone's round corners still cut off the first or last button in the bottom bar, go to your picture → Settings & edit → Colors and pick more Bottom bar room. It is saved on this phone only."
+    { id: "2026-10-25h", title: "Bottom bar fits your phone", items: [
+      "The bottom bar now sizes itself to your phone, so the round corners of newer iPhones no longer cut off the first and last buttons."
     ] },
     { id: "2026-10-25g", title: "Header image on your Profile + bottom bar fix", items: [
       "On your Profile, tap the camera on the cover to pick a header image (the trash button removes it). Only people who are allowed to see your profile can see it.",
