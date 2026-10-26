@@ -767,6 +767,7 @@
         $("push-p-social").checked = p.social !== false; $("push-p-contests").checked = p.contests !== false; $("push-p-trips").checked = p.trips !== false;
         $("push-p-wx").checked = p.weather !== false; $("push-p-rt").checked = p.red_tide !== false; $("push-p-weekly").checked = p.weekly !== false; $("push-p-cond").checked = !!p.conditions; $("push-c-opts").hidden = !p.conditions;
         $("push-c-time").value = String(p.cond_time || "06:30").slice(0, 5); $("push-c-radius").value = String(p.cond_radius_mi || 25);
+        $("push-p-eve").checked = !!p.evening; $("push-e-opts").hidden = !p.evening; $("push-e-time").value = String(p.eve_time || "19:00").slice(0, 5);
         pushCondLoc = p.cond_lat != null && p.cond_lng != null ? { lat: p.cond_lat, lng: p.cond_lng } : null;
         $("push-c-loc").textContent = pushCondLoc ? "📍 Location saved — update it" : "📍 Use my current location";
         $("push-q-on").checked = !!p.quiet_enabled;
@@ -809,9 +810,11 @@
   async function pushSavePrefs() {
     $("push-q-times").hidden = $("push-q-note").hidden = !$("push-q-on").checked;
     $("push-c-opts").hidden = !$("push-p-cond").checked;
+    $("push-e-opts").hidden = !$("push-p-eve").checked;
     let tz = "America/New_York"; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch (e) {}
     const { error } = await db.from("notif_prefs").upsert({ user_id: me.id, social: $("push-p-social").checked, contests: $("push-p-contests").checked, trips: $("push-p-trips").checked,
       weather: $("push-p-wx").checked, red_tide: $("push-p-rt").checked, weekly: $("push-p-weekly").checked, conditions: $("push-p-cond").checked, cond_time: $("push-c-time").value || "06:30", cond_radius_mi: +$("push-c-radius").value || 25,
+      evening: $("push-p-eve").checked, eve_time: $("push-e-time").value || "19:00",
       ...(pushCondLoc ? { cond_lat: pushCondLoc.lat, cond_lng: pushCondLoc.lng } : {}),
       quiet_enabled: $("push-q-on").checked, quiet_start: $("push-q-start").value || "22:00", quiet_end: $("push-q-end").value || "06:00", tz, updated_at: new Date().toISOString() });
     pushSay(error ? "Couldn't save: " + error.message : "Saved ✓", !!error);
@@ -822,7 +825,7 @@
     const { error } = await db.rpc("send_test_push");
     pushSay(error ? "Couldn't send: " + error.message : "Sent — it should buzz in a few seconds.", !!error);
   });
-  ["push-p-social", "push-p-contests", "push-p-trips", "push-p-wx", "push-p-rt", "push-p-weekly", "push-p-cond", "push-c-time", "push-c-radius", "push-q-on", "push-q-start", "push-q-end"].forEach(id => $(id).addEventListener("change", pushSavePrefs));
+  ["push-p-social", "push-p-contests", "push-p-trips", "push-p-wx", "push-p-rt", "push-p-weekly", "push-p-cond", "push-c-time", "push-c-radius", "push-p-eve", "push-e-time", "push-q-on", "push-q-start", "push-q-end"].forEach(id => $(id).addEventListener("change", pushSavePrefs));
   $("push-weekly-preview").addEventListener("click", async () => {
     const out = $("push-weekly-out"); out.textContent = "…";
     const { data, error } = await db.rpc("weekly_preview");
@@ -837,15 +840,18 @@
       $("push-c-loc").textContent = "📍 Location saved — update it";
     }, () => pushSay("Couldn't get your location — allow location for this app in your phone's settings.", true), { enableHighAccuracy: false, timeout: 15000 });
   });
-  $("push-c-preview").addEventListener("click", async () => {
-    const out = $("push-c-out"); out.hidden = false; out.textContent = "Checking today's tide, light, pressure and wind…";
+  // 👀 previews: the morning-bites function answers "what would it say?" for this person only; nothing is sent (evening = tomorrow, setup/111)
+  async function pushPreview(outId, evening) {
+    const out = $(outId); out.hidden = false; out.textContent = evening ? "Checking tomorrow's tide, light, pressure and wind…" : "Checking today's tide, light, pressure and wind…";
     try {
       const { data: { session } } = await db.auth.getSession();
-      const r = await fetch(SUPABASE_URL + "/functions/v1/morning-bites", { method: "POST", headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + session.access_token }, body: JSON.stringify({ preview: true }) });
+      const r = await fetch(SUPABASE_URL + "/functions/v1/morning-bites", { method: "POST", headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: "Bearer " + session.access_token }, body: JSON.stringify(evening ? { preview: true, evening: true } : { preview: true }) });
       const d = await r.json();
       out.textContent = d.text || d.error || "No answer — try again in a moment.";
     } catch (e) { out.textContent = "Couldn't check right now: " + (e.message || e); }
-  });
+  }
+  $("push-c-preview").addEventListener("click", () => pushPreview("push-c-out", false));
+  $("push-e-preview").addEventListener("click", () => pushPreview("push-e-out", true));
 
   // Tapping an alert opens the right place: ?go=chat&with=ID · friends · contest&id=ID · feed · invite
   let pendingGo = /[?&]go=/.test(location.search) ? location.search : null;

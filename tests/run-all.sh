@@ -114,6 +114,7 @@ test126
 test127
 morning-score.test.mjs|morning-score
 morning-tides.test.mjs|morning-tides
+evening-score.test.mjs|evening-score
 test34|test34 (admin)|ST=admin
 test34|test34 (none)|ST=none
 test34|test34 (pending)|ST=pending
@@ -223,3 +224,4 @@ test203
 test204
 test205
 test206
+test207

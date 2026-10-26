@@ -3,8 +3,10 @@
 //  - POST with header x-hook-secret (from the cron job): handles everyone who is due now.
 //    Add {"dry_run": true, "user_id": "..."} to see the plan without sending.
 //  - POST {"preview": true} with a signed-in user's Authorization header: returns today's plan for that person only (nothing is sent).
+//    Add "evening": true for tomorrow's plan at their favourite spots (what the evening alert would say).
+//  - The same cron run also sends the evening "🌅 Tomorrow looks good" alert to people whose evening time has come (setup/111).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { planDay, composeAlert, hm } from "./score.mjs";
+import { planDay, composeAlert, composeEvening, moonPhaseName, hm } from "./score.mjs";
 import { tideEventsLocal, noaaDateRange } from "./tides.mjs";
 
 const url = Deno.env.get("SUPABASE_URL")!;
@@ -44,11 +46,17 @@ async function tidesFor(lat: number, lng: number, dateStr: string, tz: string) {
   return null;
 }
 
-async function planFor(userId: string) {
+// ahead = 0: today (morning alert, all spots in range) · ahead = 1: tomorrow (evening alert, favourite spots only:
+// the ⭐ ones you follow, or your own spots when you follow none)
+async function planFor(userId: string, ahead = 0) {
   const { data: inp, error } = await db.rpc("morning_inputs", { p_user: userId });
   if (error) throw error;
-  const spotsAll: any[] = inp.spots || [];
+  let spotsAll: any[] = inp.spots || [];
   const mine = spotsAll.filter(s => s.mine || s.followed);
+  if (ahead) {
+    spotsAll = spotsAll.some(s => s.followed) ? spotsAll.filter(s => s.followed) : spotsAll.filter(s => s.mine);
+    if (!spotsAll.length) return { skip: "no favourite spots yet — tap ⭐ on a spot to follow it" };
+  }
   let lat = inp.lat, lng = inp.lng;
   if (lat == null || lng == null) { // no saved location: use the middle of their own spots
     if (!mine.length) return { skip: "no location and no saved spots" };
@@ -59,9 +67,9 @@ async function planFor(userId: string) {
   const spots = spotsAll.filter(s => miles(lat, lng, s.lat, s.lng) <= (s.followed ? Math.max(radius, 50) : radius));
   if (!spots.length) return { skip: "no spots within " + radius + " miles" };
   const tz = inp.tz || "America/New_York";
-  const wx = await getJson(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&hourly=pressure_msl,wind_speed_10m&daily=sunrise,sunset&wind_speed_unit=mph&timezone=${encodeURIComponent(tz)}&past_hours=4&forecast_days=1`);
+  const wx = await getJson(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}&hourly=pressure_msl,wind_speed_10m&daily=sunrise,sunset&wind_speed_unit=mph&timezone=${encodeURIComponent(tz)}&past_hours=4&forecast_days=${1 + ahead}`);
   const times: string[] = wx.hourly.time;
-  const today = wx.daily.time[0] as string;
+  const today = wx.daily.time[ahead] as string;   // the day being planned (tomorrow for the evening alert)
   const wind = Array(24).fill(null), pressure: Record<number, number> = {};
   times.forEach((t, i) => {
     const d = t.slice(0, 10), h = +t.slice(11, 13);
@@ -70,9 +78,9 @@ async function planFor(userId: string) {
     if (d === today) wind[h] = wx.hourly.wind_speed_10m[i];
   });
   const tides = await tidesFor(lat, lng, today, tz);
-  const day = { sunrise: mins(wx.daily.sunrise[0]), sunset: mins(wx.daily.sunset[0]), wind, pressure, tides };
+  const day = { sunrise: mins(wx.daily.sunrise[ahead]), sunset: mins(wx.daily.sunset[ahead]), wind, pressure, tides, moon: moonPhaseName(new Date(today + "T12:00:00Z")) };
   const results = planDay(spots, inp.hist || [], day);
-  return { today, tz, lat, lng, radius, spots: spots.length, hadTides: !!tides, results, alert: composeAlert(results) };
+  return { today, tz, lat, lng, radius, spots: spots.length, hadTides: !!tides, results, alert: ahead ? composeEvening(results, day) : composeAlert(results) };
 }
 
 const describe = (p: any) => !p.alert ? "Nothing stands out today — no spot has enough going for it (light wind, moving tide, dawn/dusk, falling pressure, your own history)."
@@ -86,8 +94,10 @@ Deno.serve(async (req) => {
       const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
       const { data: u } = await db.auth.getUser(token);
       if (!u?.user) return json({ error: "sign in first" }, 401);
-      const p = await planFor(u.user.id);
-      return json({ ok: true, text: p.skip ? "Can't plan yet: " + p.skip + "." : describe(p), plan: p.skip ? null : { alert: p.alert, hadTides: p.hadTides, spots: p.spots } });
+      const p = await planFor(u.user.id, body.evening ? 1 : 0);
+      const text = p.skip ? "Can't plan yet: " + p.skip + "."
+        : body.evening ? (p.alert ? p.alert.title + " — " + p.alert.body : "Nothing stands out tomorrow at your favourite spots, so tonight's alert would stay quiet.") : describe(p);
+      return json({ ok: true, text, plan: p.skip ? null : { alert: p.alert, hadTides: p.hadTides, spots: p.spots } });
     }
     const { data: cfg } = await db.from("push_config").select("hook_secret").eq("id", 1).maybeSingle();
     if (!cfg || req.headers.get("x-hook-secret") !== cfg.hook_secret) return json({ error: "no" }, 401);
@@ -105,7 +115,21 @@ Deno.serve(async (req) => {
         await db.rpc("morning_mark", { p_user: d.user_id, p_date: d.local_date });
       } catch (e) { failed++; console.log("morning-bites failed for", d.user_id, String((e as Error).message || e)); }
     }
-    return json({ ok: true, due: (due || []).length, sent, nothing_to_say: quiet, failed });
+    // 🌅 Evening "tomorrow looks good" (setup/111): same cron run, people whose evening time has come
+    const { data: eve } = await db.rpc("evening_due");
+    let eSent = 0, eQuiet = 0;
+    for (const d of eve || []) {
+      try {
+        const p = await planFor(d.user_id, 1);
+        if (!p.skip && p.alert) {
+          await db.rpc("enqueue_notification", { p_user: d.user_id, p_kind: "evening", p_title: p.alert.title, p_body: p.alert.body,
+            p_url: "?go=spot&id=" + p.alert.spotId, p_dedupe: `eve:${d.user_id}:${d.local_date}` });
+          eSent++;
+        } else eQuiet++;
+        await db.rpc("evening_mark", { p_user: d.user_id, p_date: d.local_date });
+      } catch (e) { failed++; console.log("evening alert failed for", d.user_id, String((e as Error).message || e)); }
+    }
+    return json({ ok: true, due: (due || []).length, sent, nothing_to_say: quiet, evening_due: (eve || []).length, evening_sent: eSent, evening_quiet: eQuiet, failed });
   } catch (e) {
     return json({ error: String((e as Error).message || e) }, 500);
   }

@@ -526,6 +526,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-26c", title: "Tomorrow looks good 🌅", items: [
+      "A new evening phone alert tells you when tomorrow looks better than usual at your favourite spot, with the best time and a 0–10 score.",
+      "Turn it on in Settings → Phone alerts. Follow a spot with ⭐ to make it a favourite."
+    ] },
     { id: "2026-10-26b", title: "Weekly challenges 🎯", items: [
       "Compete now has 3 new challenges every week. Each one you finish pays 🪙 coins.",
       "Finish all 3 before Sunday night for 💎 2 gems, plus new badges for full weeks.",

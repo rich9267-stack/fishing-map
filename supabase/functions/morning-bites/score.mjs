@@ -91,6 +91,37 @@ export function planDay(spots, hist, day, from = 5, to = 20) {
   return results;
 }
 
+// The 0–10 number Home shows (js/67 todayScore), worked out for one hour of a planned day so the evening alert speaks the same language.
+// Same points as js/67: start at 5; moving tide +1.5 / slack −0.5; wind over 20 −2.5, over 15 −1, 6–15 +1, lighter +0.5;
+// pressure over 3 h falling +1.5 / rising −1 / steady +0.5; new or full moon +0.5; within 90 min of sunrise or sunset +1.
+// (Home also adds solunar feeding times; the server has no moon-position maths, so it leaves that out — it can only be a little lower.)
+export function moonPhaseName(date) {
+  const p = (((date.getTime() - Date.UTC(2000, 0, 6, 18, 14)) / 86400000 / 29.530588853) % 1 + 1) % 1;
+  return p < 0.03 || p > 0.97 ? "new moon" : p >= 0.47 && p < 0.53 ? "full moon" : "";
+}
+export function tenScore(spot, h, day) {
+  const m = h * 60 + 30; let s = 5;
+  if (spot.water_type !== "freshwater" && day.tides) { const t = tideAt(day.tides, m - (spot.tide_offset_min || 0)); if (t) s += t.moving ? 1.5 : -0.5; }
+  const w = day.wind[h];
+  if (w != null) s += w > 20 ? -2.5 : w > 15 ? -1 : w >= 6 ? 1 : 0.5;
+  const p0 = day.pressure[h], p3 = day.pressure[h - 3];
+  if (p0 != null && p3 != null) s += p0 - p3 <= -1.0 ? 1.5 : p0 - p3 >= 1.0 ? -1 : 0.5;
+  if (day.moon === "new moon" || day.moon === "full moon") s += 0.5;
+  if ((day.sunrise != null && Math.abs(m - day.sunrise) < 90) || (day.sunset != null && Math.abs(m - day.sunset) < 90)) s += 1;
+  return Math.max(0, Math.min(10, Math.round(s)));
+}
+
+// Evening heads-up: tomorrow at your favourite spot(s) — ⭐ followed ones, or your own when you follow none
+// Only on better-than-ordinary days: 4+ points or a rarer reason (a followed spot's 3-point "ordinary" day is not enough here,
+// or it would buzz nearly every evening), and 7/10 or more.
+export function composeEvening(results, day) {
+  const r = results.find(x => x.score >= STRONG_SCORE || x.reasons.some(t => RARE.test(t)));
+  if (!r) return null;
+  const best = Math.max(...Array.from({ length: r.to - r.from }, (_, i) => tenScore(r.spot, r.from + i, day)));
+  if (best < 7) return null;
+  return { title: "🌅 Tomorrow looks good", body: `${r.spot.followed ? "⭐ " : ""}${r.spot.name} ${hLabel(r.from)}–${hLabel(r.to)}: ${r.reasons.slice(0, 3).join(", ")} · ${best}/10`, spotId: r.spot.id, ten: best };
+}
+
 // One short alert: the best of your own spots, plus the best new spot nearby (if any)
 export function composeAlert(results) {
   if (!results.length) return null;
