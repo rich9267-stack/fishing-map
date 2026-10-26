@@ -1447,3 +1447,25 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
 
   /* Home: the alert number sits on the picture's corner, inside the screen (it was poking above the top edge) */
   body:not(.on-map) #me-btn .nav-badge { top: 4px; right: -2px; }
+
+/* 📆 Good days month calendar (js/69) */
+.fc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.fc-title { font-weight: 800; font-size: 17px; }
+.fc-nav { appearance: none; border: 1.5px solid var(--line-strong); background: transparent; color: var(--text); border-radius: 50%; width: 44px; height: 44px; font-size: 22px; cursor: pointer; }
+.fc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.fc-dow { text-align: center; font-size: 12px; color: var(--text-2); font-weight: 700; }
+.fc-day { appearance: none; font: inherit; color: var(--text); border: 1.5px solid var(--line); background: transparent; border-radius: 10px; min-height: 58px; padding: 3px 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; cursor: pointer; }
+.fc-n { font-size: 12px; color: var(--text-2); line-height: 1; }
+.fc-m { font-size: 14px; line-height: 1; }
+.fc-s { font-weight: 800; font-size: 15px; line-height: 1; }
+.fc-day.lvl-great, .fc-lg.lvl-great { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.fc-day.lvl-great .fc-n { color: var(--on-accent); }
+.fc-day.lvl-good, .fc-lg.lvl-good { border-color: var(--accent); }
+.fc-day.lvl-good .fc-s { color: var(--accent); }
+.fc-day.lvl-slow .fc-s { color: var(--text-2); }
+.fc-day.past { opacity: .55; }
+.fc-day.today { outline: 2.5px solid var(--text); outline-offset: 1px; }
+.fc-legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; font-size: 12px; }
+.fc-lg { border: 1.5px solid var(--line); border-radius: 8px; padding: 2px 8px; }
+.fc-detail { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
+.fc-detail h3 { margin: 0 0 6px; font-size: 15px; }

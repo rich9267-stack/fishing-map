@@ -526,6 +526,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-26e", title: "Good days calendar 📆", items: [
+      "New “Good days” button on Home opens a month calendar. Every day has a 0–10 score from the moon and the tide (new and full moon, moon feeding times at sunrise and sunset, big tide swings).",
+      "Tap a day to see why, plus sunrise, sunset and the tide times. Use the arrows to look at other months. It can't know the wind or weather that far ahead, so use “Fishing right now” on Home for today."
+    ] },
     { id: "2026-10-26d", title: "Photo knows the spot 📍", items: [
       "When you log a catch from a photo that was taken at a different one of your spots, a button now offers to log it there instead.",
       "Time and place were already filled from the photo; the photo's location is only used to find the spot and is not kept anywhere new."

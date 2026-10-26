@@ -69,7 +69,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   $("hn-start").click(); check("and Start trip presses the prompt's button", yes === 1);
   let pl = 0, ln = 0; $("plan-add").addEventListener("click", () => pl++); $("learn-card").addEventListener("click", () => ln++);
   const acts = [...d.querySelectorAll("#hn-act-sec .hn-act")]; acts[0].click(); acts[1].click();
-  check("Plan a trip and Learn buttons press the real ones", acts.length === 2 && pl === 1 && ln === 1 && /Invite friends/.test(acts[0].textContent) && /Rules, fish, rigs, knots/.test(acts[1].textContent));
+  check("Plan a trip and Learn buttons press the real ones", acts.length === 3 && pl === 1 && ln === 1 && /Invite friends/.test(acts[0].textContent) && /Rules, fish, rigs, knots/.test(acts[1].textContent));
   check("Best spots has a How it's ranked link that opens the details", /How it's ranked/.test($("best-how").textContent) && (() => { $("best-how").click(); return $("best-card").classList.contains("how-open"); })());
   console.log(good ? "OK" : "FAIL");
   process.exit(good ? 0 : 1);

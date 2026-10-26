@@ -698,6 +698,7 @@
     $("view-list").hidden = which !== "list";
     $("view-insights").hidden = which !== "insights";
     { const vl = $("view-learn"); if (vl) { vl.hidden = which !== "learn"; if (which === "learn" && typeof renderLearn === "function") renderLearn(); } }   // 📚 Learn (js/62): opened from the Home card, no tab
+    { const vf = $("view-fcal"); if (vf) { vf.hidden = which !== "fcal"; if (which === "fcal" && typeof renderFishCal === "function") renderFishCal(); } }   // 📆 Good days (js/69): opened from a Home button, no tab
     $("view-seasons").hidden = which !== "seasons";
     $("view-tank").hidden = which !== "tank";
     $("tab-tank").classList.toggle("on", which === "tank");
