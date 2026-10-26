@@ -565,7 +565,7 @@
   // All the rules and the daily limit live in the database (setup/41); the app only asks "claim_coins" and shows the result.
   // Gems are earned only. The shop that spends them comes next (simulator step 7).
   let wallet = null, walletBusy = false, walletAt = 0;
-  const COIN_WHY = { catch: "photographed catch", measured: "measured it", species: "new species", best: "new personal best", collection: "finished a collection", tournament: "tournament placing", purchase: "bought", race: "won a fish race", race_fee: "race entry fee", race_prize: "race prize", race_refund: "race fee back" };
+  const COIN_WHY = { catch: "photographed catch", measured: "measured it", species: "new species", best: "new personal best", collection: "finished a collection", tournament: "tournament placing", purchase: "bought", race: "won a fish race", race_fee: "race entry fee", race_prize: "race prize", race_refund: "race fee back", challenge: "weekly challenge", challenge_week: "all weekly challenges done" };
   const COIN_GROUPS = { inshore: "Inshore", beach: "Beach & pier", offshore: "Offshore", fresh: "Freshwater" };
   function walletToast(added) {
     if (!added || !added.length) return;
@@ -594,6 +594,7 @@
     try {
       const r = await db.rpc("claim_coins"); if (r.error || !r.data || typeof r.data.coins !== "number") throw (r.error || new Error("no wallet"));
       wallet = r.data; walletAt = Date.now(); walletToast(wallet.added); walletDraw();
+      if (typeof chClaim === "function") chClaim();   // weekly challenges (js/68) pay out on the same check
       if ((wallet.added || []).some(x => x.reason === "tournament")) { shop.ready = false; setTimeout(cupToast, 5200); } // a trophy cup may have arrived: reload what you own + tell the winner
       // finished collection groups: ask once per group (the server checks every species has a photographed catch)
       const mine = Object.values(catchesBySpot || {}).flat().filter(c => c.created_by === me.id && !c.deleted_at);
@@ -620,6 +621,7 @@
       "🪙 40 the first time you catch a species · 🪙 25 for a new personal best (3 a day at most).",
       "🪙 150 + 💎 2 when you finish a collection.",
       "🏆 Official tournaments, top 3: 🪙 200 / 120 / 80 and 💎 3 / 2 / 1.",
+      "🎯 Weekly challenges (on Compete): 🪙 20–40 each, and 💎 2 when you finish all of them before the week ends.",
       "💎 Gems can only be earned — they are never for sale. The shop where you spend them is coming soon."].forEach(t => det.appendChild(el("div", "spot-meta", t)));
     if ((wallet.recent || []).length) {
       det.appendChild(el("div", "label wallet-h", "Recent"));

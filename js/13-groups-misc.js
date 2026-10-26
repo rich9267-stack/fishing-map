@@ -526,6 +526,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-26b", title: "Weekly challenges 🎯", items: [
+      "Compete now has 3 new challenges every week. Each one you finish pays 🪙 coins.",
+      "Finish all 3 before Sunday night for 💎 2 gems, plus new badges for full weeks.",
+      "Only catches with a photo count."
+    ] },
     { id: "2026-10-26a", title: "Today's fishing score", items: [
       "Home now shows one number from 0 to 10 for how good fishing looks right now, from the tide, wind, pressure, moon and time of day.",
       "Tap it to see what's helping and what's hurting."

@@ -204,10 +204,14 @@
     { id: "trips", icon: "⏱", name: "Dedicated", desc: "Log 10 trips", n: x => x.trips, goal: 10 },
     { id: "skunk", icon: "🦨", name: "Skunk survivor", desc: "Get skunked 3 times and keep going", n: x => x.skunks, goal: 3 },
     { id: "podium", icon: "🏆", name: "Podium", desc: "Finish top 3 in an official tournament", n: x => x.podium, goal: 1 },
-    { id: "champ", icon: "🥇", name: "Champion", desc: "Win a board in an official tournament", n: x => x.wins, goal: 1 }
+    { id: "champ", icon: "🥇", name: "Champion", desc: "Win a board in an official tournament", n: x => x.wins, goal: 1 },
+    // weekly challenges (js/68, setup/110): weeks where you finished all of them in time
+    { id: "wk1", icon: "🎯", name: "Challenge accepted", desc: "Finish all of a week's challenges", n: x => x.weeks, goal: 1 },
+    { id: "wk4", icon: "🔥", name: "On a roll", desc: "Finish all weekly challenges in 4 weeks", n: x => x.weeks, goal: 4 },
+    { id: "wk12", icon: "👑", name: "Season grinder", desc: "Finish all weekly challenges in 12 weeks", n: x => x.weeks, goal: 12 }
   ];
   function badgeCtx() {
-    const cs = myCatches(), trips = myTrips(), x = { fish: 0, species: new Set(), maxLen: 0, slotSnook: 0, night: 0, early: 0, months: new Set(), photos: 0, trips: trips.length, skunks: trips.filter(t => !tripFish(t)).length, podium: 0, wins: 0 };
+    const cs = myCatches(), trips = myTrips(), x = { fish: 0, species: new Set(), maxLen: 0, slotSnook: 0, night: 0, early: 0, months: new Set(), photos: 0, trips: trips.length, skunks: trips.filter(t => !tripFish(t)).length, podium: 0, wins: 0, weeks: window.chWeeksDone || 0 };
     const withPhoto = new Set(Object.values(photosBySpot).flat().map(p => p.catch_id));
     cs.forEach(c => {
       const k = c.how_many || 1, sp = (c.species || "").toLowerCase().trim(), h = new Date(c.caught_at).getHours(), L = +c.length_in || 0;

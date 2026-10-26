@@ -4,7 +4,7 @@
 // - Live data (database, tides, weather) is never cached here. Map tiles are served from the phone only if saved for offline.
 // - Catch photos: kept by their storage path (the link's ?token= changes every hour, the photo never does), so each photo is
 //   downloaded once per phone. The app empties this on sign-out and account delete.
-const CACHE = "fishing-map-v211";
+const CACHE = "fishing-map-v212";
 const APP_FILES = ["./", "./index.html", "./privacy.html", "./terms.html", "./css/app.css", "./js/00-icons.js", "./js/01-core.js", "./js/02-spots.js", "./js/03-photos.js", "./js/04-insights.js", "./js/05-seasons-records.js", "./js/06-catching.js", "./js/07-measure-fishid.js", "./js/08-feed-plans.js", "./js/09-map-forecast.js", "./js/10-tools-safety.js", "./js/11-accounts-social.js", "./js/12-contests-alerts.js", "./js/13-groups-misc.js", "./js/14-tank.js", "./js/15-fish-rank.js", "./js/16-fish-race.js", "./js/17-license-help.js", "./js/18-species.js", "./js/19-biting.js", "./js/20-spot-share.js", "./js/21-pub-filters.js", "./js/22-public-water.js", "./js/23-depth.js", "./js/24-delete-account.js", "./js/25-home-map.js", "./js/26-sub-tabs.js", "./js/27-me-find.js", "./js/28-host-pages.js", "./js/29-home-waters.js", "./js/30-red-tide.js", "./js/31-regional-rules.js", "./js/32-spot-style.js", "./js/33-zones.js", "./js/34-official-admin.js", "./js/35-palettes.js", "./js/36-tutorials.js", "./js/37-official-layer.js", "./js/38-admin-powers.js",
   "./js/39-admin-log.js", "./js/40-admin-page.js", "./js/41-admin-people.js", "./js/42-admin-undo.js", "./js/43-admin-warn.js",
   "./js/44-admin-hide.js",
@@ -29,6 +29,7 @@ const APP_FILES = ["./", "./index.html", "./privacy.html", "./terms.html", "./cs
   "./js/65-profile.js",
   "./js/66-page-heads.js",
   "./js/67-today-score.js",
+  "./js/68-challenges.js",
   "./js/99-boot.js"];
 const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com"];
 const TILE_CACHE = "fishing-map-tiles";   // map tiles the person chose to save for offline (kept across updates)
