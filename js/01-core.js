@@ -112,6 +112,7 @@
         days.appendChild(card);
       });
       if (typeof homeCondRender === "function") homeCondRender();
+      if (typeof todayScoreRender === "function") todayScoreRender();
     } catch (err) {
       stage.textContent = "Couldn't load tides right now";
       document.getElementById("next").textContent = "Check your connection and refresh the page.";

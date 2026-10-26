@@ -526,6 +526,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-26a", title: "Today's fishing score", items: [
+      "Home now shows one number from 0 to 10 for how good fishing looks right now, from the tide, wind, pressure, moon and time of day.",
+      "Tap it to see what's helping and what's hurting."
+    ] },
     { id: "2026-10-25h", title: "Bottom bar fits your phone", items: [
       "The bottom bar now sizes itself to your phone, so the round corners of newer iPhones no longer cut off the first and last buttons."
     ] },
