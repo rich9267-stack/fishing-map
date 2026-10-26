@@ -79,7 +79,7 @@ const c61 = { console, Math, isFinite, Array, Object, Set, Promise, Date, JSON, 
 vm.createContext(c61);
 vm.runInContext(src61 + "\nthis.api = { STATE_RAMPS, stPlace, stLoad, stItems, outsideItems, outsideLoad, outsideNote, STR };", c61);
 const S = c61.api;
-const WANT = "AL AR CT DE GA ID IA IN KY LA MA MD ME MI MN MO MT NC NE NH NJ NM NY OH OR RI SC TN TX UT VA VT WA WI WV".split(" ");
+const WANT = "AL AR CT DE GA ID IA IN KY LA MA MD ME MI MN MO MT NC NE NH NJ NM NY OH OR RI SC TN TX UT VA VT WA WI WV CO MS PA".split(" ");
 ok(JSON.stringify(Object.keys(S.STATE_RAMPS).sort()) === JSON.stringify(WANT.slice().sort()), `agency lists for ${WANT.length} states: ${WANT.slice().sort().join(" ")}`);
 ok(!S.STATE_RAMPS.FL, "no Florida list (Florida keeps FWC / FL DEP)");
 ok(Object.values(S.STATE_RAMPS).every(c => /^https:\/\//.test(c.url) && c.credit && c.f && typeof c.name === "function" && typeof c.keep === "function"), "every state has an https address, a credit line, its fields, a name rule and a public-and-open rule");
@@ -159,6 +159,14 @@ const R = [
   ["ID", { site_name: "Bank", status: "Active", ramp: "no" }, false, "ID no ramp"],
   ["UT", { Name: "Utah Lake Ramp", OWNER: "State", AGENCY: "DNR", Vessels: "any" }, true, "UT state ramp"],
   ["UT", { Name: "Ranch Ramp", OWNER: "Private", AGENCY: "Private" }, false, "UT private"],
+  ["PA", { ACC_NAME: "Kaercher Creek", WATERBODY: "Kaercher Creek Dam", COUNTY: "Berks", OWNER: "PFBC", OWNERSHIP: "PFBC", FEE: "N", RAMP: "Y", Marina: " " }, true, "PA ramp"],
+  ["PA", { ACC_NAME: "Bank Only", OWNERSHIP: "PFBC", RAMP: "N", Marina: " " }, false, "PA no ramp"],
+  ["PA", { ACC_NAME: "Private Marina", OWNERSHIP: "PFBC/Private", RAMP: "Y", Marina: "Y" }, false, "PA marina / private"],
+  ["MS", { FACILITY_NAME: "WASP LAKE LANDING", WATERBODY: "WASP LAKE", COUNTY: "HUMPHREYS", OWNER: "COUNTY", FEE_TYPE: "none" }, true, "MS ramp"],
+  ["MS", { FACILITY_NAME: "CLUB LANDING", WATERBODY: "X", OWNER: "PRIVATE" }, false, "MS private"],
+  ["CO", { PROPNAME: "Cherry Creek State Park", FAC_TYPE: 3010, FAC_NAME: "West Boat Ramp", CONDITION: null }, true, "CO ramp"],
+  ["CO", { PROPNAME: "Yampa River State Park", FAC_TYPE: 3010, FAC_NAME: "Pump Station", CONDITION: "Good" }, false, "CO pump station"],
+  ["CO", { PROPNAME: "Cherry Creek State Park", FAC_TYPE: 1200, FAC_NAME: "Picnic", CONDITION: "Good" }, false, "CO not a ramp"],
   ["WA", { BoatRampName: "Lake Washington Ramp" }, true, "WA ramp"],
   ["OR", { name: "Sand Lake", public_display: "Yes", facility_type: "Boat Ramp", launch_type: "Trailered Boat Launch", manager: "Oregon Parks and Recreation Department", county: "Tillamook" }, true, "OR ramp"],
   ["OR", { name: "Marina", public_display: "Yes", facility_type: "Marina", manager: "Private" }, false, "OR marina"],
@@ -213,9 +221,9 @@ const bounds = (s, w, n, e) => ({ getSouth: () => s, getWest: () => w, getNorth:
   changed = await S.stLoad(bounds(26.0, -80.3, 26.3, -80.0));
   ok(changed === false && calls.length === 0, "an all-Florida view asks no agency server");
   // a state with no list
-  stateAt = () => "PA"; calls = [];
-  changed = await S.stLoad(bounds(40.0, -76.3, 40.3, -76.0));
-  ok(changed === false && calls.length === 0, "a Pennsylvania view (no usable list) asks nothing — OpenStreetMap covers it");
+  stateAt = () => "IL"; calls = [];
+  changed = await S.stLoad(bounds(40.0, -89.3, 40.3, -89.0));
+  ok(changed === false && calls.length === 0, "an Illinois view (no usable list) asks nothing — OpenStreetMap covers it");
   // two states in one view
   answers.SC = { features: [feat({ Boat_Ramp_Name: "Savannah River Ramp", County: "Jasper", Body_of_Water: "Savannah River" }, -81.1, 32.4)] };
   answers.GA = { features: [feat({ Name: "River Ramp GA", Draw: "Public", Status: "Open", Ramp: "Y" }, -81.2, 32.2)] };

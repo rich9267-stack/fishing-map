@@ -526,6 +526,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-26f", title: "✅ Official ramps in Pennsylvania, Mississippi and Colorado", items: [
+      "✅ Official public spots now show boat ramps straight from the state agency in Pennsylvania (Fish & Boat Commission), Mississippi (Wildlife, Fisheries & Parks) and Colorado (state parks and wildlife areas). Only public, open ramps; tap a pin to see which agency it comes from."
+    ] },
     { id: "2026-10-26e", title: "Good days calendar 📆", items: [
       "New “Good days” button on Home opens a month calendar. Every day has a 0–10 score from the moon and the tide (new and full moon, moon feeding times at sunrise and sunset, big tide swings).",
       "Tap a day to see why, plus sunrise, sunset and the tide times. Use the arrows to look at other months. It can't know the wind or weather that far ahead, so use “Fishing right now” on Home for today."

@@ -3,7 +3,7 @@
 // For every other state whose wildlife / natural-resources agency publishes a boat-ramp list on a free public map server (ArcGIS), the
 // ✅ Official public spots layer (js/37) asks that agency's server for the ramps in the part of the map ON SCREEN. Nothing goes into our database.
 // Only places the agency's own list shows as public and open are kept (each state's `keep` below: not private, not closed, not a marina).
-// States without a free list we could use (Pennsylvania's server is down, Illinois, Colorado, Kansas, Oklahoma, the Dakotas, Mississippi, Arizona,
+// States without a free list we could use (Illinois, Kansas, Oklahoma, the Dakotas, Arizona,
 // Nevada, Wyoming, California, DC) keep the OpenStreetMap ramps from js/58. Where both know the same ramp (within ~200 yards) the agency's wins.
 // Each answer is kept on this phone for a week (the last STR.keep views), so panning back or going offline still shows them.
 // The tap card says which agency the place comes from (credit). js/37 calls outsideLoad / outsideItems / outsideNote below.
@@ -176,7 +176,23 @@ const STATE_RAMPS = {
     url: "https://services.arcgis.com/uUvqNMGPm7axC2dD/arcgis/rest/services/Boating_Access_Sites_OA/FeatureServer/0",
     f: "name,public_display,facility_type,launch_type,oa_status,manager,waterway_name,county",
     name: a => stT(a.name), keep: a => stYes(a.public_display) && /^boat ramp$/i.test(a.facility_type || "") && !/closed|restricted/i.test(a.oa_status || "") && !/private/i.test(a.manager || ""),
-    hand: a => /hand carry|slide/i.test(a.launch_type || ""), info: a => ({ water: stT(a.waterway_name), owner: stT(a.manager) }), county: a => stT(a.county) }
+    hand: a => /hand carry|slide/i.test(a.launch_type || ""), info: a => ({ water: stT(a.waterway_name), owner: stT(a.manager) }), county: a => stT(a.county) },
+  PA: { credit: "Pennsylvania Fish & Boat Commission access areas",
+    url: "https://fbweb.pa.gov/arcgis/rest/services/PFBC_Map_Services/County_Guide_SQL_MSL/MapServer/0",
+    f: "ACC_NAME,WATERBODY,COUNTY,OWNER,OWNERSHIP,FEE,RAMP,Marina",
+    name: a => stT(a.ACC_NAME), keep: a => (stYes(a.RAMP) || /launch|boat/i.test(a.ACC_NAME || "")) && !stYes(a.Marina) && !/private/i.test((a.OWNERSHIP || "") + " " + (a.OWNER || "")) && !/drawdown/i.test(a.ACC_NAME || ""),
+    hand: a => !stYes(a.RAMP), info: a => ({ water: stT(a.WATERBODY), fee: stYes(a.FEE) ? "Yes" : "No", owner: stT(a.OWNER) }), county: a => stT(a.COUNTY) },
+  MS: { credit: "Mississippi Dept. of Wildlife, Fisheries & Parks boat ramps",
+    url: "https://arcgis.mdwfp.com/arcgis/rest/services/Public/Public_Lakes/MapServer/5",
+    f: "FACILITY_NAME,WATERBODY,COUNTY,OWNER,FEE_TYPE",
+    name: a => stT(a.FACILITY_NAME || a.WATERBODY), keep: a => !/private|unknown|properties|jerry lee/i.test(a.OWNER || ""),
+    info: a => ({ water: stT(a.WATERBODY), fee: /^(none|no)?$/i.test(a.FEE_TYPE || "") ? "No" : "Yes", owner: stT(a.OWNER) }), county: a => stT(a.COUNTY) },
+  CO: { credit: "Colorado Parks & Wildlife facilities (state parks and wildlife areas)",
+    url: "https://services5.arcgis.com/ttNGmDvKQA7oeDQ3/arcgis/rest/services/CPW_Facilities_Populated_2025/FeatureServer/2",
+    f: "PROPNAME,FAC_TYPE,TYPE_DETAIL,FAC_NAME,CONDITION",
+    name: a => { const p = stT(a.PROPNAME), n = stT(a.FAC_NAME); return !p ? "" : (n && !/^boat ramp$/i.test(n)) ? n + " (" + p + ")" : p + " boat ramp"; },
+    keep: a => +a.FAC_TYPE === 3010 && !/pump station|headquarters/i.test(a.FAC_NAME || "") && !/poor/i.test(a.CONDITION || ""),
+    hand: a => /hand launch/i.test((a.FAC_NAME || "") + " " + (a.TYPE_DETAIL || "")), info: () => ({ owner: "Colorado Parks & Wildlife" }) }
 };
 
 const STR = { key: "fm-st-ramps-v1", age: 7 * 86400000, keep: 12, maxDeg: 1.2, pad: 0.1, boxes: [], read: false, loading: {}, failAt: {}, note: "", snap: {}, snapLoading: {} };
