@@ -18,11 +18,11 @@
   @media (prefers-color-scheme: dark) {
     :root { --text-2: #9db2ba; --line-strong: #3a5560; --section-gap: #0a1418; --alert-bg: #3a2c0a; --alert-text: #f3d9a0; --placeholder: #23414a; }
   }
-  /* Room under and beside the bottom bar. An iPhone Home Screen app runs under the home bar and reports no safe area, and the screen corners are round,
-  /* so it gets fixed room big enough for the roundest iPhones (17/18 Pro). Real safe areas, where a phone reports them, win when bigger. */
+  /* Room under and beside the bottom bar. An iPhone Home Screen app runs under the home bar and the round screen corners but reports no safe area,
+  /* so js/01 marks it with html.ios-app and the bar gets fixed room there (Richard's pick on the 17 / 18 Pro, plus a little). A real reported safe area wins when bigger. */
   :root { --bn-safe: env(safe-area-inset-bottom, 0px); }
-  @media (display-mode: standalone) { @supports (-webkit-touch-callout: none) { :root { --bn-safe: max(env(safe-area-inset-bottom, 0px), 52px); }
-    #bnav .bnav-in { padding-left: max(env(safe-area-inset-left, 0px), 43px); padding-right: max(env(safe-area-inset-right, 0px), 43px); } } }
+  html.ios-app { --bn-safe: max(env(safe-area-inset-bottom, 0px), 16px); }
+  html.ios-app #bnav .bnav-in { padding-left: max(env(safe-area-inset-left, 0px), 12px); padding-right: max(env(safe-area-inset-right, 0px), 12px); }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
