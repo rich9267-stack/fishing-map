@@ -1469,3 +1469,8 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
 .fc-lg { border: 1.5px solid var(--line); border-radius: 8px; padding: 2px 8px; }
 .fc-detail { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
 .fc-detail h3 { margin: 0 0 6px; font-size: 15px; }
+  /* others' profile pages (js/11 renderProfilePage): same look as my Profile, inside the page card */
+  #pub-profile-body > .pf-other { height: 120px; border-radius: 12px; margin-top: 10px; }
+  #pub-profile-body > .pf-other-top { padding: 0 12px; }
+  #pub-profile-body > .pf-o { padding: 0 4px; }
+  #pub-profile-body .pf-btns .spot-meta { align-self: center; }

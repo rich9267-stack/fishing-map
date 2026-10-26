@@ -526,6 +526,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-27b", title: "New look for other people's profiles", items: [
+      "Other people's profile pages now look like yours: header image, round picture, name, bio and counts, with Add friend / Message on the right."
+    ] },
     { id: "2026-10-27a", title: "Header images on other people's profiles", items: [
       "If someone picked a header image for their profile, you now see it at the top of their page (only when you are allowed to open their profile)."
     ] },

@@ -197,7 +197,7 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   ACCESS["other"] = { can_view: true, visibility: "public", is_self: false };
   w.eval("showProfile('other')"); await sleep(500);
   console.log("their header image shown:", !!d.querySelector("#prof-cover") && /cover-1/.test(d.querySelector("#prof-cover").getAttribute("style") || ""));
-  console.log("page: tagline:", /Tarpon nut/.test(body()), "| fav:", /Favorite fish: Tarpon/.test(body()), "| avatar img:", !!d.querySelector("#pub-profile-body img[src*='av/other']"), "| showcase cards:", d.querySelectorAll("#prof-showcase + .badges > div").length, "| accent border:", /5px solid/.test(d.querySelector("#pub-profile-body > div:not(#prof-cover)").getAttribute("style") || ""), "| not locked:", !$("prof-locked"));
+  console.log("page: tagline:", /Tarpon nut/.test(body()), "| fav:", /Favorite fish: Tarpon/.test(body()), "| avatar img:", !!d.querySelector("#pub-profile-body img[src*='av/other']"), "| showcase cards:", d.querySelectorAll("#prof-showcase + .badges > div").length, "| accent border:", /--pf-cover/.test(d.querySelector("#prof-cover").getAttribute("style") || ""), "| not locked:", !$("prof-locked"));
   // my own page when private still opens
   ACCESS["u-rich"] = { can_view: true, visibility: "private", is_self: true };
   w.eval("showProfile('u-rich')"); await sleep(400);

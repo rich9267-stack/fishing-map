@@ -520,29 +520,32 @@
     const id = pubProfileId, box = $("pub-profile-body"); box.innerHTML = "";
     const p = profOf(id), mine = !!(me && id === me.id);
     const ex = (profView && profView.extras) || {}, accent = ex.accent || null, locked = !!(profView && profView.locked);
-    if (!locked && profView && profView.cover) {
-      const cv = el("div", "pf-cover has-img"); cv.id = "prof-cover"; cv.style.height = "110px"; cv.style.borderRadius = "12px"; cv.style.marginTop = "10px";
-      cv.style.backgroundImage = "url(\"" + profView.cover + "\")"; if (accent) cv.style.setProperty("--pf-cover", accent);
-      box.appendChild(cv);
-    }
-    const head = el("div"); head.style.cssText = "margin-top:10px;display:flex;gap:12px;align-items:center" + (accent ? `;border-left:5px solid ${accent};padding-left:10px` : "");
-    head.appendChild(avatarNode(locked ? null : profView && profView.avatar, p ? (p.display_name || p.handle) : "?", 64, accent));
-    const hb = el("div");
-    hb.appendChild(el("div", "label", p ? (p.display_name || "@" + p.handle) : "Someone"));
-    if (p) hb.appendChild(el("div", "spot-meta", `@${p.handle}` + (!locked && p.home_area ? ` · ${p.home_area}` : "")));
-    if (!locked && ex.tagline) hb.appendChild(el("div", null, ex.tagline));
-    if (!locked && ex.fav_species) hb.appendChild(el("div", "spot-meta", "⭐ Favorite fish: " + ex.fav_species));
-    head.appendChild(hb); box.appendChild(head);
-    if (!locked && p && p.bio) box.appendChild(el("p", null, p.bio));
+    // "Clean Social" look, same as my Profile (js/65): header image (or colour), picture overlapping it, buttons on the right, name, handle, bio, counts
+    const cv = el("div", "pf-cover pf-other"); cv.id = "prof-cover";
+    if (accent) cv.style.setProperty("--pf-cover", accent);
+    if (!locked && profView && profView.cover) { cv.style.backgroundImage = "url(\"" + profView.cover + "\")"; cv.classList.add("has-img"); }
+    box.appendChild(cv);
+    const top = el("div", "pf-top pf-other-top"), av = el("div", "pf-av");
+    av.appendChild(avatarNode(locked ? null : profView && profView.avatar, p ? (p.display_name || p.handle) : "?", 84, accent));
+    top.appendChild(av);
+    const btns = el("div", "pf-btns"); top.appendChild(btns); box.appendChild(top);
     if (!mine && p && !locked) {
       const r = friendRows.find(x => otherOf(x) === id);
       const done = ok => { if (ok !== false) renderPublic(); };
-      let act;
-      if (!r) act = frBtn("Add friend", async () => { friendProfiles[id] = p; done(await sendRequest(id)); }, "btn small");
-      else if (r.status === "accepted") { act = el("span"); act.style.cssText = "display:flex;gap:10px;align-items:center"; act.appendChild(el("span", "spot-meta", "✓ Friends")); act.appendChild(frBtn("💬 Message", () => openChatWith(id), "btn small")); }
-      else if (r.requested_by === me.id) act = el("span", "spot-meta", "Friend request sent");
-      else act = frBtn("Accept friend request", async () => { done(await acceptRequest(r)); }, "btn small");
-      act.style.marginTop = "8px"; box.appendChild(act);
+      if (!r) btns.appendChild(frBtn("Add friend", async () => { friendProfiles[id] = p; done(await sendRequest(id)); }, "btn small"));
+      else if (r.status === "accepted") { btns.appendChild(el("span", "spot-meta", "✓ Friends")); btns.appendChild(frBtn("💬 Message", () => openChatWith(id), "btn small")); }
+      else if (r.requested_by === me.id) btns.appendChild(el("span", "spot-meta", "Friend request sent"));
+      else btns.appendChild(frBtn("Accept friend request", async () => { done(await acceptRequest(r)); }, "btn small"));
+    }
+    const won = hof.filter(r => r.user_id === id), sp = spotsAll.filter(x => x.created_by === id && x.visibility === "public");
+    box.appendChild(el("div", "pf-name pf-o", p ? (p.display_name || "@" + p.handle) : "Someone"));
+    if (p) box.appendChild(el("div", "pf-handle pf-o", `@${p.handle}` + (!locked && p.home_area ? ` · ${p.home_area}` : "")));
+    if (!locked && (ex.tagline || (p && p.bio))) box.appendChild(el("div", "pf-bio pf-o", [ex.tagline, p && p.bio].filter(Boolean).join(" — ")));
+    if (!locked && ex.fav_species) box.appendChild(el("div", "pf-lines pf-o", "⭐ Favorite fish: " + ex.fav_species));
+    if (!locked && profView && !profView.loading && !profView.error) {
+      const counts = el("div", "pf-counts pf-o"), nC = profView.catches.length;
+      [[nC >= 30 ? "30+" : nC, "public catches"], [sp.length, sp.length === 1 ? "public spot" : "public spots"], [won.length, won.length === 1 ? "trophy" : "trophies"]].forEach(([n, l]) => { const c = el("span"); c.appendChild(el("b", null, String(n))); c.appendChild(document.createTextNode(" " + l)); counts.appendChild(c); });
+      box.appendChild(counts);
     }
     if (!mine && p) {
       const tools = el("div"); tools.style.cssText = "display:flex;gap:14px;margin-top:6px";
@@ -578,12 +581,10 @@
       box.appendChild(grid);
     }
     if (profView && profView.tankCatches && typeof tankProfile === "function") tankProfile(profView.tankCatches, spotsAll, box, mine, profView.tankSetups);
-    const won = hof.filter(r => r.user_id === id);
     if (won.length) {
       box.appendChild(el("div", "label", `🏆 Trophies (${won.length})`)); box.lastChild.id = "prof-trophies";
       won.forEach(r => box.appendChild(el("div", null, `${MEDAL[r.rank]} ${r.title} — ${CT_BOARDS[r.board]}: ${hofVal(r)}`)));
     }
-    const sp = spotsAll.filter(x => x.created_by === id && x.visibility === "public");
     box.appendChild(el("div", "label", `Public spots (${sp.length})`));
     if (!sp.length) box.appendChild(el("div", "spot-meta", "None shared yet."));
     sp.forEach(x => {
