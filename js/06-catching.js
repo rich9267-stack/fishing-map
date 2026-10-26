@@ -1075,6 +1075,19 @@
     } else notes.push("📍 No location in this photo (phones often remove it)");
     out.textContent = notes.join("  ·  ");
     catchForm.photoInfo = info;
+    // v214: photo was taken at a different saved spot → one tap moves the catch there (the photo's location is only used for this match, not stored)
+    if (info.lat != null) {
+      const near = (spots || []).filter(x => hasLoc(x) && x.id !== openCatchSpot).map(x => ({ x, d: miles(x.lat, x.lng, info.lat, info.lng) })).sort((a, b) => a.d - b.d)[0];
+      if (near && near.d < 0.3 && !(spot && hasLoc(spot) && miles(spot.lat, spot.lng, info.lat, info.lng) <= 0.3)) {
+        const b = el("button", "linkbtn", ` 📍 Log it at ${near.x.name} instead`); b.type = "button";
+        b.addEventListener("click", () => {
+          const dt = new DataTransfer(); dt.items.add(f);
+          openCatchForm(near.x.id);
+          const inp = catchForm.querySelector("#c-photo"); inp.files = dt.files; inp.dispatchEvent(new Event("change"));
+        });
+        out.appendChild(b);
+      }
+    }
   });
   catchForm.querySelector("#c-tide").addEventListener("change", () => { tideTouched = true; });
   // Extra photos for the same catch (the first photo above stays the one used for time, measuring and fish ID)

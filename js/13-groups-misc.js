@@ -526,6 +526,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-26d", title: "Photo knows the spot 📍", items: [
+      "When you log a catch from a photo that was taken at a different one of your spots, a button now offers to log it there instead.",
+      "Time and place were already filled from the photo; the photo's location is only used to find the spot and is not kept anywhere new."
+    ] },
     { id: "2026-10-26c", title: "Tomorrow looks good 🌅", items: [
       "A new evening phone alert tells you when tomorrow looks better than usual at your favourite spot, with the best time and a 0–10 score.",
       "Turn it on in Settings → Phone alerts. Follow a spot with ⭐ to make it a favourite."
