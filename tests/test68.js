@@ -192,11 +192,12 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   w.eval("showProfile('str1')"); await sleep(400);
   console.log("private ->", /This profile is private/.test(body()), "| add friend:", /Add friend/.test(body()));
   // visible page with extras, pinned catch and showcase
-  EXTRAS["other"] = { user_id: "other", visibility: "public", accent: "#6a3fb5", tagline: "Tarpon nut", fav_species: "Tarpon", avatar_path: "other/a.jpg", pinned_catch_id: "c1",
+  EXTRAS["other"] = { user_id: "other", visibility: "public", accent: "#6a3fb5", tagline: "Tarpon nut", fav_species: "Tarpon", avatar_path: "other/a.jpg", cover_path: "other/cover-1.jpg", pinned_catch_id: "c1",
     showcase: [{ k: "custom", icon: "🏆", title: "Fish of a lifetime", detail: "120 lb tarpon" }, { k: "badge", icon: "🎣", title: "First fish", detail: "Log your first catch" }] };
   ACCESS["other"] = { can_view: true, visibility: "public", is_self: false };
   w.eval("showProfile('other')"); await sleep(500);
-  console.log("page: tagline:", /Tarpon nut/.test(body()), "| fav:", /Favorite fish: Tarpon/.test(body()), "| avatar img:", !!d.querySelector("#pub-profile-body img[src*='av/other']"), "| showcase cards:", d.querySelectorAll("#prof-showcase + .badges > div").length, "| accent border:", /5px solid/.test(d.querySelector("#pub-profile-body > div").getAttribute("style") || ""), "| not locked:", !$("prof-locked"));
+  console.log("their header image shown:", !!d.querySelector("#prof-cover") && /cover-1/.test(d.querySelector("#prof-cover").getAttribute("style") || ""));
+  console.log("page: tagline:", /Tarpon nut/.test(body()), "| fav:", /Favorite fish: Tarpon/.test(body()), "| avatar img:", !!d.querySelector("#pub-profile-body img[src*='av/other']"), "| showcase cards:", d.querySelectorAll("#prof-showcase + .badges > div").length, "| accent border:", /5px solid/.test(d.querySelector("#pub-profile-body > div:not(#prof-cover)").getAttribute("style") || ""), "| not locked:", !$("prof-locked"));
   // my own page when private still opens
   ACCESS["u-rich"] = { can_view: true, visibility: "private", is_self: true };
   w.eval("showProfile('u-rich')"); await sleep(400);

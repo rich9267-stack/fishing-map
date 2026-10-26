@@ -510,7 +510,8 @@
         try { const pc = await db.from("catches").select("*").eq("id", extras.pinned_catch_id).is("deleted_at", null).maybeSingle(); pinned = pc && pc.data && pc.data.id ? pc.data : null; } catch (e) { pinned = null; }
       }
       const avatar = extras && extras.avatar_path ? await avatarUrl(extras.avatar_path) : null;
-      profView = { catches: ct.data || [], extras, pinned, avatar, access, tankCatches: tk && !tk.error ? (tk.data || []) : null, tankSetups: Object.assign(typeof tankSetupsFrom === "function" ? tankSetupsFrom(ts && !ts.error ? ts.data : [], ut && !ut.error ? ut.data : [], tsp && !tsp.error ? tsp.data : []) : {}, { ownerId: id }) };
+      const cover = extras && extras.cover_path ? await avatarUrl(extras.cover_path) : null;   // their header image (v217; same private bucket as the picture)
+      profView = { catches: ct.data || [], extras, pinned, avatar, cover, access, tankCatches: tk && !tk.error ? (tk.data || []) : null, tankSetups: Object.assign(typeof tankSetupsFrom === "function" ? tankSetupsFrom(ts && !ts.error ? ts.data : [], ut && !ut.error ? ut.data : [], tsp && !tsp.error ? tsp.data : []) : {}, { ownerId: id }) };
       await loadPubPhotos(pinned ? profView.catches.concat([pinned]) : profView.catches);
     } catch (e) { profView = { catches: [], error: true }; }
     if (pubProfileId === id) renderPublic();
@@ -519,6 +520,11 @@
     const id = pubProfileId, box = $("pub-profile-body"); box.innerHTML = "";
     const p = profOf(id), mine = !!(me && id === me.id);
     const ex = (profView && profView.extras) || {}, accent = ex.accent || null, locked = !!(profView && profView.locked);
+    if (!locked && profView && profView.cover) {
+      const cv = el("div", "pf-cover has-img"); cv.id = "prof-cover"; cv.style.height = "110px"; cv.style.borderRadius = "12px"; cv.style.marginTop = "10px";
+      cv.style.backgroundImage = "url(\"" + profView.cover + "\")"; if (accent) cv.style.setProperty("--pf-cover", accent);
+      box.appendChild(cv);
+    }
     const head = el("div"); head.style.cssText = "margin-top:10px;display:flex;gap:12px;align-items:center" + (accent ? `;border-left:5px solid ${accent};padding-left:10px` : "");
     head.appendChild(avatarNode(locked ? null : profView && profView.avatar, p ? (p.display_name || p.handle) : "?", 64, accent));
     const hb = el("div");

@@ -526,6 +526,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-27a", title: "Header images on other people's profiles", items: [
+      "If someone picked a header image for their profile, you now see it at the top of their page (only when you are allowed to open their profile)."
+    ] },
     { id: "2026-10-26f", title: "✅ Official ramps in Pennsylvania, Mississippi and Colorado", items: [
       "✅ Official public spots now show boat ramps straight from the state agency in Pennsylvania (Fish & Boat Commission), Mississippi (Wildlife, Fisheries & Parks) and Colorado (state parks and wildlife areas). Only public, open ramps; tap a pin to see which agency it comes from."
     ] },
