@@ -33,6 +33,8 @@ After the US expansion (done v173): make the national map trustworthy and useful
 
 7. **ON HOLD (Richard, Oct 27: stay with free Gemini for now; Claude API is separate pay-as-you-go money, not his subscription).** Fish ID through Claude instead of Gemini (Gemini is slow and weak). Plan written: plans/fishid-claude-plan.md. Waits for Richard: Anthropic account + a few dollars credit + spend limit + key saved as `ANTHROPIC_API_KEY` in Supabase. Then Engineer swaps the function (only supabase/functions/identify-fish + a photo shrink in js/07).
 
+8. **Log a sighting (Richard, Oct 27).** A way to record a fish/animal you saw but did not catch (e.g. a tarpon rolling, manatee, bait school, shark) with photo optional, spot and time. Designer first: where the button lives (Quick catch / spot / map), what it shows (own list, friends feed, map dot), who can see it (private / friends / public, same as catches), no coins. Questions: share places like catches (blurred when public)? lawyer-packet line (new member data).
+
 ## Later
 - Kansas reservoir depth maps (one map per reservoir; few anglers there yet). Wisconsin / Connecticut / Tennessee depth: no free source found.
 - Refresh the 2009 FWC ramp list and the park/pier/station lists now and then.
