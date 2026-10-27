@@ -349,7 +349,11 @@
       // Home look (js/63): number badge · name + ONE reason line · best time on the right. The longer detail is folded under "How it's ranked".
       const row = el("div", "best"), isOpen = bestOpen.has(r.s.id);
       row.setAttribute("role", "button"); row.tabIndex = 0; row.setAttribute("aria-expanded", String(isOpen)); row.classList.toggle("open", isOpen);
-      const flip = () => { isOpen ? bestOpen.delete(r.s.id) : bestOpen.add(r.s.id); renderBest(); };
+      const flip = () => {   // opens/closes just this card in place (no re-ranking, so it is instant)
+        const nxt = row.nextElementSibling, open2 = nxt && nxt.classList.contains("best-card-body");
+        if (open2) { nxt.remove(); bestOpen.delete(r.s.id); } else { const bd = el("div", "spot-body best-card-body"); fillSpotBody(r.s, bd); row.after(bd); bestOpen.add(r.s.id); }
+        row.classList.toggle("open", !open2); row.setAttribute("aria-expanded", String(!open2));
+      };
       row.addEventListener("click", e => { if (!e.target.closest("a, button")) flip(); });
       row.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target === row) { e.preventDefault(); flip(); } });
       row.appendChild(el("span", "best-rank", String(i + 1)));
