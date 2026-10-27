@@ -43,6 +43,10 @@
 
   // A GPS stamp saved at the moment a catch is logged live — this is what geo-locked contests check.
   async function saveCatchGeo(catchId, pos) {
+    if (db && catchId && pos && pos.acc == null && pos.from === "photo" && pos.lat != null) { // a place read from a gallery photo: kept for the trip map only, never used by contests
+      try { await db.from("catch_photo_geo").insert({ catch_id: catchId, lat: pos.lat, lng: pos.lng }); } catch (e) {}
+      return;
+    }
     if (!db || !catchId || !pos || pos.acc == null) return;
     try {
       await db.from("catch_geo").insert({ catch_id: catchId, lat: pos.lat, lng: pos.lng, accuracy_m: Math.round(pos.acc), captured_at: pos.at || new Date().toISOString() });

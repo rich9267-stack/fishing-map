@@ -296,6 +296,17 @@
       if (onTrip(pl) && Date.now() >= tripWindow(pl)[0]) {
         const rv = el("button", "btn ghost small", "📖 Review trip"); rv.type = "button"; rv.addEventListener("click", () => openTripReview(pl)); acts.appendChild(rv);
       }
+      // Directions + Share for everyone who can see the plan (exact pins only: a blurred pin would lead to the wrong place)
+      if (spot && hasLoc(spot) && spot.is_exact !== false) {
+        const dirUrl = `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`;
+        const da = el("a", "btn ghost small", "📍 Directions"); da.href = dirUrl; da.target = "_blank"; da.rel = "noopener"; acts.appendChild(da);
+        const sh = el("button", "btn ghost small", "📤 Share"); sh.type = "button";
+        sh.addEventListener("click", async () => {
+          const text = `Fishing trip: ${planWhen(new Date(pl.plan_at))} at ${spot.name}. Directions: ${dirUrl} — Fishing Map`;
+          try { if (navigator.share) await navigator.share({ title: "Fishing trip", text }); else if (navigator.clipboard) { await navigator.clipboard.writeText(text); toast("Copied ✓"); } } catch (e) { /* cancelled */ }
+        });
+        acts.appendChild(sh);
+      }
       item.appendChild(acts);
       if (onTrip(pl) && openPlanChats.has(pl.id)) item.appendChild(groupChatPanel("trip", pl.id));
       box.appendChild(item);

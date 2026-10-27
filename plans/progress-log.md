@@ -9,6 +9,8 @@ After the US expansion (done v173): make the national map trustworthy and useful
 - Oct 20–21 — v150–v154: tanks, 🎮 Games (5 games + streak), better weight guesses.
 - Oct 21–22 — v155–v173: continental US plan finished. Every state + DC has Seasons cards and rules (all setup files applied; checked in the database Oct 22), national no-fishing zones, OpenStreetMap ramps/piers outside Florida, games use the region's fish, NOAA dashed 🚫 outlines, lake depth (10 states) + public fishing water (11 states). Also v159–v171 Fish ID training steps 1–4 (training waits for the lawyer), v172 photos use less data.
 - Oct 22 — Richard's partial phone check outside Florida (see Next up 1 and 2 for what it found).
+- Oct 27 — Richard phone-checked v218 (new look on other people's profile pages): looks right.
+- Oct 27 — Richard phone-checked Next up 1–5 (v174–v193): all passed. Trip check (6) passed too, but a trip with a friend hit frustrations (details pending).
 - Oct 22 — No-fishing warning in Home / Find new water / Plan a trip: already built (v118); it reads the national zone list since v169, so nothing to build.
 
 ## Decisions

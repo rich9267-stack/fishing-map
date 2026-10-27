@@ -310,6 +310,7 @@
       const a = new Date(pl.solo.started_at), z = new Date(pl.solo.ended_at), hrs = Math.max(1 / 60, (z - a) / 3600000), tm = d => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       body.appendChild(el("div", "spot-meta", `🕑 ${tm(a)} – ${tm(z)} (${hrs < 1 ? Math.max(1, Math.round(hrs * 60)) + " min" : hrs.toFixed(1) + " hr"})`));
     }
+    { const rf = el("button", "btn ghost small", "🔄 Refresh catches"); rf.type = "button"; rf.className += " trip-refresh"; rf.style.margin = "6px 0"; rf.addEventListener("click", () => openTripReview(pl)); body.appendChild(rf); }
     const cbox = el("div"); cbox.id = "trip-contests"; body.appendChild(cbox);
     const st = el("div", "spot-meta", "Loading…"); body.appendChild(st);
     const content = el("div"); body.appendChild(content);
@@ -331,13 +332,13 @@
     await ensureProfiles(rows.map(r => r.user_id));
     try { await loadPubPhotos(rows.map(r => ({ id: r.catch_id }))); } catch (e) { /* photos are a bonus */ }
     if (tripOpen !== pl) return;
-    if (!rows.length) { st.textContent = pl.solo ? "No catches logged on this trip (a skunk still counts and helps the predictions)." : "No catches logged for this trip yet."; return; }
+    if (!rows.length) { st.textContent = pl.solo ? "No catches logged on this trip (a skunk still counts and helps the predictions)." : "No catches logged for this trip yet."; }
     const fish = rows.reduce((n, r) => n + (r.how_many || 1), 0), people = [...new Set(rows.map(r => r.user_id))];
-    st.textContent = `${fish} fish · ${rows.length} catch${rows.length === 1 ? "" : "es"} · ${people.length} angler${people.length === 1 ? "" : "s"}`;
+    if (rows.length) st.textContent = `${fish} fish · ${rows.length} catch${rows.length === 1 ? "" : "es"} · ${people.length} angler${people.length === 1 ? "" : "s"}`;
     const nm = id => (me && id === me.id ? "You" : (profName(id) || ((planRsvps[pl.id] || []).find(x => x.user_id === id) || {}).name || "Someone"));
     const geo = rows.filter(r => r.lat != null && r.lng != null);
-    if (pl.solo) content.appendChild(el("div", "spot-meta", stamped === rows.length ? "📍 Every catch has a GPS stamp, shown as a dot on the map." : stamped ? `📍 ${stamped} of ${rows.length} catches had a GPS stamp (dots on the map). The rest are in the list below.` : "No GPS stamps for these catches, so the map shows only the spot. The catches are in the list below."));
-    if (geo.length || (pl.solo && hasLoc(spot))) {
+    if (pl.solo && rows.length) content.appendChild(el("div", "spot-meta", stamped === rows.length ? "📍 Every catch has a GPS stamp, shown as a dot on the map." : stamped ? `📍 ${stamped} of ${rows.length} catches had a GPS stamp (dots on the map). The rest are in the list below.` : "No GPS stamps for these catches, so the map shows only the spot. The catches are in the list below."));
+    if (geo.length || hasLoc(spot)) {
       const mapDiv = el("div"); mapDiv.id = "trip-map"; mapDiv.style.cssText = "height:260px;border-radius:10px;margin:10px 0;border:1px solid var(--line)"; content.appendChild(mapDiv);
       try {
         if (tripMap) { tripMap.remove(); tripMap = null; }
@@ -526,6 +527,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-27c", title: "Trips: Directions, Share and map", items: [
+      "Planned trips in the Feed now have 📍 Directions and 📤 Share, so you can send a friend the time, spot and directions.",
+      "The trip review now shows the map with the spot even when no catches were logged yet.",
+      "Catches you add from a gallery photo now show as dots on the trip map too, using the place saved in the photo."
+    ] },
     { id: "2026-10-27b", title: "New look for other people's profiles", items: [
       "Other people's profile pages now look like yours: header image, round picture, name, bio and counts, with Add friend / Message on the right."
     ] },

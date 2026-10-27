@@ -709,3 +709,7 @@ Legal check of the FWC ramp and FDEP parks/piers data: neither layer states a li
 **v217 (Oct 27):** Header image on other people's profile pages (js/11 openProfile/renderProfilePage; test68; no database change). Same private avatars bucket and same viewing rule as the picture, so locked pages show nothing.
 
 **v218 (Oct 27):** Other people's profile pages get the "Clean Social" look (js/11 renderProfilePage + css pf-other; test68; no database change). Header (image or accent colour) always shown, picture overlapping, friend/message buttons beside it, name, handle + home area, tagline/bio, favourite fish, counts (public catches, public spots, trophies). Pinned catch, showcase, tank, trophies, spots, catches below unchanged; Report/Block kept. Redesign step list is now fully done.
+
+**v220 (Oct 27):** Trip refinements after Richard's trip with a friend: planned-trip cards get 📍 Directions + 📤 Share (js/08, exact pins only); trip review shows the spot map even with no catches (js/13). No database change.
+
+**v220 (same release):** gallery-photo places now saved for the trip map only: new table `catch_photo_geo` (setup/112, applied; own add/see; contests still use only live `catch_geo`); `trip_review` falls back to it; js/12 `saveCatchGeo`; test210; 🔄 Refresh catches button on trip review. New table catch_photo_geo (backup picks it up Sunday).
