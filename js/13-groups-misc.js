@@ -527,6 +527,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-27f", title: "🗂 Spots by state · Best spots open up", items: [
+      "Your saved spots are now grouped by state. Tap a state's name to fold it away, so you can look at only Florida. Your phone remembers which are folded.",
+      "Tap a row in 🏆 Best spots today and that spot's card opens right underneath, just like a saved spot."
+    ] },
     { id: "2026-10-27e", title: "👀 Log a sighting", items: [
       "Saw something but didn't catch it — a tarpon rolling, a manatee, a bait school? Tap 👀 Log a sighting on a spot, on its map pop-up, or in Quick catch.",
       "Choose who sees it (only you, friends or public). Sightings never show as pins; they add to the \"seen nearby\" lines on spots and fish pages. Your own are under Profile → Sightings.",

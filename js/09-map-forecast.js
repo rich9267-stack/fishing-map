@@ -299,6 +299,7 @@
       (s.faces_deg == null && styleShowsWindKind(s) ? " Edit the spot to say which way the water lies and wind will show onshore/offshore." : "")));
   }
 
+  const bestOpen = new Set();   // Best spots rows that are opened (not remembered)
   function renderBest() {
     const box = $("best-list");
     if (!box || !spots) return;
@@ -346,7 +347,11 @@
     }
     ranked.slice(0, 5).forEach((r, i) => {
       // Home look (js/63): number badge · name + ONE reason line · best time on the right. The longer detail is folded under "How it's ranked".
-      const row = el("div", "best");
+      const row = el("div", "best"), isOpen = bestOpen.has(r.s.id);
+      row.setAttribute("role", "button"); row.tabIndex = 0; row.setAttribute("aria-expanded", String(isOpen)); row.classList.toggle("open", isOpen);
+      const flip = () => { isOpen ? bestOpen.delete(r.s.id) : bestOpen.add(r.s.id); renderBest(); };
+      row.addEventListener("click", e => { if (!e.target.closest("a, button")) flip(); });
+      row.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target === row) { e.preventDefault(); flip(); } });
       row.appendChild(el("span", "best-rank", String(i + 1)));
       const mid = el("div", "best-mid");
       mid.appendChild(el("span", "best-name", r.s.name));
@@ -362,6 +367,7 @@
       row.appendChild(mid);
       row.appendChild(el("span", "best-when" + (r.best.now ? " now" : ""), r.best.now ? "Now" : clock(r.best.t, tzFor(r.s.lat, r.s.lng))));
       box.appendChild(row);
+      if (isOpen) { const body = el("div", "spot-body best-card-body"); fillSpotBody(r.s, body); box.appendChild(body); }   // v224: opens underneath, like a saved spot
     });
     if (skipped.length) box.appendChild(el("div", "spot-meta", `Not ranked yet (too few catches): ${skipped.map(s => s.name).join(", ")}`));
   }
@@ -379,37 +385,8 @@
     });
   }
 
-  function renderSpots() {
-    const list = $("spot-list");
-    list.innerHTML = "";
-    if (spotsError) { list.appendChild(errBox(spotsError, () => { loadSpots(); })); return; }
-    if (spots === null) { list.appendChild(el("div", "empty", "Loading spots…")); return; }
-    if (!spots.length) {
-      list.appendChild(emptyBox("No spots yet — save the first spot you fish.", "+ Add a spot", () => { $("add-btn").click(); }));
-      return;
-    }
-    const shown = filteredSpots();
-    updateFilterStatus(shown.length);
-    if (!shown.length) list.appendChild(emptyBox("No spots match these filters.", "Clear filters", clearFilters));
-    shown.forEach(s => {
-      // plans/ui-review.md item 1A: one short line per spot; tap it to open the full card (built as before, just folded)
-      const item = el("div", "spot");
-      const open = spotOpen.has(s.id) || openCatchSpot === s.id;
-      item.classList.toggle("open", open);
-      const head = el("button", "spot-head"); head.type = "button";
-      head.setAttribute("aria-expanded", String(open)); head.setAttribute("aria-controls", "spot-body-" + s.id);
-      const dot = el("span", "spot-dot"); dot.style.background = WATER_COLOR[s.water_type] || "#888"; dot.setAttribute("aria-hidden", "true"); head.appendChild(dot);
-      head.appendChild(el("span", "spot-name", visIcon(s) + s.name));
-      const fact = spotFact(s); if (fact) head.appendChild(el("span", "spot-fact", fact));
-      head.appendChild(el("span", "spot-chev", open ? "▴" : "›")); head.lastChild.setAttribute("aria-hidden", "true");
-      head.addEventListener("click", () => {
-        if (spotOpen.has(s.id)) { spotOpen.delete(s.id); if (openCatchSpot === s.id && typeof closeCatchForm === "function") { closeCatchForm(); return; } }
-        else spotOpen.add(s.id);
-        renderSpots();
-        const h = document.querySelector(`.spot-head[aria-controls="spot-body-${s.id}"]`); if (h) h.focus();
-      });
-      item.appendChild(head);
-      const body = el("div", "spot-body"); body.id = "spot-body-" + s.id; body.hidden = !open; item.appendChild(body);
+  // The full spot card contents (used by the saved-spots list and by an opened Best spots row)
+  function fillSpotBody(s, body) {
       { const sm = el("div", "spot-meta"); sm.appendChild(document.createTextNode(`${cap(s.spot_type)} · ${WATER_LABEL[s.water_type] || s.water_type}`));
         if (s.added_by) { sm.appendChild(document.createTextNode(" · added by ")); sm.appendChild(personLink(isMine(s) ? null : s.created_by, s.added_by)); }
         body.appendChild(sm); }
@@ -459,8 +436,64 @@
       }
       body.appendChild(spotPhotoSection(s));
       body.appendChild(catchSection(s));
-      list.appendChild(item);
+  }
+
+  function renderSpots() {
+    const list = $("spot-list");
+    list.innerHTML = "";
+    if (spotsError) { list.appendChild(errBox(spotsError, () => { loadSpots(); })); return; }
+    if (spots === null) { list.appendChild(el("div", "empty", "Loading spots…")); return; }
+    if (!spots.length) {
+      list.appendChild(emptyBox("No spots yet — save the first spot you fish.", "+ Add a spot", () => { $("add-btn").click(); }));
+      return;
+    }
+    const shown = filteredSpots();
+    updateFilterStatus(shown.length);
+    if (!shown.length) list.appendChild(emptyBox("No spots match these filters.", "Clear filters", clearFilters));
+    // v224: grouped by state, each group folds (which are folded is remembered on this phone); a search or an open catch form opens its group
+    const grp = {}, order = [];
+    shown.forEach(s => {
+      const st = hasLoc(s) && typeof stateOf === "function" ? stateOf(s.lat, s.lng) : null;
+      const key = st && typeof STATE_NAMES !== "undefined" && STATE_NAMES[st] ? st : "other";
+      if (!grp[key]) { grp[key] = []; order.push(key); }
+      grp[key].push(s);
     });
+    const shut = new Set(lsGet("fm-spot-groups-shut", []));
+    const forced = key => !!spotQuery || grp[key].some(x => openCatchSpot === x.id);
+    const sorted = order.filter(k => k !== "other").concat(order.includes("other") ? ["other"] : []);
+    sorted.forEach(key => {
+      const isShut = shut.has(key) && !forced(key);
+      const gh = el("button", "spot-group"); gh.type = "button"; gh.setAttribute("aria-expanded", String(!isShut));
+      gh.appendChild(el("span", "spot-group-name", key === "other" ? "Other places" : STATE_NAMES[key]));
+      gh.appendChild(el("span", "spot-group-n", String(grp[key].length)));
+      gh.appendChild(el("span", "spot-chev", isShut ? "›" : "▴")); gh.lastChild.setAttribute("aria-hidden", "true");
+      gh.addEventListener("click", () => { isShut ? shut.delete(key) : shut.add(key); lsSet("fm-spot-groups-shut", [...shut]); renderSpots(); });
+      list.appendChild(gh);
+      if (!isShut) grp[key].forEach(addSpot);
+    });
+    function addSpot(s) {
+      // plans/ui-review.md item 1A: one short line per spot; tap it to open the full card (built as before, just folded)
+      const item = el("div", "spot");
+      const open = spotOpen.has(s.id) || openCatchSpot === s.id;
+      item.classList.toggle("open", open);
+      const head = el("button", "spot-head"); head.type = "button";
+      head.setAttribute("aria-expanded", String(open)); head.setAttribute("aria-controls", "spot-body-" + s.id);
+      const dot = el("span", "spot-dot"); dot.style.background = WATER_COLOR[s.water_type] || "#888"; dot.setAttribute("aria-hidden", "true"); head.appendChild(dot);
+      head.appendChild(el("span", "spot-name", visIcon(s) + s.name));
+      const fact = spotFact(s); if (fact) head.appendChild(el("span", "spot-fact", fact));
+      head.appendChild(el("span", "spot-chev", open ? "▴" : "›")); head.lastChild.setAttribute("aria-hidden", "true");
+      head.addEventListener("click", () => {
+        if (spotOpen.has(s.id)) { spotOpen.delete(s.id); if (openCatchSpot === s.id && typeof closeCatchForm === "function") { closeCatchForm(); return; } }
+        else spotOpen.add(s.id);
+        renderSpots();
+        const h = document.querySelector(`.spot-head[aria-controls="spot-body-${s.id}"]`); if (h) h.focus();
+      });
+      item.appendChild(head);
+      const body = el("div", "spot-body"); body.id = "spot-body-" + s.id; body.hidden = !open; item.appendChild(body);
+      fillSpotBody(s, body);
+      list.appendChild(item);
+    }
+    if (bestOpen.size) renderBest();   // an opened Best spots row shows the same card: keep it current
   }
   // The small fact on a closed spot line: distance when sorted by Nearest, otherwise how long since the last catch there
   function spotFact(s) {
