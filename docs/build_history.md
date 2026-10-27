@@ -713,3 +713,5 @@ Legal check of the FWC ramp and FDEP parks/piers data: neither layer states a li
 **v220 (Oct 27):** Trip refinements after Richard's trip with a friend: planned-trip cards get 📍 Directions + 📤 Share (js/08, exact pins only); trip review shows the spot map even with no catches (js/13). No database change.
 
 **v220 (same release):** gallery-photo places now saved for the trip map only: new table `catch_photo_geo` (setup/112, applied; own add/see; contests still use only live `catch_geo`); `trip_review` falls back to it; js/12 `saveCatchGeo`; test210; 🔄 Refresh catches button on trip review. New table catch_photo_geo (backup picks it up Sunday).
+
+**v221 (Oct 27):** Look fixes from the v220 phone check: What's new lines no longer split into columns around icons; Plan-a-trip "Suggested spots" use a normal block layout again (Home's 3-column .best rule had leaked in); link buttons (Directions) match the other buttons; trip card buttons wrap instead of running off the screen (css/app.css only).

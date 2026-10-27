@@ -1474,3 +1474,11 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
   #pub-profile-body > .pf-other-top { padding: 0 12px; }
   #pub-profile-body > .pf-o { padding: 0 4px; }
   #pub-profile-body .pf-btns .spot-meta { align-self: center; }
+
+  /* v221 fixes: What's new lines, the plan form's suggested spots, and link-style buttons (Directions) */
+  #whatsnew li { display: block; }
+  #pl-sugg-body .best { display: block; }
+  #pl-sugg-body .best-rank { display: inline; width: auto; height: auto; background: none; margin-right: 4px; font-size: inherit; color: var(--muted); }
+  #pl-sugg-body .best-name { display: inline; font-size: inherit; }
+  a.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; text-align: center; }
+  .feed-actions { flex-wrap: wrap; align-items: center; }
