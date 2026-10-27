@@ -90,6 +90,6 @@ const names = s => (s.match(/^(?:const|let|function|async function)\s+([A-Za-z_$
 const others = fs.readdirSync(path.join(root, "js")).filter(f => f.endsWith(".js") && !/^62-/.test(f)).map(f => read("js/" + f)).join("\n");
 const clash = names(read("js/62-learn.js")).filter(n => new RegExp("(?:^|[\\s;(])(?:const|let|var|function)\\s+" + n + "\\b").test(others));
 ok(clash.length === 0, "no top-level name in js/62 is also declared elsewhere" + (clash.length ? " (" + clash.join(", ") + ")" : ""));
-const wn = read("js/13-groups-misc.js"); ok(/Learn page/.test(wn.slice(wn.indexOf("WHATS_NEW"), wn.indexOf("WHATS_NEW") + 14000)), "What's new mentions the Learn page");
+const wn = read("js/13-groups-misc.js"); ok(/Learn page/.test(wn.slice(wn.indexOf("WHATS_NEW"), wn.indexOf("WHATS_NEW") + 30000)), "What's new mentions the Learn page");
 ok(/v179/.test(read("docs/build_history.md")), "build history has v179");
 console.log(bad ? `\n${bad} FAILED` : "\nALL OK"); process.exit(bad ? 1 : 0);

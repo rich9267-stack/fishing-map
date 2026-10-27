@@ -723,3 +723,5 @@ Legal check of the FWC ramp and FDEP parks/piers data: neither layer states a li
 **v224 (Oct 27):** Saved spots grouped by state (js/09 `renderSpots`; state from `stateOf`, spots with no place under "Other places"), each header folds and shows a count, folds remembered in `fm-spot-groups-shut`; a search or an open catch form opens its group. Best spots rows open the same spot card underneath (`fillSpotBody` pulled out of renderSpots; `bestOpen` set, not remembered). No database change. test213.
 
 **v225 (Oct 27):** Best spots rows open/close their card in place (no re-ranking) and get `touch-action: manipulation`, removing the half-second delay. No database change.
+
+**v226 (Oct 27):** Profile pictures in the feed, comments and Community trip circles (js/11 `personAvatar`/`feedAvFetch`: one `profile_extras` lookup per screen, signed links cached; the existing profile rules + avatars bucket policy decide who sees whose, otherwise the first letter). No database change. test214.

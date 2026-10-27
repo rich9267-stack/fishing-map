@@ -49,7 +49,7 @@
     const ps = (typeof plans !== "undefined" && plans) || [];
     ps.forEach((pl, i) => {
       const mineP = !!(me && pl.created_by === me.id), name = mineP ? "You" : String(pl.author || "Friend").split(" ")[0];
-      const av = typeof avatarNode === "function" ? avatarNode(null, pl.author || "?", 56, null) : el("span", null, "?");
+      const av = typeof personAvatar === "function" ? personAvatar(pl.created_by, pl.author || "?", 56) : el("span", null, "?");
       strip.appendChild(story(`${name} · ${dayOf(pl.plan_at)}`, av, () => {
         card.classList.add("cm-open");
         const item = list.children[i]; if (item) item.scrollIntoView({ behavior: "smooth", block: "center" });

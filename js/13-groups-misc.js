@@ -527,6 +527,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-27g", title: "🖼 Pictures in the feed", items: [
+      "Posts, comments and the trip circles on Community now show the person's profile picture instead of just a letter. If someone has no picture, or their page isn't open to you, you still see their first letter."
+    ] },
     { id: "2026-10-27f", title: "🗂 Spots by state · Best spots open up", items: [
       "Your saved spots are now grouped by state. Tap a state's name to fold it away, so you can look at only Florida. Your phone remembers which are folded.",
       "Tap a row in 🏆 Best spots today and that spot's card opens right underneath, just like a saved spot."

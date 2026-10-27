@@ -79,7 +79,7 @@
       const item = el("div", "feed-item feed-post");
       const nm = o.who || c.caught_by || "Someone", pid = c.created_by, mineCard = !!(me && pid === me.id);
       const openWho = () => { if (o.onWho) o.onWho(); else if (pid && typeof showProfile === "function") showProfile(pid); };
-      const avN = typeof avatarNode === "function" ? avatarNode(null, nm, 40, null) : el("span", null, nm[0]);
+      const avN = typeof personAvatar === "function" ? personAvatar(pid, nm, 40) : typeof avatarNode === "function" ? avatarNode(null, nm, 40, null) : el("span", null, nm[0]);
       let av;
       if (!mineCard && pid) { av = el("button", "feed-av"); av.type = "button"; av.setAttribute("aria-label", "Open " + nm + "'s profile"); av.addEventListener("click", openWho); }
       else av = el("span", "feed-av");
@@ -141,6 +141,7 @@
         cms.forEach(cm => {
           const p = el("p");
           if (cm.review_state === "blurred") markReview(p, true, cm.id);
+          if (typeof personAvatar === "function") { const ca = personAvatar(cm.created_by, cm.author || "Someone", 22); ca.style.display = "inline-flex"; ca.style.verticalAlign = "middle"; ca.style.marginRight = "6px"; p.appendChild(ca); }
           { const b = el("b"); b.appendChild(personLink(cm.created_by, (cm.author || "Someone"))); b.appendChild(document.createTextNode(": ")); p.appendChild(b); }
           p.appendChild(document.createTextNode(cm.body));
           if (me && cm.created_by === me.id) {

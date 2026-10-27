@@ -211,6 +211,31 @@
     else d.textContent = ((name || "?").trim()[0] || "?").toUpperCase();
     return d;
   }
+  // v226: a person's picture next to their posts (feed, trips, comments). Pictures are fetched in one batch per screen; the database decides who may see
+  // whose (the same profile rules as their page: profile_extras + the avatars bucket), so a picture you may not see simply stays the first letter.
+  const feedAv = {}; let feedAvQueue = new Set(), feedAvTimer = null;   // user id -> picture link, or false = none / not allowed
+  function personAvatar(uid, name, size) {
+    const n = avatarNode(feedAv[uid] || null, name, size, null);
+    if (uid) {
+      n.dataset.avUid = uid; n.dataset.avName = name || "";
+      if (feedAv[uid] === undefined) { feedAvQueue.add(uid); clearTimeout(feedAvTimer); feedAvTimer = setTimeout(feedAvFetch, 60); }
+    }
+    return n;
+  }
+  async function feedAvFetch() {
+    const ids = [...feedAvQueue].filter(u => feedAv[u] === undefined); feedAvQueue = new Set();
+    if (!ids.length || !db) return;
+    try {
+      const { data, error } = await db.from("profile_extras").select("user_id,avatar_path").in("user_id", ids);
+      if (error) throw error;
+      const got = {}; (data || []).forEach(r => { if (r.avatar_path) got[r.user_id] = r.avatar_path; });
+      await Promise.all(ids.map(async u => { feedAv[u] = got[u] ? (await avatarUrl(got[u])) || false : false; }));
+      document.querySelectorAll("[data-av-uid]").forEach(n => {
+        const url = feedAv[n.dataset.avUid]; if (!url || n.querySelector("img")) return;
+        n.textContent = ""; const im = document.createElement("img"); im.src = url; im.alt = ""; im.style.cssText = "width:100%;height:100%;object-fit:cover"; n.appendChild(im);
+      });
+    } catch (e) { /* offline: the first letters stay */ }
+  }
   // pick, drag and zoom a square crop (shown through a round window) — resolves a 320 px JPEG, or null if cancelled
   async function cropPicture(file) {
     let src;
