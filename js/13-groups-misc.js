@@ -527,6 +527,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-27d", title: "Share a trip with a link", items: [
+      "📤 Share on a planned trip now sends a link. When a friend taps it, the app opens right on that trip so they can tap \"I'm in\" and get directions.",
+      "Only friends of the person who planned the trip can open it."
+    ] },
     { id: "2026-10-27c", title: "Trips: Directions, Share and map", items: [
       "Planned trips in the Feed now have 📍 Directions and 📤 Share, so you can send a friend the time, spot and directions.",
       "The trip review now shows the map with the spot even when no catches were logged yet.",

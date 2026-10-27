@@ -715,3 +715,5 @@ Legal check of the FWC ramp and FDEP parks/piers data: neither layer states a li
 **v220 (same release):** gallery-photo places now saved for the trip map only: new table `catch_photo_geo` (setup/112, applied; own add/see; contests still use only live `catch_geo`); `trip_review` falls back to it; js/12 `saveCatchGeo`; test210; 🔄 Refresh catches button on trip review. New table catch_photo_geo (backup picks it up Sunday).
 
 **v221 (Oct 27):** Look fixes from the v220 phone check: What's new lines no longer split into columns around icons; Plan-a-trip "Suggested spots" use a normal block layout again (Home's 3-column .best rule had leaked in); link buttons (Directions) match the other buttons; trip card buttons wrap instead of running off the screen (css/app.css only).
+
+**v222 (Oct 27):** "Join this trip" link: 📤 Share on a planned trip adds `?go=trip&id=<plan>`; handleGo (js/12 `openSharedTrip`) opens the Feed on that trip (highlighted), or the review if it is over and you were on it, or says it isn't available (friends of the planner only, same rule as the plan itself). test211; no database change.

@@ -298,11 +298,13 @@
       }
       // Directions + Share for everyone who can see the plan (exact pins only: a blurred pin would lead to the wrong place)
       if (spot && hasLoc(spot) && spot.is_exact !== false) {
-        const dirUrl = `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`;
+        const dirUrl = `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`, joinUrl = `${location.origin}${location.pathname}?go=trip&id=${pl.id}`;
         const da = el("a", "btn ghost small", "📍 Directions"); da.href = dirUrl; da.target = "_blank"; da.rel = "noopener"; acts.appendChild(da);
         const sh = el("button", "btn ghost small", "📤 Share"); sh.type = "button";
         sh.addEventListener("click", async () => {
-          const text = `Fishing trip: ${planWhen(new Date(pl.plan_at))} at ${spot.name}. Directions: ${dirUrl} — Fishing Map`;
+          const text = `Fishing trip: ${planWhen(new Date(pl.plan_at))} at ${spot.name}.
+Join on Fishing Map: ${joinUrl}
+Directions: ${dirUrl}`;
           try { if (navigator.share) await navigator.share({ title: "Fishing trip", text }); else if (navigator.clipboard) { await navigator.clipboard.writeText(text); toast("Copied ✓"); } } catch (e) { /* cancelled */ }
         });
         acts.appendChild(sh);

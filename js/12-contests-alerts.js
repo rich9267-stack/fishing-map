@@ -877,6 +877,7 @@
         if (pl) openTripReview(pl);
       })();
     }
+    else if (go === "trip" && q.get("id")) openSharedTrip(q.get("id"));
     else if (go === "contest" && q.get("id")) { ctId = q.get("id"); ctView = "detail"; feedMode = "contests"; showView("feed"); window.scrollTo({ top: 0 }); }
     else if (go === "spot" && q.get("id")) { goToSpot(q.get("id"), false); }
     else if (go === "plan" || go === "weather") { showView("list"); ciLoad(); wxRefresh(true); setTimeout(() => $("safety-strip").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }
@@ -889,6 +890,26 @@
     else if (go === "problems" && adminCan("problems") && typeof goProblems === "function") goProblems();
     else if (go === "pages" && typeof window.openHostPages === "function") window.openHostPages(q.get("id") || undefined);   // ✏️ rename decision alert (setup/75): open that club / business page
     else { feedMode = "circle"; if (typeof comMark === "function") comMark("feed"); else showView("feed"); window.scrollTo({ top: 0 }); }
+  }
+  // A shared trip link (?go=trip&id=PLAN): open the Feed on that planned trip so a friend can tap "I'm in" and use Directions
+  async function openSharedTrip(id) {
+    feedMode = "circle"; if (typeof comMark === "function") comMark("feed"); else showView("feed"); window.scrollTo({ top: 0 });
+    try {
+      if (!plans.some(x => x.id === id)) await loadPlans();
+      const i = plans.findIndex(x => x.id === id);
+      if (i >= 0) {
+        const card = $("feed-plans-card"); if (card) card.classList.add("cm-open");
+        const item = $("plan-list").children[i];
+        if (item) { item.scrollIntoView({ behavior: "smooth", block: "center" }); item.style.outline = "2px solid var(--accent)"; item.style.borderRadius = "10px"; setTimeout(() => { item.style.outline = ""; }, 4000); }
+        return;
+      }
+      const { data } = await db.from("trip_plans").select("*").eq("id", id).maybeSingle();   // already over: members on it can review it
+      if (data && !data.cancelled_at) {
+        const { data: rs } = await db.from("trip_plan_rsvps").select("*").eq("plan_id", id); planRsvps[id] = rs || [];
+        if (onTrip(data)) { openTripReview(data); return; }
+      }
+      toast("That trip isn't available — it may be over, cancelled, or only friends of the planner can see it.", 5000);
+    } catch (e) { toast("Couldn't open that trip.", 4000); }
   }
   function runPendingGo() { if (pendingGo && me) { const g = pendingGo; pendingGo = null; try { history.replaceState(null, "", SITE); } catch (e) {} handleGo(g); } }
   if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", e => { if (e.data && e.data.go) { pendingGo = e.data.go; runPendingGo(); } });
