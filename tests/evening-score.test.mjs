@@ -20,7 +20,7 @@ ok(tenScore(pier, 12, { ...day, pressure: steady, moon: "full moon" }) - tenScor
 
 // the same points as Home's todayScore (js/67): check the numbers in the code match
 const js67 = fs.readFileSync(new URL("../js/67-today-score.js", import.meta.url), "utf8");
-ok(/add\(-0\.5, `Slack tide/.test(js67) && /add\(1\.5, b\.high/.test(js67) && /add\(-2\.5, `Too windy/.test(js67) && /add\(1\.5, "Pressure falling/.test(js67) && /add\(1, "Around sunrise"/.test(js67), "Home's score still uses the same points (keep js/67 and score.mjs in step)");
+ok(/add\(-0\.5, `Slack tide/.test(js67) && /add\(1\.5, i\.flow/.test(js67) && /add\(-2\.5, `Too windy/.test(js67) && /add\(1\.5, "Pressure falling/.test(js67) && /add\(1, "Around sunrise"/.test(js67), "Home's score still uses the same points (keep js/67 and score.mjs in step)");
 
 // moon names (known dates)
 ok(moonPhaseName(new Date("2026-01-03T12:00:00Z")) === "full moon", "Jan 3 2026 is a full moon");

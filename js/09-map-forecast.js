@@ -383,6 +383,7 @@
       const node = document.querySelector(`.spot-cond[data-spot="${s.id}"]`);
       if (node) node.textContent = spotConditions(s);
     });
+    if (typeof refillSpotScores === "function") refillSpotScores();
     document.querySelectorAll(".outlook[data-spot]").forEach(box => {
       const s = (spots || []).find(x => String(x.id) === box.dataset.spot);
       if (s) fillOutlook(box, s);
@@ -397,6 +398,7 @@
       const condEl = el("div", "spot-cond", spotConditions(s));
       condEl.dataset.spot = s.id;
       body.appendChild(condEl);
+      if (typeof spotScoreLine === "function") body.appendChild(spotScoreLine(s));   // 🎣 0–10 for this spot right now (js/67)
       const sightEl = el("div", "spot-meta spot-sight", sightLine(s));
       sightEl.dataset.spot = s.id; sightEl.hidden = !sightEl.textContent;
       body.appendChild(sightEl);

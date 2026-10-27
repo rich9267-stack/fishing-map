@@ -725,3 +725,5 @@ Legal check of the FWC ramp and FDEP parks/piers data: neither layer states a li
 **v225 (Oct 27):** Best spots rows open/close their card in place (no re-ranking) and get `touch-action: manipulation`, removing the half-second delay. No database change.
 
 **v226 (Oct 27):** Profile pictures in the feed, comments and Community trip circles (js/11 `personAvatar`/`feedAvFetch`: one `profile_extras` lookup per screen, signed links cached; the existing profile rules + avatars bucket policy decide who sees whose, otherwise the first letter). No database change. test214.
+
+**v227 (Oct 27):** Fishing score per spot: js/67 now has one `scoreCore` recipe (Home unchanged) plus `spotScoreAt(spot, time, forecastHour)` and `spotScoreLine` (spot card, refills with conditions); Plan a trip shows the chosen spot's score and a 🎣 n/10 on each suggestion (js/08 `planChosenScore`; past ~3 days = tide/moon/light only). test215. No database change. Bite-window phone alert not built yet (design in plans/progress-log.md item 11).

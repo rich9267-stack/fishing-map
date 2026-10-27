@@ -377,11 +377,24 @@ Directions: ${dirUrl}`;
     $("pl-msg").className = "msg";
     $("pl-msg").textContent = dup.length ? `⚠ ${similarText(dup)} — check 🎣 Feed and tap "I'm in" instead?` : "";
   }
-  $("pl-spot").addEventListener("change", warnSimilar);
+  $("pl-spot").addEventListener("change", () => { warnSimilar(); planSuggest(); });
   $("pl-date").addEventListener("change", warnSimilar);
 
   // ---- 💡 Suggested spots inside "plan a trip": rank spots for the chosen day & time and say why ----
   let planSuggTok = 0;
+  // 🎣 The 0–10 fishing score (js/67) for the spot chosen above, at the chosen day & time — shown even when the spot has too few catches to rank
+  async function planChosenScore(body, t, soon, fcs, tok) {
+    const s = (spots || []).find(x => String(x.id) === String($("pl-spot").value));
+    if (!s || !hasLoc(s) || typeof spotScoreAt !== "function") return;
+    let fh = null;
+    if (soon) { try { const h = fcs.get(s.id) || await spotForecast(s); fh = fcHour(h, t); } catch (e) { /* no forecast for this one */ } }
+    if (tok !== planSuggTok) return;
+    const q = spotScoreAt(s, t, fh), row = el("div", "best");
+    row.appendChild(el("div", "best-name", `🎣 ${s.name} then: ${q.score}/10 · ${q.word}`));
+    row.appendChild(el("div", "best-why", q.why.filter(x => x.n !== 0).slice(0, 4).map(x => (x.n > 0 ? "▲ " : "▼ ") + x.text).join(" · ")));
+    if (q.partial) row.appendChild(el("div", "spot-meta", "Wind and pressure aren't known that far ahead — this uses tide, moon and light only."));
+    body.appendChild(row);
+  }
   async function planSuggest() {
     const body = $("pl-sugg-body"); if (!body || $("plan-form").hidden) return;
     const tok = ++planSuggTok;
@@ -411,11 +424,14 @@ Directions: ${dirUrl}`;
     });
     ranked.sort((a, b) => b.score - a.score);
     body.innerHTML = "";
-    if (!ranked.length) { body.textContent = "Not enough catches logged yet to rank spots — once a spot has about 3 fish (or the group has 5), suggestions appear here."; return; }
+    await planChosenScore(body, t, soon, fcs, tok);
+    if (tok !== planSuggTok) return;
+    if (!ranked.length) { body.appendChild(el("div", "spot-meta", "Not enough catches logged yet to rank spots — once a spot has about 3 fish (or the group has 5), suggestions appear here.")); return; }
     body.appendChild(el("div", "spot-meta", `${t.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" })} around ${clock(t)} — top ${Math.min(3, ranked.length)} of ${ranked.length} ranked spots:`));
     ranked.slice(0, 3).forEach((r, i) => {
       const row = el("div", "best"); const top = el("div", "best-top"); const name = el("div");
       name.appendChild(el("span", "best-rank", `${i + 1}.`)); name.appendChild(el("span", "best-name", r.s.name));
+      { const q = spotScoreAt(r.s, t, r.fh); name.appendChild(el("span", "rating " + (q.score >= 6 ? "strong" : ""), `🎣 ${q.score}/10`)); }
       const rating = r.score > 1.2 ? ["strong", "Strong match"] : r.score > 0.4 ? ["", "Good match"] : ["", "Weak match"];
       name.appendChild(el("span", "rating " + rating[0], rating[1])); top.appendChild(name);
       const use = el("button", "btn ghost small", $("pl-spot").value === r.s.id ? "✓ Chosen" : "Use this spot"); use.type = "button";

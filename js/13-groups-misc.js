@@ -527,6 +527,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-27h", title: "🎣 Fishing score on every spot", items: [
+      "Every spot card now shows “Fishing here now: 7/10” with a Why? button (tide, wind, pressure, moon and light for that spot).",
+      "Planning a trip shows the score for your chosen spot at the day and time you pick, and for each suggested spot. Beyond about 3 days it uses tide, moon and light only."
+    ] },
     { id: "2026-10-27g", title: "🖼 Pictures in the feed", items: [
       "Posts, comments and the trip circles on Community now show the person's profile picture instead of just a letter. If someone has no picture, or their page isn't open to you, you still see their first letter."
     ] },

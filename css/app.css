@@ -1273,6 +1273,12 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
   .ts-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .ts-top { font-size: 13px; color: var(--text-2); margin-top: 2px; }
   .ts-more { color: var(--accent); font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .ts-spot { margin-top: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+  .ts-spot-btn { appearance: none; width: 100%; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; padding: 0; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+  .ts-mini { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--line-strong); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
+  .ts-spot[data-lvl="great"] .ts-mini, .ts-spot[data-lvl="good"] .ts-mini { border-color: var(--accent); color: var(--accent); }
+  .ts-spot[data-lvl="slow"] .ts-mini { color: var(--text-2); }
+  .ts-spot-t { flex: 1; min-width: 0; font-size: 14px; }
   .ts-why { margin-top: 10px; display: grid; gap: 4px; font-size: 14px; }
   .ts-why[hidden] { display: none; }
   .ts-row.up { color: var(--text); }
