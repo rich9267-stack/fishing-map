@@ -7,7 +7,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://coastwatch.pfeg.noaa.gov; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' data: blob: https://challenges.cloudflare.com https://euxcisnyansdrzzjyvsl.supabase.co wss://euxcisnyansdrzzjyvsl.supabase.co https://api.tidesandcurrents.noaa.gov https://api.weather.gov https://api.open-meteo.com https://marine-api.open-meteo.com https://archive-api.open-meteo.com https://waterservices.usgs.gov https://api.inaturalist.org https://overpass-api.de https://gis.myfwc.com https://services1.arcgis.com https://services2.arcgis.com https://arcgisserver.digital.mass.gov https://enterprise.gisdata.mn.gov https://gisdata.in.gov https://ndgishub.nd.gov https://nhgeodata.unh.edu https://services.arcgis.com https://services3.arcgis.com https://services5.arcgis.com https://services9.arcgis.com https://services6.arcgis.com https://services7.arcgis.com https://services8.arcgis.com https://anrmaps.vermont.gov https://fbweb.pa.gov https://arcgis.mdwfp.com https://mapsdep.nj.gov https://enterprise.firstmap.delaware.gov https://services.dwr.virginia.gov https://dnrmaps.wi.gov https://gisportal-idfg.idaho.gov https://geodataservices.wdfw.wa.gov https://gis.charttools.noaa.gov https://coastwatch.pfeg.noaa.gov https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://tile.openstreetmap.org https://server.arcgisonline.com https://photon.komoot.io; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Fishing Map — Tides</title>
-<link rel="stylesheet" href="css/app.css?v=222">
+<link rel="stylesheet" href="css/app.css?v=223">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
@@ -1138,6 +1138,7 @@
       <input id="qc-file" type="file" accept="image/*" hidden>
       <button type="button" id="qc-shutter" aria-label="Take photo"></button>
       <button type="button" id="qc-skip" class="qc-small">No photo</button>
+      <button type="button" id="qc-sighting" class="qc-small">👀 Sighting</button>
     </div>
     <div id="qc-mrow">
       <button type="button" id="qc-mtoggle" class="qc-pill">📏 Measure: off</button>
@@ -1217,6 +1218,33 @@
       <button class="btn ghost" id="ci-cancel" type="button">Not now</button>
     </div>
     <div class="msg" id="ci-msg"></div>
+  </form>
+</div>
+
+<div id="sg-sheet" hidden>
+  <form class="ci-card" id="sg-form">
+    <div class="label" style="font-size:1.15rem">👀 Log a sighting</div>
+    <div class="spot-meta">Something you saw but didn't catch. It never shows as a pin on the map.</div>
+    <label for="sg-spot">Where?</label>
+    <select id="sg-spot"></select>
+    <div class="spot-meta" id="sg-spot-note"></div>
+    <label for="sg-species">What did you see?</label>
+    <input id="sg-species" maxlength="60" list="species-list" placeholder="e.g., Manatee, Tarpon, Bait school" autocomplete="off">
+    <label for="sg-count">How many?</label>
+    <input id="sg-count" type="number" min="1" max="5000" value="1" inputmode="numeric">
+    <label for="sg-note">Note (optional)</label>
+    <input id="sg-note" maxlength="500" placeholder="Rolling near the bridge, big school of pilchards…">
+    <label for="sg-photo">Photo (optional)</label>
+    <input id="sg-photo" type="file" accept="image/*">
+    <div class="spot-meta" id="sg-photo-note"></div>
+    <label for="sg-vis">Who can see it?</label>
+    <select id="sg-vis"><option value="private">🔒 Only me</option><option value="friends">👥 Friends</option><option value="public">🌎 Public</option></select>
+    <div class="spot-meta" id="sg-coin-note">🪙 A 🌎 Public sighting with a photo taken in the last 24 hours earns 1 coin (10 a day at most).</div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn" id="sg-save" type="submit">Save sighting</button>
+      <button class="btn ghost" id="sg-cancel" type="button">Cancel</button>
+    </div>
+    <div class="msg" id="sg-msg"></div>
   </form>
 </div>
 
@@ -1327,74 +1355,75 @@
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/full.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="js/00-icons.js?v=222"></script>
-<script src="js/01-core.js?v=222"></script>
-<script src="js/02-spots.js?v=222"></script>
-<script src="js/03-photos.js?v=222"></script>
-<script src="js/04-insights.js?v=222"></script>
-<script src="js/05-seasons-records.js?v=222"></script>
-<script src="js/06-catching.js?v=222"></script>
-<script src="js/07-measure-fishid.js?v=222"></script>
-<script src="js/08-feed-plans.js?v=222"></script>
-<script src="js/09-map-forecast.js?v=222"></script>
-<script src="js/10-tools-safety.js?v=222"></script>
-<script src="js/11-accounts-social.js?v=222"></script>
-<script src="js/12-contests-alerts.js?v=222"></script>
-<script src="js/13-groups-misc.js?v=222"></script>
-<script src="js/14-tank.js?v=222"></script>
-<script src="js/15-fish-rank.js?v=222"></script>
-<script src="js/16-fish-race.js?v=222"></script>
-<script src="js/17-license-help.js?v=222"></script>
-<script src="js/18-species.js?v=222"></script>
-<script src="js/19-biting.js?v=222"></script>
-<script src="js/20-spot-share.js?v=222"></script>
-<script src="js/21-pub-filters.js?v=222"></script>
-<script src="js/22-public-water.js?v=222"></script>
-<script src="js/23-depth.js?v=222"></script>
-<script src="js/24-delete-account.js?v=222"></script>
-<script src="js/25-home-map.js?v=222"></script>
-<script src="js/26-sub-tabs.js?v=222"></script>
-<script src="js/27-me-find.js?v=222"></script>
-<script src="js/28-host-pages.js?v=222"></script>
-<script src="js/29-home-waters.js?v=222"></script>
-<script src="js/30-red-tide.js?v=222"></script>
-<script src="js/31-regional-rules.js?v=222"></script>
-<script src="js/32-spot-style.js?v=222"></script>
-<script src="js/33-zones.js?v=222"></script>
-<script src="js/34-official-admin.js?v=222"></script>
-<script src="js/35-palettes.js?v=222"></script>
-<script src="js/36-tutorials.js?v=222"></script>
-<script src="js/37-official-layer.js?v=222"></script>
-<script src="js/38-admin-powers.js?v=222"></script>
-<script src="js/39-admin-log.js?v=222"></script>
-<script src="js/40-admin-page.js?v=222"></script>
-<script src="js/41-admin-people.js?v=222"></script>
-<script src="js/42-admin-undo.js?v=222"></script>
-<script src="js/43-admin-warn.js?v=222"></script>
-<script src="js/44-admin-hide.js?v=222"></script>
-<script src="js/45-admin-official.js?v=222"></script>
-<script src="js/47-admin-gated.js?v=222"></script>
-<script src="js/49-terms-banner.js?v=222"></script>
-<script src="js/50-map-full.js?v=222"></script>
-<script src="js/51-games.js?v=222"></script>
-<script src="js/52-games-more.js?v=222"></script>
-<script src="js/53-us-states.js?v=222"></script>
-<script src="js/54-state-agencies.js?v=222"></script>
-<script src="js/55-southeast-seasons.js?v=222"></script>
-<script src="js/56-fishid-training.js?v=222"></script>
-<script src="js/57-fishid-review.js?v=222"></script>
-<script src="js/58-osm-ramps-piers.js?v=222"></script>
-<script src="js/59-us-lakes.js?v=222"></script>
-<script src="js/60-noaa-stations.js?v=222"></script>
-<script src="js/61-state-ramps.js?v=222"></script>
-<script src="js/62-learn.js?v=222"></script>
-<script src="js/63-home.js?v=222"></script>
-<script src="js/64-community.js?v=222"></script>
-<script src="js/65-profile.js?v=222"></script>
-<script src="js/66-page-heads.js?v=222"></script>
-<script src="js/67-today-score.js?v=222"></script>
-<script src="js/68-challenges.js?v=222"></script>
-<script src="js/69-month-calendar.js?v=222"></script>
-<script src="js/99-boot.js?v=222"></script>
+<script src="js/00-icons.js?v=223"></script>
+<script src="js/01-core.js?v=223"></script>
+<script src="js/02-spots.js?v=223"></script>
+<script src="js/03-photos.js?v=223"></script>
+<script src="js/04-insights.js?v=223"></script>
+<script src="js/05-seasons-records.js?v=223"></script>
+<script src="js/06-catching.js?v=223"></script>
+<script src="js/07-measure-fishid.js?v=223"></script>
+<script src="js/08-feed-plans.js?v=223"></script>
+<script src="js/09-map-forecast.js?v=223"></script>
+<script src="js/10-tools-safety.js?v=223"></script>
+<script src="js/11-accounts-social.js?v=223"></script>
+<script src="js/12-contests-alerts.js?v=223"></script>
+<script src="js/13-groups-misc.js?v=223"></script>
+<script src="js/14-tank.js?v=223"></script>
+<script src="js/15-fish-rank.js?v=223"></script>
+<script src="js/16-fish-race.js?v=223"></script>
+<script src="js/17-license-help.js?v=223"></script>
+<script src="js/18-species.js?v=223"></script>
+<script src="js/19-biting.js?v=223"></script>
+<script src="js/20-spot-share.js?v=223"></script>
+<script src="js/21-pub-filters.js?v=223"></script>
+<script src="js/22-public-water.js?v=223"></script>
+<script src="js/23-depth.js?v=223"></script>
+<script src="js/24-delete-account.js?v=223"></script>
+<script src="js/25-home-map.js?v=223"></script>
+<script src="js/26-sub-tabs.js?v=223"></script>
+<script src="js/27-me-find.js?v=223"></script>
+<script src="js/28-host-pages.js?v=223"></script>
+<script src="js/29-home-waters.js?v=223"></script>
+<script src="js/30-red-tide.js?v=223"></script>
+<script src="js/31-regional-rules.js?v=223"></script>
+<script src="js/32-spot-style.js?v=223"></script>
+<script src="js/33-zones.js?v=223"></script>
+<script src="js/34-official-admin.js?v=223"></script>
+<script src="js/35-palettes.js?v=223"></script>
+<script src="js/36-tutorials.js?v=223"></script>
+<script src="js/37-official-layer.js?v=223"></script>
+<script src="js/38-admin-powers.js?v=223"></script>
+<script src="js/39-admin-log.js?v=223"></script>
+<script src="js/40-admin-page.js?v=223"></script>
+<script src="js/41-admin-people.js?v=223"></script>
+<script src="js/42-admin-undo.js?v=223"></script>
+<script src="js/43-admin-warn.js?v=223"></script>
+<script src="js/44-admin-hide.js?v=223"></script>
+<script src="js/45-admin-official.js?v=223"></script>
+<script src="js/47-admin-gated.js?v=223"></script>
+<script src="js/49-terms-banner.js?v=223"></script>
+<script src="js/50-map-full.js?v=223"></script>
+<script src="js/51-games.js?v=223"></script>
+<script src="js/52-games-more.js?v=223"></script>
+<script src="js/53-us-states.js?v=223"></script>
+<script src="js/54-state-agencies.js?v=223"></script>
+<script src="js/55-southeast-seasons.js?v=223"></script>
+<script src="js/56-fishid-training.js?v=223"></script>
+<script src="js/57-fishid-review.js?v=223"></script>
+<script src="js/58-osm-ramps-piers.js?v=223"></script>
+<script src="js/59-us-lakes.js?v=223"></script>
+<script src="js/60-noaa-stations.js?v=223"></script>
+<script src="js/61-state-ramps.js?v=223"></script>
+<script src="js/62-learn.js?v=223"></script>
+<script src="js/63-home.js?v=223"></script>
+<script src="js/64-community.js?v=223"></script>
+<script src="js/65-profile.js?v=223"></script>
+<script src="js/66-page-heads.js?v=223"></script>
+<script src="js/67-today-score.js?v=223"></script>
+<script src="js/68-challenges.js?v=223"></script>
+<script src="js/69-month-calendar.js?v=223"></script>
+<script src="js/70-sightings.js?v=223"></script>
+<script src="js/99-boot.js?v=223"></script>
 </body>
 </html>

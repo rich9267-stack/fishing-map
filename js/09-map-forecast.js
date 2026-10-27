@@ -86,7 +86,7 @@
     if (seen.length) {
       bonus += seen.length >= 6 ? 0.3 : seen.length >= 3 ? 0.2 : 0.1;
       const kinds = [...new Set(seen.map(o => o.name))];
-      notes.push(`👀 ${seen.length} game-fish sighting${seen.length === 1 ? "" : "s"} nearby (${kinds.slice(0, 2).join(", ")}${kinds.length > 2 ? "…" : ""})`);
+      notes.push(`👀 ${seen.length} sighting${seen.length === 1 ? "" : "s"} nearby (${kinds.slice(0, 2).join(", ")}${kinds.length > 2 ? "…" : ""})`);
     }
     return { bonus, notes };
   }
@@ -496,6 +496,7 @@
       if (typeof licLoad === "function") licLoad();       // 🎫 license banner on Home
       if (typeof shareLoad === "function") shareLoad();   // 📩 spots sent to / by me
       loadSightings();
+      if (typeof sgLoad === "function") sgLoad();   // 👀 members' own sightings (js/70)
       loadPlans();
       if (typeof renderSuggestions === "function") renderSuggestions();
       if (typeof pwLoadFma === "function") { pwLoadFma(); renderPwCard(); }   // 🏞 FWC public lakes near you
@@ -929,6 +930,8 @@
     open.addEventListener("click", () => goToSpot(s.id, false));
     const log = el("button", null, "🐟 Log a catch"); log.type = "button";
     log.addEventListener("click", () => goToSpot(s.id, true));
+    const sgb = el("button", null, "👀 Log a sighting"); sgb.type = "button";
+    sgb.addEventListener("click", () => { map.closePopup(); if (typeof openSighting === "function") openSighting(s.id); });
     const dir = el("a", null, "Directions");
     dir.href = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
     dir.target = "_blank"; dir.rel = "noopener";
@@ -947,7 +950,7 @@
       }
     }
     // Approximate (blurred) pins never get Directions: the blur would send people up to ¼ mile off. Public places snap to the exact official spot in the database (setup/68), so those are exact and keep Directions.
-    [open, log, fol].concat(s.is_exact === false ? [] : [dir]).concat(isMine(s) ? [move, edit] : []).forEach(b => actions.appendChild(b));
+    [open, log, sgb, fol].concat(s.is_exact === false ? [] : [dir]).concat(isMine(s) ? [move, edit] : []).forEach(b => actions.appendChild(b));
     box.appendChild(actions);
     return box;
   }

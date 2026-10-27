@@ -527,6 +527,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-27e", title: "👀 Log a sighting", items: [
+      "Saw something but didn't catch it — a tarpon rolling, a manatee, a bait school? Tap 👀 Log a sighting on a spot, on its map pop-up, or in Quick catch.",
+      "Choose who sees it (only you, friends or public). Sightings never show as pins; they add to the \"seen nearby\" lines on spots and fish pages. Your own are under Profile → Sightings.",
+      "🪙 A public sighting with a photo you just took earns 1 coin (10 a day at most)."
+    ] },
     { id: "2026-10-27d", title: "Share a trip with a link", items: [
       "📤 Share on a planned trip now sends a link. When a friend taps it, the app opens right on that trip so they can tap \"I'm in\" and get directions.",
       "Only friends of the person who planned the trip can open it."

@@ -147,6 +147,8 @@ function renderMyProfile() {
         grid.appendChild(t);
       });
       pane.appendChild(grid);
+    } else if (pfTab === "sightings") {
+      if (typeof sgDraw === "function") sgDraw(pane);
     } else if (pfTab === "spots") {
       const mine = (spots || []).filter(s => isMine(s));
       if (!mine.length) { pane.appendChild(el("div", "pf-empty", "No spots saved yet.")); return; }
@@ -178,7 +180,7 @@ function renderMyProfile() {
       pane.appendChild(grid);
     }
   };
-  [["catches", "Catches"], ["spots", "Spots"], ["trips", "Trips"], ["badges", "Badges"]].forEach(([k, t]) => {
+  [["catches", "Catches"], ["sightings", "Sightings"], ["spots", "Spots"], ["trips", "Trips"], ["badges", "Badges"]].forEach(([k, t]) => {
     const b = el("button", null, t); b.type = "button"; b.dataset.t = k; b.setAttribute("role", "tab");
     b.addEventListener("click", () => { pfTab = k; draw(); }); tabs.appendChild(b);
   });

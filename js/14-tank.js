@@ -565,7 +565,7 @@
   // All the rules and the daily limit live in the database (setup/41); the app only asks "claim_coins" and shows the result.
   // Gems are earned only. The shop that spends them comes next (simulator step 7).
   let wallet = null, walletBusy = false, walletAt = 0;
-  const COIN_WHY = { catch: "photographed catch", measured: "measured it", species: "new species", best: "new personal best", collection: "finished a collection", tournament: "tournament placing", purchase: "bought", race: "won a fish race", race_fee: "race entry fee", race_prize: "race prize", race_refund: "race fee back", challenge: "weekly challenge", challenge_week: "all weekly challenges done" };
+  const COIN_WHY = { catch: "photographed catch", measured: "measured it", species: "new species", sighting: "sighting with a photo", best: "new personal best", collection: "finished a collection", tournament: "tournament placing", purchase: "bought", race: "won a fish race", race_fee: "race entry fee", race_prize: "race prize", race_refund: "race fee back", challenge: "weekly challenge", challenge_week: "all weekly challenges done" };
   const COIN_GROUPS = { inshore: "Inshore", beach: "Beach & pier", offshore: "Offshore", fresh: "Freshwater" };
   function walletToast(added) {
     if (!added || !added.length) return;
@@ -618,6 +618,7 @@
     more.appendChild(el("div", "spot-meta", `Today: ${wallet.today} of ${wallet.cap} catch coins`));
     const det = el("details", "wallet-more"); det.appendChild(el("summary", "", "How do I earn coins and gems?"));
     ["🪙 2 for every catch you log with a photo (+1 if you measure it) — up to 50 a day.",
+      "🪙 1 for a 🌎 Public sighting with a photo you just took (10 a day at most).",
       "🪙 40 the first time you catch a species · 🪙 25 for a new personal best (3 a day at most).",
       "🪙 150 + 💎 2 when you finish a collection.",
       "🏆 Official tournaments, top 3: 🪙 200 / 120 / 80 and 💎 3 / 2 / 1.",

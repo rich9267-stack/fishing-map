@@ -798,6 +798,9 @@
   body.cond-open { overflow: hidden; }
   /* Plan-a-trip card above the tabs only shows when it has something to say */
   #plan-top[data-quiet]:not(:has(#plan-form:not([hidden]), #plan-line:not([hidden]), #ct-banner:not([hidden]), #pl-done:not(:empty))) { display: none; }
+  #sg-sheet { position: fixed; inset: 0; z-index: 1210; background: rgba(0,0,0,.55); overflow: auto; padding: 16px; }
+  #sg-sheet[hidden] { display: none; }
+  #qc-sighting { position: absolute; right: 14px; bottom: 100%; margin-bottom: 14px; }
   #trip-sheet { position: fixed; inset: 0; z-index: 1210; background: rgba(0,0,0,.55); overflow: auto; padding: 16px; }
   #trip-sheet[hidden] { display: none; }
   /* Map: Layers / Find new water bottom sheets */

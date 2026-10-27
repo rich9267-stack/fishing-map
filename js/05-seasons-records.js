@@ -656,6 +656,8 @@
   const hasWord = (name, words) => words.some(w => new RegExp(`\\b${w}(s|es)?\\b`, "i").test(name));
   const isGameFish = name => SEASONS.some(f => hasWord(name, f.match)) || hasWord(name, EXTRA_GAME);
   let sightings = null, sightLayer = null, sightOn = false, sightErr = null;
+  let memberSights = [];   // 👀 sightings logged by members (js/70): counted in the lines below, never drawn as pins
+  const sightAll = () => memberSights.length ? (sightings || []).concat(memberSights).sort((a, b) => (b.date || "").localeCompare(a.date || "")) : sightings;
 
   // Group spots that are close together so one request covers each area
   function sightAreas() {
@@ -720,8 +722,9 @@
 
   // Sightings within a few miles of a spot that fit its water (no peacock bass at the beach)
   function sightsNear(s) {
-    if (!sightings || !hasLoc(s)) return [];
-    return sightings.filter(o => {
+    const all = sightAll();
+    if (!all || !hasLoc(s)) return [];
+    return all.filter(o => {
       if (miles(s.lat, s.lng, o.lat, o.lng) > SIGHT_NEAR_MI) return false;
       const fresh = hasWord(o.name, FRESH_ONLY);
       return s.water_type === "freshwater" ? fresh : (s.water_type === "saltwater" ? !fresh : true);
@@ -738,9 +741,10 @@
   }
   const shortDate = ymd => ymd ? new Date(ymd + "T12:00:00").toLocaleDateString([], { month: "short", day: "numeric" }) : "";
   function sightCountFor(f) {
-    if (!sightings) return 0;
+    const all = sightAll();
+    if (!all) return 0;
     const pts = (spots || []).filter(hasLoc);
-    return sightings.filter(o => hasWord(o.name, f.sightMatch || f.match) &&
+    return all.filter(o => hasWord(o.name, f.sightMatch || f.match) &&
       (pts.length ? pts.some(p => miles(p.lat, p.lng, o.lat, o.lng) <= SIGHT_NEAR_MI) : true)).length;
   }
 

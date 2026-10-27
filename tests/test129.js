@@ -165,7 +165,7 @@ function boot(o) {
   const html = read("index.html"), sw = read("sw.js"), runall = read("tests/run-all.sh"), sql = read("setup/73-tutorials-seen.sql");
   ok(/id="help-btn"[^>]*>\?<\/button>\s*<button class="linkbtn" id="me-btn"/.test(html.replace(/\n\s*/g, " ").replace(/> </g, ">\n<").replace(/\n/g, " ")) || html.indexOf('id="help-btn"') < html.indexOf('id="me-btn"'), "? button sits right next to the Me picture");
   ok(html.indexOf('id="help-btn"') > 0 && html.indexOf('id="me-help"') > 0 && html.indexOf('id="settings-help"') > 0, "? button on the top bar, the Me page and the Settings page");
-  ok(/js\/35-palettes\.js[^\n]*\n<script src="js\/36-tutorials\.js\?v=\d+"><\/script>\n(<script src="js\/[3456][0-9]-[^\n]*\n)*<script src="js\/99-boot/.test(html), "script is loaded before the boot file");
+  ok(/js\/35-palettes\.js[^\n]*\n<script src="js\/36-tutorials\.js\?v=\d+"><\/script>\n(<script src="js\/[34567][0-9]-[^\n]*\n)*<script src="js\/99-boot/.test(html), "script is loaded before the boot file");
   ok(sw.includes('"./js/36-tutorials.js"'), "works offline (in the service worker list)");
   ok(read("js/11-accounts-social.js").includes("tutLoadMine()"), "sign-in loads what this person has seen");
   ok((read("js/06-catching.js").match(/tutPhotoTip\(\)/g) || []).length === 2, "photo tip hooked into Quick catch and the full catch form");

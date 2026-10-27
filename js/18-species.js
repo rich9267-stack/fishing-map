@@ -137,7 +137,7 @@
     // 👀 sightings
     if (f && typeof sightCountFor === "function") {
       const n = sightCountFor(f);
-      if (n) { const s = section("👀 Seen nearby"); s.appendChild(el("div", null, `${n} public photo${n === 1 ? "" : "s"} near your spots in the last ${SIGHT_DAYS} days (iNaturalist).`)); }
+      if (n) { const s = section("👀 Seen nearby"); s.appendChild(el("div", null, `${n} sighting${n === 1 ? "" : "s"} near your spots in the last ${SIGHT_DAYS} days (iNaturalist and members).`)); }
     }
 
     // actions
