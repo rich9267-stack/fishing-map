@@ -101,7 +101,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   // ---- Me page ----
   check("Me page closed at start", mc.hidden && fp.hidden);
   check("picture button + 🔍 are in the top bar", !!$("me-btn") && !!$("find-btn"));
-  click($("me-btn")); click($("pf-settings")); await wait(100);
+  click($("me-btn")); click($("pf-gear")); await wait(100);
   check("tapping the picture opens the Me page (not a dropdown)", !mc.hidden && $("me-menu").hidden);
   check("page is marked open on <body>", d.body.classList.contains("me-open"));
   check("header shows my name", $("me-name").textContent.length > 0);
@@ -112,7 +112,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   // each section opens alone
   const SECS = { alerts: "push-box", license: "lic-box", privacy: "settings-privacy", offline: "me-offline-go", phone: "save-pics", data: "export-catches", help: "bug-btn" };
   for (const [sec, inside] of Object.entries(SECS)) {
-    click($("me-btn")); click($("pf-settings")); await wait(30);
+    click($("me-btn")); click($("pf-gear")); await wait(30);
     click(mc.querySelector(`[data-me="${sec}"]`)); await wait(150);
     const others = Object.entries(SECS).filter(([k]) => k !== sec).map(([, id]) => id);
     const target = $(inside).closest(".me-sec");
@@ -121,14 +121,14 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
     check(`${sec}: Back returns to the Me page`, (click($("settings-close")), await wait(50), !mc.hidden && sc.hidden && !sc.dataset.show));
     click($("me-close")); await wait(20);
   }
-  click($("me-btn")); click($("pf-settings")); click(mc.querySelector('[data-me="alerts"]')); await wait(100);
+  click($("me-btn")); click($("pf-gear")); click(mc.querySelector('[data-me="alerts"]')); await wait(100);
   check("section title shown", /Phone alerts/.test($("settings-title").textContent) && $("settings-close").textContent.includes("Back"));
   d.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Escape", bubbles: true })); await wait(50);
   check("Escape goes back to the Me page", !mc.hidden && sc.hidden);
   d.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Escape", bubbles: true })); await wait(50);
   check("Escape closes the Me page", mc.hidden && !d.body.classList.contains("me-open"));
   // Edit → profile, closing returns to Me
-  click($("me-btn")); click($("pf-settings")); click($("me-edit")); await wait(200);
+  click($("me-btn")); click($("pf-gear")); click($("me-edit")); await wait(200);
   check("Edit opens the profile card and leaves the Me page", !$("profile-card").hidden && mc.hidden);
   check("Profile card holds only profile things (no alerts/photos/export)", !$("profile-card").querySelector("#push-box") && !$("profile-card").querySelector("#save-pics") && !$("profile-card").querySelector("#export-catches"));
   click($("profile-close")); await wait(50);
@@ -136,14 +136,14 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   // other rows
   click(mc.querySelector('[data-me="whatsnew"]')); await wait(100);
   check("What's new opens the pop-up", !$("whatsnew").hidden); click($("wn-ok")); click($("me-close"));
-  click($("me-btn")); click($("pf-settings")); click(mc.querySelector('[data-me="inbox"]')); await wait(200);
+  click($("me-btn")); click($("pf-gear")); click(mc.querySelector('[data-me="inbox"]')); await wait(200);
   check("Alerts inbox opens its card and closes the Me page", !$("inbox-card").hidden && mc.hidden); click($("inbox-close"));
-  click($("me-btn")); click($("pf-settings")); click(mc.querySelector('[data-me="invite"]')); await wait(200);
+  click($("me-btn")); click($("pf-gear")); click(mc.querySelector('[data-me="invite"]')); await wait(200);
   check("Invite (admin) opens the invite card", !$("invite-card").hidden && mc.hidden); click($("invite-close"));
-  click($("me-btn")); click($("pf-settings")); click(mc.querySelector('[data-me="privacy"]')); await wait(100); click($("settings-blocked")); await wait(300);
+  click($("me-btn")); click($("pf-gear")); click(mc.querySelector('[data-me="privacy"]')); await wait(100); click($("settings-blocked")); await wait(300);
   check("Blocked people goes to Friends", sc.hidden && !$("friends-card").hidden);
   click($("tab-list")); await wait(100);
-  click($("me-btn")); click($("pf-settings")); click(mc.querySelector('[data-me="offline"]')); await wait(100); click($("me-offline-go")); await wait(700);
+  click($("me-btn")); click($("pf-gear")); click(mc.querySelector('[data-me="offline"]')); await wait(100); click($("me-offline-go")); await wait(700);
   check("Offline maps opens the map with the Layers sheet", !$("view-map").hidden && !$("layers-sheet").hidden && sc.hidden);
   check("picture is hidden on the Map page", w.getComputedStyle($("me-btn")).display === "none" && d.body.classList.contains("on-map"));
   click($("tab-list")); await wait(200);

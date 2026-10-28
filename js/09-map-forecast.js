@@ -824,10 +824,11 @@
     const closeMe = () => { mm.hidden = true; mb.setAttribute("aria-expanded", "false"); };
     mb.addEventListener("click", e => {
       e.stopPropagation();
-      if (typeof openMyProfile === "function") { openMyProfile(); return; }   // redesign step 5: your picture opens your Profile (js/65); its "Settings & edit" button opens the Me page (js/27)
+      if (typeof openMyProfile === "function") { openMyProfile(); return; }   // redesign step 5: your picture opens your Profile (js/65); its Edit button opens the profile editor; the gear icon opens the Me page / Settings (js/27)
       if (typeof openMe === "function") { openMe(); return; }   // UX v2 step 4: the Me page; the old dropdown is only a fallback
       mm.hidden = !mm.hidden; mb.setAttribute("aria-expanded", String(!mm.hidden));
     });
+    $("gear-btn").addEventListener("click", e => { e.stopPropagation(); if (typeof openMe === "function") openMe(); });   // gear next to Help on every page: Settings, alerts and the rest (the Me page, js/27)
     mm.addEventListener("click", () => setTimeout(closeMe, 0));
     document.addEventListener("click", e => { if (!mm.hidden && !mm.contains(e.target) && e.target !== mb) closeMe(); });
     document.addEventListener("keydown", e => { if (e.key === "Escape") closeMe(); });

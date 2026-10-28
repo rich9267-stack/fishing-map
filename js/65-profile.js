@@ -1,5 +1,5 @@
 // ---- My Profile screen, "Clean Social" look (redesign step 5; docs/fishing-map-redesign/DESIGN-HANDOFF.md) ----
-// Opens from the top-right picture (js/09 calls openMyProfile). "Settings & edit" opens the Me page that the picture used to open (openMe, js/27).
+// Opens from the top-right picture (js/09 calls openMyProfile). Edit opens the profile editor; the gear icon in each header opens the Me page (openMe, js/27).
 // Everything here is read from what the app already holds about ME (my catches, spots, trips, badges, friends); nothing new is stored or sent.
 let pfTab = "catches", pfPrev = "list", pfCoverPath = null;
 // Make the picked photo a 1200×480 header (centre crop, under 1 MB), upload it, remember its path; null = remove the header image
@@ -62,14 +62,16 @@ function renderMyProfile() {
   const top = el("div", "pf-top");
   const av = el("div", "pf-av"); av.appendChild(avatarNode(null, name, 84, null)); top.appendChild(av);
   const btns = el("div", "pf-btns");
-  const set = el("button", "pf-set"); set.type = "button"; set.id = "pf-settings"; set.innerHTML = ic("gear") + "<span>Settings &amp; edit</span>";
-  set.addEventListener("click", () => { if (typeof openMe === "function") openMe(); });
+  const set = el("button", "pf-set"); set.type = "button"; set.id = "pf-settings"; set.innerHTML = ic("pencil") + "<span>Edit</span>";
+  set.addEventListener("click", () => $("profile-btn").click());
   const sh = el("button", "pf-share"); sh.type = "button"; sh.setAttribute("aria-label", "Share the app"); sh.innerHTML = ic("upload");
   sh.addEventListener("click", async () => {   // shares only the app's web address, nothing about you
     const url = location.origin + location.pathname;
     try { if (navigator.share) await navigator.share({ title: "Fishing Map", text: "Fishing Map", url }); else if (navigator.clipboard) { await navigator.clipboard.writeText(url); toast("Link copied ✓"); } } catch (e) { /* cancelled */ }
   });
-  btns.appendChild(set); btns.appendChild(sh); top.appendChild(btns); root.appendChild(top);
+  const gr = el("button", "pf-share"); gr.type = "button"; gr.id = "pf-gear"; gr.setAttribute("aria-label", "Settings"); gr.innerHTML = ic("gear");
+  gr.addEventListener("click", () => $("gear-btn").click());
+  btns.appendChild(set); btns.appendChild(gr); btns.appendChild(sh); top.appendChild(btns); root.appendChild(top);
   // my real picture, if I have one (the letter shows until it arrives)
   (async () => {
     try {

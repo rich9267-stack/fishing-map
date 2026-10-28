@@ -192,9 +192,9 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   await w.eval("meAvatarRefresh()"); await sleep(100);
   console.log("menu button shows my picture:", !!$("me-avatar").querySelector("img[src='https://img/u-rich/a.jpg']"));
   console.log("Me page closed at start:", $("me-card").hidden);
-  click($("me-btn")); click($("pf-settings")); console.log("picture opens the Me page:", !$("me-card").hidden, "| old dropdown stays hidden:", $("me-menu").hidden, "| old hook buttons still there:", ["profile-btn", "settings-btn", "inbox-btn", "refresh-btn", "signout-btn"].every(id => !!$(id)));
+  click($("me-btn")); click($("pf-gear")); console.log("picture opens the Me page:", !$("me-card").hidden, "| old dropdown stays hidden:", $("me-menu").hidden, "| old hook buttons still there:", ["profile-btn", "settings-btn", "inbox-btn", "refresh-btn", "signout-btn"].every(id => !!$(id)));
   d.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Escape", bubbles: true })); console.log("Escape closes the Me page:", $("me-card").hidden);
-click($("me-btn")); click($("pf-settings")); click($("me-edit")); await sleep(100); console.log("Edit on the Me page opens the profile card:", !$("profile-card").hidden, "| Me page closed:", $("me-card").hidden);
+click($("me-btn")); click($("pf-gear")); click($("me-edit")); await sleep(100); console.log("Edit on the Me page opens the profile card:", !$("profile-card").hidden, "| Me page closed:", $("me-card").hidden);
   // badges
   $("chat-btn").textContent = "💬 Messages (2)"; $("friends-btn").textContent = "👥 Friends (1)"; $("inbox-btn").textContent = "🔔 Alerts (4)"; await sleep(50);
   console.log("badges: community", $("com-badge").hidden ? "hidden" : $("com-badge").textContent, "| me", $("me-badge").hidden ? "hidden" : $("me-badge").textContent);

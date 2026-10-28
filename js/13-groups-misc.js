@@ -527,6 +527,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-28e", title: "⚙️ Settings and Edit are now separate", items: [
+      "A gear icon now sits next to the Help icon at the top of every page. Tap it for Settings, alerts, privacy and the rest.",
+      "On your Profile page the old Settings & edit button is now just Edit, and it opens the profile editor. The gear is on your Profile too."
+    ] },
     { id: "2026-10-28d", title: "🦈 Sharks, gar, rays, eels and puffers in your tank", items: [
       "Sharks now have a pointed nose and a tall tail, gar and needlefish a long beak, rays are flat diamonds, eels wavy, and puffers round.",
       "Spotted seatrout are speckled, and peacock bass have their dark tail spot."
@@ -624,7 +628,7 @@
     { id: "2026-10-25e", title: "Your own Profile page", items: [
       "Tap your picture (top right) and you now land on your Profile: your name, @handle, home waters, what you catch most, and counts of fish, trips and friends.",
       "Under that are your best catches, a My tank shortcut, and tabs for your Catches (a photo grid), Spots, Trips and Badges.",
-      "Settings, alerts, privacy and everything else are one tap away on the Settings & edit button."
+      "Settings, alerts, privacy and everything else are one tap away on the gear icon next to Help."
     ] },
     { id: "2026-10-25d", title: "A cleaner Community screen", items: [
       "Community now has its own header with search, friends and groups, messages and your picture. Switch between My circle and Public with the two tabs.",

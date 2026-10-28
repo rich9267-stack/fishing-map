@@ -19,6 +19,7 @@
   const fr = iconBtn("cm-friends", ic("users"), "Friends and groups", () => comOpen("friends"));
   const ms = iconBtn("cm-messages", ic("chat"), "Messages", () => comOpen("messages"));
   iconBtn("cm-help", ic("help"), "Help for this screen", () => $("help-btn").click());
+  iconBtn("cm-gear", ic("gear"), "Settings", () => $("gear-btn").click());
   const me2 = iconBtn("cm-me", "", "Me — profile, settings, alerts", () => $("me-btn").click()); me2.classList.add("cm-me");
   // unread numbers: copy the badges the sub-tab bar already keeps
   [["com-b-friends", fr], ["com-b-messages", ms]].forEach(([src, btn]) => {
