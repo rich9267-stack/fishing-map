@@ -6,6 +6,17 @@
   const TANK_LOOKS = [
     // newer fish first, so specific names win over broad ones ("amberjack" before "jack")
     // Gulf + Keys fish and sharks (Oct 15 2026): above /snapper/, /jack/, /trout/ and the general /shark/ line at the bottom
+    // Porgies, grunts, whiting and a few more that were drawn in a random colour (v233)
+    { m: /red porgy/, shape: "deep", body: "#d98a8a", belly: "#f4d9d6", mark: "" },
+    { m: /knobbed porgy/, shape: "deep", body: "#a9a79a", belly: "#e9e6d6", mark: "" },
+    { m: /jolthead/, shape: "deep", body: "#b9b8ad", belly: "#eceae0", mark: "" },
+    { m: /porgy/, shape: "deep", body: "#c4a9a3", belly: "#f2e6e2", mark: "" },
+    { m: /grunt/, shape: "deep", body: "#aebdc2", belly: "#f2efd0", mark: "stripe" },
+    { m: /whiting|southern kingfish/, shape: "torpedo", body: "#b7bcae", belly: "#f0efe4", mark: "" },
+    { m: /toadfish/, shape: "bass", body: "#8a7b5c", belly: "#cdbf9b", mark: "dots" },
+    { m: /walleye/, shape: "torpedo", body: "#a39a55", belly: "#efe7bd", mark: "bars" },
+    { m: /scamp/, shape: "bass", body: "#8a7a5c", belly: "#d9ccaa", mark: "dots" },
+    { m: /rock hind/, shape: "bass", body: "#b5694f", belly: "#e5c3ad", mark: "dots" },
     { m: /lionfish/, shape: "deep", body: "#a8452f", belly: "#ecd2b4", mark: "bars" },
     { m: /bonefish/, shape: "torpedo", body: "#c3ccd1", belly: "#f4f6f7", mark: "" },
     { m: /yellowfin tuna/, shape: "torpedo", body: "#4f7391", belly: "#e8e8d0", mark: "stripe" },
@@ -57,13 +68,13 @@
     { m: /alewife/, shape: "torpedo", body: "#7a9a96", belly: "#edf1ef", mark: "dots" },
     { m: /creek chub/, shape: "torpedo", body: "#8a8453", belly: "#e8e2bd", mark: "stripe" },
     // not fish: drawn with the nearest fish shape until the tank artist makes real ones (plans/bait-collections-plan.md)
-    { m: /shrimp/, shape: "long", body: "#e8a58a", belly: "#f8e3d8", mark: "stripe" },
-    { m: /blue crab/, shape: "flat", body: "#4f86a8", belly: "#d8e6ee", mark: "dots" },
-    { m: /fiddler crab/, shape: "flat", body: "#a98a5f", belly: "#ecdcbc", mark: "" },
-    { m: /sand flea|mole crab|sand crab/, shape: "deep", body: "#b5ab97", belly: "#ece6d8", mark: "" },
-    { m: /hermit crab/, shape: "deep", body: "#c8805a", belly: "#f0d4bf", mark: "bars" },
-    { m: /crayfish|crawfish|crawdad/, shape: "long", body: "#a8412f", belly: "#e6b6a8", mark: "stripe" },
-    { m: /squid/, shape: "long", body: "#d9b3b0", belly: "#f6ecea", mark: "dots" },
+    { m: /shrimp/, shape: "shrimp", body: "#e8a58a", belly: "#f8e3d8", mark: "stripe" },
+    { m: /blue crab/, shape: "crab", body: "#4f86a8", belly: "#d8e6ee", mark: "dots" },
+    { m: /fiddler crab/, shape: "crab", body: "#a98a5f", belly: "#ecdcbc", mark: "" },
+    { m: /sand flea|mole crab|sand crab/, shape: "egg", body: "#b5ab97", belly: "#ece6d8", mark: "" },
+    { m: /hermit crab/, shape: "crab", body: "#c8805a", belly: "#f0d4bf", mark: "bars" },
+    { m: /crayfish|crawfish|crawdad/, shape: "shrimp", body: "#a8412f", belly: "#e6b6a8", mark: "stripe" },
+    { m: /squid/, shape: "squid", body: "#d9b3b0", belly: "#f6ecea", mark: "" },
     { m: /crappie|speckled perch/, shape: "deep", body: "#a6aa8a", belly: "#eef0dc", mark: "dots" },
     { m: /\boscar\b/, shape: "deep", body: "#55503f", belly: "#d98a3d", mark: "bars" },
     { m: /tilapia/, shape: "deep", body: "#8fa3a5", belly: "#e3ecea", mark: "bars" },
@@ -91,7 +102,16 @@
     deep: { body: "M24 30 C34 3 92 1 112 30 C92 59 34 57 24 30 Z", tail: "M27 30 L6 11 L6 49 Z", fin: "M42 11 L64 -1 L88 11 Z", fin2: "M58 51 L72 59 L86 50 Z" },
     bass: { body: "M20 30 C34 9 90 5 114 27 C113 41 100 51 70 51 C40 53 26 45 20 30 Z", tail: "M23 30 L3 14 L3 46 Z", fin: "M44 13 L62 3 L86 12 Z", fin2: "M60 48 L72 56 L84 48 Z" },
     long: { body: "M10 30 C30 21 92 19 117 28 L117 33 C92 41 30 39 10 30 Z", tail: "M14 30 L0 19 L0 41 Z", fin: "M30 24 L40 17 L52 23 Z", fin2: "M34 37 L42 43 L52 38 Z" },
-    flat: { body: "M8 30 C28 4 96 4 116 30 C96 56 28 56 8 30 Z", tail: "M10 30 L-2 28 L-2 32 Z", fin: "M52 10 L62 6 L72 10 Z", fin2: "M52 50 L62 54 L72 50 Z" }
+    flat: { body: "M8 30 C28 4 96 4 116 30 C96 56 28 56 8 30 Z", tail: "M10 30 L-2 28 L-2 32 Z", fin: "M52 10 L62 6 L72 10 Z", fin2: "M52 50 L62 54 L72 50 Z" },
+    // Not fish (v233): same four moving parts, so the swim engine treats them alike. `eye` moves the eyes; `gill: false` hides the gill line.
+    // crab (seen from above, like a crab drawing turned to face right): scalloped shell, big claws with a wrist, three bent legs each side, paddle legs at the back, eyes on stalks
+    crab: { body: "M50 12 Q58 8 66 12 Q72 12 74 18 Q78 22 76 30 Q78 38 74 42 Q72 48 66 48 Q58 52 50 48 Q42 44 42 30 Q42 16 50 12 Z", tail: "M44 21 L34 16 L27 20 L31 27 L42 27 Z M44 39 L34 44 L27 40 L31 33 L42 33 Z", extra: "M64 14 L64 4 L58 -2 M56 12 L52 2 L44 0 M48 13 L40 5 L32 6 M64 46 L64 56 L58 62 M56 48 L52 58 L44 60 M48 47 L40 55 L32 54 M75 28 L79 26 M75 32 L79 34", xw: 2.6, fin: "M68.8 17.6 L72.5 12.7 L77.4 13.9 L75 20.1 Z M75 11.4 C78.7 6.5 88.6 6.5 93.6 10.2 C96 12 96 15.1 93.6 17.6 C88.6 20.1 79.9 18.9 75 15.1 Z M91.1 8.3 C96 5.2 101 8.9 99.8 13.9 C97.3 11.4 94.8 11.4 92.3 12.7 Z M92.3 16.4 C96 15.1 99.8 16.4 99.8 20.1 C96 20.1 92.3 20.1 88.6 18.9 Z", fin2: "M68.8 42.4 L72.5 47.3 L77.4 46.1 L75 39.9 Z M75 48.6 C78.7 53.5 88.6 53.5 93.6 49.8 C96 48 96 44.9 93.6 42.4 C88.6 39.9 79.9 41.1 75 44.9 Z M91.1 51.7 C96 54.8 101 51.1 99.8 46.1 C97.3 48.6 94.8 48.6 92.3 47.3 Z M92.3 43.6 C96 44.9 99.8 43.6 99.8 39.9 C96 39.9 92.3 39.9 88.6 41.1 Z", eyes: [[80, 25], [80, 35]], er: 2, gill: false, line: true },
+    // shrimp / crayfish: curved body, tail fan, feelers (fin), little legs (fin2)
+    shrimp: { body: "M26 36 C32 12 92 6 112 24 C114 32 106 36 98 32 C80 22 52 28 40 42 C34 46 24 42 26 36 Z", tail: "M30 38 L6 26 L2 40 L10 50 Z", fin: "M108 22 L124 12 L124 16 L111 27 Z", fin2: "M62 31 L66 46 L74 31 Z", eye: [100, 24], gill: false },
+    // squid: pointed body with side fins at the back and trailing tentacles at the front
+    squid: { body: "M10 30 C28 21 58 18 76 22 C86 22 92 25 92 30 C92 35 86 38 76 38 C58 42 28 39 10 30 Z", tail: "M8 30 L22 12 L40 21 L30 30 L40 39 L22 48 Z", extra: "M92 27 Q104 21 116 24 M92 29 Q106 27 120 30 M92 31 Q106 33 120 34 M92 33 Q104 39 116 38 M90 26 Q100 16 112 14 M90 34 Q100 44 112 46", xw: 2, fin: "M92 28 Q108 24 122 26 L121 29 Q108 28 92 31 Z", fin2: "M92 32 Q108 34 122 32 L121 35 Q108 36 92 33 Z", eye: [82, 27], er: 3.8, gill: false },
+    // egg: small round sand flea / mole crab with feelers
+    egg: { body: "M18 34 C16 16 58 8 84 20 C94 25 96 34 90 40 C78 50 34 52 18 34 Z", tail: "M20 38 L8 42 L10 34 L4 32 L16 30 Z", extra: "M34 46 L30 56 M46 48 L44 58 M58 48 L58 58 M70 46 L72 56", xw: 2.2, fin: "M90 25 L112 12 L122 15 L112 20 L122 23 L110 26 L92 29 Z", fin2: "M90 33 L106 38 L114 46 L104 44 L92 38 Z", eye: [78, 25], er: 2.8, gill: false }
   };
   function tankLook(species) {
     const name = String(species || "").toLowerCase();
@@ -112,7 +132,9 @@
     [[0, L.body], [0.55, L.body], [1, L.belly]].forEach(([o, c]) => g.appendChild(mk("stop", { offset: o, "stop-color": c })));
     const cp = mk("clipPath", { id: id + "c" }); cp.appendChild(mk("path", { d: S.body })); defs.appendChild(g); defs.appendChild(cp); svg.appendChild(defs);
     const dark = "rgba(20,30,35,.55)", rig = mk("g", { class: "fs-rig" });
-    rig.appendChild(mk("path", { class: "fs-tail", d: S.tail, fill: L.body })); rig.appendChild(mk("path", { class: "fs-fin", d: S.fin, fill: L.body, opacity: .85 })); rig.appendChild(mk("path", { class: "fs-fin2", d: S.fin2, fill: L.body, opacity: .8 }));
+    const ln = S.line ? { stroke: "rgba(0,0,0,.4)", "stroke-width": 0.9, "stroke-linejoin": "round" } : {}; // crabs: outlined claws and paddles, solid
+    rig.appendChild(mk("path", Object.assign({ class: "fs-tail", d: S.tail, fill: L.body }, ln))); rig.appendChild(mk("path", Object.assign({ class: "fs-fin", d: S.fin, fill: L.body, opacity: S.line ? 1 : .85 }, ln))); rig.appendChild(mk("path", Object.assign({ class: "fs-fin2", d: S.fin2, fill: L.body, opacity: S.line ? 1 : .8 }, ln)));
+    if (S.extra) rig.appendChild(mk("path", { class: "fs-extra", d: S.extra, fill: "none", stroke: L.body, "stroke-width": S.xw || 2.4, "stroke-linecap": "round", "stroke-linejoin": "round" })); // legs / arms
     const body = mk("g", { class: "fs-body" });
     body.appendChild(mk("path", { d: S.body, fill: `url(#${id}g)`, stroke: "rgba(0,0,0,.25)", "stroke-width": 1 }));
     const marks = mk("g", { "clip-path": `url(#${id}c)` });
@@ -122,9 +144,10 @@
     if (L.mark === "dots") [[50, 22], [64, 28], [78, 21], [58, 38], [90, 30], [44, 30], [72, 36]].forEach(([x, y]) => marks.appendChild(mk("circle", { cx: x, cy: y, r: 2.4, fill: dark })));
     if (L.mark === "scales") [[46, 22], [60, 22], [74, 22], [88, 24], [53, 32], [67, 32], [81, 33], [60, 42], [74, 42]].forEach(([x, y]) => marks.appendChild(mk("circle", { cx: x, cy: y, r: 6, fill: "none", stroke: "rgba(255,255,255,.55)", "stroke-width": 1 })));
     body.appendChild(marks);
-    body.appendChild(mk("path", { class: "fs-gill", d: "M92 18 C98 26 98 36 92 44", stroke: "rgba(0,0,0,.25)", "stroke-width": 1.4, fill: "none" })); // gill
+    if (S.gill !== false) body.appendChild(mk("path", { class: "fs-gill", d: "M92 18 C98 26 98 36 92 44", stroke: "rgba(0,0,0,.25)", "stroke-width": 1.4, fill: "none" })); // gill
     const eye = mk("g", { class: "fs-eye" });
-    eye.appendChild(mk("circle", { cx: 102, cy: 27, r: 3.4, fill: "#fff" })); eye.appendChild(mk("circle", { cx: 103, cy: 27, r: 1.9, fill: "#101010" }));
+    (S.eyes || [S.eye || [102, 27]]).forEach(ey => { const r = S.er || 3.4;
+      eye.appendChild(mk("circle", { cx: ey[0], cy: ey[1], r, fill: "#fff" })); eye.appendChild(mk("circle", { cx: ey[0] + 1, cy: ey[1], r: r * 0.56, fill: "#101010" })); });
     body.appendChild(eye); rig.appendChild(body); svg.appendChild(rig);
     if (live) { // each fish moves a little differently: its own speed and starting point
       let h = tankUid * 37; for (let i = 0; i < species.length; i++) h = (h * 31 + species.charCodeAt(i)) % 997;

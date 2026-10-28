@@ -527,6 +527,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-28c", title: "🦀 Crabs, shrimp & squid look like themselves", items: [
+      "In your 🐠 tank, crabs now have a wide shell and claws, shrimp and crayfish a curved body, and squid trailing tentacles (they used to be drawn as fish).",
+      "Porgies, grunts, whiting, toadfish, walleye, scamp and rock hind now have their own colors instead of a random one."
+    ] },
     { id: "2026-10-28b", title: "🦐 Shrimp, crabs & other bait collection", items: [
       "A third bait collection: photograph a Shrimp, Blue crab, Fiddler crab, Sand flea (mole crab), Hermit crab, Crayfish and Squid and you earn 🪙 150 + 💎 2 once. You log them like any catch (they are not fish, so no weight guess or rank, and they stay out of the fish games).",
       "Each has a 📚 Learn card (shrimp, blue crab, crayfish and squid from FWC, NOAA or USGS pages; the others are general advice) with a reminder to check your state's rules before you keep any. They swim in your tank for now as fish-shaped stand-ins until proper pictures are drawn."

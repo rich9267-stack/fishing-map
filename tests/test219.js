@@ -43,7 +43,7 @@ const pics = JSON.parse(read("data/learn/fish-pictures.json"));
 
 // tank pictures and the catch form
 const looks = new Function(tankSrc.match(/const TANK_LOOKS = \[[\s\S]*?\n  \];/)[0] + "; return TANK_LOOKS;")();
-const shape = { Shrimp: "long", "Blue crab": "flat", "Fiddler crab": "flat", "Sand flea": "deep", "Hermit crab": "deep", Crayfish: "long", Squid: "long" };
+const shape = { Shrimp: "shrimp", "Blue crab": "crab", "Fiddler crab": "crab", "Sand flea": "egg", "Hermit crab": "crab", Crayfish: "shrimp", Squid: "squid" };
 Object.keys(shape).forEach(n => { const l = looks.find(x => x.m.test(n.toLowerCase())); ok(`tank picture: ${n} is ${shape[n]}`, l && l.shape === shape[n]); });
 ["Shrimp", "Blue crab", "Fiddler crab", "Sand flea (mole crab)", "Hermit crab", "Crayfish", "Squid"].forEach(n => ok(`catch-form suggestion: ${n}`, catchSrc.includes(`"${n}"`)));
 
