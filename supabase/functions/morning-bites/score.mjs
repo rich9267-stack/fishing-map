@@ -122,6 +122,16 @@ export function composeEvening(results, day) {
   return { title: "🌅 Tomorrow looks good", body: `${r.spot.followed ? "⭐ " : ""}${r.spot.name} ${hLabel(r.from)}–${hLabel(r.to)}: ${r.reasons.slice(0, 3).join(", ")} · ${best}/10`, spotId: r.spot.id, ten: best };
 }
 
+// ⏰ Heads-up (setup/114): a strong window at a ⭐ followed spot that starts 1–2 hours from now (nowMin = minutes since local midnight).
+// Same bar as the evening alert: 4+ points or a rarer reason, and 7/10 or more. `results` should come from planDay for today.
+export function composeHeadsUp(results, day, nowMin) {
+  const r = results.find(x => x.spot.followed && x.from * 60 - nowMin >= 60 && x.from * 60 - nowMin <= 120 && (x.score >= STRONG_SCORE || x.reasons.some(t => RARE.test(t))));
+  if (!r) return null;
+  const best = Math.max(...Array.from({ length: r.to - r.from }, (_, i) => tenScore(r.spot, r.from + i, day)));
+  if (best < 7) return null;
+  return { title: "⏰ Bite window soon", body: `⭐ ${r.spot.name} ${hLabel(r.from)}–${hLabel(r.to)}: ${r.reasons.slice(0, 3).join(", ")} · ${best}/10`, spotId: r.spot.id, ten: best };
+}
+
 // One short alert: the best of your own spots, plus the best new spot nearby (if any)
 export function composeAlert(results) {
   if (!results.length) return null;

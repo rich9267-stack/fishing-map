@@ -1211,6 +1211,8 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
   .learn-search { width: 100%; box-sizing: border-box; min-height: 44px; font: inherit; padding: 6px 10px; margin: 6px 0; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
   .learn-fishrow { display: block; width: 100%; text-align: left; appearance: none; font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; margin: 4px 0; cursor: pointer; }
   .learn-fishhero { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+  .learn-fishpic { margin: 8px 0; }
+  .learn-fishpic img { display: block; width: 100%; max-height: 260px; object-fit: contain; border-radius: 10px; background: var(--line); }
   .learn-fishrules { border: 1px solid var(--line); border-radius: 10px; padding: 4px 10px 10px; margin: 6px 0; }
   .learn-fig img { max-width: 100%; border-radius: 8px; }
   .learn-link { appearance: none; font: inherit; color: var(--accent, #1976d2); background: none; border: 0; padding: 6px 0; min-height: 36px; text-align: left; cursor: pointer; text-decoration: underline; }

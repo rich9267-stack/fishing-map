@@ -41,6 +41,14 @@
     { m: /blue runner|hardtail/, shape: "torpedo", body: "#5f8fa6", belly: "#dfeaee", mark: "" },
     { m: /little tunny|bonito|false albacore/, shape: "torpedo", body: "#5f7f94", belly: "#e6edf0", mark: "dots" },
     { m: /pinfish/, shape: "deep", body: "#b9b27a", belly: "#ece8c4", mark: "stripe" },
+    { m: /mullet/, shape: "torpedo", body: "#8d9c9e", belly: "#eef1f0", mark: "stripe" },
+    { m: /mojarra|silver jenny/, shape: "deep", body: "#b9c4c8", belly: "#f3f5f5", mark: "" },
+    { m: /sardine|pilchard|greenback|whitebait/, shape: "torpedo", body: "#6f93a0", belly: "#e9eff1", mark: "dots" },
+    { m: /herring/, shape: "torpedo", body: "#7d9aa6", belly: "#eef2f3", mark: "" },
+    { m: /menhaden|pogy|pogie|bunker/, shape: "deep", body: "#79929c", belly: "#e6ebec", mark: "dots" },
+    { m: /ballyhoo|halfbeak/, shape: "long", body: "#8fb0b8", belly: "#eef3f4", mark: "stripe" },
+    { m: /anchov|glass minnow/, shape: "long", body: "#b9c6c2", belly: "#f4f6f5", mark: "stripe" },
+    { m: /cigar minnow|round scad|cigarfish/, shape: "long", body: "#5f8f88", belly: "#e8efec", mark: "stripe" },
     { m: /crappie|speckled perch/, shape: "deep", body: "#a6aa8a", belly: "#eef0dc", mark: "dots" },
     { m: /\boscar\b/, shape: "deep", body: "#55503f", belly: "#d98a3d", mark: "bars" },
     { m: /tilapia/, shape: "deep", body: "#8fa3a5", belly: "#e3ecea", mark: "bars" },
@@ -566,7 +574,7 @@
   // Gems are earned only. The shop that spends them comes next (simulator step 7).
   let wallet = null, walletBusy = false, walletAt = 0;
   const COIN_WHY = { catch: "photographed catch", measured: "measured it", species: "new species", sighting: "sighting with a photo", best: "new personal best", collection: "finished a collection", tournament: "tournament placing", purchase: "bought", race: "won a fish race", race_fee: "race entry fee", race_prize: "race prize", race_refund: "race fee back", challenge: "weekly challenge", challenge_week: "all weekly challenges done" };
-  const COIN_GROUPS = { inshore: "Inshore", beach: "Beach & pier", offshore: "Offshore", fresh: "Freshwater" };
+  const COIN_GROUPS = { inshore: "Inshore", beach: "Beach & pier", offshore: "Offshore", fresh: "Freshwater", bait: "Saltwater bait" };
   function walletToast(added) {
     if (!added || !added.length) return;
     const coins = added.reduce((a, x) => a + (x.coins || 0), 0), gems = added.reduce((a, x) => a + (x.gems || 0), 0);
@@ -948,7 +956,7 @@
     const seen = new Set();
     (catches || []).forEach(c => { if (c.deleted_at) return; const f = seasonFor(c.species); if (f) seen.add(f.name); });
     return SEASON_GROUPS.map(([key, label]) => {
-      const all = SEASONS.filter(f => f.group === key && !f.far && !/mullet run/i.test(f.name)).map(f => f.name);   // only fish that live here
+      const all = SEASONS.filter(f => (f.group === key || (key === "bait" && f.alsoBait)) && !f.far && !/mullet run/i.test(f.name)).map(f => f.name);   // only fish that live here
       const got = all.filter(n => seen.has(n));
       return { key, label, total: all.length, got, missing: all.filter(n => !seen.has(n)) };
     }).filter(g => g.total);

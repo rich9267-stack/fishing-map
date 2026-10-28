@@ -4,9 +4,10 @@
 //    Add {"dry_run": true, "user_id": "..."} to see the plan without sending.
 //  - POST {"preview": true} with a signed-in user's Authorization header: returns today's plan for that person only (nothing is sent).
 //    Add "evening": true for tomorrow's plan at their favourite spots (what the evening alert would say).
+//  - The same cron run also sends the ⏰ bite-window heads-up (setup/114): hourly per person, followed spots only, max 1 a day.
 //  - The same cron run also sends the evening "🌅 Tomorrow looks good" alert to people whose evening time has come (setup/111).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { planDay, composeAlert, composeEvening, moonPhaseName, hm } from "./score.mjs";
+import { planDay, composeAlert, composeEvening, composeHeadsUp, moonPhaseName, hm } from "./score.mjs";
 import { tideEventsLocal, noaaDateRange } from "./tides.mjs";
 
 const url = Deno.env.get("SUPABASE_URL")!;
@@ -48,10 +49,11 @@ async function tidesFor(lat: number, lng: number, dateStr: string, tz: string) {
 
 // ahead = 0: today (morning alert, all spots in range) · ahead = 1: tomorrow (evening alert, favourite spots only:
 // the ⭐ ones you follow, or your own spots when you follow none)
-async function planFor(userId: string, ahead = 0) {
+async function planFor(userId: string, ahead = 0, followedOnly = false) {
   const { data: inp, error } = await db.rpc("morning_inputs", { p_user: userId });
   if (error) throw error;
   let spotsAll: any[] = inp.spots || [];
+  if (followedOnly) { spotsAll = spotsAll.filter(s => s.followed); if (!spotsAll.length) return { skip: "no followed spots" }; }
   const mine = spotsAll.filter(s => s.mine || s.followed);
   if (ahead) {
     spotsAll = spotsAll.some(s => s.followed) ? spotsAll.filter(s => s.followed) : spotsAll.filter(s => s.mine);
@@ -80,7 +82,7 @@ async function planFor(userId: string, ahead = 0) {
   const tides = await tidesFor(lat, lng, today, tz);
   const day = { sunrise: mins(wx.daily.sunrise[ahead]), sunset: mins(wx.daily.sunset[ahead]), wind, pressure, tides, moon: moonPhaseName(new Date(today + "T12:00:00Z")) };
   const results = planDay(spots, inp.hist || [], day);
-  return { today, tz, lat, lng, radius, spots: spots.length, hadTides: !!tides, results, alert: ahead ? composeEvening(results, day) : composeAlert(results) };
+  return { today, tz, lat, lng, radius, spots: spots.length, hadTides: !!tides, day, results, alert: ahead ? composeEvening(results, day) : composeAlert(results) };
 }
 
 const describe = (p: any) => !p.alert ? "Nothing stands out today — no spot has enough going for it (light wind, moving tide, dawn/dusk, falling pressure, your own history)."
@@ -129,7 +131,22 @@ Deno.serve(async (req) => {
         await db.rpc("evening_mark", { p_user: d.user_id, p_date: d.local_date });
       } catch (e) { failed++; console.log("evening alert failed for", d.user_id, String((e as Error).message || e)); }
     }
-    return json({ ok: true, due: (due || []).length, sent, nothing_to_say: quiet, evening_due: (eve || []).length, evening_sent: eSent, evening_quiet: eQuiet, failed });
+    // ⏰ Bite-window heads-up (setup/114): checked about once an hour per person, only followed spots, one per day
+    const { data: hu } = await db.rpc("headsup_due");
+    let hSent = 0;
+    for (const d of hu || []) {
+      try {
+        const p: any = await planFor(d.user_id, 0, true);
+        const al = p.skip ? null : composeHeadsUp(p.results, p.day, d.now_min);
+        if (al) {
+          await db.rpc("enqueue_notification", { p_user: d.user_id, p_kind: "headsup", p_title: al.title, p_body: al.body,
+            p_url: "?go=spot&id=" + al.spotId, p_dedupe: `hu:${d.user_id}:${d.local_date}` });
+          hSent++;
+        }
+        await db.rpc("headsup_mark", { p_user: d.user_id, p_date: d.local_date, p_sent: !!al });
+      } catch (e) { failed++; console.log("heads-up failed for", d.user_id, String((e as Error).message || e)); }
+    }
+    return json({ ok: true, headsup_due: (hu || []).length, headsup_sent: hSent, due: (due || []).length, sent, nothing_to_say: quiet, evening_due: (eve || []).length, evening_sent: eSent, evening_quiet: eQuiet, failed });
   } catch (e) {
     return json({ error: String((e as Error).message || e) }, 500);
   }

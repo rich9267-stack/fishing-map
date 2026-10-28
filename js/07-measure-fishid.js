@@ -34,6 +34,8 @@
     [["gulf toadfish", "toadfish"], 10, 0.56, 3.28], [["grunt"], 12, 1, 3], [["porkfish"], 10, 0.6], [["porgy"], 14, 1.44, 3.07],
     [["triggerfish"], 16, 2.55, 3], [["clown knifefish", "knifefish"], 24, 3.6], [["puffer"], 8, 0.4, 3.01], [["mojarra"], 8, 0.24, 2.82],
     [["silver jenny"], 6, 0.1, 3.04],
+    [["scaled sardine", "pilchard", "greenback", "whitebait"], 6, 0.12, 3], [["spanish sardine"], 8, 0.18, 3], [["thread herring", "threadfin herring"], 8, 0.25, 3],
+    [["menhaden", "pogy", "pogie"], 10, 0.65, 3], [["ballyhoo"], 12, 0.25, 2.8], [["bay anchovy", "anchovy", "glass minnow"], 3.5, 0.02, 3], [["cigar minnow", "round scad"], 7, 0.17, 3],
     [["smallmouth"], 16, 2, 3.02], [["spotted bass"], 14, 1.2, 3.06], [["striped bass", "striper"], 28, 9.7, 3.14], [["white bass"], 12, 0.8, 3.08],
     [["white perch"], 9, 0.37, 3.14], [["walleye"], 18, 2.1, 3.17], [["sauger"], 14, 0.9, 3.19], [["yellow perch"], 9, 0.34, 3.08],
     [["northern pike"], 26, 4, 3.06], [["muskellunge", "muskie", "musky"], 40, 18, 3.4], [["pickerel"], 18, 1.25, 3.1],

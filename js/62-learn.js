@@ -79,6 +79,7 @@ function lnFishLoad() {
   fetch("data/learn/fish.json").then(r => { if (!r.ok) throw new Error("http"); return r.json(); })
     .then(j => { if (!j || !Array.isArray(j.fish)) throw new Error("bad"); LN.fish = j.fish; LN.fishT = j.t || ""; LN.fishHandling = j.handling || null; })
     .catch(() => { LN.fishErr = true; })
+    .then(() => fetch("data/learn/fish-pictures.json").then(r => r.ok ? r.json() : null).then(j => { LN.fishPics = (j && j.pictures) || {}; }).catch(() => { LN.fishPics = {}; }))
     .then(() => { LN.fishLoading = false; const v = $("view-learn"); if (v && !v.hidden && lnShowsData()) renderLearn(); });
 }
 const lnWords = f => [f.name].concat(f.match || []).map(w => String(w).toLowerCase());
@@ -126,6 +127,18 @@ function lnSourceLine(box, lead, src, t) {
   if (t) d.appendChild(el("span", null, " · checked " + lnDate(t)));
   box.appendChild(d);
 }
+// One free picture (data/learn/fish-pictures.json): linked, not copied. The credit, licence and source page always show under it; no picture = nothing shown.
+function lnFishPicture(box, f) {
+  const p = LN.fishPics && LN.fishPics[f.name];
+  if (!p || !/^https:\/\//.test(p.img || "") || !/^https:\/\//.test(p.page || "")) return;
+  const fig = el("figure", "learn-fishpic");
+  const img = el("img"); img.src = p.img; img.alt = f.name + " (picture)"; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
+  img.addEventListener("error", () => fig.remove());
+  fig.appendChild(img);
+  const cap = el("figcaption", "spot-meta", "Illustration: " + p.credit + " · " + p.licence + " · "); const a = el("a", null, "source on " + p.site + " ↗");
+  a.href = p.page; a.target = "_blank"; a.rel = "noopener"; cap.appendChild(a);
+  fig.appendChild(cap); box.appendChild(fig);
+}
 function lnFishCard(f, st) {
   const box = el("div", "learn-fishcard");
   const back = el("button", "btn ghost small", "‹ All fish"); back.type = "button";
@@ -135,6 +148,7 @@ function lnFishCard(f, st) {
   if (typeof fishSvg === "function") { try { hero.appendChild(fishSvg(f.name, 96)); } catch (e) { /* no picture: the name is enough */ } }
   hero.appendChild(el("h2", "learn-h", f.name));
   box.appendChild(hero);
+  lnFishPicture(box, f);
   box.appendChild(lnFishRuleBlock(f, st));
   box.appendChild(el("div", "spot-meta", f.source ? "ℹ️ The rest of this card is general information from the official source linked at the bottom. It is not a rule." : "ℹ️ No official fish page was found for this fish, so everything below is general advice written for this app. It is not a rule."));
   const sec = (h, text) => { if (!text) return; box.appendChild(el("h3", "learn-h2", h)); box.appendChild(el("div", null, text)); };
@@ -145,7 +159,7 @@ function lnFishCard(f, st) {
   sec("🔀 Look-alikes", f.lookalikes);
   lnFishGeneral(box, f);
   if (f.kind === "salt" && LN.fishHandling && !f.nohandling) { list("💧 Release & handling", LN.fishHandling.points); const hs = LN.fishHandling.source; if (hs) lnSourceLine(box, "Handling advice from", hs, LN.fishT); }
-  if (f.source) lnSourceLine(box, "Source:", f.source, LN.fishT);
+  if (f.source) lnSourceLine(box, "Source:", f.source, f.checked || LN.fishT);
   return box;
 }
 // What the official page does not give: general advice written for this app, kept apart and labelled (fields of f.general)

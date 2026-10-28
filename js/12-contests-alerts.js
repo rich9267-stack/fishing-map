@@ -771,7 +771,7 @@
         $("push-p-social").checked = p.social !== false; $("push-p-contests").checked = p.contests !== false; $("push-p-trips").checked = p.trips !== false;
         $("push-p-wx").checked = p.weather !== false; $("push-p-rt").checked = p.red_tide !== false; $("push-p-weekly").checked = p.weekly !== false; $("push-p-cond").checked = !!p.conditions; $("push-c-opts").hidden = !p.conditions;
         $("push-c-time").value = String(p.cond_time || "06:30").slice(0, 5); $("push-c-radius").value = String(p.cond_radius_mi || 25);
-        $("push-p-eve").checked = !!p.evening; $("push-e-opts").hidden = !p.evening; $("push-e-time").value = String(p.eve_time || "19:00").slice(0, 5);
+        $("push-p-eve").checked = !!p.evening; $("push-e-opts").hidden = !p.evening; $("push-e-time").value = String(p.eve_time || "19:00").slice(0, 5); $("push-p-hu").checked = !!p.headsup;
         pushCondLoc = p.cond_lat != null && p.cond_lng != null ? { lat: p.cond_lat, lng: p.cond_lng } : null;
         $("push-c-loc").textContent = pushCondLoc ? "📍 Location saved — update it" : "📍 Use my current location";
         $("push-q-on").checked = !!p.quiet_enabled;
@@ -818,7 +818,7 @@
     let tz = "America/New_York"; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch (e) {}
     const { error } = await db.from("notif_prefs").upsert({ user_id: me.id, social: $("push-p-social").checked, contests: $("push-p-contests").checked, trips: $("push-p-trips").checked,
       weather: $("push-p-wx").checked, red_tide: $("push-p-rt").checked, weekly: $("push-p-weekly").checked, conditions: $("push-p-cond").checked, cond_time: $("push-c-time").value || "06:30", cond_radius_mi: +$("push-c-radius").value || 25,
-      evening: $("push-p-eve").checked, eve_time: $("push-e-time").value || "19:00",
+      evening: $("push-p-eve").checked, eve_time: $("push-e-time").value || "19:00", headsup: $("push-p-hu").checked,
       ...(pushCondLoc ? { cond_lat: pushCondLoc.lat, cond_lng: pushCondLoc.lng } : {}),
       quiet_enabled: $("push-q-on").checked, quiet_start: $("push-q-start").value || "22:00", quiet_end: $("push-q-end").value || "06:00", tz, updated_at: new Date().toISOString() });
     pushSay(error ? "Couldn't save: " + error.message : "Saved ✓", !!error);
@@ -829,7 +829,7 @@
     const { error } = await db.rpc("send_test_push");
     pushSay(error ? "Couldn't send: " + error.message : "Sent — it should buzz in a few seconds.", !!error);
   });
-  ["push-p-social", "push-p-contests", "push-p-trips", "push-p-wx", "push-p-rt", "push-p-weekly", "push-p-cond", "push-c-time", "push-c-radius", "push-p-eve", "push-e-time", "push-q-on", "push-q-start", "push-q-end"].forEach(id => $(id).addEventListener("change", pushSavePrefs));
+  ["push-p-social", "push-p-contests", "push-p-trips", "push-p-wx", "push-p-rt", "push-p-weekly", "push-p-cond", "push-c-time", "push-c-radius", "push-p-eve", "push-p-hu", "push-e-time", "push-q-on", "push-q-start", "push-q-end"].forEach(id => $(id).addEventListener("change", pushSavePrefs));
   $("push-weekly-preview").addEventListener("click", async () => {
     const out = $("push-weekly-out"); out.textContent = "…";
     const { data, error } = await db.rpc("weekly_preview");

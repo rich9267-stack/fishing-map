@@ -1,5 +1,5 @@
 // Evening "tomorrow looks good" alert (v213): the 0–10 number matches Home's rules, and the alert text.
-import { planDay, tenScore, composeEvening, moonPhaseName } from "../supabase/functions/morning-bites/score.mjs";
+import { planDay, tenScore, composeEvening, composeHeadsUp, moonPhaseName } from "../supabase/functions/morning-bites/score.mjs";
 import fs from "node:fs";
 let bad = 0; const ok = (c, m) => { console.log((c ? "ok   " : "FAIL ") + m); if (!c) bad++; };
 const flat = v => Array.from({ length: 24 }, () => v);
@@ -35,4 +35,17 @@ ok(al.body.length <= 160, "fits in one phone alert (160 letters)");
 ok(composeEvening(planDay([pier], [], { ...day, wind: flat(25) }), day) === null, "too windy all day: no alert");
 const ordinary = { ...day, pressure: steady };
 ok(planDay([pier], [], ordinary).length === 1 && composeEvening(planDay([pier], [], ordinary), ordinary) === null, "an ordinary day (tide + light + light wind) at a followed spot: the evening alert stays quiet");
+
+// ⏰ heads-up (v228, setup/114): strong window at a followed spot starting 1–2 h from now, one alert text
+const rt = planDay([pier], [], day), w0 = rt[0];
+const startMin = w0.from * 60;
+const hu = composeHeadsUp(rt, day, startMin - 90);
+ok(hu && hu.title === "⏰ Bite window soon" && /^⭐ Hillsboro Inlet \d+(am|pm)–\d+(am|pm): /.test(hu.body) && / · \d+\/10$/.test(hu.body) && hu.spotId === "a" && hu.body.length <= 160, "heads-up text: " + (hu && hu.body));
+ok(composeHeadsUp(rt, day, startMin - 61) && composeHeadsUp(rt, day, startMin - 120), "heads-up covers 1 to 2 hours ahead");
+ok(composeHeadsUp(rt, day, startMin - 30) === null && composeHeadsUp(rt, day, startMin - 121) === null, "too soon or too early: no heads-up");
+ok(composeHeadsUp(planDay([{ ...pier, followed: false, mine: true }], [], day), day, startMin - 90) === null, "a spot you don't follow never gets a heads-up");
+ok(composeHeadsUp(planDay([pier], [], { ...day, wind: flat(25) }), day, startMin - 90) === null, "too windy: no heads-up");
+ok(composeHeadsUp(planDay([pier], [], ordinary), ordinary, 4 * 60) === null, "an ordinary day stays quiet");
+const sql = fs.readFileSync(new URL("../setup/114-bite-headsup.sql", import.meta.url), "utf8");
+ok(/revoke all on function public\.headsup_due\(\), public\.headsup_mark\(uuid, date, boolean\) from public, anon, authenticated/.test(sql) && /'headsup'/.test(sql), "setup/114: functions locked down, kind added");
 process.exit(bad ? 1 : 0);

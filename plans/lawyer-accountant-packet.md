@@ -70,6 +70,9 @@ These were found by checking the texts against v173. Don't change anything yet; 
 26. When is it worth forming a Florida nonprofit + 501(c)(3)? Is a fiscal sponsor a good first step? Can the nonprofit share the app's name, and what must stay separate?
 27. Do cleanup or tagging days run through the app need waivers or insurance?
 
+**Learn → Fish illustrations (v228)**
+28. Each fish card links one outside illustration (drawing or painting, no photos; not copied into the app): U.S. Fish & Wildlife Service (Duane Raver) and NOAA / U.S. Fish Commission files first, then older public-domain drawings (FMIB, pre-1930) and one CC BY drawing, all via Wikimedia Commons. The credit, licence and source page show under it. Is that credit line enough (incl. CC BY), is linking (not hosting) fine, and is it OK to rely on Commons' public-domain labels for the old drawings? List: data/learn/fish-pictures.json; 29 fish have none.
+
 ## 4. Proposed new lines (drafts for the lawyer to fix, NOT live)
 - **Coins and gems:** "Coins and gems are points for fun. They have no cash value, can't be bought, sold or traded, and the owner may correct them (always logged)."
 - **Contests and races:** "No purchase needed. Prizes are coins only. We may cancel or correct a result for cheating or mistakes."

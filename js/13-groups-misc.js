@@ -527,6 +527,18 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-27k", title: "🐟 Saltwater bait collection", items: [
+      "A new collection: catch a photographed Pinfish, Mullet, Mojarra, Scaled sardine (pilchard), Spanish sardine, Threadfin herring, Menhaden, Ballyhoo, Bay anchovy and Cigar minnow and you earn 🪙 150 + 💎 2 once. Pinfish still counts in Beach & pier too.",
+      "All of them are in the species suggestions when you log a catch, have a Seasons card, a picture in the tanks and a 📚 Learn card (most from FWC's species pages; threadfin herring is general advice)."
+    ] },
+    { id: "2026-10-27j", title: "⏰ Bite window heads-up", items: [
+      "New phone alert in Settings → Phone alerts: “Bite window soon”. When a spot you follow ⭐ has a strong window starting in 1–2 hours, you get one heads-up (at most one a day). It's off until you tick it.",
+      "It uses the same tide, wind, pressure and light as the 0–10 score, stays quiet on ordinary days, and respects your quiet hours."
+    ] },
+    { id: "2026-10-27i", title: "🖼 Drawings on the Learn fish cards", items: [
+      "Open 📚 Learn → Fish and tap a fish: most cards now have a drawing or painting at the top (no photos), with who made it, its licence and a link to the source under it.",
+      "The art comes from free sources only (mostly U.S. Fish & Wildlife Service and NOAA, plus older public-domain drawings). About 30 fish have no free drawing yet and keep their little icon."
+    ] },
     { id: "2026-10-27h", title: "🎣 Fishing score on every spot", items: [
       "Every spot card now shows “Fishing here now: 7/10” with a Why? button (tide, wind, pressure, moon and light for that spot).",
       "Planning a trip shows the score for your chosen spot at the day and time you pick, and for each suggested spot. Beyond about 3 days it uses tide, moon and light only."
