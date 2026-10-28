@@ -111,6 +111,8 @@
     box.appendChild(el("div", "pop-meta", [badge + label, county].filter(Boolean).join(" · ")));
     const facts = officialFacts({ info: d, county: null });   // lanes, fee, hours, water, who runs it (the county is already on the line above)
     if (facts) box.appendChild(el("div", "pop-meta", facts));
+    const runBy = el("div", "pop-meta"); box.appendChild(runBy);   // "🏪 Run by <business page>" when a page has linked this place (js/71)
+    if (typeof bpPlaceLine === "function") bpPlaceLine(o, runBy);
     if (o.source === "fwc-ramp" && o.source_id) {   // "More from FWC": filled in a moment later; stays out if there is no signal
       const more = el("div", "ol-more"); box.appendChild(more);
       olFetchMore(o.source_id).then(a => {

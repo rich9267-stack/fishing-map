@@ -527,6 +527,12 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-28g", title: "🏪 Business pages grow up", items: [
+      "Shops, charters and guides can now show hours, address, phone, website, photos and what they offer, plus a map pin with Directions.",
+      "Pages can post fishing reports and what's in stock. Follow a page to see them, and get an alert from ✔ verified shops (at most 1 a day).",
+      "Every page with a pin lists the official ramps, piers and parks nearby under 🎣 Fishing near here.",
+      "Something looks fake? Tap ⚑ Report this page and the admin will check it."
+    ] },
     { id: "2026-10-28f", title: "✏️ A tidier Edit profile page", items: [
       "Your picture and who can see your page are now at the top, then About you, Home waters and Your page.",
       "One Save button at the bottom saves everything (it used to be two), and the long explanations tuck under a small ⓘ.",

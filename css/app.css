@@ -939,6 +939,32 @@
   .hp-admin-row { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin: 8px 0; }
   .hp-admin-live { margin: 10px 0; }
   .hp-admin-live summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+  /* 🏪 business pages (js/71) */
+  .hp-chip.verified { background: #d4edda; color: #155724; }
+  #hp-page input[type="tel"], #hp-page input[type="url"], #hp-page input[type="date"], #hp-page input[type="number"], #hp-page select { width: 100%; box-sizing: border-box; margin-top: 8px; }
+  .bp-sec { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .bp-line { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; overflow-wrap: anywhere; }
+  .bp-ic { flex: none; width: 1.4em; text-align: center; }
+  .bp-strip { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; }
+  .bp-photo { width: 140px; height: 105px; object-fit: cover; border-radius: 10px; flex: none; background: var(--line); }
+  .bp-ph-edit { display: flex; flex-direction: column; align-items: flex-start; }
+  .bp-svc { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+  .bp-svc-edit { display: grid; grid-template-columns: 1fr 6em auto; gap: 6px; align-items: center; margin: 6px 0; }
+  .bp-svc-edit input { width: 100%; box-sizing: border-box; }
+  .bp-post { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin: 8px 0; }
+  .bp-post.bp-hidden { opacity: .55; }
+  .bp-post-t { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 4px; }
+  .bp-compose { margin-bottom: 10px; }
+  .bp-kinds { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+  .bp-chip-btn { appearance: none; font: inherit; font-size: .85rem; min-height: 36px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; }
+  .bp-chip-btn.on { background: var(--accent, #0b6e99); border-color: var(--accent, #0b6e99); color: #fff; }
+  .bp-alert { display: flex; align-items: center; gap: 6px; min-height: 44px; }
+  .bp-pinmap { height: 220px; border-radius: 12px; margin: 6px 0; border: 1px solid var(--line); }
+  .bp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; margin: 6px 0; }
+  .bp-stat { border: 1px solid var(--line); border-radius: 12px; padding: 8px; display: flex; flex-direction: column; }
+  .bp-stat b { font-size: 1.3rem; }
+  .bp-stat span { font-size: .78rem; color: var(--muted); }
+  .bp-soon { margin-top: 12px; }
 
   /* 🚫 no-fishing zones check (js/33) */
   .zone-chip-wrap { display: contents; }

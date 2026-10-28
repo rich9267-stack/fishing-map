@@ -73,7 +73,7 @@
       row.setAttribute("aria-label", `${p.name}, ${KIND[p.kind].label}` + (p.is_mine ? ", " + STATUS[p.status] : ""));
       row.appendChild(pageAvatar(p, 44));
       const t = el("div", "hp-row-t"); t.appendChild(el("b", null, p.name));
-      t.appendChild(el("div", "spot-meta", KIND[p.kind].icon + " " + KIND[p.kind].label + (p.area ? " · " + p.area : "") + (p.is_mine && p.status !== "approved" ? " · " + STATUS[p.status] : "") + (p.following ? " · ✓ Following" : "")));
+      t.appendChild(el("div", "spot-meta", KIND[p.kind].icon + " " + KIND[p.kind].label + (p.verified ? " ✔" : "") + (p.area ? " · " + p.area : "") + (p.is_mine && p.status !== "approved" ? " · " + STATUS[p.status] : "") + (p.following ? " · ✓ Following" : "")));
       row.appendChild(t);
       row.addEventListener("click", () => { openId = p.id; view = "detail"; pickBlob = null; pickClear = false; pickColor = p.accent || null; draw(); pg.scrollTop = 0; });
       return row;
@@ -145,6 +145,7 @@
       const head = el("div", "hp-head"); head.appendChild(pageAvatar(p, 64));
       const t = el("div"); t.appendChild(el("h2", "hp-h", p.name));
       const chips = el("div", "hp-chips"); chips.appendChild(chip(KIND[p.kind].icon + " " + KIND[p.kind].label));
+      if (p.verified) chips.appendChild(chip("✔ Verified", "verified"));
       if (p.area) chips.appendChild(chip("📍 " + p.area));
       if (p.is_mine) chips.appendChild(chip(STATUS[p.status], p.status));
       t.appendChild(chips); head.appendChild(t); body.appendChild(head);
@@ -161,7 +162,10 @@
       }
       if (p.is_mine && p.status === "pending") body.appendChild(el("div", "msg", "The admin hasn't looked at this yet. Nobody else can see it until it's approved."));
       if (p.is_mine && p.status === "declined") body.appendChild(el("div", "msg err", "This request wasn't approved. You can remove it and ask again with a different name or more detail."));
+      // 🏪 business pages (js/71, setup/118): details, pin, photos, services, posts, Fishing near here, report; then the owner's tools
+      if (typeof bpPageTop === "function") bpPageTop(p, body, !!data.extras_on);
       if (p.status === "approved") drawPageTournaments(p);
+      if (p.is_mine && p.status !== "declined" && typeof bpOwner === "function") bpOwner(p, body, async () => { await load(); draw(); }, !!data.extras_on);
       if (p.is_mine && p.status !== "declined") drawEdit(p);
       if (p.is_mine) {
         const rm = el("button", "btn ghost small", "Remove this page"); rm.type = "button"; rm.id = "hp-remove"; rm.style.cssText = "display:block;margin-top:18px;color:#c0392b";
@@ -308,7 +312,8 @@
       try { const q = await db.rpc("host_page_renames_admin"); renameReqs = q && !q.error && Array.isArray(q.data) ? q.data : []; } catch (e) { renameReqs = []; }
       box.innerHTML = "";
       const pending = rows.filter(r => r.status === "pending"), live = rows.filter(r => r.status === "approved");
-      updateRequestBadge(null, null, pending.length + renameReqs.length);
+      const extra = typeof bpAdmin === "function" ? await bpAdmin(box, adminLoad) : 0;   // page reports, place links, reviews (js/71)
+      updateRequestBadge(null, null, pending.length + renameReqs.length + extra);
       if (!rows.length && !renameReqs.length) return;
       const who = r => (r.owner_name || "?") + (r.owner_handle ? " (@" + r.owner_handle + ")" : "");
       const review = async (r, ok) => {
@@ -343,6 +348,7 @@
           row.appendChild(el("div", "spot-meta", `${KIND[r.kind] ? KIND[r.kind].label : r.kind} · from ${who(r)}` + (r.area ? " · " + r.area : "")));
           if (r.about) row.appendChild(el("div", "spot-meta", r.about));
           if (r.note) row.appendChild(el("div", "spot-meta", "“" + r.note + "”"));
+          if (typeof bpAdminRow === "function") bpAdminRow(r, row, el("div"), adminLoad);   // phone / address so the admin can check it's real
           const btns = el("div", "sugg-btns");
           const yes = el("button", "btn small", "Approve"); yes.type = "button"; yes.addEventListener("click", () => review(r, true));
           const no = el("button", "linkbtn danger", "Decline"); no.type = "button"; no.addEventListener("click", () => review(r, false));
@@ -351,7 +357,7 @@
       }
       if (live.length) {
         const d = document.createElement("details"); d.className = "hp-admin-live";
-        const s = document.createElement("summary"); s.textContent = `Live pages (${live.length}) — business allowance & removing`; d.appendChild(s);
+        const s = document.createElement("summary"); s.textContent = `Live pages (${live.length}) — verify, pause, business allowance & removing`; d.appendChild(s);
         live.forEach(r => {
           const row = el("div", "hp-admin-row");
           row.appendChild(el("b", null, (KIND[r.kind] ? KIND[r.kind].icon + " " : "") + r.name));
@@ -370,7 +376,9 @@
             if (!await askOk("Remove \"" + r.name + "\" for everyone?")) return;
             const { error } = await db.rpc("close_host_page", { p_id: r.id }); if (error) toast(nice(error), 5000); else adminLoad();
           });
-          btns.appendChild(rm); row.appendChild(btns); d.appendChild(row);
+          btns.appendChild(rm);
+          if (typeof bpAdminRow === "function") bpAdminRow(r, row, btns, adminLoad);   // ✔ verify, ⏸ pause, report count (js/71)
+          row.appendChild(btns); d.appendChild(row);
         });
         box.appendChild(d);
       }

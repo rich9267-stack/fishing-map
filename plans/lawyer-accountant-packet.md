@@ -1,6 +1,6 @@
 # Lawyer + accountant packet (send this ahead of the appointments)
 
-**Checked against the live app: v173, Oct 22 2026.** Before the appointment, ask Claude to "bring the lawyer packet up to date" so it matches the newest version. Rule (CLAUDE.md): anything new that touches members' data, photos, money, outside data or the fishing rules adds a line here.
+**Checked against the live app: v173, Oct 22 2026 (business pages section 29–35 added for v238, Oct 28).** Before the appointment, ask Claude to "bring the lawyer packet up to date" so it matches the newest version. Rule (CLAUDE.md): anything new that touches members' data, photos, money, outside data or the fishing rules adds a line here.
 
 Not legal or tax advice. This lists what the app does and what to ask. **terms.html and privacy.html stay unchanged until the lawyer answers.** After that, the Engineer applies the wording once and bumps `TERMS_VERSION` (js/49, now "2026-10-18") so members agree again once.
 
@@ -72,6 +72,15 @@ These were found by checking the texts against v173. Don't change anything yet; 
 
 **Learn → Fish illustrations (v228)**
 28. Each fish card links one outside illustration (drawing or painting, no photos; not copied into the app): U.S. Fish & Wildlife Service (Duane Raver) and NOAA / U.S. Fish Commission files first, then older public-domain drawings (FMIB, pre-1930) and one CC BY drawing, all via Wikimedia Commons. The credit, licence and source page show under it. Is that credit line enough (incl. CC BY), is linking (not hosting) fine, and is it OK to rely on Commons' public-domain labels for the old drawings? List: data/learn/fish-pictures.json; 29 fish have none.
+
+**🏪 Business pages (v238, setup/118; bait shops, charters, tackle stores, marinas, guides)**
+29. A business page (admin-approved, 1 per account) can now show the shop's hours, address, phone, website, a map pin with Directions, up to 4 photos (stored in the page's own folder of the private `host-avatars` bucket) and a "services & prices" list. The prices are plain text written by the business; nobody pays in the app. Question: are we responsible for wrong prices, hours or claims a business writes, and what should the terms say (for example "businesses write their own pages; check with them")?
+30. Posts: a page can post fishing reports, "what's in stock" and news (3 a day). A ✔ verified page can also send 1 phone alert a day to its followers only. There are no deals or discounts (kept for paid ads later). Question: a shop's fishing report is a third party's claim about fishing. Is the as-is clause enough, or do posts need their own line?
+31. ✔ Verified = the admin phoned the number the business lists. Question: what may "verified" promise, and how should it be worded so it doesn't sound like a guarantee of the business?
+32. Report a page: members can report a page (fake, spam, wrong info, rude, other, plus an optional 300-letter note). The admin can hide a post or pause a page, and every action is in the admin log. A business can ask to link an official ramp, pier or park on the map to its page (the admin approves), and the place card then says "Run by <page>". Question: if a business links to a public ramp, could people think the ramp is private or that the business owns it?
+33. Owner stats show follower numbers and post counts only. No page views are counted (the privacy page says there's no visit tracking).
+34. **Built but switched OFF until this review:** (a) trip booking requests: a member sends a date, party size and a note to a charter, and the owner sees the member's name and replies yes or no in the app; no payment, no contact details exchanged. (b) Reviews: 1 to 5 stars plus up to 300 letters; each review waits for the admin before it shows; owners can't review their own page. Questions: may we run reviews at all (false or defamatory reviews, FTC rules on fake reviews, does admin pre-approval make us the publisher)? For bookings, is passing a member's name to a business a new kind of sharing that needs a privacy line? Switching either on = one small database change after the answers.
+35. Future paid ads (NOT built): reaching people who don't follow a page (featured pin, nearby shop, sponsored post). Question for the lawyer and the accountant: what's needed before a business pays us anything (business setup, sales tax, ad disclosure such as a "Sponsored" label)?
 
 ## 4. Proposed new lines (drafts for the lawyer to fix, NOT live)
 - **Coins and gems:** "Coins and gems are points for fun. They have no cash value, can't be bought, sold or traded, and the owner may correct them (always logged)."
