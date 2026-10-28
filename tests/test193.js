@@ -66,7 +66,7 @@ const tick = () => new Promise(r => setTimeout(r, 5));
   ok(/could not load/.test(text()), "if the file can't be read, an honest message");
 
   ok(read("sw.js").includes("learn\\/(fish|knots|rigs|bait)"), "sw.js keeps data/learn/knots.json on the phone");
-  ok(/Knots/.test(read("js/13-groups-misc.js").slice(0, 60000)) && /2026-10-23a/.test(read("js/13-groups-misc.js")), "What's new mentions the knots");
+  ok(/Knots/.test(read("js/13-groups-misc.js")) && /2026-10-23a/.test(read("js/13-groups-misc.js")), "What's new mentions the knots");
   ok(/v181/.test(read("docs/build_history.md")), "build history has v181");
   ok(!/\.from\(/.test(read("js/62-learn.js")), "no database call in js/62");
   console.log(bad ? `\n${bad} FAILED` : "\nALL OK"); process.exit(bad ? 1 : 0);

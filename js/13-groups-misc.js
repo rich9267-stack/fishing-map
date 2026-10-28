@@ -527,6 +527,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-28d", title: "🦈 Sharks, gar, rays, eels and puffers in your tank", items: [
+      "Sharks now have a pointed nose and a tall tail, gar and needlefish a long beak, rays are flat diamonds, eels wavy, and puffers round.",
+      "Spotted seatrout are speckled, and peacock bass have their dark tail spot."
+    ] },
     { id: "2026-10-28c", title: "🦀 Crabs, shrimp & squid look like themselves", items: [
       "In your 🐠 tank, crabs now have a wide shell and claws, shrimp and crayfish a curved body, and squid trailing tentacles (they used to be drawn as fish).",
       "Porgies, grunts, whiting, toadfish, walleye, scamp and rock hind now have their own colors instead of a random one."

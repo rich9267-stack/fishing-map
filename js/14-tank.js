@@ -17,6 +17,11 @@
     { m: /walleye/, shape: "torpedo", body: "#a39a55", belly: "#efe7bd", mark: "bars" },
     { m: /scamp/, shape: "bass", body: "#8a7a5c", belly: "#d9ccaa", mark: "dots" },
     { m: /rock hind/, shape: "bass", body: "#b5694f", belly: "#e5c3ad", mark: "dots" },
+    { m: /stingray|eagle ray|manta|\bray\b|skate/, shape: "ray", body: "#8e7a5e", belly: "#d8c9ae", mark: "dots" },
+    { m: /puffer|blowfish|porcupinefish|boxfish|cowfish/, shape: "puffer", body: "#b9ad7a", belly: "#f3efd8", mark: "dots" },
+    { m: /\beel\b|moray|conger/, shape: "eel", body: "#6c7a58", belly: "#c9cfa8", mark: "" },
+    { m: /\bgar\b/, shape: "gar", body: "#7c8d5b", belly: "#dcdcb2", mark: "dots" },
+    { m: /needlefish/, shape: "gar", body: "#8d9aa3", belly: "#e4e9ec", mark: "stripe" },
     { m: /lionfish/, shape: "deep", body: "#a8452f", belly: "#ecd2b4", mark: "bars" },
     { m: /bonefish/, shape: "torpedo", body: "#c3ccd1", belly: "#f4f6f7", mark: "" },
     { m: /yellowfin tuna/, shape: "torpedo", body: "#4f7391", belly: "#e8e8d0", mark: "stripe" },
@@ -25,11 +30,11 @@
     { m: /bar jack/, shape: "deep", body: "#8fa6b0", belly: "#eef1f2", mark: "stripe" },
     { m: /horse-eye|horse eye/, shape: "deep", body: "#9aa9a3", belly: "#ece9c2", mark: "" },
     { m: /sand seatrout|sand trout|white trout/, shape: "torpedo", body: "#b9bfb0", belly: "#f1efe6", mark: "" },
-    { m: /blacktip/, shape: "torpedo", body: "#7d8a94", belly: "#eef1f2", mark: "" },
-    { m: /bull shark/, shape: "bass", body: "#76828b", belly: "#e9edef", mark: "" },
-    { m: /bonnethead/, shape: "torpedo", body: "#8d979c", belly: "#e7eaeb", mark: "" },
-    { m: /nurse shark/, shape: "long", body: "#8a7a62", belly: "#d9cdb4", mark: "" },
-    { m: /lemon shark/, shape: "bass", body: "#b8a466", belly: "#efe6c4", mark: "" },
+    { m: /blacktip/, shape: "shark", body: "#7d8a94", belly: "#eef1f2", mark: "" },
+    { m: /bull shark/, shape: "shark", body: "#76828b", belly: "#e9edef", mark: "" },
+    { m: /bonnethead/, shape: "shark", body: "#8d979c", belly: "#e7eaeb", mark: "" },
+    { m: /nurse shark/, shape: "shark", body: "#8a7a62", belly: "#d9cdb4", mark: "" },
+    { m: /lemon shark/, shape: "shark", body: "#b8a466", belly: "#efe6c4", mark: "" },
     // catfish first: "walking" contains "king", which would otherwise draw it as a mackerel
     { m: /walking catfish|clarias/, shape: "long", body: "#5f5a52", belly: "#b9b2a4", mark: "dots" },
     { m: /sailfin catfish|suckermouth|pleco/, shape: "bass", body: "#4e4a3f", belly: "#a8a08a", mark: "dots" },
@@ -81,7 +86,7 @@
     { m: /snook/, shape: "torpedo", body: "#bcbf78", belly: "#f3f1d2", mark: "stripe" },
     { m: /tarpon/, shape: "deep", body: "#a9b6c0", belly: "#eef2f5", mark: "scales" },
     { m: /redfish|red drum/, shape: "torpedo", body: "#c8683a", belly: "#f2cbaa", mark: "spot" },
-    { m: /trout/, shape: "torpedo", body: "#9aa88c", belly: "#ecebdf", mark: "dots" },
+    { m: /trout/, shape: "torpedo", body: "#9aa88c", belly: "#ecebdf", mark: "speckle" },
     { m: /jack|permit|pompano/, shape: "deep", body: "#c4ad55", belly: "#f0e7bd", mark: "" },
     { m: /snapper/, shape: "deep", body: "#b7542f", belly: "#ebb494", mark: "" },
     { m: /sheepshead/, shape: "deep", body: "#aeb4b7", belly: "#e8ebec", mark: "bars" },
@@ -89,12 +94,12 @@
     { m: /barracuda|needlefish|ladyfish|wahoo|cobia/, shape: "long", body: "#8d9aa3", belly: "#e4e9ec", mark: "stripe" },
     { m: /mackerel|bluefish|mahi|dolphin|sailfish|king/, shape: "torpedo", body: "#6f95a8", belly: "#e3edf2", mark: "stripe" },
     { m: /grouper/, shape: "bass", body: "#7b5b3b", belly: "#c8ab8c", mark: "dots" },
-    { m: /peacock/, shape: "bass", body: "#c7a02a", belly: "#f1e3a2", mark: "bars" },
+    { m: /peacock/, shape: "bass", body: "#c7a02a", belly: "#f1e3a2", mark: "bars+ocellus" },
     { m: /largemouth|bass/, shape: "bass", body: "#5f8a3e", belly: "#dbe7b4", mark: "stripe" },
     { m: /bluegill|sunfish|panfish|tilapia|cichlid|oscar|bream|crappie|warmouth|redear/, shape: "deep", body: "#4f8ca6", belly: "#e8a449", mark: "bars" },
     { m: /\bgar\b|snakehead|knifefish|bowfin/, shape: "long", body: "#7c8d5b", belly: "#dcdcb2", mark: "dots" },
     { m: /catfish|bullhead/, shape: "bass", body: "#6e7c87", belly: "#c5cdd2", mark: "" },
-    { m: /shark/, shape: "torpedo", body: "#7d8b97", belly: "#e7ecef", mark: "" },
+    { m: /shark/, shape: "shark", body: "#7d8b97", belly: "#e7ecef", mark: "" },
     { m: /ray|flounder|skate/, shape: "flat", body: "#8e7a5e", belly: "#d8c9ae", mark: "dots" }
   ];
   const TANK_SHAPES = {
@@ -103,6 +108,12 @@
     bass: { body: "M20 30 C34 9 90 5 114 27 C113 41 100 51 70 51 C40 53 26 45 20 30 Z", tail: "M23 30 L3 14 L3 46 Z", fin: "M44 13 L62 3 L86 12 Z", fin2: "M60 48 L72 56 L84 48 Z" },
     long: { body: "M10 30 C30 21 92 19 117 28 L117 33 C92 41 30 39 10 30 Z", tail: "M14 30 L0 19 L0 41 Z", fin: "M30 24 L40 17 L52 23 Z", fin2: "M34 37 L42 43 L52 38 Z" },
     flat: { body: "M8 30 C28 4 96 4 116 30 C96 56 28 56 8 30 Z", tail: "M10 30 L-2 28 L-2 32 Z", fin: "M52 10 L62 6 L72 10 Z", fin2: "M52 50 L62 54 L72 50 Z" },
+    // More fish bodies (v234): shark (pointed nose, tall tail), gar (long beak, fins far back), ray (diamond wings, thin tail), puffer (round), eel (wavy)
+    shark: { body: "M10 31 C30 24 70 14 112 29 C116 31 116 33 112 34 C80 46 36 42 10 31 Z", tail: "M18 31 L2 4 L12 29 L4 46 Z", fin: "M54 21 L66 2 L78 20 Z", fin2: "M80 36 L70 56 L92 40 Z", eye: [100, 28], er: 2.4, gill: false },
+    gar: { body: "M12 30 C30 25 80 25 100 28 L124 29 L124 31 L100 33 C80 36 30 36 12 30 Z", tail: "M16 30 L4 22 L0 30 L4 38 Z", fin: "M24 27 L30 19 L42 27 Z", fin2: "M24 33 L30 41 L42 33 Z", eye: [94, 28], er: 2.4, gill: false },
+    ray: { body: "M8 30 C24 24 44 6 64 4 C84 6 98 22 118 30 C98 38 84 54 64 56 C44 54 24 36 8 30 Z", tail: "M12 30 L-6 29.2 L-6 30.8 Z", fin: "M50 28 L56 24 L60 28 Z", fin2: "M52 32 L58 36 L62 32 Z", eyes: [[92, 24], [92, 36]], er: 2.4, gill: false },
+    puffer: { body: "M22 30 C22 6 100 4 108 30 C100 56 22 54 22 30 Z", tail: "M26 30 L12 20 L12 40 Z", fin: "M44 12 L52 5 L60 12 Z", fin2: "M60 48 L68 56 L76 48 Z", eye: [92, 24], er: 3, gill: false },
+    eel: { body: "M4 30 C20 20 36 40 52 30 C68 20 84 40 100 30 L118 28 L118 32 L100 33 C84 44 68 24 52 34 C36 44 20 24 4 32 Z", tail: "M6 31 L0 27 L0 35 Z", fin: "M52 26 L58 23 L63 28 Z", fin2: "M52 36 L58 39 L63 34 Z", eye: [110, 29], er: 2, gill: false },
     // Not fish (v233): same four moving parts, so the swim engine treats them alike. `eye` moves the eyes; `gill: false` hides the gill line.
     // crab (seen from above, like a crab drawing turned to face right): scalloped shell, big claws with a wrist, three bent legs each side, paddle legs at the back, eyes on stalks
     crab: { body: "M50 12 Q58 8 66 12 Q72 12 74 18 Q78 22 76 30 Q78 38 74 42 Q72 48 66 48 Q58 52 50 48 Q42 44 42 30 Q42 16 50 12 Z", tail: "M44 21 L34 16 L27 20 L31 27 L42 27 Z M44 39 L34 44 L27 40 L31 33 L42 33 Z", extra: "M64 14 L64 4 L58 -2 M56 12 L52 2 L44 0 M48 13 L40 5 L32 6 M64 46 L64 56 L58 62 M56 48 L52 58 L44 60 M48 47 L40 55 L32 54 M75 28 L79 26 M75 32 L79 34", xw: 2.6, fin: "M68.8 17.6 L72.5 12.7 L77.4 13.9 L75 20.1 Z M75 11.4 C78.7 6.5 88.6 6.5 93.6 10.2 C96 12 96 15.1 93.6 17.6 C88.6 20.1 79.9 18.9 75 15.1 Z M91.1 8.3 C96 5.2 101 8.9 99.8 13.9 C97.3 11.4 94.8 11.4 92.3 12.7 Z M92.3 16.4 C96 15.1 99.8 16.4 99.8 20.1 C96 20.1 92.3 20.1 88.6 18.9 Z", fin2: "M68.8 42.4 L72.5 47.3 L77.4 46.1 L75 39.9 Z M75 48.6 C78.7 53.5 88.6 53.5 93.6 49.8 C96 48 96 44.9 93.6 42.4 C88.6 39.9 79.9 41.1 75 44.9 Z M91.1 51.7 C96 54.8 101 51.1 99.8 46.1 C97.3 48.6 94.8 48.6 92.3 47.3 Z M92.3 43.6 C96 44.9 99.8 43.6 99.8 39.9 C96 39.9 92.3 39.9 88.6 41.1 Z", eyes: [[80, 25], [80, 35]], er: 2, gill: false, line: true },
@@ -131,6 +142,7 @@
     const defs = mk("defs", {}); const g = mk("linearGradient", { id: id + "g", x1: 0, y1: 0, x2: 0, y2: 1 });
     [[0, L.body], [0.55, L.body], [1, L.belly]].forEach(([o, c]) => g.appendChild(mk("stop", { offset: o, "stop-color": c })));
     const cp = mk("clipPath", { id: id + "c" }); cp.appendChild(mk("path", { d: S.body })); defs.appendChild(g); defs.appendChild(cp); svg.appendChild(defs);
+    const hasMark = m => String(L.mark || "").split("+").indexOf(m) >= 0;
     const dark = "rgba(20,30,35,.55)", rig = mk("g", { class: "fs-rig" });
     const ln = S.line ? { stroke: "rgba(0,0,0,.4)", "stroke-width": 0.9, "stroke-linejoin": "round" } : {}; // crabs: outlined claws and paddles, solid
     rig.appendChild(mk("path", Object.assign({ class: "fs-tail", d: S.tail, fill: L.body }, ln))); rig.appendChild(mk("path", Object.assign({ class: "fs-fin", d: S.fin, fill: L.body, opacity: S.line ? 1 : .85 }, ln))); rig.appendChild(mk("path", Object.assign({ class: "fs-fin2", d: S.fin2, fill: L.body, opacity: S.line ? 1 : .8 }, ln)));
@@ -138,11 +150,13 @@
     const body = mk("g", { class: "fs-body" });
     body.appendChild(mk("path", { d: S.body, fill: `url(#${id}g)`, stroke: "rgba(0,0,0,.25)", "stroke-width": 1 }));
     const marks = mk("g", { "clip-path": `url(#${id}c)` });
-    if (L.mark === "stripe") marks.appendChild(mk("path", { d: "M26 30 L112 29", stroke: dark, "stroke-width": 3.2, fill: "none" }));
-    if (L.mark === "bars") [44, 58, 72, 86].forEach(x => marks.appendChild(mk("rect", { x, y: 0, width: 5, height: 60, fill: dark, opacity: .6 })));
-    if (L.mark === "spot") marks.appendChild(mk("circle", { cx: 34, cy: 28, r: 4.5, fill: "#1b1b1b" }));
-    if (L.mark === "dots") [[50, 22], [64, 28], [78, 21], [58, 38], [90, 30], [44, 30], [72, 36]].forEach(([x, y]) => marks.appendChild(mk("circle", { cx: x, cy: y, r: 2.4, fill: dark })));
-    if (L.mark === "scales") [[46, 22], [60, 22], [74, 22], [88, 24], [53, 32], [67, 32], [81, 33], [60, 42], [74, 42]].forEach(([x, y]) => marks.appendChild(mk("circle", { cx: x, cy: y, r: 6, fill: "none", stroke: "rgba(255,255,255,.55)", "stroke-width": 1 })));
+    if (hasMark("stripe")) marks.appendChild(mk("path", { d: "M26 30 L112 29", stroke: dark, "stroke-width": 3.2, fill: "none" }));
+    if (hasMark("bars")) [44, 58, 72, 86].forEach(x => marks.appendChild(mk("rect", { x, y: 0, width: 5, height: 60, fill: dark, opacity: .6 })));
+    if (hasMark("spot")) marks.appendChild(mk("circle", { cx: 34, cy: 28, r: 4.5, fill: "#1b1b1b" }));
+    if (hasMark("dots")) [[50, 22], [64, 28], [78, 21], [58, 38], [90, 30], [44, 30], [72, 36]].forEach(([x, y]) => marks.appendChild(mk("circle", { cx: x, cy: y, r: 2.4, fill: dark })));
+    if (hasMark("speckle")) [[40, 24], [48, 20], [56, 23], [64, 19], [72, 22], [80, 20], [88, 23], [52, 28], [68, 27], [84, 28], [44, 30], [60, 31], [76, 31], [50, 34]].forEach(([x, y]) => marks.appendChild(mk("circle", { cx: x, cy: y, r: 1.4, fill: dark })));
+    if (hasMark("ocellus")) marks.appendChild(mk("circle", { cx: 34, cy: 30, r: 6, fill: "#1f1f1f", stroke: "#f2c14e", "stroke-width": 1.6 }));
+    if (hasMark("scales")) [[46, 22], [60, 22], [74, 22], [88, 24], [53, 32], [67, 32], [81, 33], [60, 42], [74, 42]].forEach(([x, y]) => marks.appendChild(mk("circle", { cx: x, cy: y, r: 6, fill: "none", stroke: "rgba(255,255,255,.55)", "stroke-width": 1 })));
     body.appendChild(marks);
     if (S.gill !== false) body.appendChild(mk("path", { class: "fs-gill", d: "M92 18 C98 26 98 36 92 44", stroke: "rgba(0,0,0,.25)", "stroke-width": 1.4, fill: "none" })); // gill
     const eye = mk("g", { class: "fs-eye" });
@@ -151,7 +165,7 @@
     body.appendChild(eye); rig.appendChild(body); svg.appendChild(rig);
     if (live) { // each fish moves a little differently: its own speed and starting point
       let h = tankUid * 37; for (let i = 0; i < species.length; i++) h = (h * 31 + species.charCodeAt(i)) % 997;
-      const fast = L.shape === "long" ? 0.7 : L.shape === "flat" ? 1.5 : 1;
+      const fast = /^(long|gar|eel)$/.test(L.shape) ? 0.7 : /^(flat|ray)$/.test(L.shape) ? 1.5 : 1;
       svg.setAttribute("class", "fish-live"); svg.style.setProperty("--fd", (fast * (0.85 + (h % 40) / 100)).toFixed(2) + "s"); svg.style.setProperty("--fo", "-" + ((h % 17) / 10).toFixed(1) + "s"); svg.style.setProperty("--bl", (4 + h % 5) + "s");
     }
     return svg;
