@@ -369,7 +369,7 @@
     try { const b = await cropPicture(f); if (b) { ppAvatarBlob = b; ppAvatarClear = false; ppDrawAvatar(); } } catch (e) { $("pp-msg").className = "msg err"; $("pp-msg").textContent = "Couldn't read that picture."; }
   });
   $("pp-avatar-rm").addEventListener("click", () => { ppAvatarBlob = null; ppAvatarClear = true; ppDrawAvatar(); });
-  $("pp-save").addEventListener("click", async () => {
+  async function ppSave() {   // saves picture, who sees it, tagline, colour, pin and showcase; true when it worked
     const msg = $("pp-msg"); msg.className = "msg"; msg.textContent = "Saving…"; $("pp-save").disabled = true;
     try {
       let path = ppAvatarClear ? null : ppAvatarPath; const old = ppAvatarPath;
@@ -385,9 +385,11 @@
       if (old && old !== path) db.storage.from("avatars").remove([old]);   // tidy up the old picture
       ppMine = row; ppAvatarPath = path; ppAvatarBlob = null; ppAvatarClear = false; delete avatarUrls["avatars" + old];
       msg.textContent = "Saved ✓"; ppDrawAvatar(); meAvatarRefresh();
+      $("pp-save").disabled = false; return true;
     } catch (e) { msg.className = "msg err"; msg.textContent = "Couldn't save: " + (e.message || e); }
-    $("pp-save").disabled = false;
-  });
+    $("pp-save").disabled = false; return false;
+  }
+  $("pp-save").addEventListener("click", ppSave);
   $("pp-view").addEventListener("click", () => { $("profile-card").hidden = true; showProfile(me.id); });
 
   // ---- 🌎 Public (V4.5 step D): public catches, a map of public spots, and profile pages ----
@@ -1035,6 +1037,7 @@
   $("settings-close").addEventListener("click", () => { $("settings-card").hidden = true; });
   $("settings-privacy").addEventListener("click", () => { $("settings-card").hidden = true; $("profile-btn").click(); });
   $("settings-wn").addEventListener("click", () => $("wn-open").click());
+  $("pf-save").addEventListener("click", () => $("profile-form").dispatchEvent(new Event("submit", { cancelable: true, bubbles: true })));
   $("profile-form").addEventListener("submit", async e => {
     e.preventDefault();
     const msg = $("pf-msg");
@@ -1050,7 +1053,8 @@
       me.profile = { ...(me.profile || {}), ...(data || {}), display_name: name, handle, home_area: $("pf-area").value.trim() || null, bio: $("pf-bio").value.trim() || null };
       me.handle = handle;
       $("who").textContent = `Signed in as ${me.name} (@${handle})`;
-      msg.textContent = "Saved ✓";
+      if (await ppSave()) msg.textContent = "Saved ✓";   // one Save button saves the page settings too (picture, who sees it, tagline, colour, pin, showcase)
+      else { msg.className = "msg err"; msg.textContent = $("pp-msg").textContent; }
     } catch (err) {
       msg.className = "msg err";
       msg.textContent = err && err.code === "23505" ? "That username is taken — try another." : "Couldn't save: " + (err.message || err);

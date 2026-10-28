@@ -182,6 +182,9 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   // replacing the avatar removes the old file
   w.eval(`ppAvatarBlob = new Blob(["y"], { type: "image/jpeg" })`); click($("pp-save")); await sleep(300);
   console.log("old avatar tidied:", removed.length === 1 && removed[0] === uploads[0]);
+  // one Save button saves the profile and the page settings together
+  $("pf-name").value = "Rich"; $("pf-handle").value = "richfish"; $("pp-tag").value = "One save"; const n0 = upserts.length; click($("pf-save")); await sleep(400);
+  console.log("one Save also saves the page settings:", upserts.length === n0 + 1 && upserts[upserts.length - 1].tagline === "One save", "|", txt("pf-msg"));
   // ---- viewing other people's pages ----
   w.eval("profile-card".length && "$('profile-close').click()");
   ACCESS["str1"] = { can_view: false, visibility: "friends", is_self: false };

@@ -261,7 +261,7 @@ const bounds = (s, w, n, e) => ({ getSouth: () => s, getWest: () => w, getNorth:
   ok(clash.length === 0, "no top-level name in js/60 or js/61 is also declared in another file" + (clash.length ? " (clash: " + clash.join(", ") + ")" : ""));
   // shown in the app
   const wn = read("js/13-groups-misc.js"), hist = read("docs/build_history.md");
-  ok(/ramp lists from state/i.test(wn.slice(wn.indexOf("WHATS_NEW"), wn.indexOf("WHATS_NEW") + 20000)) || /state wildlife/i.test(wn.slice(wn.indexOf("WHATS_NEW"), wn.indexOf("WHATS_NEW") + 20000)), "What's new mentions the state ramp lists");
+  ok(/ramp lists from state/i.test(wn.slice(wn.indexOf("WHATS_NEW"), wn.length)) || /state wildlife/i.test(wn.slice(wn.indexOf("WHATS_NEW"), wn.length)), "What's new mentions the state ramp lists");
   ok(/v176/.test(hist), "build history has v176");
   console.log(bad ? `\n${bad} FAILED` : "\nALL OK");
   process.exit(bad ? 1 : 0);

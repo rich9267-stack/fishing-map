@@ -527,6 +527,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-28f", title: "✏️ A tidier Edit profile page", items: [
+      "Your picture and who can see your page are now at the top, then About you, Home waters and Your page.",
+      "One Save button at the bottom saves everything (it used to be two), and the long explanations tuck under a small ⓘ.",
+      "Labels now sit above their boxes, so Tagline and Favorite fish no longer get squashed."
+    ] },
     { id: "2026-10-28e", title: "⚙️ Settings and Edit are now separate", items: [
       "A gear icon now sits next to the Help icon at the top of every page. Tap it for Settings, alerts, privacy and the rest.",
       "On your Profile page the old Settings & edit button is now just Edit, and it opens the profile editor. The gear is on your Profile too."

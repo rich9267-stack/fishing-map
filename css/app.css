@@ -1501,3 +1501,15 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
   .spot-group:focus-visible, .best[role="button"]:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   .best[role="button"] { cursor: pointer; touch-action: manipulation; }
   .best-card-body { border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+
+  /* Edit profile page: sections, labels above boxes everywhere, long notes folded away */
+  #profile-card label { display: block; font-size: .85rem; color: var(--muted); margin: 12px 0 4px; }
+  #profile-card input:not([type=file]), #profile-card select, #profile-card textarea { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; }
+  #profile-card textarea { min-height: 70px; resize: vertical; }
+  .pf-sec { padding: 14px 0; border-top: 1px solid var(--line); }
+  #profile-card > .row + .pf-sec { border-top: 0; padding-top: 6px; }
+  .pf-h { font-size: 17px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+  .pf-pic { display: flex; gap: 12px; align-items: center; margin: 4px 0 6px; }
+  .pf-more { margin: 6px 0 0; }
+  .pf-more summary { cursor: pointer; color: var(--muted); font-size: .85rem; list-style: none; }
+  .pf-more summary::-webkit-details-marker { display: none; }
