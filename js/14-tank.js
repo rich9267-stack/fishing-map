@@ -49,6 +49,21 @@
     { m: /ballyhoo|halfbeak/, shape: "long", body: "#8fb0b8", belly: "#eef3f4", mark: "stripe" },
     { m: /anchov|glass minnow/, shape: "long", body: "#b9c6c2", belly: "#f4f6f5", mark: "stripe" },
     { m: /cigar minnow|round scad|cigarfish/, shape: "long", body: "#5f8f88", belly: "#e8efec", mark: "stripe" },
+    { m: /golden shiner/, shape: "deep", body: "#c9a640", belly: "#f1e3a6", mark: "" },
+    { m: /gizzard shad|threadfin shad/, shape: "deep", body: "#8fa3ad", belly: "#eef2f4", mark: "dots" },
+    { m: /mosquitofish|gambusia/, shape: "long", body: "#a9a98d", belly: "#eeeedb", mark: "" },
+    { m: /fathead minnow/, shape: "torpedo", body: "#8a8f64", belly: "#e6e6c8", mark: "stripe" },
+    { m: /emerald shiner/, shape: "long", body: "#9db8a4", belly: "#f1f5f1", mark: "stripe" },
+    { m: /alewife/, shape: "torpedo", body: "#7a9a96", belly: "#edf1ef", mark: "dots" },
+    { m: /creek chub/, shape: "torpedo", body: "#8a8453", belly: "#e8e2bd", mark: "stripe" },
+    // not fish: drawn with the nearest fish shape until the tank artist makes real ones (plans/bait-collections-plan.md)
+    { m: /shrimp/, shape: "long", body: "#e8a58a", belly: "#f8e3d8", mark: "stripe" },
+    { m: /blue crab/, shape: "flat", body: "#4f86a8", belly: "#d8e6ee", mark: "dots" },
+    { m: /fiddler crab/, shape: "flat", body: "#a98a5f", belly: "#ecdcbc", mark: "" },
+    { m: /sand flea|mole crab|sand crab/, shape: "deep", body: "#b5ab97", belly: "#ece6d8", mark: "" },
+    { m: /hermit crab/, shape: "deep", body: "#c8805a", belly: "#f0d4bf", mark: "bars" },
+    { m: /crayfish|crawfish|crawdad/, shape: "long", body: "#a8412f", belly: "#e6b6a8", mark: "stripe" },
+    { m: /squid/, shape: "long", body: "#d9b3b0", belly: "#f6ecea", mark: "dots" },
     { m: /crappie|speckled perch/, shape: "deep", body: "#a6aa8a", belly: "#eef0dc", mark: "dots" },
     { m: /\boscar\b/, shape: "deep", body: "#55503f", belly: "#d98a3d", mark: "bars" },
     { m: /tilapia/, shape: "deep", body: "#8fa3a5", belly: "#e3ecea", mark: "bars" },
@@ -132,7 +147,7 @@
       const list = by[key].slice().sort((a, b) => better(b, a)), best = list[0], name = cap(String(best.species).trim());
       const sf = typeof seasonFor === "function" ? seasonFor(name) : null;
       let home;
-      if (sf) home = sf.group === "fresh" ? "fresh" : "salt";
+      if (sf) home = sf.group === "fresh" || sf.group === "baitfresh" || /crayfish|crawfish|crawdad/i.test(name) ? "fresh" : "salt";
       else if (TANK_FRESH_RE.test(name)) home = "fresh";
       else { let fr = 0, other = 0; list.forEach(c => { const s = spotOf(c.spot_id); if (s && s.water_type === "freshwater") fr++; else other++; }); home = fr > other ? "fresh" : "salt"; }
       const extra = Math.max(0, (best.how_many || 1) - 1) + list.slice(1).reduce((n, c) => n + (c.how_many || 1), 0);
@@ -574,7 +589,7 @@
   // Gems are earned only. The shop that spends them comes next (simulator step 7).
   let wallet = null, walletBusy = false, walletAt = 0;
   const COIN_WHY = { catch: "photographed catch", measured: "measured it", species: "new species", sighting: "sighting with a photo", best: "new personal best", collection: "finished a collection", tournament: "tournament placing", purchase: "bought", race: "won a fish race", race_fee: "race entry fee", race_prize: "race prize", race_refund: "race fee back", challenge: "weekly challenge", challenge_week: "all weekly challenges done" };
-  const COIN_GROUPS = { inshore: "Inshore", beach: "Beach & pier", offshore: "Offshore", fresh: "Freshwater", bait: "Saltwater bait" };
+  const COIN_GROUPS = { inshore: "Inshore", beach: "Beach & pier", offshore: "Offshore", fresh: "Freshwater", bait: "Saltwater bait", baitfresh: "Freshwater bait", baitother: "Shrimp, crabs & other bait" };
   function walletToast(added) {
     if (!added || !added.length) return;
     const coins = added.reduce((a, x) => a + (x.coins || 0), 0), gems = added.reduce((a, x) => a + (x.gems || 0), 0);
@@ -956,7 +971,7 @@
     const seen = new Set();
     (catches || []).forEach(c => { if (c.deleted_at) return; const f = seasonFor(c.species); if (f) seen.add(f.name); });
     return SEASON_GROUPS.map(([key, label]) => {
-      const all = SEASONS.filter(f => (f.group === key || (key === "bait" && f.alsoBait)) && !f.far && !/mullet run/i.test(f.name)).map(f => f.name);   // only fish that live here
+      const all = SEASONS.filter(f => (f.group === key || (key === "bait" && f.alsoBait)) && (!f.far || key === "baitfresh") && !/mullet run/i.test(f.name)).map(f => f.name);   // only fish that live here
       const got = all.filter(n => seen.has(n));
       return { key, label, total: all.length, got, missing: all.filter(n => !seen.has(n)) };
     }).filter(g => g.total);

@@ -111,7 +111,7 @@
     return { state: i.state, lat: +(a ? a.lat : LAT), lng: +(a ? a.lng : LNG) };
   }
   const gfAtKey = w => w ? w.state : "FL";
-  const gfFish = () => (typeof seasonList === "function" ? seasonList() : SEASONS).filter(f => !f.far && !/\brun\b/i.test(f.name));
+  const gfFish = () => (typeof seasonList === "function" ? seasonList() : SEASONS).filter(f => !f.far && f.group !== "baitother" && !/\brun\b/i.test(f.name));   // shrimp, crabs and squid are not fish
   // An iNaturalist observation → one of our Seasons fish (or null); only photos whose own licence allows reuse
   function gfFromObs(o) {
     const nm = o && o.taxon && (o.taxon.preferred_common_name || o.taxon.name); if (!nm) return null;
@@ -252,7 +252,7 @@
   const glPts = off => off <= 1 ? 3 : off <= 3 ? 2 : off <= 6 ? 1 : 0;
   const GL_WORD = ["Way off", "Not bad", "Close!", "Spot on!"];
   // A believable length for this fish: around its legal size if the app has a rule for it, else a usual size for its group
-  const GL_GROUP = { fresh: [6, 20], beach: [8, 24], inshore: [12, 34], offshore: [18, 46] };
+  const GL_GROUP = { baitfresh: [3, 8], fresh: [6, 20], beach: [8, 24], inshore: [12, 34], offshore: [18, 46] };
   function glRange(f) {
     const r = typeof ruleFor === "function" ? ruleFor(f.match[0] || f.name) : null;
     let [lo, hi] = GL_GROUP[f.group] || [10, 30];
@@ -379,7 +379,7 @@
   function bgCard(month) {
     const rand = krRand("bingo-" + month), m = +month.slice(5, 7) - 1;
     const out = !!gfWhere();   // outside Florida: the region's cards (gfFish), freshwater fish too (most of the country fishes lakes and rivers)
-    const fish = gfFish().filter(f => (out || f.group !== "fresh") && f.shore && f.shore[m] >= 2).sort((a, b) => a.name.localeCompare(b.name));
+    const fish = gfFish().filter(f => (out || (f.group !== "fresh" && f.group !== "baitfresh")) && f.shore && f.shore[m] >= 2).sort((a, b) => a.name.localeCompare(b.name));
     const take = (list, n) => { const a = list.slice(), r = []; while (a.length && r.length < n) r.push(a.splice(Math.floor(rand() * a.length), 1)[0]); return r; };
     const fishSq = take(fish, 3).map(f => ({ id: "fish:" + f.name, icon: "🎣", label: "Catch " + f.name.replace(/\s*\(.*\)$/, ""), ok: x => x.catches.some(c => seasonFor(c.species) === f) }));
     const sq = take(BG_TASKS, 8 - fishSq.length).concat(fishSq);

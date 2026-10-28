@@ -101,7 +101,8 @@ const FL_VIEW = [-80.6, 25.3, -79.9, 26.4], GA_VIEW = [-81.6, 31.0, -80.6, 31.8]
     c.place = place;
     c.rulesInfo = () => { const p = c.place; const st = p ? fakeState(p.lat, p.lng) : "FL"; return st === "FL" ? { tags: ["atlantic"] } : { outside: true, state: st }; };
     vm.createContext(c);
-    vm.runInContext(helpers + seasonsSrc + s55 + "\n" + src + "\nthis.api = { gfToday, gfLoad, gfFish, gfEnd, bgCard, SEASONS, SEASONS_SE, SEASONS_GL, get gfPhotos() { return gfPhotos; } };", c);
+    // v231: the old games code (a snapshot from v170) knows nothing of the "baitfresh" group; take those fish out so both copies see the same Florida list
+    vm.runInContext(helpers + seasonsSrc + s55 + "\nSEASONS.splice(0, SEASONS.length, ...SEASONS.filter(f => f.group !== 'baitfresh' && f.group !== 'baitother'));\n" + src + "\nthis.api = { gfToday, gfLoad, gfFish, gfEnd, bgCard, SEASONS, SEASONS_SE, SEASONS_GL, get gfPhotos() { return gfPhotos; } };", c);
     c.setPlace = p => { c.place = p; c.area = p; };
     if (place) c.area = place;
     return { c, api: c.api, store, fetched };

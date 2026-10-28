@@ -527,6 +527,14 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-28b", title: "🦐 Shrimp, crabs & other bait collection", items: [
+      "A third bait collection: photograph a Shrimp, Blue crab, Fiddler crab, Sand flea (mole crab), Hermit crab, Crayfish and Squid and you earn 🪙 150 + 💎 2 once. You log them like any catch (they are not fish, so no weight guess or rank, and they stay out of the fish games).",
+      "Each has a 📚 Learn card (shrimp, blue crab, crayfish and squid from FWC, NOAA or USGS pages; the others are general advice) with a reminder to check your state's rules before you keep any. They swim in your tank for now as fish-shaped stand-ins until proper pictures are drawn."
+    ] },
+    { id: "2026-10-28a", title: "🐟 Freshwater bait collection", items: [
+      "A second bait collection: photograph a Golden shiner, Threadfin shad, Gizzard shad, Eastern mosquitofish, Fathead minnow, Emerald shiner, Alewife and Creek chub (all 8) and you earn 🪙 150 + 💎 2 once. Four of them live up north, so this one needs a trip or a friend's photo spot.",
+      "Each has a 📚 Learn card with its USGS or Texas Parks & Wildlife source and a reminder to check your state's live-bait rules. Several Learn cards also got a free drawing (menhaden, ballyhoo, bay anchovy, cigar minnow, golden shiner, gizzard shad, fathead minnow, alewife and mosquitofish)."
+    ] },
     { id: "2026-10-27k", title: "🐟 Saltwater bait collection", items: [
       "A new collection: catch a photographed Pinfish, Mullet, Mojarra, Scaled sardine (pilchard), Spanish sardine, Threadfin herring, Menhaden, Ballyhoo, Bay anchovy and Cigar minnow and you earn 🪙 150 + 💎 2 once. Pinfish still counts in Beach & pier too.",
       "All of them are in the species suggestions when you log a catch, have a Seasons card, a picture in the tanks and a 📚 Learn card (most from FWC's species pages; threadfin herring is general advice)."

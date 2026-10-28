@@ -36,6 +36,8 @@
     [["silver jenny"], 6, 0.1, 3.04],
     [["scaled sardine", "pilchard", "greenback", "whitebait"], 6, 0.12, 3], [["spanish sardine"], 8, 0.18, 3], [["thread herring", "threadfin herring"], 8, 0.25, 3],
     [["menhaden", "pogy", "pogie"], 10, 0.65, 3], [["ballyhoo"], 12, 0.25, 2.8], [["bay anchovy", "anchovy", "glass minnow"], 3.5, 0.02, 3], [["cigar minnow", "round scad"], 7, 0.17, 3],
+    [["golden shiner"], 8, 0.2, 3], [["threadfin shad"], 5, 0.07, 3], [["gizzard shad"], 12, 0.8, 3.1], [["mosquitofish", "gambusia"], 2, 0.002, 3],
+    [["fathead minnow"], 3, 0.02, 3], [["emerald shiner"], 4, 0.03, 3], [["alewife"], 8, 0.25, 3], [["creek chub"], 8, 0.2, 3],
     [["smallmouth"], 16, 2, 3.02], [["spotted bass"], 14, 1.2, 3.06], [["striped bass", "striper"], 28, 9.7, 3.14], [["white bass"], 12, 0.8, 3.08],
     [["white perch"], 9, 0.37, 3.14], [["walleye"], 18, 2.1, 3.17], [["sauger"], 14, 0.9, 3.19], [["yellow perch"], 9, 0.34, 3.08],
     [["northern pike"], 26, 4, 3.06], [["muskellunge", "muskie", "musky"], 40, 18, 3.4], [["pickerel"], 18, 1.25, 3.1],
