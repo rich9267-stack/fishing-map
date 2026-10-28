@@ -47,7 +47,7 @@ After the US expansion (done v173): make the national map trustworthy and useful
 - Kansas reservoir depth maps (one map per reservoir; few anglers there yet). Wisconsin / Connecticut / Tennessee depth: no free source found.
 - Refresh the 2009 FWC ramp list and the park/pier/station lists now and then.
 - Photo files in the backup; second backup copy off this computer.
-- Extra coin tests (catch rewards, collections, tournament prizes).
+- ~~Extra coin tests~~ done Oct 28: tests/db-coin-checks-rewards.sql (33 checks; tournament prizes were already in db-tournament-cup-checks.sql). Rerun after any change to claim_coins or claim_collection.
 - Older parked ideas: plans/parked-ideas.md.
 
 ## Risks

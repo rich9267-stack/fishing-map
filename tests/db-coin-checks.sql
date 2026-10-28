@@ -13,7 +13,7 @@
 -- RERUN after any change to race rooms, solo races, the shop, tank saving or coin rules.
 -- If a rule changes on purpose (a fee cap, a prize split, a price), update the expected
 -- numbers in the matching check below.
--- Not covered yet: catch rewards (claim_coins), collections, tournament prizes.
+-- Catch rewards + collections: db-coin-checks-rewards.sql. Tournament prizes + trophy cups: db-tournament-cup-checks.sql.
 -- This file is NOT part of tests/run-all.sh (that suite does not touch the database).
 
 do $do$
