@@ -479,19 +479,16 @@
       items.push({ el: b, turnEl, w: px, h: Math.round(px * 68 / 128), depth: [0.25, 0.6, 1][i % 3], kind: f.key });
     });
     const sandEl = el("div", "tank-sand"); sandEl.setAttribute("aria-hidden", "true"); tank.appendChild(sandEl);
-    // Decorations are earned: one more for every couple of species in this tank (so friends see the same ones on your profile)
-    const deco = TANK_DECOR[salt ? "salt" : "fresh"], got = deco.filter(d => fish.length >= d.at);
-    got.forEach((d, i) => { const e = el("span", "decor"); e.appendChild(tankArt(d.art, Math.round(d.sz * 1.5))); e.style.left = (5 + i * (76 / Math.max(deco.length - 1, 1))) + "%"; e.title = d.n; e.setAttribute("aria-hidden", "true"); tank.appendChild(e); });
-    // Spoken description: the tank is a labelled group; its fish are buttons; the decorations are read out in the label (they are only pictures)
-    tank.setAttribute("role", "group"); tank.dataset.a11y = `${view.name ? view.name + ", a " + (salt ? "saltwater" : "freshwater") + " tank" : view.title} with ${fish.length} species. Tab to a fish and press Enter for its details.`; tank.dataset.decor = got.map(d => d.n).join(", ");
+    // No free decorations (v242): the only pieces in a tank are ones the person bought in the Shop (or won) and placed with 🎨 Customize
+    // Spoken description: the tank is a labelled group; its fish are buttons; the placed pieces are read out in the label (they are only pictures)
+    tank.setAttribute("role", "group"); tank.dataset.a11y = `${view.name ? view.name + ", a " + (salt ? "saltwater" : "freshwater") + " tank" : view.title} with ${fish.length} species. Tab to a fish and press Enter for its details.`;
     // The cabinet: the tank sits in a dark frame with a name plaque under the glass ("Snook Corner · 6 fish", or "Saltwater tank · 6 fish" with no name)
     const cab = el("div", "tank-cab"); cab.appendChild(tank);
     cab.appendChild(el("div", "tank-plaque", `${view.title} · ${fish.length} fish`));
     card.appendChild(cab);
     tankApplySetup(tank, opts.setup);
     tankSwim(tank, items, { seed: salt ? 1 : 2, chase: true });
-    const nxt = deco.find(d => fish.length < d.at);
-    card.appendChild(el("div", "spot-meta", got.length ? `${got.length} of ${deco.length} decorations unlocked` + (nxt ? ` · next one at ${nxt.at} species` : " — tank fully decorated! 🎉") : `First decoration unlocks at ${deco[0].at} species.`));
+    if (mineOwn) { const h = el("div", "spot-meta tank-nodecor", "No decorations yet — get pieces in the 🛍 Shop, then tap 🎨 Customize to place them."); h.hidden = !shop.ready || !!((opts.setup && opts.setup.placed) || []).length; card.appendChild(h); }
     card.appendChild(tankMoodLine());
     const acts = el("div", "tank-actions");
     if (!opts.other) { tankFeedBind(tank); acts.appendChild(feedBtn(tank, true)); }
@@ -503,11 +500,6 @@
     const info = el("div", "tank-info"); info.hidden = true; info.setAttribute("role", "status"); card.appendChild(info);
     box.appendChild(card);
   }
-  // Decorations that unlock as a tank fills up (at = number of species in that tank)
-  const TANK_DECOR = {
-    salt: [{ at: 2, e: "🌿", n: "Seaweed", art: "seaweed", sz: 26 }, { at: 4, e: "🐚", n: "Shell", art: "shell", sz: 20 }, { at: 6, e: "⚓", n: "Anchor", art: "anchor", sz: 24 }, { at: 8, e: "🪸", n: "Coral", art: "coral", sz: 28 }, { at: 10, e: "🏰", n: "Castle", art: "castle", sz: 32 }],
-    fresh: [{ at: 2, e: "🌿", n: "Water plant", art: "leafy", sz: 26 }, { at: 4, e: "🪨", n: "Rock", art: "rock", sz: 22 }, { at: 6, e: "🪷", n: "Lily", art: "lily", sz: 26 }, { at: 8, e: "🏺", n: "Old jar", art: "jar", sz: 26 }, { at: 10, e: "🏰", n: "Castle", art: "castle", sz: 32 }]
-  };
   function tankInfo(f, kind, i, opts) {
     const c = f.catchRow; i.innerHTML = ""; i.hidden = false;
     i.appendChild(el("div", "tank-info-t", `${kind === "salt" ? "🌊" : "🌿"} ${f.species}`));
@@ -743,10 +735,11 @@
   // Paint a setup ({gravel, placed:[{key,x,layer}]}) onto a tank element: the gravel colour and the pieces
   function tankApplySetup(tank, setup) {
     tank.querySelectorAll(".placed").forEach(e => e.remove());
+    const nd = tank.closest(".tank-card") && tank.closest(".tank-card").querySelector(".tank-nodecor"); if (nd) nd.hidden = !shop.ready || !!((setup && setup.placed) || []).length;
     const sand = tank.querySelector(".tank-sand"), g = GRAVEL[(setup && setup.gravel) || "sand"] || GRAVEL.sand;
     if (sand) sand.style.background = `linear-gradient(${g[0]}, ${g[1]})`;
     if (tank.dataset.a11y) {
-      const names = (tank.dataset.decor ? [tank.dataset.decor] : []).concat(((setup && setup.placed) || []).map(p => SHOP_ART[p.key] && SHOP_ART[p.key].n).filter(Boolean));
+      const names = ((setup && setup.placed) || []).map(p => SHOP_ART[p.key] && SHOP_ART[p.key].n).filter(Boolean);
       tank.setAttribute("aria-label", tank.dataset.a11y + (names.length ? " Decorations: " + names.join(", ") + "." : ""));
     }
     ((setup && setup.placed) || []).forEach(p => {

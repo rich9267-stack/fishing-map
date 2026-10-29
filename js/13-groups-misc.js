@@ -527,6 +527,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-29b", title: "🐠 Your tank, your decorations", items: [
+      "Tanks no longer get decorations by themselves. Get pieces in the 🛍 Shop, then tap 🎨 Customize to place them where you like."
+    ] },
     { id: "2026-10-29a", title: "📷 Camera fix", items: [
       "If the camera screen stays black, the app now starts the camera again by itself. If it is still black, tap the message to try again."
     ] },

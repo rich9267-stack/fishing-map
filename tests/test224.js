@@ -163,10 +163,15 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   const names = ["seaweed", "kelp", "grass", "leafy", "fern", "shell", "conch", "anchor", "coral", "fan", "staghorn", "brain", "castle", "rock", "pile", "arch", "lily", "jar", "driftwood", "diver", "trophy"];
   check("every decoration has a drawing", names.every(n => w.eval("TANK_ART")[n]));
   const src = require("fs").readFileSync(__dirname + "/../js/14-tank.js", "utf8");
-  check("every unlock and shop piece names a drawing", (src.match(/art: "(\w+)"/g) || []).length >= 29 && (src.match(/art: "(\w+)"/g) || []).every(m => names.includes(m.slice(6, -1))));
+  check("every shop piece names a drawing", (src.match(/art: "(\w+)"/g) || []).length >= 19 && (src.match(/art: "(\w+)"/g) || []).every(m => names.includes(m.slice(6, -1))));
   w.showView("tank"); await wait(500);
-  const decor = [...d.querySelectorAll(".decor")];
-  check("tank decorations on screen are drawings", decor.length > 0 && decor.every(e => e.querySelector("svg") && !e.querySelector(".ei")));
+  // v242: no free decorations; with nothing placed, the tank says to get pieces in the Shop
+  const hint = d.querySelector("#tank-body .tank-nodecor");
+  check("no free decorations in the tanks (only Shop pieces you place)", d.querySelectorAll("#tank-body .decor:not(.placed)").length === 0 && !/TANK_DECOR/.test(src));
+  check("empty tank points to the Shop + Customize", !!hint && !hint.hidden && /Shop.*Customize/.test(hint.textContent));
+  w.tankApplySetup(hint.closest(".tank-card").querySelector(".tank"), { placed: [{ key: "shell_conch", x: 40, layer: "back" }] });
+  const pl = [...d.querySelectorAll("#tank-body .decor.placed")];
+  check("a placed piece is a drawing and the hint goes away", pl.length === 1 && pl[0].querySelector("svg") && !pl[0].querySelector(".ei") && hint.hidden);
 
   // ---- icons: colour + soft fill; gear stays a plain line in the text colour; solid buttons use the text colour
   const st = $("icon-style").textContent;

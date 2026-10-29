@@ -212,7 +212,7 @@ process.on("unhandledRejection", e => console.log("UNHANDLED", e && e.stack));
   let bad = 0; const ck = (n, v) => { console.log(v ? "ok  " : "FAIL", n); if (!v) bad++; };
   const salt = d.querySelector("#tank-body .tank-salt");
   ck("salt tank is a labelled group", salt.getAttribute("role") === "group" && /^Saltwater tank with \d+ species\./.test(salt.getAttribute("aria-label") || ""));
-  ck("label names the unlocked decoration and the placed pieces", /Decorations: .*Seaweed/.test(salt.getAttribute("aria-label")) && /Small driftwood/.test(salt.getAttribute("aria-label")) && /Treasure chest/.test(salt.getAttribute("aria-label")));
+  ck("label names the placed pieces (no free decorations)", !/Seaweed/.test(salt.getAttribute("aria-label")) && /Small driftwood/.test(salt.getAttribute("aria-label")) && /Treasure chest/.test(salt.getAttribute("aria-label")));
   const fish = [...salt.querySelectorAll(".tfish")];
   ck("every fish is a button with a spoken name and a keyboard hint", fish.length > 0 && fish.every(b => b.tagName === "BUTTON" && /Press Enter for details\.$/.test(b.getAttribute("aria-label") || "")));
   ck("bubbles, sand and decoration pictures are hidden from screen readers", [...salt.querySelectorAll(".bubble, .tank-sand, .decor")].every(x => x.getAttribute("aria-hidden") === "true"));
