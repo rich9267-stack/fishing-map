@@ -973,7 +973,7 @@
     box.innerHTML = "";
     if (error) { box.appendChild(el("div", "msg err", "Couldn't search right now.")); return; }
     const found = (data || []).filter(x => x.user_id !== me.id);
-    if (!found.length) { box.appendChild(el("div", "spot-meta", "Nobody found with that username or name.")); return; }
+    if (!found.length) { box.appendChild(el("div", "spot-meta", "Nobody found with that name or @username. Check the spelling, or type just part of it. Someone who hasn't joined yet won't show up until they sign up and an admin approves them.")); return; }
     found.forEach(pr => {
       friendProfiles[pr.user_id] = pr;
       const r = friendRows.find(x => otherOf(x) === pr.user_id);
@@ -1102,7 +1102,7 @@
   }
   async function loadMembers() {
     const ul = $("member-list"); ul.innerHTML = "";
-    const { data, error } = await db.from("members").select("email,display_name,is_admin,status,note,requested_at").order("added_at");
+    const { data, error } = await db.from("members").select("email,display_name,is_admin,status,note,requested_at,first_opened_at").order("added_at");
     if (error) { ul.appendChild(el("li", "empty", "Couldn't load the list: " + error.message)); return; }
     const pending = data.filter(m => m.status === "pending");
     updateRequestBadge(pending.length);
@@ -1131,11 +1131,16 @@
       });
       const h2 = el("li"); h2.appendChild(el("div", "label", "Members")); ul.appendChild(h2);
     }
+    // 📵 approved but never opened the app (setup/121 first_opened_at; only admins can read this list): they're listed first
+    const notOpened = m => m.status === "approved" && !m.first_opened_at;
+    const waiting = data.filter(notOpened).length;
+    if (waiting) { const h3 = el("li"); h3.appendChild(el("div", "spot-meta", `📵 ${waiting} approved ${waiting === 1 ? "person hasn't" : "people haven't"} opened the app yet (others can already find and add them).`)); ul.appendChild(h3); }
+    data.sort((a, b) => notOpened(b) - notOpened(a));
     data.filter(m => m.status !== "pending").forEach(m => {
       const li = el("li");
       const left = el("div");
       left.appendChild(el("div", "sugg-name", m.display_name || "(hasn't signed in yet)"));
-      left.appendChild(el("div", "spot-meta", m.email + (m.is_admin ? " · admin" : "") + (m.status === "blocked" ? " · declined" : "")));
+      left.appendChild(el("div", "spot-meta", m.email + (m.is_admin ? " · admin" : "") + (m.status === "blocked" ? " · declined" : "") + (notOpened(m) ? " · 📵 hasn't opened the app yet" : "")));
       li.appendChild(left);
       const btns = el("div", "sugg-btns");
       li.appendChild(btns);

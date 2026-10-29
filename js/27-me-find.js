@@ -126,7 +126,7 @@
     const matches = (hay, toks) => toks.every(t => hay.includes(t));
     const dateTxt = iso => { try { return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch (e) { return ""; } };
     function search(text) {
-      const toks = norm(text).split(/\s+/).filter(Boolean);
+      const toks = norm(text).split(/\s+/).map(t => t.replace(/^@/, "")).filter(Boolean);   // "@derr" finds @derricksilly too
       const spotName = id => { const s = (spots || []).find(x => x.id === id); return s ? s.name : ""; };
       const res = { features: [], spots: [], fish: [], people: [], catches: [] };
       if (!toks.length) return res;
@@ -144,17 +144,37 @@
         let n = 0; try { n = all.filter(c => isMine(c) && c.species && (cap(c.species.trim()).toLowerCase() === f.name.toLowerCase() || (typeof seasonFor === "function" && seasonFor(c.species) && seasonFor(c.species).name === f.name))).length; } catch (e) { /* fine */ }
         res.fish.push({ title: f.name, sub: "Species page" + (n ? " · you've caught " + n : ""), run: () => openSpecies(f.name) });
       });
-      const people = {}; Object.assign(people, pubProfiles || {}, friendProfiles || {});
+      const people = {}; Object.assign(people, findPeople, pubProfiles || {}, friendProfiles || {});
+      const rel = id => { const r = (typeof friendRows !== "undefined" ? friendRows : []).find(x => x.user_a === id || x.user_b === id);
+        return !r ? "Tap to see their page and add them" : r.status === "accepted" ? "Friend" : r.requested_by === (me && me.id) ? "Friend request sent" : "Wants to be friends — tap to answer"; };
       Object.keys(people).forEach(id => {
         const p = people[id]; if (!p || (me && id === me.id)) return;
         if (matches(norm([p.display_name, p.handle, p.home_area].filter(Boolean).join(" ")), toks))
-          res.people.push({ title: p.display_name || "@" + p.handle, sub: (p.handle ? "@" + p.handle + " · " : "") + (me && me.friendIds && me.friendIds.has(id) ? "Friend" : "In the app"), run: () => openProfile(id) });
+          res.people.push({ title: p.display_name || "@" + p.handle, sub: (p.handle ? "@" + p.handle + " · " : "") + rel(id), run: () => (typeof showProfile === "function" ? showProfile(id) : openProfile(id)) });   // showProfile switches to Community first, so the page shows from anywhere
       });
       all.slice().sort((a, b) => String(b.caught_at).localeCompare(String(a.caught_at))).forEach(c => {
         if (matches(norm([c.species, c.notes, c.bait, c.lure, spotName(c.spot_id)].filter(Boolean).join(" ")), toks))
           res.catches.push({ title: (c.species || "Catch") + (c.length_in ? " · " + c.length_in + " in" : ""), sub: [spotName(c.spot_id), dateTxt(c.caught_at), isMine(c) ? "you" : (typeof profName === "function" && profName(c.created_by)) || "a friend"].filter(Boolean).join(" · "), run: () => goToSpot(c.spot_id, false) });
       });
       return res;
+    }
+    // 👥 everyone in the app (v244): the list above only knows people already loaded (friends, public posts), so also ask the database
+    // for names / @usernames that match, a moment after typing stops; matches are added to the People group
+    const findPeople = {}; let findTimer = null, findAsked = "";
+    function askPeople(text) {
+      const qq = text.trim().replace(/^@/, "").replace(/[%,()*\\]/g, "");
+      clearTimeout(findTimer);
+      if (qq.length < 2 || qq === findAsked) return;
+      findTimer = setTimeout(async () => {
+        findAsked = qq;
+        try {
+          const { data, error } = await db.from("profiles").select("user_id,handle,display_name,home_area").or(`handle.ilike.%${qq}%,display_name.ilike.%${qq}%`).limit(20);
+          if (error || !data) return;
+          let added = false;
+          data.forEach(p => { if (!findPeople[p.user_id]) { findPeople[p.user_id] = p; added = true; } if (typeof friendProfiles !== "undefined" && !friendProfiles[p.user_id]) friendProfiles[p.user_id] = p; });
+          if (added && !fp.hidden && q.value.trim()) render();
+        } catch (e) { /* the local matches still show */ }
+      }, 350);
     }
     const GROUPS = [["features", "Features", "✨"], ["spots", "Spots", "📍"], ["fish", "Fish", "🐟"], ["people", "People", "🙂"], ["catches", "Catches", "🎣"]];
     // the last few searches come back as chips next time (kept on this phone only)
@@ -186,6 +206,7 @@
         out.appendChild(el("p", "spot-meta fp-hint", "Type a spot, a fish, a friend's name, or something the app does."));
         return;
       }
+      askPeople(text);
       const r = search(text); let any = false;
       GROUPS.forEach(([k, label, ic]) => {
         const list = r[k]; if (!list.length) return; any = true;
