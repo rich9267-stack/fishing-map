@@ -527,6 +527,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-28i", title: "🎨 Fresh icons and tank decorations", items: [
+      "Icons are now filled and in colour, so they are easier to see outside (the ⚙️ gear stays as it was).",
+      "Tank decorations are little colour drawings instead of plain icons.",
+      "The map has no top bar any more: more room for the map. Help is now in ⋯ More."
+    ] },
     { id: "2026-10-28h", title: "👀 Admins can hide a sighting", items: [
       "Admins have a new 👀 Sightings tab: they can hide a rude or fake 🌎 Public sighting. Its owner gets an alert with the reason and still sees it in Profile → Sightings."
     ] },

@@ -1063,7 +1063,7 @@
   body.on-map.has-bnav { padding-bottom: 0; }
   body.on-map main { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; padding-top: 10px; padding-bottom: calc(var(--bnav-h, 58px) + var(--bn-safe)); }
   body.on-map main > h1, body.on-map #hdr-sub, body.on-map #plan-top, body.on-map #terms-banner, body.on-map main > footer, body.on-map #safety-strip, body.on-map #hw-ask { display: none !important; }   /* all still on Home */
-  body.on-map .userbar { margin: 0 0 8px; }
+  body.on-map .userbar { display: none !important; }   /* no Search / Help / Settings bar on the map: Help is in ⋯ More */
   body.on-map #app:not([hidden]) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   body.on-map #view-map:not([hidden]) { flex: 1; min-height: 0; position: relative; margin: 0 -16px; }
   body.on-map #map { height: 100%; min-height: 0; border-radius: 0; border: 0; border-top: 1px solid var(--line); }

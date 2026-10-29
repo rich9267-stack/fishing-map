@@ -35,6 +35,7 @@
     });
     document.addEventListener("click", e => { if (!more.hidden && !more.contains(e.target) && !moreBtn.contains(e.target)) closeMore(false); });
     $("map-layers-btn").addEventListener("click", () => { closeMore(false); closeResults(); });
+    $("map-help").addEventListener("click", () => $("help-btn").click());   // the top bar is hidden on the map, so Help lives in ⋯ More
     // Map key: opens the Layers sheet at the key
     $("map-key-btn").addEventListener("click", () => {
       if ($("layers-sheet").hidden) $("map-layers-btn").click();

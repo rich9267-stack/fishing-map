@@ -1,14 +1,16 @@
-// ---- Icons: line icons (24px, 1.8 stroke) shown in place of emoji ----
+// ---- Icons: filled colour icons (24px, v240) shown in place of emoji ----
 // The app text keeps its emoji (so data, tests and copy/paste don't change); on screen each mapped emoji
-// is wrapped in <span class="ei ei-NAME"> and drawn as a line icon in the text colour (style added below).
-// Add an icon: put it in ICON_SVG, then list the emoji that use it in ICON_MAP. Dots and medals take their colour from --dc.
+// is wrapped in <span class="ei ei-NAME"> and drawn as an outline with a soft fill of the same colour (style added below).
+// Each icon has its own colour (ICON_COLOR); on solid buttons, chips that are on and the bottom bar they use the text colour instead.
+// Add an icon: put it in ICON_SVG (+ a colour in ICON_COLOR, or in NO_FILL if it is only lines), then list the emoji that use it in ICON_MAP.
+// The ⚙️ gear stays a plain line icon in the text colour (Richard, Oct 28). Dots and medals take their colour from --dc.
 (function () {
   const C = (x, y, r) => "M" + (x - r) + " " + y + "a" + r + " " + r + " 0 1 0 " + 2 * r + " 0a" + r + " " + r + " 0 1 0 " + -2 * r + " 0";
   // name -> path data (stroke icons); names starting with "!" are solid shapes
   const ICON_SVG = {
     pin: "M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" + C(12, 10, 2.5),
     hook: "M14 3v11a4.5 4.5 0 0 1-9 0v-1.5M3 10.5l2 2 2-2",
-    fish: "M3 12c3-4.5 8-6 13-3.5l4-2.5-1.2 6 1.2 6-4-2.5C11 18 6 16.5 3 12zM8 11.5h.01",
+    fish: "M2.5 12C5 7.5 9.5 5.5 14 6.5c2.3.5 4 1.9 5 3.5l2.5-2.5v9L19 14c-1 1.6-2.7 3-5 3.5-4.5 1-9-1-11.5-5.5zM7.5 11h.01",
     shark: "M2 15c4 1 10 0 14-4l-1-6 5 5c1 2 1 4 0 5-4 3-12 4-18 0zM7 13h.01",
     trophy: "M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3",
     globe: C(12, 12, 9) + "M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18",
@@ -143,6 +145,28 @@
     "!moon3": "M12 3a9 9 0 0 1 0 18 4.5 9 0 0 0 0-18z",
     "!moonfull": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 5.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13z"
   };
+  // icon name -> its colour (the soft fill is the same colour, see svgUrl)
+  const ICON_COLOR = {
+    pin: "#e0533d", hook: "#5b6b78", fish: "#1c9bb0", shark: "#4f7892", trophy: "#d9a514", globe: "#2f7fd6", users: "#3b7dd8", user: "#3b7dd8", ruler: "#d98a1f",
+    flag: "#e0533d", wave: "#2f8fd6", search: "#5b6b78", ban: "#d64545", camera: "#5b6b78", coin: "#d9a514", mountain: "#4f9a5b", star: "#e3a812", alert: "#e8902a",
+    chat: "#3b7dd8", map: "#2e9e5b", chart: "#7a5bd6", book: "#b8642f", home: "#2e9e5b", eye: "#3b7dd8", eyeoff: "#7a8590", calendar: "#e0533d", lock: "#7a8590",
+    sparkle: "#e3a812", gem: "#8e5bd6", palette: "#c0569a", gamepad: "#7a5bd6", compass: "#e0533d", pencil: "#e8902a", tag: "#2e9e5b", bell: "#e3a812",
+    download: "#2e9e5b", upload: "#3b7dd8", phone: "#5b6b78", wind: "#5aa5c8", mail: "#3b7dd8", lifebuoy: "#e0533d", trash: "#d64545", egg: "#d8a95a",
+    ticket: "#c0569a", thermo: "#e0533d", leaf: "#3fa34d", flame: "#ec6a2c", bolt: "#e3a812", repeat: "#3b7dd8", sunrise: "#ec8a2c", sun: "#e8a317",
+    save: "#3b7dd8", bulb: "#e3a812", plus: "#2e9e5b", clock: "#5b6b78", alarm: "#e0533d", timer: "#5b6b78", knot: "#b8642f", scroll: "#b8642f",
+    shrimp: "#ec7a5c", worm: "#c97a6a", rock: "#7d858c", bug: "#4f9a3b", coral: "#ec6f7c", volume: "#5b6b78", mute: "#7a8590", brain: "#d6789a",
+    moon: "#6b6fd6", boat: "#2f7fd6", tree: "#3fa34d", crown: "#d9a514", heart: "#e0475a", hand: "#d8975a", thumb: "#3b7dd8", bank: "#5b6b78",
+    shop: "#2e9e5b", idcard: "#5b6b78", storm: "#5c7fa8", signal: "#5b6b78", bars: "#2e9e5b", anchor: "#3f5f80", gift: "#c0569a", grain: "#c9a03a",
+    swim: "#2f8fd6", log: "#8b5a2b", phoneoff: "#7a8590", key: "#d9a514", hourglass: "#b8642f", check: "#2e9e5b", checkcircle: "#2e9e5b", xcircle: "#d64545",
+    help: "#3b7dd8", stop: "#d64545", bridge: "#7a8590", turtle: "#3fa34d", wrench: "#5b6b78", file: "#5b6b78", image: "#2f8fd6", drop: "#2f8fd6",
+    access: "#3b7dd8", toolbox: "#d64545", trident: "#2f7fd6", web: "#7a8590", target: "#e0533d", box: "#b8842f", crab: "#e0533d", barrel: "#8b5a2b",
+    cloudsun: "#5aa5c8", expand: "#5b6b78", shell: "#e09a6a", castle: "#c9a03a", card: "#3b7dd8", flask: "#7a5bd6", shuffle: "#3b7dd8", beach: "#e8a317",
+    shield: "#2e9e5b", salt: "#7a8590", rainbow: "#e0533d", scissors: "#5b6b78", link: "#3b7dd8", keyboard: "#5b6b78", car: "#d64545", folder: "#e3a812",
+    scale: "#5b6b78", undo: "#5b6b78", arrowr: "#5b6b78", arrowl: "#5b6b78"
+  };
+  // icons made only of lines get no soft fill (it would fill odd shapes)
+  const NO_FILL = new Set(["hook", "wave", "chart", "plus", "wind", "check", "arrowr", "arrowl", "undo", "repeat", "shuffle", "download", "upload", "link", "knot",
+    "worm", "signal", "web", "expand", "trident", "coral", "bridge", "rainbow", "hourglass", "swim", "scale", "shrimp", "bars", "gear", "grain", "sunrise", "scissors"]);
   // emoji -> icon name (or [name, colour, mirrored]). Faces and plain typed symbols (arrows, ticks, stars like ★ ☆) are left as typed.
   const ICON_MAP = {
     "📍": "pin", "📌": "pin", "🎣": "hook", "🪝": "hook", "🐟": "fish", "🐠": "fish", "🐡": "fish", "🐱": "fish", "🦈": "shark", "🏆": "trophy", "🌎": "globe",
@@ -176,21 +200,31 @@
 
   // Icons that show filled when their bottom-bar tab is the active one
   const FILLED = { home: 1.8, map: 1.8, fish: 1.8, trophy: 1.8, users: 1.8, chart: 3.4 };
+  // the mask: the outline at full strength + the shape filled at 25%, so one colour gives both the outline and its soft fill
+  const soft = name => NO_FILL.has(name) ? "" : '<path fill="black" fill-opacity=".25" fill-rule="evenodd" d="' + ICON_SVG[name] + '"/>';
   function svgUrl(name, filled) {
     const body = filled ? '<path fill="' + (name === "chart" ? "none" : "black") + '" fill-rule="evenodd" stroke="black" stroke-width="' + FILLED[name] + '" stroke-linecap="round" stroke-linejoin="round" d="' + ICON_SVG[name] + '"/>'
       : name[0] === "!" ? '<path fill="black" fill-rule="evenodd" d="' + ICON_SVG[name] + '"/>'
-      : '<path fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="' + ICON_SVG[name] + '"/>';
+      : soft(name) + '<path fill="none" stroke="black" stroke-width="' + (name === "gear" ? 1.8 : 2) + '" stroke-linecap="round" stroke-linejoin="round" d="' + ICON_SVG[name] + '"/>';
     return 'url("data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' + body + "</svg>") + '")';
   }
   // inline svg for code that builds markup itself (uses the text colour)
-  window.iconSvg = name => ICON_SVG[name] ? '<svg class="ic" viewBox="0 0 24 24" width="1.15em" height="1.15em" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="' + ICON_SVG[name] + '"/></svg>' : "";
+  window.iconSvg = name => {
+    if (!ICON_SVG[name]) return "";
+    const c = ICON_COLOR[name] || "currentColor", fill = NO_FILL.has(name) ? "" : '<path class="ic-soft" fill="' + c + '" fill-opacity=".25" stroke="none" fill-rule="evenodd" d="' + ICON_SVG[name] + '"/>';
+    return '<svg class="ic" viewBox="0 0 24 24" width="1.15em" height="1.15em" aria-hidden="true" fill="none" stroke="' + c + '" stroke-width="' + (name === "gear" ? 1.8 : 2) + '" stroke-linecap="round" stroke-linejoin="round">' + fill + '<path d="' + ICON_SVG[name] + '"/></svg>';
+  };
 
   if (typeof document === "undefined" || !document.head) return;
   let css = ".ei{position:relative;display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;overflow:hidden;text-indent:-9999px;white-space:nowrap;line-height:1;font-style:normal}" +
     ".ei::before{content:'';position:absolute;inset:0;text-indent:0;background:var(--dc,currentColor);-webkit-mask:var(--i) center/contain no-repeat;mask:var(--i) center/contain no-repeat}" +
-    ".ei-flip::before{transform:scaleX(-1)}";
+    ".ei-flip::before{transform:scaleX(-1)}" +
+    // on solid buttons, chips that are on, the bottom bar and dark tank footers the icon takes the text colour (a colour icon would clash)
+    ".bnav-in .ei,.btn:not(.ghost) .ei,.fchip.on .ei,#bn-log .ei,.tf-foot .ei,[data-icmono] .ei{--dc:currentColor}" +
+    ".bnav-in .ic,.btn:not(.ghost) .ic,.fchip.on .ic,#bn-log .ic,[data-icmono] .ic{stroke:currentColor}" +
+    ".bnav-in .ic-soft,.btn:not(.ghost) .ic-soft,.fchip.on .ic-soft,#bn-log .ic-soft,[data-icmono] .ic-soft{fill:currentColor}";
   const done = new Set();   // each icon's rule is added the first time that icon is shown (keeps the style sheet small)
-  const addRule = v => { const n = nameOf(v); if (done.has(n)) return; done.add(n); const c = "." + cls(v).split(" ")[0]; st.appendChild(document.createTextNode(c + "{--i:" + svgUrl(n) + "}" + (FILLED[n] ? ".bnav-in .on " + c + "{--i:" + svgUrl(n, true) + "}" : ""))); };
+  const addRule = v => { const n = nameOf(v); if (done.has(n)) return; done.add(n); const c = "." + cls(v).split(" ")[0]; st.appendChild(document.createTextNode(c + "{--i:" + svgUrl(n) + (ICON_COLOR[n] ? ";--dc:" + ICON_COLOR[n] : "") + "}" + (FILLED[n] ? ".bnav-in .on " + c + "{--i:" + svgUrl(n, true) + "}" : ""))); };
   const st = document.createElement("style"); st.id = "icon-style"; st.textContent = css; document.head.appendChild(st);
 
   const SKIP = /^(SCRIPT|STYLE|TEXTAREA|OPTION|TITLE|NOSCRIPT|INPUT|SELECT)$/;

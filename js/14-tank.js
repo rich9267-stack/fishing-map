@@ -481,7 +481,7 @@
     const sandEl = el("div", "tank-sand"); sandEl.setAttribute("aria-hidden", "true"); tank.appendChild(sandEl);
     // Decorations are earned: one more for every couple of species in this tank (so friends see the same ones on your profile)
     const deco = TANK_DECOR[salt ? "salt" : "fresh"], got = deco.filter(d => fish.length >= d.at);
-    got.forEach((d, i) => { const e = el("span", "decor", d.e); e.style.left = (5 + i * (76 / Math.max(deco.length - 1, 1))) + "%"; e.style.fontSize = d.sz + "px"; e.title = d.n; e.setAttribute("aria-hidden", "true"); tank.appendChild(e); });
+    got.forEach((d, i) => { const e = el("span", "decor"); e.appendChild(tankArt(d.art, Math.round(d.sz * 1.5))); e.style.left = (5 + i * (76 / Math.max(deco.length - 1, 1))) + "%"; e.title = d.n; e.setAttribute("aria-hidden", "true"); tank.appendChild(e); });
     // Spoken description: the tank is a labelled group; its fish are buttons; the decorations are read out in the label (they are only pictures)
     tank.setAttribute("role", "group"); tank.dataset.a11y = `${view.name ? view.name + ", a " + (salt ? "saltwater" : "freshwater") + " tank" : view.title} with ${fish.length} species. Tab to a fish and press Enter for its details.`; tank.dataset.decor = got.map(d => d.n).join(", ");
     // The cabinet: the tank sits in a dark frame with a name plaque under the glass ("Snook Corner · 6 fish", or "Saltwater tank · 6 fish" with no name)
@@ -505,8 +505,8 @@
   }
   // Decorations that unlock as a tank fills up (at = number of species in that tank)
   const TANK_DECOR = {
-    salt: [{ at: 2, e: "🌿", n: "Seaweed", sz: 26 }, { at: 4, e: "🐚", n: "Shell", sz: 20 }, { at: 6, e: "⚓", n: "Anchor", sz: 24 }, { at: 8, e: "🪸", n: "Coral", sz: 28 }, { at: 10, e: "🏰", n: "Castle", sz: 32 }],
-    fresh: [{ at: 2, e: "🌿", n: "Water plant", sz: 26 }, { at: 4, e: "🪨", n: "Rock", sz: 22 }, { at: 6, e: "🪷", n: "Lily", sz: 26 }, { at: 8, e: "🏺", n: "Old jar", sz: 26 }, { at: 10, e: "🏰", n: "Castle", sz: 32 }]
+    salt: [{ at: 2, e: "🌿", n: "Seaweed", art: "seaweed", sz: 26 }, { at: 4, e: "🐚", n: "Shell", art: "shell", sz: 20 }, { at: 6, e: "⚓", n: "Anchor", art: "anchor", sz: 24 }, { at: 8, e: "🪸", n: "Coral", art: "coral", sz: 28 }, { at: 10, e: "🏰", n: "Castle", art: "castle", sz: 32 }],
+    fresh: [{ at: 2, e: "🌿", n: "Water plant", art: "leafy", sz: 26 }, { at: 4, e: "🪨", n: "Rock", art: "rock", sz: 22 }, { at: 6, e: "🪷", n: "Lily", art: "lily", sz: 26 }, { at: 8, e: "🏺", n: "Old jar", art: "jar", sz: 26 }, { at: 10, e: "🏰", n: "Castle", art: "castle", sz: 32 }]
   };
   function tankInfo(f, kind, i, opts) {
     const c = f.catchRow; i.innerHTML = ""; i.hidden = false;
@@ -691,17 +691,17 @@
     more.appendChild(det);
   }
   // ---- 🛍 Shop & 🎨 Customize: gravel colors and pieces you buy (coins/gems) or win, placed in your tanks and saved to your account (setup/42) ----
-  // Prices and what you own live in the database; this is only the pictures (emoji for now — artist art can replace SHOP_ART entry by entry).
+  // Prices and what you own live in the database; this is only the pictures (colour drawings from js/72 for now — artist art can replace them entry by entry; e is kept for text).
   const GRAVEL = { sand: ["#e6d3a1", "#c9b078", "Natural sand"], gravel_black: ["#55555c", "#2c2c31"], gravel_blue: ["#6fa8dc", "#3b6ea5"], gravel_green: ["#8fbc6f", "#4f8a3b"], gravel_pink: ["#f3a6c3", "#d4709a"], gravel_white: ["#f4f1ea", "#d8d2c4"] };
   const SHOP_ART = {
-    wood_small: { e: "🪵", sz: 26, n: "Small driftwood" }, wood_big: { e: "🪵", sz: 46, n: "Big driftwood" },
-    plant_grass: { e: "🌾", sz: 36, n: "Sea grass" }, plant_kelp: { e: "🌿", sz: 58, f: "hue-rotate(35deg) saturate(1.4)", n: "Kelp" },
-    plant_leafy: { e: "🍃", sz: 34, n: "Leafy water plant" }, plant_fern: { e: "🌿", sz: 38, n: "Water fern" }, plant_lily: { e: "🪷", sz: 28, n: "Lily pads" },
-    rock_small: { e: "🪨", sz: 22, n: "Small rocks" }, rock_pile: { e: "🪨", sz: 40, n: "Boulder pile" }, rock_arch: { e: "🪨", sz: 58, f: "contrast(1.1)", n: "Rock arch" },
-    coral_brain: { e: "🪸", sz: 32, f: "hue-rotate(300deg)", n: "Brain coral" }, coral_fan: { e: "🪸", sz: 42, n: "Sea fan" }, coral_branch: { e: "🪸", sz: 52, f: "hue-rotate(40deg) saturate(1.3)", n: "Staghorn coral" },
-    shell_scallop: { e: "🦪", sz: 22, n: "Scallop shell" }, shell_conch: { e: "🐚", sz: 24, n: "Conch shell" },
-    diver: { e: "🤿", sz: 40, n: "Diver figurine" }, chest: { e: "💰", sz: 36, n: "Treasure chest", chest: true },
-    trophy_gold: { e: "🏆", sz: 32, n: "Gold trophy cup" }, trophy_silver: { e: "🏆", sz: 30, f: "grayscale(1) brightness(1.25)", n: "Silver trophy cup" }, trophy_bronze: { e: "🏆", sz: 28, f: "sepia(1) saturate(2) hue-rotate(-15deg)", n: "Bronze trophy cup" }
+    wood_small: { art: "driftwood", e: "🪵", sz: 26, n: "Small driftwood" }, wood_big: { art: "driftwood", e: "🪵", sz: 46, n: "Big driftwood" },
+    plant_grass: { art: "grass", e: "🌾", sz: 36, n: "Sea grass" }, plant_kelp: { art: "kelp", e: "🌿", sz: 58, n: "Kelp" },
+    plant_leafy: { art: "leafy", e: "🍃", sz: 34, n: "Leafy water plant" }, plant_fern: { art: "fern", e: "🌿", sz: 38, n: "Water fern" }, plant_lily: { art: "lily", e: "🪷", sz: 28, n: "Lily pads" },
+    rock_small: { art: "rock", e: "🪨", sz: 22, n: "Small rocks" }, rock_pile: { art: "pile", e: "🪨", sz: 40, n: "Boulder pile" }, rock_arch: { art: "arch", e: "🪨", sz: 58, n: "Rock arch" },
+    coral_brain: { art: "brain", e: "🪸", sz: 32, n: "Brain coral" }, coral_fan: { art: "fan", e: "🪸", sz: 42, n: "Sea fan" }, coral_branch: { art: "staghorn", e: "🪸", sz: 52, n: "Staghorn coral" },
+    shell_scallop: { art: "shell", e: "🦪", sz: 22, n: "Scallop shell" }, shell_conch: { art: "conch", e: "🐚", sz: 24, n: "Conch shell" },
+    diver: { art: "diver", e: "🤿", sz: 40, n: "Diver figurine" }, chest: { e: "💰", sz: 36, n: "Treasure chest", chest: true },
+    trophy_gold: { art: "trophy", tint: "gold", e: "🏆", sz: 32, n: "Gold trophy cup" }, trophy_silver: { art: "trophy", tint: "silver", e: "🏆", sz: 30, n: "Silver trophy cup" }, trophy_bronze: { art: "trophy", tint: "bronze", e: "🏆", sz: 28, n: "Bronze trophy cup" }
   };
   const SHOP_CATS = [["gravel", "Gravel colors"], ["wood", "Driftwood"], ["plant", "Plants"], ["rock", "Rocks"], ["coral", "Coral"], ["shell", "Shells"], ["diver", "Diver"], ["chest", "Treasure chest"], ["trophy", "Trophy cups"]];
   const shop = { ready: false, loading: false, items: {}, owned: new Set(), setups: { salt: null, fresh: null, extras: [], place: {} } };
@@ -753,7 +753,7 @@
       const a = SHOP_ART[p.key]; if (!a) return;
       const d = el("span", "decor placed " + (p.layer === "front" ? "lay-front" : "lay-back"));
       d.style.left = Math.max(0, Math.min(100, +p.x || 0)) + "%"; d.title = a.n; d.setAttribute("aria-hidden", "true");
-      if (a.chest) { d.classList.add("chest"); d.appendChild(chestSvg()); chestLife(d); } else { d.textContent = a.e; d.style.fontSize = a.sz + "px"; if (a.f) d.style.filter = a.f + " drop-shadow(0 2px 2px rgba(0,0,0,.35))"; }
+      if (a.chest) { d.classList.add("chest"); d.appendChild(chestSvg()); chestLife(d); } else d.appendChild(tankArt(a.art, Math.round(a.sz * 1.4), a.tint));
       tank.appendChild(d);
     });
   }
@@ -827,7 +827,7 @@
       list.forEach(i => {
         const cell = el("div", "shop-item"), art = el("div", "shop-art"); cell.setAttribute("role", "listitem"); art.setAttribute("aria-hidden", "true");
         if (cat === "gravel") { const c = GRAVEL[i.key] || GRAVEL.sand; art.style.background = `linear-gradient(${c[0]}, ${c[1]})`; art.classList.add("swatch"); }
-        else { const a = SHOP_ART[i.key]; if (a && a.chest) art.appendChild(chestSvg()); else { art.textContent = (a && a.e) || "✨"; if (a && a.f) art.style.filter = a.f; } }
+        else { const a = SHOP_ART[i.key]; if (a && a.chest) art.appendChild(chestSvg()); else if (a) art.appendChild(tankArt(a.art, 34, a.tint)); else art.textContent = "✨"; }
         cell.appendChild(art); cell.appendChild(el("div", "shop-name", i.name));
         cell.appendChild(el("div", "spot-meta", i.water === "salt" ? "🌊 saltwater tank" : i.water === "fresh" ? "🌿 freshwater tank" : "any tank"));
         const owned = shop.owned.has(i.key);
