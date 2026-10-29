@@ -47,7 +47,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   for (const [k, view, title] of [["play", "view-tank", "Play"], ["compete", "view-compete", "Compete"], ["stats", "view-insights", "Stats"]]) {
     nav(k).click(); await wait(400);
     const head = $(view).querySelector(".cm-head");
-    check(title + ": own header with title and Search / Help / gear / picture", !!head && head.textContent.includes(title) && head.querySelectorAll(".cm-ib").length === 4);
+    check(title + ": own header with title and Search / Help / bell / gear / picture", !!head && head.textContent.includes(title) && head.querySelectorAll(".cm-ib").length === 5);
     check(title + ": the shared top header is hidden", d.body.classList.contains("on-page"));
   }
   let q = 0; $("find-btn").addEventListener("click", () => q++); $("view-insights").querySelector(".cm-ib").click();

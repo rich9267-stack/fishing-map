@@ -527,6 +527,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-29c", title: "🔔 Tidier alerts", items: [
+      "New alerts now show as a red number on the 🔔 bell next to the gear. Tap the bell to open them.",
+      "Tap ✕ on an alert to clear it, or 🧹 Clear all to empty the list."
+    ] },
     { id: "2026-10-29b", title: "🐠 Your tank, your decorations", items: [
       "Tanks no longer get decorations by themselves. Get pieces in the 🛍 Shop, then tap 🎨 Customize to place them where you like."
     ] },

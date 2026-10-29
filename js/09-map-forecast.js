@@ -836,7 +836,7 @@
     const num = id => +((/\((\d+)\)/.exec($(id).textContent) || [])[1] || 0);
     function badges() {
       const a = num("inbox-btn"), c = num("chat-btn") + num("friends-btn");
-      $("me-badge").hidden = !a; $("me-badge").textContent = a;
+      $("bell-badge").hidden = !a; $("bell-badge").textContent = a;   // new alerts show on the 🔔 bell (v243), not on the picture, which opens the Profile
       $("com-badge").hidden = !c; $("com-badge").textContent = c;
     }
     ["inbox-btn", "chat-btn", "friends-btn"].forEach(id => new MutationObserver(badges).observe($(id), { childList: true, characterData: true, subtree: true }));

@@ -71,7 +71,7 @@ function renderMyProfile() {
   });
   const gr = el("button", "pf-share"); gr.type = "button"; gr.id = "pf-gear"; gr.setAttribute("aria-label", "Settings"); gr.innerHTML = ic("gear");
   gr.addEventListener("click", () => $("gear-btn").click());
-  btns.appendChild(set); btns.appendChild(gr); btns.appendChild(sh); top.appendChild(btns); root.appendChild(top);
+  btns.appendChild(set); btns.appendChild(bellBtn("pf-share")); btns.appendChild(gr); btns.appendChild(sh); top.appendChild(btns); root.appendChild(top);
   // my real picture, if I have one (the letter shows until it arrives)
   (async () => {
     try {

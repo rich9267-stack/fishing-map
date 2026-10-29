@@ -10,6 +10,7 @@
     const mk = (label, svg, fn) => { const b = el("button", "cm-ib"); b.type = "button"; b.setAttribute("aria-label", label); b.innerHTML = svg; b.addEventListener("click", fn); icons.appendChild(b); return b; };
     mk("Find anything — spots, fish, people, catches", ic("search"), () => $("find-btn").click());
     mk("Help for this screen", ic("help"), () => $("help-btn").click());
+    icons.appendChild(bellBtn());
     mk("Settings", ic("gear"), () => $("gear-btn").click());
     const me2 = mk("Me — profile, settings, alerts", "", () => $("me-btn").click()); me2.classList.add("cm-me");
     pickers.push(me2);

@@ -848,12 +848,12 @@
   body.me-open, body.find-open, body.hp-open { overflow: hidden; }
   #find-btn { font-size: 1.05rem; min-width: 44px; min-height: 44px; }
   #me-btn { min-width: 44px; min-height: 44px; }
-  #me-card, #settings-card[data-show], #find-page, #hp-page { position: fixed; inset: 0; z-index: 1090; margin: 0; border: 0; border-radius: 0; box-shadow: none; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  #me-card, #settings-card[data-show], #find-page, #hp-page, #inbox-card { position: fixed; inset: 0; z-index: 1090; margin: 0; border: 0; border-radius: 0; box-shadow: none; overflow-y: auto; -webkit-overflow-scrolling: touch;
     background: var(--bg); box-sizing: border-box; padding: calc(8px + env(safe-area-inset-top)) 16px calc(40px + var(--bn-safe)); }
-  body.me-open #toast-box, body.find-open #toast-box, body.hp-open #toast-box { z-index: 1195; }
-  body.me-open .ask-bg, body.find-open .ask-bg, body.hp-open .ask-bg { z-index: 1195; }
-  #me-card[hidden], #find-page[hidden], #hp-page[hidden] { display: none; }
-  #me-card > *, #settings-card[data-show] > *, #find-page > *, #hp-page > * { max-width: 560px; margin-left: auto; margin-right: auto; }
+  body.me-open #toast-box, body.find-open #toast-box, body.hp-open #toast-box, body.inbox-open #toast-box { z-index: 1195; }
+  body.me-open .ask-bg, body.find-open .ask-bg, body.hp-open .ask-bg, body.inbox-open .ask-bg { z-index: 1195; }
+  #me-card[hidden], #find-page[hidden], #hp-page[hidden], #inbox-card[hidden] { display: none; }
+  #me-card > *, #settings-card[data-show] > *, #find-page > *, #hp-page > *, #inbox-card > * { max-width: 560px; margin-left: auto; margin-right: auto; }
   #settings-card[data-show] .me-sec { display: none; }
   #settings-card[data-show="alerts"] .me-sec[data-sec="alerts"], #settings-card[data-show="license"] .me-sec[data-sec="license"], #settings-card[data-show="privacy"] .me-sec[data-sec="privacy"],
   #settings-card[data-show="offline"] .me-sec[data-sec="offline"], #settings-card[data-show="phone"] .me-sec[data-sec="phone"], #settings-card[data-show="data"] .me-sec[data-sec="data"],
@@ -897,7 +897,15 @@
   .fp-it small { overflow-wrap: anywhere; }
   .fp-empty .fp-chips { margin: 10px 0; justify-content: center; }
   #me-sub { overflow-wrap: anywhere; }
-  #me-card, #find-page, #hp-page { overscroll-behavior: contain; }
+  #me-card, #find-page, #hp-page, #inbox-card { overscroll-behavior: contain; }
+  /* 🔔 bell next to the gear (v243): opens the Alerts list; the red number of new alerts sits on it (not on the picture) */
+  #bell-btn { position: relative; min-width: 44px; min-height: 44px; }
+  #bell-btn .nav-badge, .pf-share .nav-badge { position: absolute; top: 2px; right: -2px; margin: 0; }
+  #bell-btn .nav-badge[hidden], .cm-ib .nav-badge[hidden], .pf-share .nav-badge[hidden] { display: none; }
+  .pf-share { position: relative; }
+  body.on-map #bell-btn { display: none; }
+  #inbox-list .feed-top .spot-meta { margin-left: auto; white-space: nowrap; }
+  .inbox-x { min-width: 36px; min-height: 36px; font-size: 1rem; color: var(--muted); padding: 0; }
   .me-it:focus-visible, .fp-it:focus-visible, .fp-chip:focus-visible, .bnav-in button:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 
   /* ---- Map page tidy-up: one 3-column button grid, a folded-away key ---- */

@@ -469,12 +469,13 @@
   const ago = d => { const m = Math.round((Date.now() - new Date(d)) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : new Date(d).toLocaleDateString([], { month: "short", day: "numeric" }); };
   function inboxBadge() {
     const n = inbox.filter(x => +new Date(x.created_at) > inboxSeen() && x.kind !== "test").length;
+    $("inbox-clear").hidden = !inbox.length;
     $("inbox-btn").textContent = n ? `🔔 Alerts (${n})` : "🔔 Alerts";
   }
   async function inboxLoad() {
     if (!me) return;
     try {
-      const { data, error } = await db.from("notifications").select("*").order("created_at", { ascending: false }).limit(50);
+      const { data, error } = await db.from("notifications").select("*").is("cleared_at", null).order("created_at", { ascending: false }).limit(50);
       if (error) throw error;
       inbox = data || [];
     } catch (e) { /* keep the last list */ }
@@ -490,6 +491,9 @@
       if (x.body) row.appendChild(el("div", null, x.body));
       if (x.result === "quiet hours") row.appendChild(el("div", "spot-meta", "🌙 Held back — it arrived during your quiet hours"));
       if (x.url) row.addEventListener("click", () => { $("inbox-card").hidden = true; handleGo(x.url); });
+      const clr = el("button", "linkbtn inbox-x", "✕"); clr.type = "button"; clr.setAttribute("aria-label", "Clear this alert: " + x.title);
+      clr.addEventListener("click", e => { e.stopPropagation(); inboxClear(x.id); });
+      top.appendChild(clr);
       box.appendChild(row);
     });
   }
@@ -500,6 +504,33 @@
     inboxBadge(); $("inbox-card").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   $("inbox-close").addEventListener("click", () => { $("inbox-card").hidden = true; });
+  // full-screen list (v243): body.inbox-open lifts the "are you sure?" box and toasts above it
+  new MutationObserver(() => document.body.classList.toggle("inbox-open", !$("inbox-card").hidden)).observe($("inbox-card"), { attributes: true, attributeFilter: ["hidden"] });
+  // 🧹 Clear (setup/120): one alert (✕) or all of them; nothing is deleted, a cleared alert just stops showing here
+  async function inboxClear(id) {
+    const keep = inbox;
+    inbox = id ? inbox.filter(x => x.id !== id) : [];
+    inboxRender(); inboxBadge();
+    const { error } = await db.rpc("clear_my_alerts", id ? { p_id: id } : {});
+    if (error) { inbox = keep; inboxRender(); inboxBadge(); toast("Couldn't clear: " + error.message, 5000); }
+  }
+  $("inbox-clear").addEventListener("click", async () => {
+    if (!inbox.length || !(await askOk(`Clear all ${inbox.length} alerts from this list?`))) return;
+    inboxClear(null);
+  });
+  // 🔔 the bell next to the gear opens the list straight away; its red number = new alerts
+  $("bell-btn").addEventListener("click", e => { e.stopPropagation(); $("inbox-btn").click(); });
+  // a copy of the bell for the pages with their own header (Community, Play, Compete, Stats, Profile); its number follows #bell-badge
+  function bellBtn(cls) {
+    const b = el("button", cls || "cm-ib"); b.type = "button"; b.setAttribute("aria-label", "Alerts");
+    b.innerHTML = typeof iconSvg === "function" ? iconSvg("bell") : "🔔";
+    const n = el("span", "nav-badge"); n.hidden = true; b.appendChild(n);
+    const paint = () => { const s = $("bell-badge"); n.hidden = s.hidden; n.textContent = s.textContent; b.setAttribute("aria-label", s.hidden ? "Alerts" : `Alerts, ${s.textContent} new`); };
+    new MutationObserver(paint).observe($("bell-badge"), { attributes: true, attributeFilter: ["hidden"], childList: true, characterData: true, subtree: true });
+    paint();
+    b.addEventListener("click", () => $("bell-btn").click());
+    return b;
+  }
 
   // ---- 🧰 Polish (D): spot search & sort, undo delete, export CSV, offline map area, admin dashboard ----
   function undoToast(text, onUndo, label, ms) {
