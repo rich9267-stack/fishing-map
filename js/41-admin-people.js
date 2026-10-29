@@ -3,7 +3,7 @@ const ADMIN_BOX_WORDS = {
   people: "Approve or decline access requests", invite: "Add people to the invite list", remove_from_list: "Remove people from the list",
   reports: "Reports and removing content", warn: "Warn people", ban: "Ban people", pages: "Club & business pages",
   rules: "Size & bag rules", tournaments: "Official tournaments", official_places: "Official places", delete_spot: "Delete anyone's spot",
-  hide_spots: "Hide public spots", problems: "Problem reports", dashboard: "Dashboard", read_log: "Read the admin log",
+  hide_spots: "Hide public spots & sightings", problems: "Problem reports", dashboard: "Dashboard", read_log: "Read the admin log",
   manage_admins: "Manage admins"
 };
 const ADMIN_GATED_WORDS = {

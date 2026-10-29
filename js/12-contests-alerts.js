@@ -887,6 +887,7 @@
     else if (go === "insights") { if (typeof statsOpen === "function") statsOpen("insights"); else showView("insights"); window.scrollTo({ top: 0 }); }
     else if (go === "race" && typeof raceOpenRoom === "function") raceOpenRoom(q.get("room"));
     else if (go === "license" && typeof goLicense === "function") goLicense();
+    else if (go === "sightings" && typeof openMyProfile === "function") { pfTab = "sightings"; openMyProfile(); }   // 🙈 hidden-sighting alert (setup/119)
     else if (go === "problems" && adminCan("problems") && typeof goProblems === "function") goProblems();
     else if (go === "pages" && typeof window.openHostPages === "function") window.openHostPages(q.get("id") || undefined);   // ✏️ rename decision alert (setup/75): open that club / business page
     else { feedMode = "circle"; if (typeof comMark === "function") comMark("feed"); else showView("feed"); window.scrollTo({ top: 0 }); }

@@ -9,6 +9,7 @@ const ADMIN_SECTIONS = [
   { id: "dashboard", label: "📊 Dashboard", power: "dashboard" },
   { id: "official", label: "📍 Places", power: "official_places" },
   { id: "coins", label: "💰 Coins", power: "correct_coins" },
+  { id: "sightings", label: "👀 Sightings", power: "hide_spots" },
   { id: "removed", label: "↩️ Removed", any: ["reports", "delete_spot", "pages"] },
   { id: "admins", label: "🔑 Admins", power: "manage_admins" },
   { id: "log", label: "📜 Log", power: "read_log" },
@@ -31,6 +32,7 @@ function adminPageShow(sec) {
   card.querySelectorAll("div[data-asec]").forEach(d => { d.hidden = d.dataset.asec !== sec; });
   if (sec === "removed" && typeof window.adminUndoLoad === "function") window.adminUndoLoad();
   if (sec === "official" && typeof window.adminOfficialLoad === "function") window.adminOfficialLoad();
+  if (sec === "sightings" && typeof window.adminSightingsLoad === "function") window.adminSightingsLoad();
   if (sec === "coins" && typeof window.adminCoinsLoad === "function") window.adminCoinsLoad();
   if (sec === "fishid" && typeof window.adminFishIdLoad === "function") window.adminFishIdLoad();
   if (sec === "admins" && typeof window.adminsLoad === "function") window.adminsLoad();

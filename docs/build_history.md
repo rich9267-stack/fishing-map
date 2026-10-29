@@ -755,3 +755,8 @@ Legal check of the FWC ramp and FDEP parks/piers data: neither layer states a li
 - ⚓ Link an official place: request, then admin approves; the place card shows "🏪 Run by <page>" (`host_page_for_spot`).
 - Booking requests + reviews are built but OFF: `private.business_extras_on()` returns false. To switch on after the lawyer, add a setup file that makes it return true.
 - New tables: host_page_reports, host_page_posts, host_page_claims, host_page_bookings, host_page_reviews (normal user data; the backup picks them up). Database checked with pretend users in a self-cancelling block, both switch states. No anon/PUBLIC execute grants on the new functions.
+
+**v239 (Oct 28): 👀 Admin hide for sightings** (setup/119 applied, migration `hide_sightings`; no new tables; test223). Finishes progress-log item 8.
+- Admin → 👀 Sightings tab (js/40 + loader in js/44): 🌎 Public sightings from the last 14 days (name, count, who, photo when not hidden; notes left out). 🙈 Hide asks a reason (5+ letters) → `hide_sighting`: owner alert (kind safety, link `?go=sightings` opens Profile → Sightings, js/12), admin log `sighting_hidden`. ↩️ Show again → `unhide_sighting` (log `sighting_unhidden`).
+- Uses the existing "Hide public spots" power, relabelled "Hide public spots & sightings". `sightings_before` now lets hidden_at change only under app.admin_rpc. Hidden sightings already drop out of others' "Seen nearby", photo access and coin claims (setup/113 RLS).
+- Database checked with pretend users in a self-cancelling block (member blocked, short reason refused, other member stops seeing it, owner can't unhide, alert + 2 log lines). No anon/PUBLIC execute grants.

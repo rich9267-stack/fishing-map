@@ -527,6 +527,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-28h", title: "👀 Admins can hide a sighting", items: [
+      "Admins have a new 👀 Sightings tab: they can hide a rude or fake 🌎 Public sighting. Its owner gets an alert with the reason and still sees it in Profile → Sightings."
+    ] },
     { id: "2026-10-28g", title: "🏪 Business pages grow up", items: [
       "Shops, charters and guides can now show hours, address, phone, website, photos and what they offer, plus a map pin with Directions.",
       "Pages can post fishing reports and what's in stock. Follow a page to see them, and get an alert from ✔ verified shops (at most 1 a day).",
