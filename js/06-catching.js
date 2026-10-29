@@ -29,19 +29,36 @@
     }
   }
 
-  async function startCamera() {
-    $("qc-camerr").hidden = true;
+  // iPhones sometimes hand back a camera that never shows a picture (right after the permission question, or after the app was in the
+  // background): no frames ever arrive. So we check after a moment, and if the picture is still empty we start the camera once more by itself;
+  // if that fails too, the message offers "Tap to try again".
+  async function startCamera(retry) {
+    const v = $("qc-video"), err = $("qc-camerr"), run = (qc.camRun || 0) + 1;
+    qc.camRun = run;
+    err.hidden = true; err.onclick = null;
+    stopCamera();   // never two cameras at once (the old one would leave the picture black)
     try {
-      qc.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } }, audio: false });
-      $("qc-video").srcObject = qc.stream;
-      await $("qc-video").play().catch(() => {});
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } }, audio: false });
+      if (qc.camRun !== run || $("qc").hidden) { s.getTracks().forEach(t => t.stop()); return; }   // closed or restarted meanwhile
+      qc.stream = s;
+      v.srcObject = null; v.srcObject = s;
+      s.getVideoTracks().forEach(t => { t.onended = () => { if (qc.stream === s && !$("qc").hidden && !$("qc-cam").hidden) startCamera(); }; });
+      await v.play().catch(() => {});
+      setTimeout(() => {
+        if (qc.camRun !== run || qc.stream !== s || $("qc").hidden || $("qc-cam").hidden || v.videoWidth) return;
+        if (!retry) { startCamera(true); return; }
+        v.play().catch(() => {});
+        err.hidden = false; err.textContent = "📷 Camera picture is black — tap here to try again (or use Gallery / No photo).";
+        err.onclick = () => startCamera(true);
+      }, 1500);
     } catch (e) {
-      $("qc-camerr").hidden = false;
-      $("qc-camerr").textContent = "Camera not available — allow camera access for this site, or tap Library / No photo.";
+      if (qc.camRun !== run) return;
+      err.hidden = false;
+      err.textContent = "Camera not available — allow camera access for this site, or tap Gallery / No photo.";
     }
   }
   function stopCamera() {
-    if (qc.stream) qc.stream.getTracks().forEach(t => t.stop());
+    if (qc.stream) qc.stream.getTracks().forEach(t => { t.onended = null; t.stop(); });
     qc.stream = null;
   }
   function startLocation() {
@@ -67,6 +84,7 @@
     startCamera();
   }
   function closeQuickCatch() {
+    qc.camRun = (qc.camRun || 0) + 1;   // a camera still starting is stopped as soon as it arrives
     stopCamera(); stopLocation(); qcMeasureSet(false);
     try { window.removeEventListener("deviceorientation", mOri); } catch (e) { /* ok */ }
     $("qc").hidden = true;
@@ -569,6 +587,8 @@
     $("session-ask").hidden = true;
   });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { renderSessionBar(); maybeAskSession(); } });
+  // back from another app with the camera screen open: iPhones stop the camera in the background, so start it again
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("qc").hidden && !$("qc-cam").hidden) startCamera(); });
 
   $("qc-fab").addEventListener("click", openQuickCatch);
   $("qc-close").addEventListener("click", closeQuickCatch);
