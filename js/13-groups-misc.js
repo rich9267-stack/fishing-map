@@ -527,6 +527,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-29e", title: "🎯 Smarter spot scores", items: [
+      "A spot's \"Fishing here now\" number now counts the fish caught there: it goes up when today looks like the times they bit.",
+      "It also counts the season for those fish and the water temperature, and tap Why? to see each reason.",
+      "Night scores lower, and lakes and canals are no longer held back for having no tide."
+    ] },
     { id: "2026-10-29d", title: "👥 Finding people is easier", items: [
       "The 🔍 search at the top now finds anyone in the app by name or @username. Tap them to see their page and add them as a friend.",
       "New members can be found as soon as they are approved, even before they open the app."

@@ -95,6 +95,7 @@ export function planDay(spots, hist, day, from = 5, to = 20) {
 // Same points as js/67: start at 5; moving tide +1.5 / slack −0.5; wind over 20 −2.5, over 15 −1, 6–15 +1, lighter +0.5;
 // pressure over 3 h falling +1.5 / rising −1 / steady +0.5; new or full moon +0.5; within 90 min of sunrise or sunset +1.
 // (Home also adds solunar feeding times; the server has no moon-position maths, so it leaves that out — it can only be a little lower.)
+// v245: dark (outside daylight, away from sunrise/sunset) −1; lake or canal (no tide) +0.75. Spot cards add catches/season/water temp on top.
 export function moonPhaseName(date) {
   const p = (((date.getTime() - Date.UTC(2000, 0, 6, 18, 14)) / 86400000 / 29.530588853) % 1 + 1) % 1;
   return p < 0.03 || p > 0.97 ? "new moon" : p >= 0.47 && p < 0.53 ? "full moon" : "";
@@ -108,6 +109,8 @@ export function tenScore(spot, h, day) {
   if (p0 != null && p3 != null) s += p0 - p3 <= -1.0 ? 1.5 : p0 - p3 >= 1.0 ? -1 : 0.5;
   if (day.moon === "new moon" || day.moon === "full moon") s += 0.5;
   if ((day.sunrise != null && Math.abs(m - day.sunrise) < 90) || (day.sunset != null && Math.abs(m - day.sunset) < 90)) s += 1;
+  else if (day.sunrise != null && day.sunset != null && (m < day.sunrise || m > day.sunset)) s -= 1;   // v245: dark −1 (as the app's js/67)
+  if (spot.water_type === "freshwater") s += 0.75;   // v245: no tide at a lake or canal, counted as average
   return Math.max(0, Math.min(10, Math.round(s)));
 }
 
