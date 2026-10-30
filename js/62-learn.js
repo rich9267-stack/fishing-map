@@ -127,18 +127,19 @@ function lnSourceLine(box, lead, src, t) {
   if (t) d.appendChild(el("span", null, " · checked " + lnDate(t)));
   box.appendChild(d);
 }
-// One free picture (data/learn/fish-pictures.json): linked, not copied. The credit, licence and source page always show under it; no picture = nothing shown.
-function lnFishPicture(box, f) {
-  const p = LN.fishPics && LN.fishPics[f.name];
+// One free picture {img, page, licence, credit, site}: linked, not copied. The credit, licence and source page always show under it; no picture = nothing shown.
+// Used by fish (data/learn/fish-pictures.json), knot and rig cards (`picture` in knots.json / rigs.json).
+function lnPicture(box, p, alt, word, tall) {
   if (!p || !/^https:\/\//.test(p.img || "") || !/^https:\/\//.test(p.page || "")) return;
-  const fig = el("figure", "learn-fishpic");
-  const img = el("img"); img.src = p.img; img.alt = f.name + " (picture)"; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
+  const fig = el("figure", tall ? "learn-fishpic tall" : "learn-fishpic");
+  const img = el("img"); img.src = p.img; img.alt = alt; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
   img.addEventListener("error", () => fig.remove());
   fig.appendChild(img);
-  const cap = el("figcaption", "spot-meta", "Illustration: " + p.credit + " · " + p.licence + " · "); const a = el("a", null, "source on " + p.site + " ↗");
+  const cap = el("figcaption", "spot-meta", word + ": " + p.credit + " · " + p.licence + " · "); const a = el("a", null, "source on " + p.site + " ↗");
   a.href = p.page; a.target = "_blank"; a.rel = "noopener"; cap.appendChild(a);
   fig.appendChild(cap); box.appendChild(fig);
 }
+const lnFishPicture = (box, f) => lnPicture(box, LN.fishPics && LN.fishPics[f.name], f.name + " (picture)", "Illustration");
 function lnFishCard(f, st) {
   const box = el("div", "learn-fishcard");
   const back = el("button", "btn ghost small", "‹ All fish"); back.type = "button";
@@ -189,8 +190,8 @@ function lnFishPanel(st) {
   return box;
 }
 
-// ---- 🪢 Knots (step 3): a searchable list and a step-by-step card per knot, from data/learn/knots.json. Plain text for now;
-// each card has a spot for a picture + credit line (`picture`, `credit`) that stays hidden until a licensed diagram is added.
+// ---- 🪢 Knots (step 3): a searchable list and a step-by-step card per knot, from data/learn/knots.json. A free picture (lnPicture)
+// shows on the cards that have one (`picture`); the rest stay text only.
 LN.knots = null; LN.knotsErr = false; LN.knotsQ = ""; LN.knotOpen = null;
 function lnKnotsLoad() {
   if (LN.knots || LN.knotsLoading || LN.knotsErr) return;
@@ -217,11 +218,7 @@ function lnKnotCard(k) {
   back.addEventListener("click", () => { LN.knotOpen = null; renderLearn(); });
   box.appendChild(back);
   box.appendChild(el("h2", "learn-h", "🪢 " + k.name));
-  if (k.picture && /^(https?:\/\/|data\/)/.test(k.picture)) {
-    const fig = el("div", "learn-fig"), img = el("img"); img.src = k.picture; img.alt = k.name + " knot diagram"; img.loading = "lazy"; fig.appendChild(img);
-    if (k.credit) fig.appendChild(el("div", "spot-meta", "Picture: " + k.credit));
-    box.appendChild(fig);
-  }
+  lnPicture(box, k.picture, k.name + " knot (picture)", "Picture", true);
   box.appendChild(el("div", null, k.what));
   box.appendChild(el("h3", "learn-h2", "🎣 When to use it")); box.appendChild(el("div", null, k.use));
   box.appendChild(el("h3", "learn-h2", "Steps"));
@@ -245,7 +242,7 @@ function lnKnotsPanel() {
 }
 
 // ---- 🪝 Rigs (step 4): a searchable list and a step-by-step card per rig, from data/learn/rigs.json. Each card names its knot (a tap opens that
-// knot card) and fish cards' rig names tap through to the rig when a rig's `find` words are in the name. Plain text; `picture`/`credit` hidden until filled.
+// knot card) and fish cards' rig names tap through to the rig when a rig's `find` words are in the name. A free picture (lnPicture) where one was found.
 LN.rigs = null; LN.rigsErr = false; LN.rigsQ = ""; LN.rigOpen = null;
 function lnRigsLoad() {
   if (LN.rigs || LN.rigsLoading || LN.rigsErr) return;   // (after a failure, a fish card must not keep asking)
@@ -288,11 +285,7 @@ function lnRigCard(r) {
   back.addEventListener("click", () => { LN.rigOpen = null; renderLearn(); });
   box.appendChild(back);
   box.appendChild(el("h2", "learn-h", "🪝 " + r.name));
-  if (r.picture && /^(https?:\/\/|data\/)/.test(r.picture)) {
-    const fig = el("div", "learn-fig"), img = el("img"); img.src = r.picture; img.alt = r.name + " diagram"; img.loading = "lazy"; fig.appendChild(img);
-    if (r.credit) fig.appendChild(el("div", "spot-meta", "Picture: " + r.credit));
-    box.appendChild(fig);
-  }
+  lnPicture(box, r.picture, r.name + " (picture)", "Picture", true);
   box.appendChild(el("div", null, r.what));
   box.appendChild(el("h3", "learn-h2", "🎣 When to use it")); box.appendChild(el("div", null, r.use));
   if (r.need && r.need.length) { box.appendChild(el("h3", "learn-h2", "🧰 What you need")); const u = el("ul", "learn-ul"); r.need.forEach(x => u.appendChild(el("li", null, x))); box.appendChild(u); }

@@ -16,6 +16,6 @@ ok(all.every(([, p]) => /^(Public domain \(U\.S\. government work\)|Public domai
 ok(all.every(([, p]) => p.credit && p.credit.length >= 3 && p.site), "every picture has a credit and a site name");
 ok(!/tomelleri|peebles|fishbase|myfwc|google/i.test(JSON.stringify(pics)), "no Tomelleri, Peebles/FWC, FishBase or Google source");
 const js = fs.readFileSync(path.join(root, "js/62-learn.js"), "utf8");
-ok(/function lnFishPicture/.test(js) && /"Illustration: " \+ p\.credit \+ " · " \+ p\.licence/.test(js) && /lnFishPicture\(box, f\)/.test(js), "the fish card shows the credit and licence under the picture");
+ok(/word \+ ": " \+ p\.credit \+ " · " \+ p\.licence/.test(js) && /lnFishPicture = \(box, f\) => lnPicture\(.*"Illustration"\)/.test(js) && /lnFishPicture\(box, f\)/.test(js), "the fish card shows the credit and licence under the picture");
 ok(/fish-pictures/.test(fs.readFileSync(path.join(root, "sw.js"), "utf8")), "the phone keeps a copy of the picture list (sw.js)");
 console.log(bad ? `\n${bad} FAILED` : "\nALL OK"); process.exit(bad ? 1 : 0);

@@ -39,7 +39,7 @@ const tick = () => new Promise(r => setTimeout(r, 10));
   const rigs = rigJson.rigs, knotNames = knotJson.knots.map(k => k.name);
   const want = ["Carolina rig", "Texas rig", "Drop-shot rig", "Fish-finder rig", "Pompano rig", "Knocker rig", "Free-line live bait rig", "Popping cork rig"];
   ok(rigs.length === 8 && want.every(n => rigs.some(r => r.name === n)), "data/learn/rigs.json has the 8 starter rigs");
-  ok(rigs.every(r => r.what && r.use && r.tip && r.need.length >= 2 && r.steps.length >= 3 && r.steps.length <= 6 && "picture" in r && "credit" in r && !r.picture && !r.credit), "each rig: what, when, what you need, 3-6 steps, a tip, empty picture/credit");
+  ok(rigs.every(r => r.what && r.use && r.tip && r.need.length >= 2 && r.steps.length >= 3 && r.steps.length <= 6 && "picture" in r), "each rig: what, when, what you need, 3-6 steps, a tip, a picture spot");
   ok(rigs.every(r => knotNames.includes(r.knot)), "every rig's knot is one of the knot cards");
   ok(rigs.every(r => Array.isArray(r.find) && r.find.length), "every rig has words for fish cards to find it");
 
@@ -54,7 +54,7 @@ const tick = () => new Promise(r => setTimeout(r, 10));
   search.value = ""; search.handlers.input();
   all(n => n.className === "learn-fishrow").find(n => /Carolina/.test(n.textContent)).handlers.click();
   ok(/When to use it/.test(text()) && /What you need/.test(text()) && /Steps/.test(text()) && /Tip/.test(text()) && all(n => n.tag === "ol")[0].children.length === rigs[0].steps.length, "the Carolina card shows use, what you need, numbered steps and a tip");
-  ok(!find(n => n.tag === "img"), "no picture box while there is no picture");
+  ok(!!find(n => n.tag === "img") && /Picture: Danndorfer1914/.test(text()), "the Carolina card shows its free picture with the credit");
 
   // knot tap
   const kb = find(n => n.className === "learn-link" && /Palomar/.test(n.textContent));
