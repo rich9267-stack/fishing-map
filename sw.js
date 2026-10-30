@@ -4,7 +4,7 @@
 // - Live data (database, tides, weather) is never cached here. Map tiles are served from the phone only if saved for offline.
 // - Catch photos: kept by their storage path (the link's ?token= changes every hour, the photo never does), so each photo is
 //   downloaded once per phone. The app empties this on sign-out and account delete.
-const CACHE = "fishing-map-v246";
+const CACHE = "fishing-map-v247";
 const APP_FILES = ["./", "./index.html", "./privacy.html", "./terms.html", "./css/app.css", "./js/00-icons.js", "./js/01-core.js", "./js/02-spots.js", "./js/03-photos.js", "./js/04-insights.js", "./js/05-seasons-records.js", "./js/06-catching.js", "./js/07-measure-fishid.js", "./js/08-feed-plans.js", "./js/09-map-forecast.js", "./js/10-tools-safety.js", "./js/11-accounts-social.js", "./js/12-contests-alerts.js", "./js/13-groups-misc.js", "./js/14-tank.js", "./js/15-fish-rank.js", "./js/16-fish-race.js", "./js/17-license-help.js", "./js/18-species.js", "./js/19-biting.js", "./js/20-spot-share.js", "./js/21-pub-filters.js", "./js/22-public-water.js", "./js/23-depth.js", "./js/24-delete-account.js", "./js/25-home-map.js", "./js/26-sub-tabs.js", "./js/27-me-find.js", "./js/28-host-pages.js", "./js/29-home-waters.js", "./js/30-red-tide.js", "./js/31-regional-rules.js", "./js/32-spot-style.js", "./js/33-zones.js", "./js/34-official-admin.js", "./js/35-palettes.js", "./js/36-tutorials.js", "./js/37-official-layer.js", "./js/38-admin-powers.js",
   "./js/39-admin-log.js", "./js/40-admin-page.js", "./js/41-admin-people.js", "./js/42-admin-undo.js", "./js/43-admin-warn.js",
   "./js/44-admin-hide.js",
@@ -40,6 +40,7 @@ const TILE_CACHE = "fishing-map-tiles";   // map tiles the person chose to save 
 const CV_CACHE = "fishing-map-cv";        // the ~10 MB OpenCV helper for auto-finding the bill/card (downloaded once, kept across updates)
 const TILE_HOSTS = ["tile.openstreetmap.org", "server.arcgisonline.com"];
 const PHOTO_CACHE = "fishing-map-photos";  // catch photos + their small copies (kept across updates; emptied on sign-out)
+const SHIPPED_DATA = /\/data\/(zones-rules|learn\/(fish|knots|rigs|bait)|learn\/fish-pictures)\.json$/;   // our own lists that change with an app update
 const DATA_CACHE = "fishing-map-data";    // data/ramps/<ST>.json: each state agency's ramp list (kept across updates; shown at once, refreshed in the background)
 const PHOTO_KEEP = 800;                     // newest 800 pictures (~ small copies 20 KB, full photos ~300 KB)
 const photoKey = url => url.origin + url.pathname;   // the same photo whatever its token
@@ -57,6 +58,8 @@ self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE && k !== CV_CACHE && k !== PHOTO_CACHE && k !== DATA_CACHE).map(k => caches.delete(k))))
+      // Learn cards and the rules list ship with the app: an update drops the phone's old copies so new cards show at once (ramp lists are kept)
+      .then(() => caches.open(DATA_CACHE)).then(c => c.keys().then(reqs => Promise.all(reqs.filter(r => SHIPPED_DATA.test(new URL(r.url).pathname)).map(r => c.delete(r)))))
       .then(() => self.clients.claim())
   );
 });
@@ -78,7 +81,7 @@ self.addEventListener("fetch", event => {
   }
 
   // State ramp lists (our own files): the phone's copy first, a fresh one fetched behind it for next time
-  if (url.origin === self.location.origin && (/\/data\/(ramps\/[A-Z]{2}|zones-rules|learn\/(fish|knots|rigs|bait))\.json$/.test(url.pathname) || url.pathname.endsWith("/data/learn/fish-pictures.json"))) {
+  if (url.origin === self.location.origin && (/\/data\/ramps\/[A-Z]{2}\.json$/.test(url.pathname) || SHIPPED_DATA.test(url.pathname))) {
     event.respondWith(caches.open(DATA_CACHE).then(c => c.match(req).then(hit => {
       const net = fetch(req).then(res => { if (res.ok) c.put(req, res.clone()); return res; });
       return hit || net;

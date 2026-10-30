@@ -527,6 +527,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-30a", title: "🪢 Knot and rig pictures now show", items: [
+      "The new pictures on the Palomar, Albright and Nail knot cards and the Carolina, Texas and Drop-shot rigs were hidden behind the phone's old saved copy. App updates now refresh the 📚 Learn cards straight away."
+    ] },
     { id: "2026-10-29f", title: "🪢 Pictures for knots and rigs", items: [
       "📚 Learn: the Palomar, Albright and Nail knot cards now show a picture, and so do the Carolina, Texas and Drop-shot rigs.",
       "Each picture is free to use and shows who made it, its licence and a link to where it came from. The other cards stay text only for now."
