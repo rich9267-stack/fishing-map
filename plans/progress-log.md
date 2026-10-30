@@ -11,6 +11,7 @@ After the US expansion (done v173): make the national map trustworthy and useful
 - Oct 22 — Richard's partial phone check outside Florida (see Next up 1 and 2 for what it found).
 - Oct 28 — Richard phone-checked v238 (business pages): passed.
 - Oct 29 — Richard phone-checked v240–v245 (filled icons + no map top bar, camera fix, no free tank decorations, 🔔 bell + Clear all, people search, smarter spot scores): all passed.
+- Oct 30 — Richard phone-checked v246–v247 (knot + rig pictures in Learn): passed.
 - Oct 29 — Richard phone-checked v223–v234 (sightings, Best spots opens underneath, spots grouped by state, profile pictures in feed, spot score + bite alerts, bait collections A/B/C, new fish shapes): all passed.
 - Oct 27 — Richard phone-checked v218 (new look on other people's profile pages): looks right.
 - Oct 27 — Richard phone-checked Next up 1–5 (v174–v193): all passed. Trip check (6) passed too; the trip-with-a-friend frustrations were fixed later (Richard, Oct 29).
@@ -45,6 +46,8 @@ After the US expansion (done v173): make the national map trustworthy and useful
 12. **BUILT v224 (test213), phone check passed Oct 29.** **"Best spots today" opens underneath like saved spots do (Richard, Oct 27).** Tapping a Best spots row expands that spot's card right below it (same as My spots), instead of going somewhere else.
 13. **BUILT v224 (test213), phone check passed Oct 29 (country level later).** **Saved spots grouped by state (then country if the app grows beyond the USA), collapsible (Richard, Oct 27).** A group header per state (Florida, Georgia…) that folds/unfolds so he can look at only Florida; remember which are open; counts on each header; country level later. Small, js/08 spot list.
 14. **BUILT v226 (test214), phone check passed Oct 29.** **Profile pictures in the feed instead of the first-letter circle (Richard, Oct 27).** Feed posts, trip cards, comments and circles show the person's picture when they have one (fall back to the initial). Check privacy: only pictures the viewer is already allowed to see.
+
+15. **Speed + cost (Richard, Oct 30).** Measured + step 1 built v248 (profile pictures kept on the phone, data lists only re-downloaded when changed; test230). Waiting for phone check. Next steps for Richard to pick: plans/speed-and-cost-plan.md (one database call at app open, load rare code only when opened, split the 5.8 MB rules file by state, …).
 
 ## Later
 - Kansas reservoir depth maps (one map per reservoir; few anglers there yet). Wisconsin / Connecticut / Tennessee depth: no free source found.

@@ -527,6 +527,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-30b", title: "⚡ Less downloading", items: [
+      "Profile pictures are now kept on your phone, like catch photos, so screens with people on them load faster and use less data.",
+      "Boat-ramp lists, fishing-rule areas and 📚 Learn cards are only downloaded again when they have really changed."
+    ] },
     { id: "2026-10-30a", title: "🪢 Knot and rig pictures now show", items: [
       "The new pictures on the Palomar, Albright and Nail knot cards and the Carolina, Texas and Drop-shot rigs were hidden behind the phone's old saved copy. App updates now refresh the 📚 Learn cards straight away."
     ] },

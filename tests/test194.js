@@ -82,7 +82,7 @@ const tick = () => new Promise(r => setTimeout(r, 10));
   A.LN.rigs = null; A.LN.rigsLoading = false; failRigs = true; A.renderLearn(); await tick();
   ok(/could not load/.test(text()), "if the file can't be read, an honest message");
 
-  ok(read("sw.js").includes("learn\\/(fish|knots|rigs|bait)"), "sw.js keeps data/learn/rigs.json on the phone");
+  ok(read("sw.js").includes('"learn/rigs.json":"'), "sw.js keeps data/learn/rigs.json on the phone");
   ok(/2026-10-23b/.test(read("js/13-groups-misc.js")) && /Learn: Rigs/.test(read("js/13-groups-misc.js")), "What's new mentions the rigs");
   ok(/v182/.test(read("docs/build_history.md")), "build history has v182");
   ok(!/\.from\(/.test(read("js/62-learn.js")), "no database call in js/62");

@@ -7,3 +7,4 @@ new=$((cur + 1))
 sed -i "s/fishing-map-v$cur\"/fishing-map-v$new\"/" sw.js
 sed -i "s/\(\(css\|js\)\/[^\"?]*\)?v=[0-9]*/\1?v=$new/g" index.html
 echo "bumped v$cur -> v$new"; grep -c "?v=$new" index.html
+node tools/data-versions.js || exit 1

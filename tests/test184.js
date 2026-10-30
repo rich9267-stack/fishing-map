@@ -36,8 +36,11 @@ const signed = (p, tok) => `${SB}/storage/v1/object/sign/photos/${p}?token=${tok
     ok(net.length === 2, "the small copy is kept on its own, also once");
     await get(signed("u1/missing.jpg", "T5")); await new Promise(r => setTimeout(r, 5)); await get(signed("u1/missing.jpg", "T6"));
     ok(net.length === 4, "a failed download (expired / not allowed) is not kept");
-    ok(await get(`${SB}/storage/v1/object/sign/avatars/u1/x.jpg?token=1`) === "not handled" && await get(`${SB}/rest/v1/catches?select=*`) === "not handled", "profile pictures and live data are not touched");
+    ok(await get(`${SB}/rest/v1/catches?select=*`) === "not handled", "live data is not touched");
     ok(stores["fishing-map-photos"] && stores["fishing-map-photos"].m.size === 2, "they live in their own store 'fishing-map-photos'");
+    await get(`${SB}/storage/v1/object/sign/avatars/u1/x.jpg?token=1`); await new Promise(r => setTimeout(r, 5)); const n0 = net.length;
+    await get(`${SB}/storage/v1/object/sign/avatars/u1/x.jpg?token=2`);
+    ok(net.length === n0 && stores["fishing-map-photos"].m.size === 3, "v248: a profile picture is also downloaded once and kept (emptied on sign-out with the photos)");
     stores["fishing-map-v1"] = mkCache("fishing-map-v1");
     let w = null; handlers.activate({ waitUntil: p => { w = p; } }); await w;
     ok(stores["fishing-map-photos"] && !stores["fishing-map-v1"], "an app update keeps the saved photos (old app copies still go)");

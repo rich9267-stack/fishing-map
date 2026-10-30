@@ -76,7 +76,7 @@ process.on("unhandledRejection", e => { console.log("FAIL crashed: " + (e && e.s
   A.LN.bait = null; A.LN.baitLoading = false; failBait = true; A.renderLearn(); await tick();
   ok(/could not load/.test(text()), "if the file can't be read, an honest message");
 
-  ok(read("sw.js").includes("learn\\/(fish|knots|rigs|bait)"), "sw.js keeps data/learn/bait.json on the phone");
+  ok(read("sw.js").includes('"learn/bait.json":"'), "sw.js keeps data/learn/bait.json on the phone");
   ok(/2026-10-23d/.test(read("js/13-groups-misc.js")) && /Bait & lures/.test(read("js/13-groups-misc.js")), "What's new mentions the bait tile");
   ok(/v184/.test(read("docs/build_history.md")), "build history has v184");
   ok(!/\.from\(/.test(read("js/62-learn.js")), "no database call in js/62");
