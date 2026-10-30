@@ -15,6 +15,7 @@ function boot(stored, dbRow, dbFail) {
   const saved = [];
   w.$ = id => w.document.getElementById(id);
   w.me = { id: "u-rich" };
+  w.bootTake = (k, q) => q();   // v249: no app_start in this test
   w.db = { from: t => ({
     upsert: async (row, opt) => { saved.push([t, row, opt]); return { error: dbFail ? { message: "offline" } : null }; },
     select: () => ({ eq: () => ({ maybeSingle: async () => dbFail ? { data: null, error: { message: "x" } } : { data: dbRow, error: null } }) })

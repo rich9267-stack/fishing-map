@@ -14,7 +14,7 @@ _Goal (Richard): the app opens faster and asks the server as little as possible,
 2. **Our data lists (ramps, rules zones, Learn cards) are kept on the phone and only downloaded again when the file really changed** (bump.sh writes a fingerprint per file into sw.js). Before: re-checked in the background on every open, and v247 re-downloaded all of them after every update.
 
 ## Next steps, best value first (each is one small version; Richard picks)
-1. **One database call at app open instead of ~35** (a single `app_start()` database function returning the small lists together). Biggest speed gain on slow phone signal; fewer requests. Needs a setup/NN file + careful tests (each list keeps its own privacy rules). Medium.
+1. ✅ **Built v249 (setup/122, test231): ~40 calls → ~16; the 354 KB rules list kept on the phone by fingerprint.** ~~One database call at app open instead of ~35~~ (a single `app_start()` database function returning the small lists together). Biggest speed gain on slow phone signal; fewer requests. Needs a setup/NN file + careful tests (each list keeps its own privacy rules). Medium.
 2. **Load rarely used code only when it is opened**: admin (js/38–47, ~10 files), games (51–52), Learn (62), tank (14, 72), fish ID (07, 56–57), business pages (71). About a third of the code. The app starts faster; nothing changes for the person. Medium (each opener needs a "load then show").
 3. **Split the 5.8 MB rules-zones file by state** and load only the states near the map (like ramp lists). Faster first sign-in, less phone memory. Small–medium (tools/make-rules-zones.js already builds it).
 4. **Remember signed picture links for their hour** (today each screen asks for a new link: ~150 small requests a day). Small.

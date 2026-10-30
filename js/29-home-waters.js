@@ -113,7 +113,7 @@
   // After sign-in: the database copy wins (so a new phone knows your home waters)
   async function hwLoadMine() {
     try {
-      const { data } = await db.from("home_waters").select("name,lat,lng").eq("user_id", me.id).maybeSingle();
+      const { data } = await bootTake("home_waters", () => db.from("home_waters").select("name,lat,lng").eq("user_id", me.id).maybeSingle());
       if (data && data.name) {
         homeWaters = { name: data.name, lat: +data.lat, lng: +data.lng };
         try { localStorage.setItem(HW_KEY, JSON.stringify(homeWaters)); } catch (e) {}

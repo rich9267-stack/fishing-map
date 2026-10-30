@@ -224,10 +224,18 @@
   let fishRules = [];     // Florida's rows (no state code in `regions`)
   let stateRules = [];    // other states' rows: `regions` holds the 2-letter code, e.g. {GA} (US plan step 4)
   const isStateTag = t => /^[A-Z]{2}$/.test(t);
+  // ⚡ v249: the phone keeps its copy of the rules (~354 KB) and only downloads them again when app_start's fingerprint (rules_ver) changes
+  const RULES_KEY = "fm-rules-copy";
   async function loadRules() {
     if (!me) return;
     try {
-      const { data, error } = await db.from("fish_rules").select("*").eq("active", true);
+      const ver = typeof bootTake === "function" ? (await bootTake("rules_ver", async () => ({ data: null }))).data : null;
+      let data = null, error = null;
+      if (ver) { try { const c = JSON.parse(localStorage.getItem(RULES_KEY) || "null"); if (c && c.v === ver && Array.isArray(c.rows)) data = c.rows; } catch (e) { /* no copy */ } }
+      if (!data) {
+        ({ data, error } = await db.from("fish_rules").select("*").eq("active", true));
+        if (!error && ver) { try { localStorage.setItem(RULES_KEY, JSON.stringify({ v: ver, rows: data || [] })); } catch (e) { /* phone storage full: just download next time */ } }
+      }
       if (error) throw error;
       const all = data || [], isSt = r => Array.isArray(r.regions) && r.regions.some(isStateTag);
       fishRules = all.filter(r => !isSt(r)); stateRules = all.filter(isSt);
@@ -475,7 +483,7 @@
   async function inboxLoad() {
     if (!me) return;
     try {
-      const { data, error } = await db.from("notifications").select("*").is("cleared_at", null).order("created_at", { ascending: false }).limit(50);
+      const { data, error } = await bootTake("notifications", () => db.from("notifications").select("*").is("cleared_at", null).order("created_at", { ascending: false }).limit(50));
       if (error) throw error;
       inbox = data || [];
     } catch (e) { /* keep the last list */ }
@@ -731,7 +739,7 @@
   async function ciLoad() {
     if (!me) return;
     try {
-      const { data, error } = await db.from("float_plans").select("*").in("status", ["active", "alerted"]).order("created_at", { ascending: false });
+      const { data, error } = await bootTake("float_plans", () => db.from("float_plans").select("*").in("status", ["active", "alerted"]).order("created_at", { ascending: false }));
       if (error) throw error;
       ci.mine = (data || []).find(p => p.user_id === me.id) || null;
       ci.watch = (data || []).filter(p => p.user_id !== me.id);

@@ -3,6 +3,23 @@
   const SUPABASE_KEY = "sb_publishable_WzAISSZCvquNsRJ3iJEP-Q_GjtILF7p"; // public key, safe in the page
   const db = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
   let me = null;           // { id, email, name, isAdmin } once signed in and on the invite list
+  // ---- ⚡ One database call at app open (setup/122 app_start, v249): ~24 small lists come back together; each loader takes its part ONCE
+  // with bootTake(key, normal question). Later reloads (and any key the answer lacks, or if app_start fails) ask the normal question as before.
+  // `share` keys (several loaders read them at start) can be taken more than once in the first 30 seconds.
+  let bootP = null, bootData = null, bootAt = 0;
+  function bootStart() {
+    bootData = null; bootAt = Date.now();
+    bootP = db.rpc("app_start").then(r => { bootData = !r.error && r.data && typeof r.data === "object" ? r.data : null; }).catch(() => { bootData = null; });
+    return bootP;
+  }
+  async function bootTake(key, query, share) {
+    if (bootP) await bootP;
+    if (bootData && Object.prototype.hasOwnProperty.call(bootData, key) && (!share || Date.now() - bootAt < 30000)) {
+      const v = bootData[key]; if (!share) delete bootData[key];
+      return { data: v, error: null, count: typeof v === "number" ? v : null };
+    }
+    return query();
+  }
   const isMine = row => !!(me && row && row.created_by === me.id);
   let spots = null;       // null = still loading (your circle: you + friends)
   let spotsAll = [];      // every spot you can see, including strangers' public ones (🌎 Public tab only)
@@ -11,7 +28,7 @@
   function getCircle(fresh) {
     if (fresh || !circlePromise) circlePromise = (async () => {
       try {
-        const { data, error } = await db.from("friendships").select("user_a,user_b").eq("status", "accepted");
+        const { data, error } = await bootTake("friends_accepted", () => db.from("friendships").select("user_a,user_b").eq("status", "accepted"));
         if (error) throw error;
         return new Set(data.map(r => (r.user_a === me.id ? r.user_b : r.user_a)));
       } catch (e) { circlePromise = null; return null; }

@@ -421,7 +421,7 @@
   async function loadTackle() {
     if (!me) return;
     try {
-      const { data, error } = await db.from("tackle").select("*").is("deleted_at", null).order("created_at");
+      const { data, error } = await bootTake("tackle", () => db.from("tackle").select("*").is("deleted_at", null).order("created_at"));
       if (error) throw error;
       tackle = data || [];
     } catch (e) { /* keep the last list */ }
@@ -527,6 +527,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-30c", title: "⚡ Faster start", items: [
+      "The app now gets your settings, friends, alerts, plans and other small lists in one go when it opens, instead of asking for each one separately.",
+      "The fishing rules are kept on your phone and only downloaded again when they change."
+    ] },
     { id: "2026-10-30b", title: "⚡ Less downloading", items: [
       "Profile pictures are now kept on your phone, like catch photos, so screens with people on them load faster and use less data.",
       "Boat-ramp lists, fishing-rule areas and 📚 Learn cards are only downloaded again when they have really changed."

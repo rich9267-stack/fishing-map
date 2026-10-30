@@ -50,7 +50,7 @@
   async function palLoadMine() {
     if (!db || !me) return;
     try {
-      const { data, error } = await db.from("app_prefs").select("palette").eq("user_id", me.id).maybeSingle();
+      const { data, error } = await bootTake("app_prefs", () => db.from("app_prefs").select("palette").eq("user_id", me.id).maybeSingle());
       if (error) throw error;
       if (data && data.palette && data.palette !== palNow) palApply(data.palette);
       else if (!data && palNow !== "original") palSave(palNow);   // first time on the account: keep what this phone already had

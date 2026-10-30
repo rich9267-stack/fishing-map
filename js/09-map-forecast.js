@@ -517,7 +517,7 @@
       if (error) throw error;
       const circle = await getCircle();
       try {   // spots the team hid from others (only their owner can see this): shown with a label on the spot card
-        const { data: hid } = await db.rpc("my_hidden_spots");
+        const { data: hid } = await bootTake("hidden_spots", () => db.rpc("my_hidden_spots"));
         const hs = new Set(Array.isArray(hid) ? hid : []);
         data.forEach(x => { x.hidden_by_team = hs.has(x.id); });
       } catch (e) { /* the label is a nicety */ }
@@ -1268,7 +1268,7 @@
         try { localStorage.setItem(SUGG_OWNER_KEY, me.id); } catch (e) { /* fine */ }
       }
       await flushSuggQueue();
-      const { data, error } = await db.from("suggestion_picks").select("key,status,name,kind,label,trust,lat,lng,updated_at").eq("user_id", me.id).limit(1000);
+      const { data, error } = await bootTake("picks", () => db.from("suggestion_picks").select("key,status,name,kind,label,trust,lat,lng,updated_at").eq("user_id", me.id).limit(1000));
       if (error) throw error;
       const rows = (data || []).slice().sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
       const hidden = new Set(rows.filter(r => r.status === "hidden").map(r => r.key));

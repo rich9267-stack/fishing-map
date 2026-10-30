@@ -26,7 +26,7 @@
     tutReady = false; tutSeen = new Set(); tutClose(false);
     let local = []; try { local = JSON.parse(localStorage.getItem(tutLocalKey()) || "[]").filter(k => TUTS[k]); } catch (e) { /* none */ }
     try {
-      const { data, error } = await db.from("tutorials_seen").select("screen_key").eq("user_id", me.id);
+      const { data, error } = await bootTake("tutorials", () => db.from("tutorials_seen").select("screen_key").eq("user_id", me.id));
       if (error) throw error;
       (data || []).forEach(r => tutSeen.add(r.screen_key));
       local.forEach(k => { if (!tutSeen.has(k)) { tutSeen.add(k); tutSend(k); } });   // seen while offline → save to the account now

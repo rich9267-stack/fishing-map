@@ -29,6 +29,7 @@ w.eval(`
   var catchesBySpot = { s1: __catches };
   const myCatches = () => __catches;
   const chain = data => { const o = { is: () => o, order: () => Promise.resolve({ data, error: null }), eq: () => Promise.resolve({ error: null }) }; return o; };
+  const bootTake = (k, q) => q();   // v249: no app_start in this test
   const db = { from: () => ({ select: () => chain(__rows.slice()), insert: row => { __ins.push(row); __rows.push({ id: "n" + __rows.length, ...row }); return Promise.resolve({ error: null }); },
     update: row => { __upd.push(row); return { eq: (k, v) => { __rows = __rows.filter(r => r.id !== v); return Promise.resolve({ error: null }); } }; } }) };
 ` + sec + `\nwindow.tk = { loadTackle, tkGuess, TK_KIND };`);

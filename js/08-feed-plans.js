@@ -211,8 +211,8 @@
     try {
       const since = new Date(Date.now() - 3 * 3600000).toISOString(); // a plan stays up until 3 h after its start
       const [p, r] = await Promise.all([
-        db.from("trip_plans").select("*").is("cancelled_at", null).gte("plan_at", since).order("plan_at", { ascending: true }).limit(100),
-        db.from("trip_plan_rsvps").select("*").limit(3000)
+        bootTake("trip_plans", () => db.from("trip_plans").select("*").is("cancelled_at", null).gte("plan_at", since).order("plan_at", { ascending: true }).limit(100)),
+        bootTake("trip_plan_rsvps", () => db.from("trip_plan_rsvps").select("*").limit(3000))
       ]);
       if (p.error) throw p.error;
       if (r.error) throw r.error;
@@ -515,7 +515,7 @@ Directions: ${dirUrl}`;
   async function loadFollows() {
     if (!me) return;
     try {
-      const { data, error } = await db.from("spot_follows").select("spot_id");
+      const { data, error } = await bootTake("follows", () => db.from("spot_follows").select("spot_id"));
       if (error) throw error;
       follows.clear(); (data || []).forEach(r => follows.add(r.spot_id));
       if (spots) renderSpots();

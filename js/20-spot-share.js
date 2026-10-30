@@ -5,7 +5,7 @@
   async function shareLoad() {
     if (!me || typeof db === "undefined" || !db) return;
     try {
-      const { data, error } = await db.from("spot_shares").select("id,spot_id,owner,friend,created_at,revoked_at").is("revoked_at", null);
+      const { data, error } = await bootTake("shares", () => db.from("spot_shares").select("id,spot_id,owner,friend,created_at,revoked_at").is("revoked_at", null));
       if (error) throw error;
       shareRows = (data || []).filter(r => !r.revoked_at);
     } catch (e) { /* offline: keep what we had */ }

@@ -7,7 +7,7 @@ function el(t, c, txt) { return { t, c, text: txt || "", kids: [], style: {}, hi
 const box = el("div"); box.hidden = true;
 function ctx(version, fail) {
   const calls = [];
-  const c = { el, me: { email: "a@b.com" }, toast() {}, window: {}, document: {},
+  const c = { bootTake: (k, q) => q(), el, me: { email: "a@b.com" }, toast() {}, window: {}, document: {},
     $: id => id === "terms-banner" ? box : null,
     db: { from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { terms_version: version } }) }) }) }),
       rpc: async (n, a) => { calls.push([n, a]); return fail ? { error: { message: "x" } } : { data: "ok" }; } } };

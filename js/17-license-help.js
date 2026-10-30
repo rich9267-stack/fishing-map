@@ -21,7 +21,7 @@
     if (licBusy || !me || typeof db === "undefined" || !db) return;
     licBusy = true;
     try {
-      const { data, error } = await db.from("fishing_licenses").select("id,kind,expires_on").order("expires_on", { ascending: true, nullsFirst: false });
+      const { data, error } = await bootTake("licenses", () => db.from("fishing_licenses").select("id,kind,expires_on").order("expires_on", { ascending: true, nullsFirst: false }));
       if (error) throw error;
       licRows = data || [];
     } catch (e) { if (!licRows) licRows = null; }

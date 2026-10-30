@@ -30,6 +30,7 @@ function boot(o) {
   w.$ = id => w.document.getElementById(id);
   w.me = o.noMe ? null : { id: "u-rich" };
   if (o.local) w.localStorage.setItem("fm-tut-u-rich", JSON.stringify(o.local));
+  w.bootTake = (k, q) => q();   // v249: no app_start in this test
   w.db = { from: t => ({
     select: () => ({ eq: async () => o.fail ? { data: null, error: { message: "offline" } } : { data: (o.rows || []).map(k => ({ screen_key: k })), error: null } }),
     upsert: async (row, opt) => { saved.push([t, row, opt]); return { error: null }; }

@@ -20,7 +20,7 @@
       box.innerHTML = ""; box.appendChild(avatarNode(null, name, 56, null));
       try {
         let x = ppMine;
-        if (!x) { const r = await db.from("profile_extras").select("avatar_path,accent").eq("user_id", me.id).maybeSingle(); x = r && r.data; }
+        if (!x) { const r = await bootTake("me_extras", () => db.from("profile_extras").select("avatar_path,accent").eq("user_id", me.id).maybeSingle(), true); x = r && r.data; }
         if (!x || !x.avatar_path) return;
         const url = await avatarUrl(x.avatar_path);
         if (url) { box.innerHTML = ""; box.appendChild(avatarNode(url, name, 56, x.accent || null)); }

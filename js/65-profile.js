@@ -76,7 +76,7 @@ function renderMyProfile() {
   (async () => {
     try {
       let e = (typeof ppMine !== "undefined" && ppMine) || null;
-      if (!e) { const r = await db.from("profile_extras").select("avatar_path,accent,cover_path").eq("user_id", me.id).maybeSingle(); e = r && r.data; }
+      if (!e) { const r = await bootTake("me_extras", () => db.from("profile_extras").select("avatar_path,accent,cover_path").eq("user_id", me.id).maybeSingle(), true); e = r && r.data; }
       if (e && e.cover_path === undefined) { const r2 = await db.from("profile_extras").select("cover_path").eq("user_id", me.id).maybeSingle(); if (r2 && r2.data) e = Object.assign({}, e, r2.data); }
       if (!e) return;
       if (e.cover_path) {

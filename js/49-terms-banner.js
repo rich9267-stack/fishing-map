@@ -5,7 +5,7 @@ async function termsBannerCheck() {
   const box = $("terms-banner"); if (!box || !me || !db) return;
   box.hidden = true; box.innerHTML = "";
   let row = null;
-  try { const r = await db.from("members").select("terms_version").eq("email", me.email).maybeSingle(); if (r.error) return; row = r.data; } catch (e) { return; }
+  try { const r = await bootTake("member", () => db.from("members").select("terms_version").eq("email", me.email).maybeSingle(), true); if (r.error) return; row = r.data; } catch (e) { return; }
   if (!row || row.terms_version === TERMS_VERSION) return;
   box.appendChild(el("div", null, "📜 We added a Terms page. Please read it."));
   const row2 = el("div"); row2.style.cssText = "display:flex;gap:8px;margin-top:8px";

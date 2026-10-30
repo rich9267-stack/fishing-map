@@ -87,7 +87,7 @@
   async function refreshCtBanner() {
     try {
       if (!db || !me) return;
-      const [a, b] = await Promise.all([db.from("tournaments").select("*").order("starts_at", { ascending: true }), db.from("tournament_members").select("*")]);
+      const [a, b] = await Promise.all([bootTake("tournaments", () => db.from("tournaments").select("*").order("starts_at", { ascending: true })), bootTake("tournament_members", () => db.from("tournament_members").select("*"))]);
       if (a.error || b.error) return;
       ctRows = a.data || []; ctMembers = b.data || [];
       ctMine = {}; ctMembers.forEach(m => { if (m.user_id === me.id) ctMine[m.tournament_id] = m.status; });
@@ -115,7 +115,7 @@
   async function loadHof(force) {
     if (!me || (!force && Date.now() - hofAt < 300000)) return;
     try {
-      const { data, error } = await db.rpc("hall_of_fame");
+      const { data, error } = await bootTake("hall_of_fame", () => db.rpc("hall_of_fame"));
       if (error) throw error;
       hof = data || []; hofAt = Date.now();
       await ensureProfiles([...new Set(hof.map(r => r.user_id))]);
@@ -922,7 +922,7 @@
     try {
       if (!db || !me || !me.profile) return;
       try { if (sessionStorage.getItem("fm-welcome-later") === "1") return; } catch (e) {}
-      const { data, error } = await db.from("notif_prefs").select("welcomed_at").eq("user_id", me.id).maybeSingle();
+      const { data, error } = await bootTake("notif_welcomed", () => db.from("notif_prefs").select("welcomed_at").eq("user_id", me.id).maybeSingle());
       if (error || (data && data.welcomed_at)) return;
       const phone = isIOS || /Android/i.test(navigator.userAgent);
       const needHome = phone && !isStandalone();

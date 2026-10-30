@@ -127,7 +127,8 @@
     if (!session) { me = null; showAuth("signin"); return; }
     if (authMode === "newpw") { showAuth("newpw"); return; } // finish choosing a new password first
     const email = (session.user.email || "").toLowerCase();
-    let { data: member, error } = await db.from("members").select("email,display_name,is_admin,is_owner,status").eq("email", email).maybeSingle();
+    bootStart();   // ⚡ one database call brings the small lists the app needs at start (js/02 bootTake)
+    let { data: member, error } = await bootTake("member", () => db.from("members").select("email,display_name,is_admin,is_owner,status").eq("email", email).maybeSingle(), true);
     if (error && isNetErr(error)) {
       // No signal: trust the membership saved on this phone last time
       try { const saved = JSON.parse(localStorage.getItem("fm-member") || "null"); if (saved && saved.email === email && saved.status === "approved") { member = saved; error = null; setOffline(true); } } catch (e) {}
@@ -277,7 +278,7 @@
     });
   }
   async function ppLoadMine() {
-    try { const { data } = await db.from("profile_extras").select("*").eq("user_id", me.id).maybeSingle(); ppMine = data || null; } catch (e) { ppMine = null; }
+    try { const { data } = await bootTake("me_extras", () => db.from("profile_extras").select("*").eq("user_id", me.id).maybeSingle(), true); ppMine = data || null; } catch (e) { ppMine = null; }
     const x = ppMine || {};
     ppShow = Array.isArray(x.showcase) ? x.showcase.slice() : []; ppColor = x.accent || null; ppAvatarPath = x.avatar_path || null; ppAvatarBlob = null; ppAvatarClear = false;
     $("pp-vis").value = x.visibility || "public"; $("pp-tag").value = x.tagline || ""; $("pp-fav").value = x.fav_species || "";
@@ -666,7 +667,7 @@
   async function checkUnread() {
     if (!me) return;
     try {
-      const { count, error } = await db.from("messages").select("id", { count: "exact", head: true }).eq("recipient", me.id).is("read_at", null);
+      const { count, error } = await bootTake("unread", () => db.from("messages").select("id", { count: "exact", head: true }).eq("recipient", me.id).is("read_at", null));
       if (!error && count != null) { updateChatBadge(count); if (count > unreadFor() && !chatOpen()) loadChat(); }
     } catch (e) { /* offline — try again later */ }
   }
@@ -793,7 +794,7 @@
   async function loadBlocks() {
     if (!me) return;
     try {
-      const { data, error } = await db.from("blocks").select("blocked");
+      const { data, error } = await bootTake("blocks", () => db.from("blocks").select("blocked"));
       if (error) throw error;
       blockedIds = new Set((data || []).map(r => r.blocked));
       await ensureProfiles([...blockedIds]);
@@ -900,7 +901,7 @@
   async function loadFriends() {
     if (!me) return;
     try {
-      const { data, error } = await db.from("friendships").select("*");
+      const { data, error } = await bootTake("friendships", () => db.from("friendships").select("*"));
       if (error) throw error;
       friendRows = data;
       me.friendIds = new Set(data.filter(r => r.status === "accepted").map(otherOf));
@@ -1010,7 +1011,7 @@
     box.innerHTML = ""; box.appendChild(avatarNode(null, name, 36, null));
     try {
       let x = ppMine;
-      if (!x) { const r = await db.from("profile_extras").select("avatar_path,accent").eq("user_id", me.id).maybeSingle(); x = r && r.data; }
+      if (!x) { const r = await bootTake("me_extras", () => db.from("profile_extras").select("avatar_path,accent").eq("user_id", me.id).maybeSingle(), true); x = r && r.data; }
       if (!x || !x.avatar_path) return;
       const url = await avatarUrl(x.avatar_path);
       if (url) { box.innerHTML = ""; box.appendChild(avatarNode(url, name, 36, x.accent || null)); }
