@@ -25,18 +25,32 @@
       ? story("Check-in on", ic("lifebuoy"), () => goTo("ci-mine"), "hn-add on")
       : story("Heading out", ic("plus"), () => $("ci-start").click(), "hn-add"));
     const w = (typeof ci !== "undefined" && ci.watch) || [];
+    const out = new Set(w.map(x => x.user_id));
     w.forEach(x => {
       const name = typeof ciWho === "function" ? ciWho(x.user_id) : "Friend";
       const av = typeof avatarNode === "function" ? avatarNode(null, name, 56, null) : el("span", null, name[0]);
       strip.appendChild(story(name.split(" ")[0], av, () => goTo("ci-watch"), "hn-friend" + (x.status === "alerted" ? " late" : "")));
     });
+    // Planned trips that have already started (plans stay loaded until 3 h after their start) — one circle per trip, named for the spot
+    const meId = typeof me !== "undefined" && me ? me.id : null, now = Date.now();
+    const started = (typeof plans !== "undefined" ? plans : []).filter(pl => !pl.cancelled_at && new Date(pl.plan_at).getTime() <= now);
+    started.forEach(pl => {
+      const spot = (typeof spots !== "undefined" ? spots : []).find(x => x.id === pl.spot_id);
+      const going = typeof planGoing === "function" ? planGoing(pl) : [{ user_id: pl.created_by }];
+      going.forEach(x => { if (x.user_id && x.user_id !== meId) out.add(x.user_id); });
+      const label = spot ? spot.name.split(" ")[0] : "Trip";
+      const b = story(label, ic("calendar"), () => { const pl2 = $("plan-line"); if (pl2) pl2.click(); }, "hn-friend hn-plan");
+      b.title = `Planned trip${spot ? " at " + spot.name : ""} · ${going.length} going`;
+      strip.appendChild(b);
+    });
     const t = el("div", "hn-water-t");
     t.appendChild(el("b", null, "On the water now"));
-    t.appendChild(el("span", null, w.length ? `${w.length} friend${w.length === 1 ? "" : "s"} fishing` : "No friends out right now"));
+    t.appendChild(el("span", null, out.size ? `${out.size} friend${out.size === 1 ? "" : "s"} fishing` : started.length ? "Your trip is on" : "No friends out right now"));
     strip.appendChild(t);
   }
   renderWater();
-  { const cw = $("ci-watch"), cm = $("ci-mine"); [cw, cm].forEach(e => e && new MutationObserver(renderWater).observe(e, { childList: true })); }
+  { const cw = $("ci-watch"), cm = $("ci-mine"), pl = $("plan-list"); [cw, cm, pl].forEach(e => e && new MutationObserver(renderWater).observe(e, { childList: true })); }
+  setInterval(renderWater, 60000); // a planned trip joins the row when its start time arrives
 
   // ---- Alerts: ONE line that opens the full list (the weather + red tide banners are moved under it) ----
   const alerts = el("div", "hn-sec hn-alerts-sec"); alerts.id = "hn-alerts-sec"; alerts.hidden = true;
