@@ -527,6 +527,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-30d", title: "📤 Share a planned trip", items: [
+      "Every planned trip now has 📤 Share: send it by text, email, WhatsApp or any chat app. It says when, where, your note, how many are going and has a link that opens the trip in the app.",
+      "Right after you post a plan, tap \"📤 Share it\" next to \"Plan posted\"."
+    ] },
     { id: "2026-10-30c", title: "⚡ Faster start", items: [
       "The app now gets your settings, friends, alerts, plans and other small lists in one go when it opens, instead of asking for each one separately.",
       "The fishing rules are kept on your phone and only downloaded again when they change."

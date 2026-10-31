@@ -425,6 +425,8 @@
   .ask-text { white-space: pre-line; line-height: 1.4; margin-bottom: 16px; }
   .ask-btns { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
   .ask-btns .btn { min-height: 44px; }
+  .plan-share-btns { justify-content: center; }
+  .plan-share-btns .btn { min-height: 44px; flex: 1 1 40%; text-align: center; text-decoration: none; }
   .btn.danger { background: #b3261e; border-color: #b3261e; color: #fff; }
   .err-retry { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 

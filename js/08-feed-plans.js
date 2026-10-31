@@ -252,6 +252,36 @@
     renderPlans();
     refreshCtBanner(); // the trip's contest is cancelled along with it
   }
+  // 📤 Share a planned trip: the phone's own share menu (Messages, WhatsApp, email…); where there is none (computers), a small menu with
+  // 💬 Text, ✉️ Email, WhatsApp and 📋 Copy. The link opens the trip in the app (only friends of the planner can see it, as before).
+  const planDirUrl = spot => `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`;
+  function planShareText(pl) {
+    const spot = (spots || []).find(x => x.id === pl.spot_id), n = planGoing(pl).length;
+    const lines = [`🎣 Fishing trip: ${planWhen(new Date(pl.plan_at))}${spot ? " at " + spot.name : ""}`];
+    if (pl.note) lines.push(pl.note);
+    lines.push(`${n} going so far.`);
+    lines.push(`Join on Fishing Map: ${location.origin}${location.pathname}?go=trip&id=${pl.id}`);
+    if (spot && hasLoc(spot) && spot.is_exact !== false) lines.push(`Directions: ${planDirUrl(spot)}`);
+    return lines.join("\n");
+  }
+  async function sharePlan(pl) {
+    const text = planShareText(pl), title = "Fishing trip";
+    if (navigator.share) { try { await navigator.share({ title, text }); } catch (e) { /* cancelled */ } return; }
+    const enc = encodeURIComponent;
+    const bg = el("div", "ask-bg"), box = el("div", "ask-box plan-share-box"); box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true");
+    box.appendChild(el("div", "ask-text", "📤 Share this trip"));
+    const row = el("div", "ask-btns plan-share-btns"), end = () => bg.remove();
+    const link = (label, href) => { const a = el("a", "btn ghost small", label); a.href = href; a.target = "_blank"; a.rel = "noopener"; a.addEventListener("click", end); row.appendChild(a); };
+    link("💬 Text", `sms:?&body=${enc(text)}`);
+    link("✉️ Email", `mailto:?subject=${enc(title)}&body=${enc(text)}`);
+    link("WhatsApp", `https://wa.me/?text=${enc(text)}`);
+    const cp = el("button", "btn ghost small", "📋 Copy"); cp.type = "button";
+    cp.addEventListener("click", async () => { try { await navigator.clipboard.writeText(text); toast("Copied ✓ — paste it into any chat"); } catch (e) { toast("Couldn't copy on this device."); } end(); });
+    row.appendChild(cp);
+    const no = el("button", "btn ghost small", "Close"); no.type = "button"; no.addEventListener("click", end); row.appendChild(no);
+    box.appendChild(row); bg.appendChild(box); bg.addEventListener("click", e => { if (e.target === bg) end(); });
+    document.body.appendChild(bg);
+  }
   function renderPlans() {
     renderPlanLine();
     const box = $("plan-list");
@@ -297,19 +327,13 @@
       if (onTrip(pl) && Date.now() >= tripWindow(pl)[0]) {
         const rv = el("button", "btn ghost small", "📖 Review trip"); rv.type = "button"; rv.addEventListener("click", () => openTripReview(pl)); acts.appendChild(rv);
       }
-      // Directions + Share for everyone who can see the plan (exact pins only: a blurred pin would lead to the wrong place)
+      // Directions for exact pins only (a blurred pin would lead to the wrong place); 📤 Share on every trip
       if (spot && hasLoc(spot) && spot.is_exact !== false) {
-        const dirUrl = `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`, joinUrl = `${location.origin}${location.pathname}?go=trip&id=${pl.id}`;
-        const da = el("a", "btn ghost small", "📍 Directions"); da.href = dirUrl; da.target = "_blank"; da.rel = "noopener"; acts.appendChild(da);
-        const sh = el("button", "btn ghost small", "📤 Share"); sh.type = "button";
-        sh.addEventListener("click", async () => {
-          const text = `Fishing trip: ${planWhen(new Date(pl.plan_at))} at ${spot.name}.
-Join on Fishing Map: ${joinUrl}
-Directions: ${dirUrl}`;
-          try { if (navigator.share) await navigator.share({ title: "Fishing trip", text }); else if (navigator.clipboard) { await navigator.clipboard.writeText(text); toast("Copied ✓"); } } catch (e) { /* cancelled */ }
-        });
-        acts.appendChild(sh);
+        const da = el("a", "btn ghost small", "📍 Directions"); da.href = planDirUrl(spot); da.target = "_blank"; da.rel = "noopener"; acts.appendChild(da);
       }
+      const sh = el("button", "btn ghost small plan-share", "📤 Share"); sh.type = "button";
+      sh.addEventListener("click", () => sharePlan(pl));
+      acts.appendChild(sh);
       item.appendChild(acts);
       if (onTrip(pl) && openPlanChats.has(pl.id)) item.appendChild(groupChatPanel("trip", pl.id));
       box.appendChild(item);
@@ -471,8 +495,9 @@ Directions: ${dirUrl}`;
       if (error) throw error;
       await db.from("trip_plan_rsvps").insert({ plan_id: data.id, name: me && me.name || null }); // the person posting is going
       closePlanForm();
-      $("pl-done").textContent = "✔ Plan posted — friends see it at the top of 🎣 Feed";
-      setTimeout(() => { $("pl-done").textContent = ""; }, 8000);
+      $("pl-done").textContent = "✔ Plan posted — friends see it at the top of 🎣 Feed ";
+      { const sb = el("button", "linkbtn plan-share-new", "📤 Share it"); sb.type = "button"; sb.addEventListener("click", () => sharePlan(plans.find(x => x.id === data.id) || data)); $("pl-done").appendChild(sb); }
+      setTimeout(() => { $("pl-done").textContent = ""; }, 15000);
       await loadPlans();
     } catch (err) { msg.className = "msg err"; msg.textContent = "Couldn't post: " + (err.message || err); }
     finally { $("pl-save").disabled = false; }
