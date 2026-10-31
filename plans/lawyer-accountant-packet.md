@@ -1,6 +1,6 @@
 # Lawyer + accountant packet (send this ahead of the appointments)
 
-**Checked against the live app: v173, Oct 22 2026 (business pages section 29–35 added for v238, Oct 28; lines 36–37 trips for v253–v255, Oct 31).** Before the appointment, ask Claude to "bring the lawyer packet up to date" so it matches the newest version. Rule (CLAUDE.md): anything new that touches members' data, photos, money, outside data or the fishing rules adds a line here.
+**Checked against the live app: v173, Oct 22 2026 (business pages section 29–35 added for v238, Oct 28; lines 36–38 trips for v253–v256, Oct 31).** Before the appointment, ask Claude to "bring the lawyer packet up to date" so it matches the newest version. Rule (CLAUDE.md): anything new that touches members' data, photos, money, outside data or the fishing rules adds a line here.
 
 Not legal or tax advice. This lists what the app does and what to ask. **terms.html and privacy.html stay unchanged until the lawyer answers.** After that, the Engineer applies the wording once and bumps `TERMS_VERSION` (js/49, now "2026-10-18") so members agree again once.
 
@@ -83,6 +83,7 @@ These were found by checking the texts against v173. Don't change anything yet; 
 35. Future paid ads (NOT built): reaching people who don't follow a page (featured pin, nearby shop, sponsored post). Question for the lawyer and the accountant: what's needed before a business pays us anything (business setup, sales tax, ad disclosure such as a "Sponsored" label)?
 36. Trips (v253): a ▶ Start trip is saved to the database when it starts, so a friend who can already see that spot can see you are fishing there while the trip is running, not only after it ends. A Start trip can now be linked to a planned trip. Question: does the privacy page need a line that friends can see a trip while it is happening?
 37. Trips (v255): a planned trip shows as "on the water" while anyone on it has a ▶ Start trip linked to it running. Everyone who can see the planned trip sees that it is on and when it ended (not where anyone is, and not whose Start trip it is). Question: is that covered by the existing trip-plan wording, or does it need a line?
+38. Trips (v256): when planning, people pick roughly when they'll be back (and can tick 🚤 boat trip). At that time everyone going gets a "Still out?" phone alert naming the spot, and any one of them can extend the trip by an hour or end it for everyone. Question: is an automatic "you were due back" alert something we must say is NOT a safety or rescue service (the app already has a separate Heading out check-in)?
 
 ## 4. Proposed new lines (drafts for the lawyer to fix, NOT live)
 - **Coins and gems:** "Coins and gems are points for fun. They have no cash value, can't be bought, sold or traded, and the owner may correct them (always logged)."

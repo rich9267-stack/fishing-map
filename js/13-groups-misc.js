@@ -527,6 +527,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-31d", title: "🎣 Back by + \"Still out?\"", items: [
+      "Plan a trip now asks roughly when you'll be back: 2, 4 (the default) or 6 hours, all day, or overnight. There's also a 🚤 Boat trip box.",
+      "If nobody has ▶ Start trip running when that time comes, everyone going gets a \"🎣 Still out?\" alert: ▶ Start trip, +1 hour, or Done. Anyone going can answer for the whole trip.",
+      "Turn it off with the 🎣 trip reminders switch in alert settings."
+    ] },
     { id: "2026-10-31c", title: "🗓 Trips no longer disappear after 3 hours", items: [
       "A planned trip now stays up while anyone on it has ▶ Start trip running, so long boat days and night trips stay on \"On the water now\".",
       "If nobody presses ▶ Start trip, the trip shows as on the water for 4 hours from its start.",

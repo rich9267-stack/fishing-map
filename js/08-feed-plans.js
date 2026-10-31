@@ -204,6 +204,41 @@
     if (now < new Date(pl.plan_at).getTime()) return "planned";
     return now < planBackBy(pl) ? "on" : "ended";
   }
+  // Plan a trip → "Back by about": 2 / 4 / 6 hours, all day (10 h) or overnight (the next 8 AM at least 2 h after the start)
+  function backByFrom(at, choice) {
+    const t = new Date(at).getTime();
+    if (choice === "day") return new Date(t + 10 * 3600000);
+    if (choice === "night") { const d = new Date(t + 2 * 3600000); if (d.getHours() >= 8) d.setDate(d.getDate() + 1); d.setHours(8, 0, 0, 0); return d; }
+    return new Date(t + (Number(choice) || PLAN_BACK_H) * 3600000);
+  }
+  // "🎣 Still out?" — the phone alert at back-by time (setup/125) opens this. Anyone going answers for the whole trip.
+  async function openStillOut(id) {
+    feedMode = "circle"; if (typeof comMark === "function") comMark("feed"); else showView("feed");
+    let pl = plans.find(x => x.id === id);
+    try {
+      if (!pl) { const { data } = await db.from("trip_plans").select("*").eq("id", id).maybeSingle(); pl = data; }
+      if (pl && !planRsvps[id]) { const { data: rs } = await db.from("trip_plan_rsvps").select("*").eq("plan_id", id); planRsvps[id] = rs || []; }
+    } catch (e) { /* offline: handled below */ }
+    if (!pl || pl.cancelled_at || !onTrip(pl)) return toast("That trip isn't available — it may have been cancelled.", 5000);
+    if (pl.ended_at) return toast("That trip has already ended — it's in Community → Trips.", 5000);
+    const spot = (spots || []).find(x => x.id === pl.spot_id);
+    const bg = el("div", "ask-bg"), box = el("div", "ask-box still-out-box"); box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true");
+    box.appendChild(el("div", "ask-text", `🎣 Still out?\n${planWho(pl)[0].toUpperCase() + planWho(pl).slice(1)} trip${spot ? " at " + spot.name : ""} was due back about ${clock(new Date(planBackBy(pl)))}.`));
+    const row = el("div", "ask-btns trip-join-btns"), end = () => bg.remove();
+    const add = (label, fn, cls) => { const b = el("button", cls, label); b.type = "button"; b.addEventListener("click", async () => { end(); await fn(); }); row.appendChild(b); };
+    const answer = async a => {
+      const { data, error } = await db.rpc("trip_still_out", { p_plan: id, p_answer: a });
+      if (error) return alert("Couldn't save that — check your signal and try again.");
+      toast(a === "more" ? `✓ Back by about ${clock(new Date(planBackBy(data || pl)))} — we'll ask again then.` : "✓ Trip ended — it's in Community → Trips.", 5000);
+      await loadPlans(); try { if (typeof loadPastTrips === "function") loadPastTrips(); } catch (e) { /* not ready */ }
+    };
+    if (spot) add("▶ Start trip", async () => { await startSession(spot, id); await syncSessions(); await loadPlans(); }, "btn");
+    add("+1 hour", () => answer("more"), "btn ghost");
+    add("Done — we're back", () => answer("done"), "btn ghost");
+    const no = el("button", "linkbtn", "Not now"); no.type = "button"; no.addEventListener("click", end); row.appendChild(no);
+    box.appendChild(row); bg.appendChild(box); bg.addEventListener("click", e => { if (e.target === bg) end(); });
+    document.body.appendChild(bg);
+  }
   // Ended trips leave the planned list (they're in Community → Trips); checked every minute
   setInterval(() => {
     if (!plans.some(pl => planStatus(pl) === "ended")) return;
@@ -316,6 +351,11 @@
       item.appendChild(top);
       { const pb = el("div", "spot-meta"); pb.appendChild(document.createTextNode("Planned by ")); pb.appendChild(personLink(pl.created_by, pl.author || "someone")); if (pl.note) pb.appendChild(document.createTextNode(" — " + pl.note)); item.appendChild(pb); }
       const going = planGoing(pl);
+      { const st = planStatus(pl), bits = [];
+        if (pl.boat) bits.push("🚤 Boat trip");
+        if (st === "on") bits.push(pl.started_at ? "🎣 On the water now" : `🎣 On the water · back by about ${clock(new Date(planBackBy(pl)))}`);
+        else if (pl.back_by) bits.push(`Back by about ${clock(new Date(planBackBy(pl)))}`);
+        if (bits.length) item.appendChild(el("div", "spot-meta plan-status", bits.join(" · "))); }
       { const gb = el("div", "spot-meta"); gb.appendChild(document.createTextNode(`✋ Going (${going.length}): `)); gb.appendChild(personList(going.map(x => ({ id: x.user_id, label: x.name || "Someone" })))); item.appendChild(gb); }
       const own = !!(me && pl.created_by === me.id);
       const inn = !!(me && going.some(x => x.user_id === me.id));
@@ -378,6 +418,8 @@
     $("pl-date").value = draft ? draft.date : ymdDash(t);
     $("pl-time").value = draft ? draft.time : `${pad2(t.getHours())}:00`;
     $("pl-note").value = draft ? draft.note : "";
+    $("pl-back").value = draft && draft.back ? draft.back : "4";
+    $("pl-boat").checked = !!(draft && draft.boat);
     if (draft && draft.spot && [...sel.options].some(o => o.value === draft.spot)) sel.value = draft.spot;
     $("plan-form").hidden = false; $("plan-add").hidden = true; $("pl-done").textContent = "";
     if (!sel.options.length) return;
@@ -396,7 +438,7 @@
   }
   // "Find a spot on the map": go to the Map, tap a pin, "Use this spot" brings you back here with it chosen
   $("pl-map").addEventListener("click", () => {
-    planPick = { spot: $("pl-spot").value, date: $("pl-date").value, time: $("pl-time").value, note: $("pl-note").value };
+    planPick = { spot: $("pl-spot").value, date: $("pl-date").value, time: $("pl-time").value, note: $("pl-note").value, back: $("pl-back").value, boat: $("pl-boat").checked };
     startPlacing({ mode: "plan" });
   });
   function finishPlanPick(spotId) {
@@ -519,7 +561,8 @@
     msg.className = "msg"; msg.textContent = "Posting…"; $("pl-save").disabled = true;
     try {
       const note = $("pl-note").value.trim() || null;
-      const { data, error } = await db.from("trip_plans").insert({ spot_id: $("pl-spot").value, plan_at: at.toISOString(), note, author: me && me.name || null }).select("*").single();
+      const { data, error } = await db.from("trip_plans").insert({ spot_id: $("pl-spot").value, plan_at: at.toISOString(), note, author: me && me.name || null,
+        back_by: backByFrom(at, $("pl-back").value).toISOString(), boat: $("pl-boat").checked }).select("*").single();
       if (error) throw error;
       await db.from("trip_plan_rsvps").insert({ plan_id: data.id, name: me && me.name || null }); // the person posting is going
       closePlanForm();

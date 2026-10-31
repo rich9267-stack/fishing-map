@@ -878,6 +878,7 @@
       })();
     }
     else if (go === "trip" && q.get("id")) openSharedTrip(q.get("id"));
+    else if (go === "stillout" && q.get("id")) openStillOut(q.get("id"));   // 🎣 Still out? alert at a trip's back-by time (setup/125)
     else if (go === "contest" && q.get("id")) { ctId = q.get("id"); ctView = "detail"; feedMode = "contests"; showView("feed"); window.scrollTo({ top: 0 }); }
     else if (go === "spot" && q.get("id")) { goToSpot(q.get("id"), false); }
     else if (go === "plan" || go === "weather") { showView("list"); ciLoad(); wxRefresh(true); setTimeout(() => $("safety-strip").scrollIntoView({ behavior: "smooth", block: "start" }), 200); }
