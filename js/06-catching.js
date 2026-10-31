@@ -485,11 +485,11 @@
   const tripHours = x => Math.max(1 / 60, (new Date(x.ended_at) - new Date(x.started_at)) / 3600000);
 
   // ---- Joining a planned trip when you press ▶ Start trip (trip-lifecycle step 2) ----
-  // A planned trip you're going on can be joined from 1 hour before its start until it ends (for now: 12 hours after the start).
+  // A planned trip you're going on can be joined from 1 hour before its start until it ends (planStatus, js/08).
   function joinablePlans() {
     const now = Date.now();
-    return (typeof plans !== "undefined" ? plans : []).filter(pl => !pl.cancelled_at && !pl.ended_at && onTrip(pl)
-      && now >= tripWindow(pl)[0] && now <= tripWindow(pl)[1]);
+    return (typeof plans !== "undefined" ? plans : []).filter(pl => onTrip(pl) && planStatus(pl, now) !== "ended"
+      && now >= new Date(pl.plan_at).getTime() - 3600000);
   }
   const planWho = pl => me && pl.created_by === me.id ? "your" : `${pl.author || "a friend"}'s`;
   const planSpotName = pl => { const sp = (spots || []).find(x => x.id === pl.spot_id); return sp ? sp.name : "the planned spot"; };
@@ -526,6 +526,7 @@
     const row = { id: uuid4(), spot_id: spot.id, started_at: new Date().toISOString(), created_by: me.id };
     const pl = planId ? (typeof plans !== "undefined" ? plans : []).find(x => x.id === planId) : null;
     if (planId) row.plan_id = planId;
+    if (pl && !pl.started_at) pl.started_at = row.started_at; // the database sets this too; showing it now means the trip is "on" right away
     setActive({ ...row, spotName: spot.name });
     $("session-ask").hidden = true;
     addPending(row); syncSessions();
@@ -556,6 +557,7 @@
     setActive(null);
     await syncSessions();
     loadSessions();
+    if (a.plan_id && typeof loadPlans === "function") loadPlans(); // the trip may have ended with me (the database sets ended_at)
     if (!quiet) toast(fish ? `✓ Trip saved: ${dur(end - start)} at ${a.spotName}, ${fish} fish 🎣`
       : `✓ Trip saved: ${dur(end - start)} at ${a.spotName}. Skunked — but it still counts, and it helps the predictions.`, 6000);
   }

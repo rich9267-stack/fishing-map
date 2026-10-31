@@ -192,6 +192,24 @@
     if (!list.some(x => x.user_id === pl.created_by)) list.unshift({ plan_id: pl.id, user_id: pl.created_by, name: pl.author });
     return list;
   }
+  // Trip status (trip-lifecycle step 3): "planned" before the start; "on" while anyone's linked ▶ Start trip is running
+  // (started_at, kept by the database) or from the start time until back by (default 4 h); "ended" once ended_at is set
+  // (the last linked Start trip ended), when cancelled, or past back by with nobody on a Start trip.
+  const PLAN_BACK_H = 4, PLAN_LIVE_H = 12;
+  const planBackBy = pl => pl.back_by ? new Date(pl.back_by).getTime() : new Date(pl.plan_at).getTime() + PLAN_BACK_H * 3600000;
+  function planStatus(pl, now) {
+    now = now || Date.now();
+    if (pl.cancelled_at || pl.ended_at) return "ended";
+    if (pl.started_at && now < new Date(pl.started_at).getTime() + PLAN_LIVE_H * 3600000) return "on";
+    if (now < new Date(pl.plan_at).getTime()) return "planned";
+    return now < planBackBy(pl) ? "on" : "ended";
+  }
+  // Ended trips leave the planned list (they're in Community → Trips); checked every minute
+  setInterval(() => {
+    if (!plans.some(pl => planStatus(pl) === "ended")) return;
+    plans = plans.filter(pl => planStatus(pl) !== "ended");
+    renderPlans(); try { refreshCtBanner(); } catch (e) { /* contests not ready */ }
+  }, 60000);
   const planShort = pl => {
     const spot = (spots || []).find(x => x.id === pl.spot_id), n = planGoing(pl).length;
     const d = new Date(pl.plan_at), w = planWhen(d).replace(" · ", " ");
@@ -209,14 +227,14 @@
   $("plan-line").addEventListener("click", () => { stopPlacing(); feedMode = "circle"; ctView = "list"; if (typeof comMark === "function") comMark("feed"); else showView("feed"); window.scrollTo({ top: 0, behavior: "smooth" }); });
   async function loadPlans() {
     try {
-      const since = new Date(Date.now() - 3 * 3600000).toISOString(); // a plan stays up until 3 h after its start
+      const since = new Date(Date.now() - 24 * 3600000).toISOString(); // trips that haven't ended (planStatus decides), up to a day after the start
       const [p, r] = await Promise.all([
-        bootTake("trip_plans", () => db.from("trip_plans").select("*").is("cancelled_at", null).gte("plan_at", since).order("plan_at", { ascending: true }).limit(100)),
+        bootTake("trip_plans", () => db.from("trip_plans").select("*").is("cancelled_at", null).is("ended_at", null).gte("plan_at", since).order("plan_at", { ascending: true }).limit(100)),
         bootTake("trip_plan_rsvps", () => db.from("trip_plan_rsvps").select("*").limit(3000))
       ]);
       if (p.error) throw p.error;
       if (r.error) throw r.error;
-      plans = p.data;
+      plans = p.data.filter(pl => planStatus(pl) !== "ended");
       planRsvps = {}; r.data.forEach(x => (planRsvps[x.plan_id] = planRsvps[x.plan_id] || []).push(x));
       planError = null;
     } catch (e) { planError = "Couldn't load trip plans right now."; }

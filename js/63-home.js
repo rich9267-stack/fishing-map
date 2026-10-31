@@ -31,9 +31,9 @@
       const av = typeof avatarNode === "function" ? avatarNode(null, name, 56, null) : el("span", null, name[0]);
       strip.appendChild(story(name.split(" ")[0], av, () => goTo("ci-watch"), "hn-friend" + (x.status === "alerted" ? " late" : "")));
     });
-    // Planned trips that have already started (plans stay loaded until 3 h after their start) — one circle per trip, named for the spot
+    // Planned trips that are on the water now (planStatus: a linked Start trip running, or start time until back by) — one circle per trip, named for the spot
     const meId = typeof me !== "undefined" && me ? me.id : null, now = Date.now();
-    const started = (typeof plans !== "undefined" ? plans : []).filter(pl => !pl.cancelled_at && new Date(pl.plan_at).getTime() <= now);
+    const started = (typeof plans !== "undefined" ? plans : []).filter(pl => typeof planStatus === "function" ? planStatus(pl, now) === "on" : !pl.cancelled_at && new Date(pl.plan_at).getTime() <= now);
     started.forEach(pl => {
       const spot = (typeof spots !== "undefined" ? spots : []).find(x => x.id === pl.spot_id);
       const going = typeof planGoing === "function" ? planGoing(pl) : [{ user_id: pl.created_by }];

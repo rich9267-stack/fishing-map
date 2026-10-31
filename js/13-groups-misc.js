@@ -261,13 +261,13 @@
   async function loadPastTrips() {
     try {
       if (!db || !me) return;
-      const since = new Date(Date.now() - 60 * 86400000).toISOString(), until = new Date(Date.now() - 3 * 3600000).toISOString();
+      const since = new Date(Date.now() - 60 * 86400000).toISOString(), until = new Date(Date.now() + 3600000).toISOString();
       const p = await db.from("trip_plans").select("*").is("cancelled_at", null).gte("plan_at", since).lt("plan_at", until).order("plan_at", { ascending: false }).limit(60);
       if (p.error) throw p.error;
       const ids = (p.data || []).map(x => x.id);
       const r = ids.length ? await db.from("trip_plan_rsvps").select("*").in("plan_id", ids) : { data: [] };
       const by = {}; (r.data || []).forEach(x => (by[x.plan_id] = by[x.plan_id] || []).push(x));
-      pastTrips = (p.data || []).filter(pl => onTrip(pl, by[pl.id]));
+      pastTrips = (p.data || []).filter(pl => onTrip(pl, by[pl.id]) && planStatus(pl) === "ended"); // a trip moves here as soon as it ends
     } catch (e) { pastTrips = []; }
     pastTripsLoaded = true;
     renderPastTrips();
@@ -527,6 +527,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-31c", title: "🗓 Trips no longer disappear after 3 hours", items: [
+      "A planned trip now stays up while anyone on it has ▶ Start trip running, so long boat days and night trips stay on \"On the water now\".",
+      "If nobody presses ▶ Start trip, the trip shows as on the water for 4 hours from its start.",
+      "When the last person ends their Start trip, the trip moves to Past trips in Community → Trips."
+    ] },
     { id: "2026-10-31b", title: "▶ Start trip joins your planned trip", items: [
       "Planned trips you're going on now have ▶ Start trip on the trip card, from 1 hour before the start.",
       "Press ▶ Start trip at the planned spot and it joins the trip by itself. Somewhere else, it asks \"Joining Sam's trip?\" — tap Yes, or No, just me.",

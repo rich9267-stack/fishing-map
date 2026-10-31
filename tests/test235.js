@@ -22,7 +22,7 @@ const START = { member: { email: "sam@x.com", display_name: "Sam", is_admin: fal
 async function open(withShare) {
   const dom = new JSDOM(html, { runScripts: "dangerously", url: "https://example.org/fishing-map/", beforeParse(w) {
     w.eval(sun); w.Element.prototype.scrollIntoView = () => {};
-    const rows = t => t === "spots_visible" || t === "spots" ? SPOTS : [];
+    const rows = t => t === "spots_visible" || t === "spots" ? SPOTS : t === "trip_plans" ? PLANS : t === "trip_plan_rsvps" ? RSVPS : [];
     const chain = t => { const p = () => Promise.resolve({ data: rows(t), error: null, count: 0 });
       const o = {}; ["eq", "is", "in", "or", "ilike", "gte", "lte", "gt", "lt", "neq", "order", "select", "not", "contains", "match", "filter", "overlaps", "limit"].forEach(k => { o[k] = () => o; });
       o.range = () => p(); o.single = () => Promise.resolve({ data: null, error: null }); o.maybeSingle = () => Promise.resolve({ data: t === "members" ? START.member : null, error: null });
