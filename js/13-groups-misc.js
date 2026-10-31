@@ -527,6 +527,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-31a", title: "🗓 Planned trips show as \"On the water now\"", items: [
+      "Once a planned trip's start time comes, it shows in the \"On the water now\" row on Home, named for the spot. Tap it to see the trip.",
+      "Friends going on the trip count toward \"friends fishing\". Trips later in the day show up when they start."
+    ] },
     { id: "2026-10-30d", title: "📤 Share a planned trip", items: [
       "Every planned trip now has 📤 Share: send it by text, email, WhatsApp or any chat app. It says when, where, your note, how many are going and has a link that opens the trip in the app.",
       "Right after you post a plan, tap \"📤 Share it\" next to \"Plan posted\"."
