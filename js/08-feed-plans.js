@@ -313,6 +313,16 @@
         b.addEventListener("click", () => toggleRsvp(pl));
         acts.appendChild(b);
       }
+      // ▶ Start trip right on the trip card (from 1 hour before the start until the trip ends)
+      if (spot && typeof joinablePlans === "function" && joinablePlans().includes(pl)) {
+        const a = activeSession();
+        if (a && a.plan_id === pl.id) acts.appendChild(el("span", "spot-meta plan-on", "🎣 You're on this trip"));
+        else {
+          const st = el("button", "btn small plan-start", "▶ Start trip"); st.type = "button";
+          st.addEventListener("click", () => startSession(spot, pl.id));
+          acts.appendChild(st);
+        }
+      }
       if (onTrip(pl)) {
         const cb = el("button", "btn ghost small", openPlanChats.has(pl.id) ? "💬 Hide chat" : "💬 Chat"); cb.type = "button";
         cb.addEventListener("click", () => { if (openPlanChats.has(pl.id)) openPlanChats.delete(pl.id); else openPlanChats.add(pl.id); renderPlans(); });

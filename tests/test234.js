@@ -47,7 +47,7 @@ const ses = w => w.__ups.filter(u => u.t === "sessions").map(u => u.row);
   PLANS = [{ id: "p1", spot_id: "s1", created_by: ME, author: "Sam", plan_at: new Date(STARTED).toISOString() }]; RSVPS = [];
   let w = await open(false);
   // 1) a plain Start trip: saved at the start, no link
-  await w.eval(`startSession(spots.find(x => x.id === "s1"))`); await wait(300);
+  await w.eval(`startSession(spots.find(x => x.id === "s1"), null)`); await wait(300); // null = just me (v254 would otherwise join p1)
   let r = ses(w);
   ok(r.length === 1 && !r[0].ended_at && r[0].spot_id === "s1", "Start trip is saved to the database right when it starts");
   ok(!("plan_id" in r[0]), "…a plain Start trip has no planned-trip link");

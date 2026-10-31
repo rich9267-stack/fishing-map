@@ -459,7 +459,7 @@
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage full */ } };
   const activeSession = () => me ? lsGet(`fm-session-${me.id}`, null) : null;
-  function setActive(a) { lsSet(`fm-session-${me.id}`, a); renderSessionBar(); renderSpots(); }
+  function setActive(a) { lsSet(`fm-session-${me.id}`, a); renderSessionBar(); renderSpots(); try { if (typeof renderPlans === "function") renderPlans(); } catch (e) { /* trip list not ready */ } }
   const pendingSessions = () => me ? lsGet(`fm-session-pending-${me.id}`, []) : [];
   function addPending(row) {
     const list = pendingSessions(), i = list.findIndex(r => r.id === row.id);
@@ -484,15 +484,53 @@
   const tripFish = x => { const n = sessionCatches(x.id).reduce((k, c) => k + (c.how_many || 1), 0); return n || x.fish || 0; };
   const tripHours = x => Math.max(1 / 60, (new Date(x.ended_at) - new Date(x.started_at)) / 3600000);
 
-  // planId: the planned trip this Start trip is part of (trip-lifecycle step 1; joining comes in step 2)
+  // ---- Joining a planned trip when you press ▶ Start trip (trip-lifecycle step 2) ----
+  // A planned trip you're going on can be joined from 1 hour before its start until it ends (for now: 12 hours after the start).
+  function joinablePlans() {
+    const now = Date.now();
+    return (typeof plans !== "undefined" ? plans : []).filter(pl => !pl.cancelled_at && !pl.ended_at && onTrip(pl)
+      && now >= tripWindow(pl)[0] && now <= tripWindow(pl)[1]);
+  }
+  const planWho = pl => me && pl.created_by === me.id ? "your" : `${pl.author || "a friend"}'s`;
+  const planSpotName = pl => { const sp = (spots || []).find(x => x.id === pl.spot_id); return sp ? sp.name : "the planned spot"; };
+  // Which planned trip (if any) this Start trip belongs to. Resolves to a plan id, null (just me) or false (closed without choosing).
+  function choosePlan(spot) {
+    const list = joinablePlans();
+    if (!list.length) return Promise.resolve(null);
+    if (list.length === 1 && list[0].spot_id === spot.id) return Promise.resolve(list[0].id); // at the meeting spot: joins with no question
+    const one = list.length === 1, pl0 = list[0];
+    const text = one ? `Joining ${planWho(pl0)} trip (meeting at ${planSpotName(pl0)})?` : "Is this part of a planned trip?";
+    if (window.confirm !== nativeConfirm) return Promise.resolve(window.confirm(text) ? pl0.id : null); // tests swap in their own answer
+    return new Promise(done => {
+      const bg = el("div", "ask-bg"), box = el("div", "ask-box trip-join-box");
+      box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true");
+      box.appendChild(el("div", "ask-text", text));
+      const row = el("div", "ask-btns trip-join-btns");
+      const end = v => { document.removeEventListener("keydown", key, true); bg.remove(); done(v); };
+      const key = e => { if (e.key === "Escape") { e.preventDefault(); end(false); } };
+      const add = (label, v, cls) => { const b = el("button", cls, label); b.type = "button"; b.addEventListener("click", () => end(v)); row.appendChild(b); return b; };
+      if (one) add("Yes", pl0.id, "btn");
+      else list.slice(0, 3).forEach(pl => add(`${planWho(pl)[0].toUpperCase() + planWho(pl).slice(1)} trip · ${planSpotName(pl)} · ${clock(new Date(pl.plan_at))}`, pl.id, "btn ghost"));
+      add("No, just me", null, "btn ghost");
+      box.appendChild(row); bg.appendChild(box);
+      bg.addEventListener("click", e => { if (e.target === bg) end(false); });
+      document.addEventListener("keydown", key, true);
+      document.body.appendChild(bg);
+    });
+  }
+
+  // planId: the planned trip this Start trip is part of; null = just me; left out = work it out (choosePlan)
   async function startSession(spot, planId) {
+    if (planId === undefined) { planId = await choosePlan(spot); if (planId === false) return; }
     if (activeSession()) await endSession(true);
     const row = { id: uuid4(), spot_id: spot.id, started_at: new Date().toISOString(), created_by: me.id };
+    const pl = planId ? (typeof plans !== "undefined" ? plans : []).find(x => x.id === planId) : null;
     if (planId) row.plan_id = planId;
     setActive({ ...row, spotName: spot.name });
     $("session-ask").hidden = true;
     addPending(row); syncSessions();
-    toast(`🎣 Trip started at ${spot.name}. Catches you log here count toward it — tap End trip when you leave.`, 5000);
+    toast(pl ? `🎣 Trip started at ${spot.name} — part of ${planWho(pl)} trip. Catches you log anywhere on it count — tap End trip when you're done.`
+      : `🎣 Trip started at ${spot.name}. Catches you log here count toward it — tap End trip when you leave.`, 5000);
   }
 
   // Conditions for each hour of a trip (tide, time of day, solunar, moon, wind, water temp)

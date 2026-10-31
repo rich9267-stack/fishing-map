@@ -190,6 +190,8 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
   need(btn(card(3), /Saved/), "a new card for the same place shows Saved");
 
   // ---- Start a trip here on a place not yet saved: saves it, then starts the trip ----
+  // (v254: my trip "pnow" started 30 min ago, so Start trip elsewhere asks "Joining your trip?" — answer No, just me here)
+  const confirm0 = w.confirm; w.confirm = () => false;
   const c10 = card(10), trip = btn(c10, /Start a trip here/);
   need(trip, "Start a trip here button exists");
   trip.click(); await wait(300);
@@ -203,6 +205,7 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
   btn(card(2), /Start a trip here/).click(); await wait(300);
   need(inserts().length === before, "starting a trip at a saved place makes no second spot");
   need(J("activeSession()").spotName === "My pier spot", "trip moved to my existing spot: " + w.eval("JSON.stringify(activeSession())"));
+  w.confirm = confirm0;
 
   // ---- signed out / no signal: a plain message, nothing saved ----
   w.eval("me = null");

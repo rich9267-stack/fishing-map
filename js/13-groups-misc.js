@@ -527,6 +527,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-31b", title: "▶ Start trip joins your planned trip", items: [
+      "Planned trips you're going on now have ▶ Start trip on the trip card, from 1 hour before the start.",
+      "Press ▶ Start trip at the planned spot and it joins the trip by itself. Somewhere else, it asks \"Joining Sam's trip?\" — tap Yes, or No, just me.",
+      "Once you've joined, moving to another spot doesn't break the trip."
+    ] },
     { id: "2026-10-31a", title: "🗓 Planned trips show as \"On the water now\"", items: [
       "Once a planned trip's start time comes, it shows in the \"On the water now\" row on Home, named for the spot. Tap it to see the trip.",
       "Friends going on the trip count toward \"friends fishing\". Trips later in the day show up when they start."
