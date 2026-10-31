@@ -484,9 +484,11 @@
   const tripFish = x => { const n = sessionCatches(x.id).reduce((k, c) => k + (c.how_many || 1), 0); return n || x.fish || 0; };
   const tripHours = x => Math.max(1 / 60, (new Date(x.ended_at) - new Date(x.started_at)) / 3600000);
 
-  async function startSession(spot) {
+  // planId: the planned trip this Start trip is part of (trip-lifecycle step 1; joining comes in step 2)
+  async function startSession(spot, planId) {
     if (activeSession()) await endSession(true);
     const row = { id: uuid4(), spot_id: spot.id, started_at: new Date().toISOString(), created_by: me.id };
+    if (planId) row.plan_id = planId;
     setActive({ ...row, spotName: spot.name });
     $("session-ask").hidden = true;
     addPending(row); syncSessions();
@@ -511,7 +513,8 @@
     const queued = (await queueAll()).filter(i => i.session === a.id).reduce((n, i) => n + (i.count || 1), 0);
     const fish = sessionCatches(a.id).reduce((n, c) => n + (c.how_many || 1), 0) + queued;
     addPending({ id: a.id, spot_id: a.spot_id, started_at: a.started_at, created_by: me.id, ended_at: end.toISOString(),
-      fish: Math.min(1000, fish), hours: spot ? sessionHours(spot, start, end) : null, notes: endAt ? "Ended automatically" : null });
+      fish: Math.min(1000, fish), hours: spot ? sessionHours(spot, start, end) : null, notes: endAt ? "Ended automatically" : null,
+      ...(a.plan_id ? { plan_id: a.plan_id } : {}) });
     setActive(null);
     await syncSessions();
     loadSessions();
