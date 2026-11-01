@@ -49,6 +49,8 @@ After the US expansion (done v173): make the national map trustworthy and useful
 
 15. **Speed + cost (Richard, Oct 30).** Measured + step 1 built v248 (profile pictures kept on the phone, data lists only re-downloaded when changed; test230). v249: one database call at app open (setup/122 app_start, no new table; ~40 → ~16 calls) + rules kept on the phone (test231). Waiting for phone check of v248–v249. Next steps for Richard to pick: plans/speed-and-cost-plan.md (one database call at app open, load rare code only when opened, split the 5.8 MB rules file by state, …).
 
+16. **Planned trips that end at the right time (Richard, Oct 31) — ALL 6 STEPS BUILT v253–v258 (setup/123–127, tests 234–239); waiting for Richard's phone check.** Plan: Project doc claude/trip-lifecycle-plan.md. ▶ Start trip joins a planned trip (v254); trips stay up while anyone's Start trip runs, no 3-hour rule (v255); Back by about + 🚤 Boat trip + "🎣 Still out?" alert (v256, cron trip-still-out); latest catch spot + boat/joined trips count anywhere in contests and review (v257); Past trips rows with who went, how long, fish, other spots (v258). No new tables.
+
 ## Later
 - Kansas reservoir depth maps (one map per reservoir; few anglers there yet). Wisconsin / Connecticut / Tennessee depth: no free source found.
 - Refresh the 2009 FWC ramp list and the park/pier/station lists now and then.
