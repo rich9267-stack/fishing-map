@@ -4,7 +4,7 @@
 // - Live data (database, tides, weather) is never cached here. Map tiles are served from the phone only if saved for offline.
 // - Catch photos: kept by their storage path (the link's ?token= changes every hour, the photo never does), so each photo is
 //   downloaded once per phone. The app empties this on sign-out and account delete.
-const CACHE = "fishing-map-v260";
+const CACHE = "fishing-map-v261";
 const APP_FILES = ["./", "./index.html", "./privacy.html", "./terms.html", "./css/app.css", "./js/00-icons.js", "./js/01-core.js", "./js/02-spots.js", "./js/03-photos.js", "./js/04-insights.js", "./js/05-seasons-records.js", "./js/06-catching.js", "./js/07-measure-fishid.js", "./js/08-feed-plans.js", "./js/09-map-forecast.js", "./js/10-tools-safety.js", "./js/11-accounts-social.js", "./js/12-contests-alerts.js", "./js/13-groups-misc.js", "./js/14-tank.js", "./js/15-fish-rank.js", "./js/16-fish-race.js", "./js/17-license-help.js", "./js/18-species.js", "./js/19-biting.js", "./js/20-spot-share.js", "./js/21-pub-filters.js", "./js/22-public-water.js", "./js/23-depth.js", "./js/24-delete-account.js", "./js/25-home-map.js", "./js/26-sub-tabs.js", "./js/27-me-find.js", "./js/28-host-pages.js", "./js/29-home-waters.js", "./js/30-red-tide.js", "./js/31-regional-rules.js", "./js/32-spot-style.js", "./js/33-zones.js", "./js/34-official-admin.js", "./js/35-palettes.js", "./js/36-tutorials.js", "./js/37-official-layer.js", "./js/38-admin-powers.js",
   "./js/39-admin-log.js", "./js/40-admin-page.js", "./js/41-admin-people.js", "./js/42-admin-undo.js", "./js/43-admin-warn.js",
   "./js/44-admin-hide.js",
@@ -38,6 +38,7 @@ const APP_FILES = ["./", "./index.html", "./privacy.html", "./terms.html", "./cs
   "./js/99-boot.js"];
 const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com"];
 const TILE_CACHE = "fishing-map-tiles";   // map tiles the person chose to save for offline (kept across updates)
+const LIB_CACHE = "fishing-map-libs";    // outside code libraries with an exact version number (never change, so kept across updates)
 const CV_CACHE = "fishing-map-cv";        // the ~10 MB OpenCV helper for auto-finding the bill/card (downloaded once, kept across updates)
 const TILE_HOSTS = ["tile.openstreetmap.org", "server.arcgisonline.com"];
 const PHOTO_CACHE = "fishing-map-photos";  // catch photos + their small copies + profile pictures (kept across updates; emptied on sign-out)
@@ -74,7 +75,7 @@ async function dataTidy() {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE && k !== CV_CACHE && k !== PHOTO_CACHE && k !== DATA_CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== TILE_CACHE && k !== CV_CACHE && k !== LIB_CACHE && k !== PHOTO_CACHE && k !== DATA_CACHE).map(k => caches.delete(k))))
       .then(dataTidy).catch(() => { /* never block the update over this tidy-up */ })
       .then(() => self.clients.claim())
   );
@@ -126,10 +127,13 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // Code libraries: saved copy first, refresh in the background
+  // Code libraries: saved copy first. A library with an exact version number (all of ours since v261) never changes,
+  // so its saved copy is used as is; anything without one is refreshed in the background.
   if (CDN_HOSTS.includes(url.hostname)) {
+    const exact = /@\d+\.\d+\.\d+(?:[-.\w]*)?(?:\/|$)|\/\d+\.\d+\.\d+\//.test(url.pathname);
     event.respondWith(
-      caches.open(CACHE).then(cache => cache.match(req).then(cached => {
+      caches.open(exact ? LIB_CACHE : CACHE).then(cache => cache.match(req).then(cached => {
+        if (cached && exact) return cached;
         const fresh = fetch(req).then(res => { if (res.ok) cache.put(req, res.clone()); return res; }).catch(() => cached);
         return cached || fresh;
       }))

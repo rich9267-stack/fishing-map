@@ -198,13 +198,46 @@
   const PP_ACCENTS = ["#1f7a3f", "#0b6e99", "#6a3fb5", "#c0392b", "#d4880f", "#0e8a7d", "#a8326d", "#444444"];
   const PP_MAX = 8;
   let ppMine = null, ppShow = [], ppColor = null, ppAvatarPath = null, ppAvatarBlob = null, ppAvatarClear = false;
-  const avatarUrls = {};
+  // Picture links (profile, header, group and business pictures) are asked for once and reused for their hour (speed plan step 4, v261):
+  // kept on the phone with when they run out (like catch photos, js/03), asked again 10 minutes before; two asks for the same picture share one.
+  const avatarUrls = {}, avatarTimes = {}, avatarAsks = {}, AV_LINKS_KEY = "fm-pic-links";
+  let avatarFor = null;
+  function avatarLinksLoad() {
+    if (!me || avatarFor === me.id) return;
+    avatarFor = me.id;
+    try {
+      const s = JSON.parse(localStorage.getItem(AV_LINKS_KEY) || "null"), soon = Date.now() + LINK_SPARE;
+      if (!s || s.who !== me.id) return;
+      Object.keys(s.l || {}).forEach(k => { const [u, t] = s.l[k]; if (t > soon && !avatarUrls[k]) { avatarUrls[k] = u; avatarTimes[k] = t; } });
+    } catch (e) { /* start fresh */ }
+  }
+  function avatarLinksSave() {
+    if (!me) return;
+    try {
+      const l = {}, soon = Date.now() + LINK_SPARE;
+      Object.keys(avatarUrls).forEach(k => { if (avatarTimes[k] > soon) l[k] = [avatarUrls[k], avatarTimes[k]]; });
+      localStorage.setItem(AV_LINKS_KEY, JSON.stringify({ who: me.id, l }));
+    } catch (e) { /* storage full: links are just asked again */ }
+  }
+  function avatarLinksClear() {   // signing out / deleting the account (js/03 photoCacheClear)
+    Object.keys(avatarUrls).forEach(k => delete avatarUrls[k]); Object.keys(avatarTimes).forEach(k => delete avatarTimes[k]); avatarFor = null;
+    try { localStorage.removeItem(AV_LINKS_KEY); } catch (e) { /* fine */ }
+  }
   async function avatarUrl(path, bucket) {
     if (!path) return null;
     bucket = bucket || "avatars";
-    if (avatarUrls[bucket + path]) return avatarUrls[bucket + path];
-    try { const { data } = await db.storage.from(bucket).createSignedUrl(path, 3600); if (data && data.signedUrl) return (avatarUrls[bucket + path] = data.signedUrl); } catch (e) { /* initials instead */ }
-    return null;
+    const k = bucket + path;
+    avatarLinksLoad();
+    if (avatarUrls[k] && !(avatarTimes[k] <= Date.now() + LINK_SPARE)) return avatarUrls[k];   // a link with no time = put there by this visit's own code: keep using it
+    if (avatarAsks[k]) return avatarAsks[k];
+    avatarAsks[k] = (async () => {
+      try {
+        const { data } = await db.storage.from(bucket).createSignedUrl(path, LINK_SECS);
+        if (data && data.signedUrl) { avatarUrls[k] = data.signedUrl; avatarTimes[k] = Date.now() + LINK_SECS * 1000; avatarLinksSave(); return data.signedUrl; }
+      } catch (e) { /* initials instead */ }
+      return null;
+    })();
+    try { return await avatarAsks[k]; } finally { delete avatarAsks[k]; }
   }
   // a round picture, or the first letter of the name when there is none
   function avatarNode(url, name, size, ring) {

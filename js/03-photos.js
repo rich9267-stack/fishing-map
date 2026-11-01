@@ -71,6 +71,7 @@
   async function photoCacheClear() {
     photoUrls = {}; thumbUrls = {}; linkTimes = {}; linksFor = null; thumbNone.clear();
     try { localStorage.removeItem(LINKS_KEY); } catch (e) { /* fine */ }
+    if (typeof avatarLinksClear === "function") avatarLinksClear();   // profile / group / business picture links (js/11)
     try { if (window.caches) await window.caches.delete("fishing-map-photos"); } catch (e) { /* fine */ }
   }
   // Old photos of mine with no small copy: make it from the full photo (usually already saved on the phone) and upload it, 8 per visit
