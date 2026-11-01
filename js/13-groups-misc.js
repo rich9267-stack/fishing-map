@@ -242,7 +242,7 @@
 
   // ---- 📖 Trip review: catches by everyone on a planned trip, with exact catch pins (only people on the trip see them, only here) ----
   const TRIP_BEFORE_H = 1, TRIP_AFTER_H = 12;
-  let pastTrips = [], pastTripsLoaded = false, tripMap = null, tripOpen = null;
+  let pastTrips = [], pastTripsLoaded = false, tripMap = null, tripOpen = null, pastSums = {};
   const openPlanChats = new Set();
   const onTrip = (pl, rs) => !!(me && (pl.created_by === me.id || (rs || planRsvps[pl.id] || []).some(x => x.user_id === me.id)));
   const tripWindow = pl => { const t = new Date(pl.plan_at).getTime(); return [t - TRIP_BEFORE_H * 3600000, t + TRIP_AFTER_H * 3600000]; };
@@ -271,6 +271,13 @@
       const r = ids.length ? await db.from("trip_plan_rsvps").select("*").in("plan_id", ids) : { data: [] };
       const by = {}; (r.data || []).forEach(x => (by[x.plan_id] = by[x.plan_id] || []).push(x));
       pastTrips = (p.data || []).filter(pl => onTrip(pl, by[pl.id]) && planStatus(pl) === "ended"); // a trip moves here as soon as it ends
+      pastTrips.forEach(pl => { if (!planRsvps[pl.id]) planRsvps[pl.id] = by[pl.id] || []; });
+      // fish, catches and spots for every trip in one call, counted with the trip review's rules (setup/127)
+      pastSums = {};
+      if (pastTrips.length) {
+        const s = await db.rpc("past_trip_summaries", { p_ids: pastTrips.map(pl => pl.id) });
+        (s.data || []).forEach(x => { pastSums[x.plan_id] = x; });
+      }
     } catch (e) { pastTrips = []; }
     pastTripsLoaded = true;
     renderPastTrips();
@@ -281,8 +288,34 @@
     const since = Date.now() - 60 * 86400000;
     return Object.values(typeof sessionsBySpot !== "undefined" ? sessionsBySpot : {}).flat()
       .filter(x => x.ended_at && x.created_by === me.id && new Date(x.started_at).getTime() >= since)
-      .filter(x => !pastTrips.some(pl => pl.spot_id === x.spot_id && Math.abs(new Date(x.started_at) - new Date(pl.plan_at)) < 12 * 3600000))
+      .filter(x => !(x.plan_id && pastTrips.some(pl => pl.id === x.plan_id)))   // a Start trip joined to a planned trip shows under that trip
+      .filter(x => x.plan_id || !pastTrips.some(pl => pl.spot_id === x.spot_id && Math.abs(new Date(x.started_at) - new Date(pl.plan_at)) < 12 * 3600000))
       .map(x => ({ id: x.id, spot_id: x.spot_id, plan_at: x.started_at, solo: x }));
+  }
+  // Past trips list lines: who went · how long · fish (and the other spots fished, when you can see them)
+  const tripLen = ms => { const m = Math.max(1, Math.round(ms / 60000)); return m < 60 ? `${m} min` : `${(m / 60).toFixed(m < 600 ? 1 : 0).replace(/\.0$/, "")} hr`; };
+  function pastTripLines(pl) {
+    const out = [];
+    if (pl.solo) {
+      const x = pl.solo, n = typeof tripFish === "function" ? tripFish(x) : (x.fish || 0);
+      out.push(`🕑 ${tripLen(new Date(x.ended_at) - new Date(x.started_at))} · 🐟 ${n} fish`);
+      return out;
+    }
+    const going = planGoing(pl), names = going.map(x => me && x.user_id === me.id ? "You" : (typeof profName === "function" && profName(x.user_id)) || x.name || "Someone");
+    out.push(`✋ ${names.length > 4 ? names.slice(0, 4).join(", ") + ` +${names.length - 4}` : names.join(", ")}${pl.boat ? " · 🚤 Boat trip" : ""}`);
+    const from = new Date(pl.started_at || pl.plan_at).getTime(), to = pl.ended_at ? new Date(pl.ended_at).getTime() : planBackBy(pl);
+    const sm = pastSums[pl.id], len = to > from ? tripLen(to - from) : null;
+    const bits = [];
+    if (len) bits.push(`🕑 ${pl.started_at && pl.ended_at ? "" : "about "}${len}`);
+    if (sm) bits.push(`🐟 ${sm.fish} fish`);
+    if (bits.length) out.push(bits.join(" · "));
+    if (sm && sm.spot_ids && sm.spot_ids.length) {
+      const other = sm.spot_ids.filter(id => id !== pl.spot_id).map(id => (spots || []).find(x => x.id === id)).filter(Boolean)
+        .map(s => s.is_exact === false && !(me && s.created_by === me.id) ? "a spot nearby" : s.name);
+      const uniq = [...new Set(other)];
+      if (uniq.length) out.push(`📍 Also fished: ${uniq.slice(0, 3).join(", ")}${uniq.length > 3 ? ` +${uniq.length - 3}` : ""}`);
+    }
+    return out;
   }
   function renderPastTrips() {
     const card = $("feed-trips-card"), box = $("feed-trips-list"); if (!card) return;
@@ -296,7 +329,9 @@
       const top = el("div", "feed-top");
       top.appendChild(el("span", "feed-what", planWhen(new Date(pl.plan_at))));
       top.appendChild(el("span", "feed-when", spot ? "📍 " + spot.name : ""));
-      it.appendChild(top); it.appendChild(el("div", "spot-meta", pl.solo ? "Your own trip · tap to review your catches" : "Tap to review the catches from this trip"));
+      it.appendChild(top);
+      { const ln = pastTripLines(pl); ln.forEach(t => it.appendChild(el("div", "spot-meta past-trip-line", t))); }
+      it.appendChild(el("div", "spot-meta", pl.solo ? "Your own trip · tap to review your catches" : "Tap to review the catches from this trip"));
       it.addEventListener("click", () => openTripReview(pl));
       box.appendChild(it);
     });
@@ -309,6 +344,7 @@
     body.appendChild(el("div", "label", "📖 Trip review"));
     body.appendChild(el("b", null, `${planWhen(new Date(pl.plan_at))}${spot ? " · " + spot.name : ""}`));
     body.appendChild(el("div", "spot-meta", pl.solo ? "Your own trip: the catches you logged while it was running." : "📍 Exact catch locations are only visible to the people on this trip, and only here. Private catches stay private. " + (pl.boat ? "🚤 Boat trip: counts catches anywhere from 1 hour before to 12 hours after the start (or the back-by time)." : "Counts catches from 1 hour before to 12 hours after the start at this spot or within a mile, plus catches anywhere on a ▶ Start trip joined to this trip.")));
+    if (!pl.solo) pastTripLines(pl).filter(t => !/^📍/.test(t)).forEach(t => body.appendChild(el("div", "spot-meta", t)));
     if (pl.solo) {
       const a = new Date(pl.solo.started_at), z = new Date(pl.solo.ended_at), hrs = Math.max(1 / 60, (z - a) / 3600000), tm = d => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       body.appendChild(el("div", "spot-meta", `🕑 ${tm(a)} – ${tm(z)} (${hrs < 1 ? Math.max(1, Math.round(hrs * 60)) + " min" : hrs.toFixed(1) + " hr"})`));
@@ -530,6 +566,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-31f", title: "📖 Past trips tell the whole story", items: [
+      "Community → Trips now lists every planned trip you went on as soon as it ends, with who went, how long it lasted, how many fish, and the other spots you fished (only ones you can already see).",
+      "Your own ▶ Start trips stay listed too, with their time and fish. A Start trip you joined to a planned trip shows under that trip."
+    ] },
     { id: "2026-10-31e", title: "📍 See where a trip is now", items: [
       "While a planned trip is on, its card and the \"On the water now\" circle show the spot of the latest catch someone on the trip logged, if you can already see that catch and that spot. Spots hidden from you just say \"a spot nearby\".",
       "🚤 Boat trips: in the trip's contest and trip review, catches anywhere during the trip count.",
