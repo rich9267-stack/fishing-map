@@ -83,7 +83,7 @@ const idx = read("index.html"), sw = read("sw.js"), t09 = read("js/09-map-foreca
 const order = f => idx.indexOf('src="js/' + f);
 ok(/id="learn-card"/.test(idx) && /id="view-learn"/.test(idx) && /id="learn-body"/.test(idx) && /id="learn-back"/.test(idx), "index.html has the Home card and the Learn page");
 ok(idx.indexOf('id="learn-card"') > idx.indexOf('id="home-quick"') && idx.indexOf('id="learn-card"') < idx.indexOf('id="best-card"'), "the card sits on Home between the quick buttons and Best spots");
-ok(order("61-state-ramps") < order("62-learn") && order("62-learn") < order("99-boot"), "js/62 loads after js/61 and before the start-up file");
+ok(read("js/48-lazy-code.js").includes('learn: ["js/62-learn.js"]') && !idx.includes('src="js/62-learn') && sw.includes("./js/62-learn.js"), "js/62 loads when Learn is first opened (js/48) and is kept offline");
 ok(/js\/62-learn\.js/.test(sw), "the offline file list (sw.js) has js/62");
 ok(/vl\.hidden = which !== "learn"/.test(t09), "showView hides/shows the Learn page");
 const names = s => (s.match(/^(?:const|let|function|async function)\s+([A-Za-z_$][\w$]*)/gm) || []).map(x => x.split(/\s+/).pop());

@@ -41,7 +41,7 @@ vm.runInContext(js + "\nthis.out = { adminOfficialLoad };", ctx);
   const js37 = read("js/37-official-layer.js"), j40 = read("js/40-admin-page.js");
   ok(/adminOfficialFix\(o\)/.test(js37), "the map tap card has a Fix this place button for admins");
   ok(/id: "official"[^}]*official_places/.test(j40), "Admin page has a Places section for the Official places box");
-  ok(read("index.html").includes("js/45-admin-official.js") && read("index.html").includes('id="official-admin"') && read("sw.js").includes("./js/45-admin-official.js"), "script and section are in index.html and the offline list");
+  ok(read("js/48-lazy-code.js").includes('"js/45-admin-official.js"') && read("index.html").includes('id="official-admin"') && read("sw.js").includes("./js/45-admin-official.js"), "script and section are in index.html and the offline list");
   ok(/official_place_fixed/.test(read("js/39-admin-log.js")), "log has plain words for fixes");
   console.log(bad ? "SOME FAILED" : "ALL OK"); process.exit(bad ? 1 : 0);
 })();

@@ -102,6 +102,16 @@
   }
   const OL_CREDIT = { admin: "Added by an admin of this app", osm: "OpenStreetMap (a volunteer map, not an official list) — make sure it is open to the public" };
   // The tap card. Built from the saved list only (no network), so it opens instantly and works offline.
+  // "🏪 Run by <business page>" on an official place card: asks whether a business runs it (setup/118 host_page_for_spot; was in js/71)
+  function bpPlaceLine(o, box) {
+    if (!db || !me || o.id == null || o.source === "osm") return;
+    db.rpc("host_page_for_spot", { p_spot: o.id }).then(r => {
+      const d = r && !r.error && r.data; if (!d || !d.id || !box.isConnected) return;
+      const b = el("button", "linkbtn", "🏪 Run by " + d.name + (d.verified ? " ✔" : "")); b.type = "button";
+      b.addEventListener("click", () => { if (typeof map !== "undefined" && map) map.closePopup(); window.openHostPages(d.id); });
+      box.appendChild(b);
+    }, () => {});
+  }
   function olPopup(o) {
     const d = o.details || {}, box = document.createElement("div");
     const label = /hand/i.test(d.type || "") ? "Hand launch (kayak)" : (OFFICIAL_LABEL[o.kind] || "Fishing spot");
@@ -112,7 +122,7 @@
     const facts = officialFacts({ info: d, county: null });   // lanes, fee, hours, water, who runs it (the county is already on the line above)
     if (facts) box.appendChild(el("div", "pop-meta", facts));
     const runBy = el("div", "pop-meta"); box.appendChild(runBy);   // "🏪 Run by <business page>" when a page has linked this place (js/71)
-    if (typeof bpPlaceLine === "function") bpPlaceLine(o, runBy);
+    bpPlaceLine(o, runBy);
     if (o.source === "fwc-ramp" && o.source_id) {   // "More from FWC": filled in a moment later; stays out if there is no signal
       const more = el("div", "ol-more"); box.appendChild(more);
       olFetchMore(o.source_id).then(a => {

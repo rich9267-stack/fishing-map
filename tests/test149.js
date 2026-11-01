@@ -47,7 +47,7 @@ const tick = () => new Promise(r => setTimeout(r, 0));
   frm.kids.find(k => k.t === "select").value = "coins"; num.value = "-20"; calls.length = 0; apply.click(); await tick(); await tick();
   const e = calls.find(x => x[0] === "admin_coin_correct");
   ok(e && e[1].p_user === "u1" && e[1].p_amount === -20 && e[1].p_currency === "coins" && /glitched/.test(e[1].p_reason), "correction sends person, amount, currency and the typed reason");
-  ok(read("index.html").includes("js/47-admin-gated.js") && read("index.html").includes('id="coins-admin"') && read("sw.js").includes("./js/47-admin-gated.js"), "script and section are in index.html and the offline list");
+  ok(read("js/48-lazy-code.js").includes('"js/47-admin-gated.js"') && read("index.html").includes('id="coins-admin"') && read("sw.js").includes("./js/47-admin-gated.js"), "script and section are in index.html and the offline list");
   ok(/id: "coins"[^}]*correct_coins/.test(read("js/40-admin-page.js")), "Admin page has the Coins section");
   // the two small fixes from v138 stay
   const js09 = read("js/09-map-forecast.js"), js11 = read("js/11-accounts-social.js");

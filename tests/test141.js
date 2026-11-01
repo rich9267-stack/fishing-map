@@ -20,7 +20,7 @@ const line = ctx.out.line({ at: "2026-10-18T12:00:00Z", actor_email: "rich9267@g
 ok(/rich9267@gmail.com banned: a@b.com/.test(line), "log line reads in plain words: " + line);
 ok(["invite_added", "removed_from_list", "content_removed", "spot_deleted", "tournament_created"].every(a => ctx.out.words[a]), "main actions have plain-word labels");
 
-ok(read("index.html").includes('id="admin-log"') && read("index.html").includes("js/39-admin-log.js") && read("sw.js").includes("./js/39-admin-log.js"), "viewer is in index.html and the offline list");
+ok(read("index.html").includes('id="admin-log"') && read("js/48-lazy-code.js").includes('"js/39-admin-log.js"') && read("sw.js").includes("./js/39-admin-log.js"), "viewer is in index.html and the offline list");
 ok(/adminLogLoad/.test(read("js/11-accounts-social.js")), "Invite screen loads the log");
 ok(/if \(!adminCan\("read_log"\)\) return;/.test(js), "the viewer only shows for people with the read_log power");
 console.log(bad ? "SOME FAILED" : "ALL OK"); process.exit(bad ? 1 : 0);

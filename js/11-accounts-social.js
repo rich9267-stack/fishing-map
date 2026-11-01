@@ -169,6 +169,7 @@
     if (typeof tutLoadMine === "function") tutLoadMine();
     if (typeof termsBannerCheck === "function") termsBannerCheck();
     $("invite-btn").hidden = !adminAny();
+    if (me.isAdmin) needCode("admin").catch(() => {});   // admins: the admin tools (js/39–47, 57) load in the background; members never load them (js/48)
     checkRequests();
     startChat();
     loadBlocks();
@@ -539,6 +540,7 @@
       }
       const avatar = extras && extras.avatar_path ? await avatarUrl(extras.avatar_path) : null;
       const cover = extras && extras.cover_path ? await avatarUrl(extras.cover_path) : null;   // their header image (v217; same private bucket as the picture)
+      await needCode("tank").catch(() => {});   // the tank on profiles is drawn by js/73 (loaded the first time, js/48)
       profView = { catches: ct.data || [], extras, pinned, avatar, cover, access, tankCatches: tk && !tk.error ? (tk.data || []) : null, tankSetups: Object.assign(typeof tankSetupsFrom === "function" ? tankSetupsFrom(ts && !ts.error ? ts.data : [], ut && !ut.error ? ut.data : [], tsp && !tsp.error ? tsp.data : []) : {}, { ownerId: id }) };
       await loadPubPhotos(pinned ? profView.catches.concat([pinned]) : profView.catches);
     } catch (e) { profView = { catches: [], error: true }; }
@@ -855,6 +857,7 @@
     updateRequestBadge(null, data.length);
     if (!data.length) return;
     try { await ensureProfiles(data.flatMap(r => [r.reporter, r.target_user])); } catch (e) { /* names optional */ }
+    await needCode("admin").catch(() => {});   // ⚠️ Warn / 🙈 Hide / Ban below come from the admin files (js/48)
     const warnN = typeof window.adminWarnCounts === "function" ? await window.adminWarnCounts(data.map(r => r.target_user)) : {};
     const photoN = typeof window.adminPhotoShown === "function" ? await window.adminPhotoShown(data.filter(r => r.target_type === "catch").map(r => r.target_id)) : null;
     box.appendChild(el("div", "label", `Reports (${data.length})`));
@@ -1101,6 +1104,7 @@
     const pending = data.filter(m => m.status === "pending");
     updateRequestBadge(pending.length);
     loadReports(); loadAdminDash(); if (typeof window.hpAdminLoad === "function") window.hpAdminLoad();
+    await needCode("admin").catch(() => {});
     if (typeof window.adminLogLoad === "function") window.adminLogLoad();
     if (typeof window.adminsLoad === "function") window.adminsLoad();
     $("invite-form").hidden = !adminCan("invite");

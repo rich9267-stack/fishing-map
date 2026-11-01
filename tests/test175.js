@@ -59,7 +59,7 @@ dom.window.HTMLElement.prototype.scrollIntoView = function () {};
   const js = read("js/57-fishid-review.js").replace(/\/\/.*$/gm, "");
   ok("no download/export in js/57", !/download|createObjectURL|\.download\b|export|\.from\("[^"]+"\)\.(upload|copy|move)/i.test(js));
   const html = read("index.html");
-  ok("js/57 loaded by the page and kept offline, section box present", /<script src="js\/57-fishid-review\.js\?v=\d+"><\/script>/.test(html) && read("sw.js").includes('"./js/57-fishid-review.js"') && /data-asec="fishid"><div id="fishid-admin">/.test(html));
+  ok("js/57 loaded by the page and kept offline, section box present", read("js/48-lazy-code.js").includes('"js/57-fishid-review.js"') && read("sw.js").includes('"./js/57-fishid-review.js"') && /data-asec="fishid"><div id="fishid-admin">/.test(html));
   const sql = read("setup/101-fishid-training-review.sql").replace(/--.*$/gm, "");
   ok("SQL: owner-only, no anon/public grants, view-only storage rule, never Private", /is_owner\(\)/.test(sql) && /revoke all on function public\.fishid_training_members\(\) from anon, public/.test(sql) && /revoke all on function public\.fishid_training_has_path\(text\) from anon, public/.test(sql) && /on storage\.objects for select to authenticated/.test(sql) && !/for (insert|update|delete|all)/.test(sql) && /in \('friends', 'public'\)/.test(sql) && !/'private'/.test(sql));
   ok("terms.html and privacy.html not touched by step 2 (no review-screen wording)", !/fishid_training_has_path|Preview 12/.test(read("terms.html") + read("privacy.html")));

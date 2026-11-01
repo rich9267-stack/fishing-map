@@ -38,8 +38,6 @@ function adminPageShow(sec) {
   if (sec === "admins" && typeof window.adminsLoad === "function") window.adminsLoad();
   if (sec === "log") { const det = document.querySelector("#admin-log details"); if (det && !det.open) det.open = true; }
 }
-// The Me row and the old Invite button both open the page on People; a link like ?go=admin&sec=reports opens that section.
-document.getElementById("invite-btn").addEventListener("click", () => adminPageShow(adminSecWant || "people"));
-let adminSecWant = null;
-window.adminPageOpen = sec => { adminSecWant = sec || null; document.getElementById("invite-btn").click(); adminSecWant = null; };
+// The Me row and the old Invite button both open the page on People; a link like ?go=admin&sec=reports opens that section
+// (those listeners + window.adminPageOpen live in js/48, because this file is only loaded when the Admin page is first opened).
 window.adminPageShow = adminPageShow;

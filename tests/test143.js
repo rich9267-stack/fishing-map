@@ -33,7 +33,7 @@ ok(a.can("reports"), "if boxes could not be loaded the screen still shows (the s
 
 const js = read("js/41-admin-people.js"), h = read("index.html"), c11 = read("js/11-accounts-social.js");
 ok(/my_powers/.test(c11) && /adminsLoad/.test(c11), "sign-in loads the boxes; Admin page loads the Admins section");
-ok(/data-asec="admins"/.test(h) && h.includes("js/41-admin-people.js") && read("sw.js").includes("./js/41-admin-people.js"), "Admins section is wired into index.html and the offline list");
+ok(/data-asec="admins"/.test(h) && read("js/48-lazy-code.js").includes('"js/41-admin-people.js"') && read("sw.js").includes("./js/41-admin-people.js"), "Admins section is wired into index.html and the offline list");
 ok(/id: "admins"[^}]*manage_admins/.test(read("js/40-admin-page.js")), "Admins button needs the Manage admins box");
 ["js/09-map-forecast.js", "js/10-tools-safety.js", "js/12-contests-alerts.js", "js/17-license-help.js", "js/28-host-pages.js", "js/34-official-admin.js"].forEach(f =>
   ok(!/me\.isAdmin|me && me\.isAdmin/.test(read(f)), f + " asks for a box instead of 'is admin'"));

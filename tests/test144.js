@@ -60,7 +60,7 @@ vm.createContext(ctx); vm.runInContext(js + "\nthis.out = { askReason, adminBan,
   ok(box.kids.length === 0, "no matching box = nothing shown");
   // wiring
   ok(/adminBan\(r\.target_user/.test(read("js/11-accounts-social.js")) && !/db\.rpc\("ban_user"/.test(read("js/11-accounts-social.js")), "Reports screen uses the new ban flow");
-  ok(/data-asec="removed"/.test(read("index.html")) && read("index.html").includes("js/42-admin-undo.js") && read("sw.js").includes("./js/42-admin-undo.js"), "Removed section is wired into index.html and the offline list");
+  ok(/data-asec="removed"/.test(read("index.html")) && read("js/48-lazy-code.js").includes('"js/42-admin-undo.js"') && read("sw.js").includes("./js/42-admin-undo.js"), "Removed section is wired into index.html and the offline list");
   ok(/id: "removed"[^}]*any:/.test(read("js/40-admin-page.js")), "Removed button shows for any matching box");
   console.log(bad ? "SOME FAILED" : "ALL OK"); process.exit(bad ? 1 : 0);
 })();

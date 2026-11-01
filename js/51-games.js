@@ -228,7 +228,4 @@
     back.addEventListener("click", () => { gamesScreen = "list"; renderGames(); window.scrollTo({ top: 0 }); });
     box.appendChild(back);
   }
-  // The race screen gets a way back to the Games list
-  (function gamesRaceBack() {
-    const b = $("race-back"); if (b) b.addEventListener("click", () => { gamesScreen = "list"; showPlay("games"); window.scrollTo({ top: 0 }); });
-  })();
+  // The race screen's "‹ Games" button is wired up in js/48 (this file is only loaded when Games is first opened).

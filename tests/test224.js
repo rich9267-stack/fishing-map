@@ -156,13 +156,14 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   check("Help in More presses the Help button", helped === 1);
 
   // ---- tank decorations are colour drawings, not emoji or line icons
+  await w.eval('needCode("tank")');   // the tank screen + drawings load when first opened (js/48)
   const art = w.eval('tankArt("anchor", 36)');
   check("tankArt gives a drawing 36px tall", art.tagName.toLowerCase() === "svg" && art.getAttribute("height") === "36" && /#4d5866/.test(art.innerHTML));
   const gold = w.eval('tankArt("trophy", 40, "silver")');
   check("silver trophy gets the silver colour", gold.style.getPropertyValue("--tc") === "#c9d1d8");
   const names = ["seaweed", "kelp", "grass", "leafy", "fern", "shell", "conch", "anchor", "coral", "fan", "staghorn", "brain", "castle", "rock", "pile", "arch", "lily", "jar", "driftwood", "diver", "trophy"];
   check("every decoration has a drawing", names.every(n => w.eval("TANK_ART")[n]));
-  const src = require("fs").readFileSync(__dirname + "/../js/14-tank.js", "utf8");
+  const src = require("fs").readFileSync(__dirname + "/../js/73-tank-screen.js", "utf8");
   check("every shop piece names a drawing", (src.match(/art: "(\w+)"/g) || []).length >= 19 && (src.match(/art: "(\w+)"/g) || []).every(m => names.includes(m.slice(6, -1))));
   w.showView("tank"); await wait(500);
   // v242: no free decorations; with nothing placed, the tank says to get pieces in the Shop

@@ -51,6 +51,7 @@
     }
     async function open(startId) { // startId (optional): jump straight to that page, e.g. from "Run by" on a tournament
       if (!me) return;
+      needCode("biz").catch(() => {});   // 🏪 business page bits (js/71) start loading while the list loads (js/48)
       const direct = typeof startId === "string" ? startId : null;
       openedFrom = direct ? "outside" : "me";
       view = "list"; openId = null;
@@ -163,6 +164,7 @@
       if (p.is_mine && p.status === "pending") body.appendChild(el("div", "msg", "The admin hasn't looked at this yet. Nobody else can see it until it's approved."));
       if (p.is_mine && p.status === "declined") body.appendChild(el("div", "msg err", "This request wasn't approved. You can remove it and ask again with a different name or more detail."));
       // 🏪 business pages (js/71, setup/118): details, pin, photos, services, posts, Fishing near here, report; then the owner's tools
+      if (typeof bpPageTop !== "function") { const id = p.id; needCode("biz").then(() => { if (view === "detail" && openId === id && !pg.hidden) draw(); }, () => {}); }   // first page opened: draw again once js/71 is here
       if (typeof bpPageTop === "function") bpPageTop(p, body, !!data.extras_on);
       if (p.status === "approved") drawPageTournaments(p);
       if (p.is_mine && p.status !== "declined" && typeof bpOwner === "function") bpOwner(p, body, async () => { await load(); draw(); }, !!data.extras_on);
@@ -312,6 +314,7 @@
       try { const q = await db.rpc("host_page_renames_admin"); renameReqs = q && !q.error && Array.isArray(q.data) ? q.data : []; } catch (e) { renameReqs = []; }
       box.innerHTML = "";
       const pending = rows.filter(r => r.status === "pending"), live = rows.filter(r => r.status === "approved");
+      await needCode("biz").catch(() => {});   // 🏪 business page bits (js/71) load the first time (js/48)
       const extra = typeof bpAdmin === "function" ? await bpAdmin(box, adminLoad) : 0;   // page reports, place links, reviews (js/71)
       updateRequestBadge(null, null, pending.length + renameReqs.length + extra);
       if (!rows.length && !renameReqs.length) return;

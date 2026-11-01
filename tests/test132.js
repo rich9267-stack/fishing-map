@@ -7,7 +7,7 @@ const tank = read("js/14-tank.js"), cts = read("js/12-contests-alerts.js");
 const i = tank.indexOf("async function cupToast"), j = tank.indexOf("async function tankClaim");
 ok(i > 0 && j > i, "cupToast exists before tankClaim");
 const toasts = []; let query = null, rows = [];
-const ctx = { console, Date, Promise, setTimeout, me: { id: "u1" }, toast: (t, ms) => toasts.push(t),
+const ctx = { console, Date, Promise, setTimeout, me: { id: "u1" }, needCode: () => Promise.resolve(), toast: (t, ms) => toasts.push(t),
   SHOP_ART: { trophy_gold: { n: "Gold trophy cup" }, trophy_silver: { n: "Silver trophy cup" } },
   db: { from: t => { query = { t }; const o = { select: () => o, eq: (c, v) => { query.eq = [c, v]; return o; }, gte: (c, v) => { query.gte = [c, v]; return Promise.resolve({ data: rows, error: null }); } }; return o; } } };
 vm.createContext(ctx); vm.runInContext(tank.slice(i, j) + "\nthis.cupToast = cupToast;", ctx);
@@ -20,7 +20,7 @@ vm.createContext(ctx); vm.runInContext(tank.slice(i, j) + "\nthis.cupToast = cup
   rows = [{ item_key: "trophy_gold" }, { item_key: "trophy_silver" }]; await ctx.cupToast();
   ok(/Gold trophy cup and the Silver trophy cup/.test(toasts[1]), "two cups are both named");
   ctx.db.from = () => { throw new Error("offline"); }; await ctx.cupToast(); ok(toasts.length === 2, "a failure stays silent");
-  ok(/x\.reason === "tournament"\)\) \{ shop\.ready = false; setTimeout\(cupToast/.test(tank), "tankClaim calls cupToast after a tournament placing");
+  ok(/x\.reason === "tournament"\)\) \{ if \(typeof shop !== "undefined"\) shop\.ready = false; setTimeout\(cupToast/.test(tank), "tankClaim calls cupToast after a tournament placing");
   ok(/Prizes \(top 3 on a board\): 🪙 200 \/ 120 \/ 80 coins · 💎 3 \/ 2 \/ 1 gems/.test(cts) && /t\.kind === "official"/.test(cts), "official tournaments list the prizes");
   ok(/run by a page, so it pays no coins, gems or cups/.test(cts), "page-run tournaments say they pay nothing");
   console.log(bad ? "FAILED" : "OK"); process.exit(bad ? 1 : 0);

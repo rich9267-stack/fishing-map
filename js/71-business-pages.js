@@ -481,13 +481,4 @@
     return reps.length + claims.length + revs.length;
   }
 
-  // the official place card asks whether a business runs it (setup/118 host_page_for_spot)
-  function bpPlaceLine(o, box) {
-    if (!db || !me || o.id == null || o.source === "osm") return;
-    db.rpc("host_page_for_spot", { p_spot: o.id }).then(r => {
-      const d = r && !r.error && r.data; if (!d || !d.id || !box.isConnected) return;
-      const b = el("button", "linkbtn", "🏪 Run by " + d.name + (d.verified ? " ✔" : "")); b.type = "button";
-      b.addEventListener("click", () => { if (typeof map !== "undefined" && map) map.closePopup(); window.openHostPages(d.id); });
-      box.appendChild(b);
-    }, () => {});
-  }
+  // (bpPlaceLine, the "🏪 Run by" line on official place cards, moved to js/37 so the map does not need this file)

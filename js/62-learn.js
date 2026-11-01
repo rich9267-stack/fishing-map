@@ -551,8 +551,4 @@ function renderLearn() {
 }
 function openLearn() { LN.st = lnHere(); LN.tile = "rules"; LN.gq = ""; showView("learn"); window.scrollTo({ top: 0 }); }
 
-(function learnSetup() {
-  const c = $("learn-card"), back = $("learn-back");
-  if (c) c.addEventListener("click", openLearn);
-  if (back) back.addEventListener("click", () => showView("list"));
-})();
+// The Home card and the back button are wired up in js/48 (this file is only loaded when Learn is first opened).

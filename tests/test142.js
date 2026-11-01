@@ -5,8 +5,8 @@ const read = f => fs.readFileSync(path.join(root, f), "utf8");
 let bad = 0; const ok = (c, m) => { console.log((c ? "ok   " : "FAIL ") + m); if (!c) bad++; };
 
 const html = read("index.html"), js = read("js/40-admin-page.js");
-ok(html.includes("js/40-admin-page.js") && read("sw.js").includes("./js/40-admin-page.js"), "page script is in index.html and the offline list");
-ok(html.indexOf("js/40-admin-page.js") > html.indexOf("js/39-admin-log.js"), "loads after the log viewer");
+ok(read("js/48-lazy-code.js").includes('"js/40-admin-page.js"') && read("sw.js").includes("./js/40-admin-page.js"), "page script is in index.html and the offline list");
+ok(read("js/48-lazy-code.js").indexOf("js/40-admin-page.js") > read("js/48-lazy-code.js").indexOf("js/39-admin-log.js"), "loads after the log viewer");
 ["people", "reports", "pages", "rules", "dashboard", "log"].forEach(s => ok(new RegExp('<div data-asec="' + s + '">').test(html), "page has a " + s + " section"));
 ok(/id="admin-nav"/.test(html), "page has the section button row");
 ok(/<div class="label">Admin<\/div>/.test(html), "page is titled Admin");

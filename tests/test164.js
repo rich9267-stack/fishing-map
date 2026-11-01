@@ -165,7 +165,8 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   const month = ev(`gamesDay().slice(0, 7)`);
   const c1 = ev(`JSON.stringify(bgCard("${month}").map(s => s.id))`);
   ok(c1 === ev(`JSON.stringify(bgCard("${month}").map(s => s.id))`) && JSON.parse(c1).length === 9 && JSON.parse(c1)[4] === "free" && new Set(JSON.parse(c1)).size === 9, "a 3×3 card, the same all month, FREE in the middle");
-  ok(c1 !== ev(`JSON.stringify(bgCard("2026-11").map(s => s.id))`), "a new card next month");
+  const other = month === "2026-11" ? "2026-12" : "2026-11";   // any other month (this check once used a fixed month, which failed in that month)
+  ok(c1 !== ev(`JSON.stringify(bgCard("${other}").map(s => s.id))`), "a new card next month");
   const S = Object.fromEntries(ev(`(() => { const x = { catches: [{ species: "Snook", caught_at: "2026-10-03T11:00:00Z", length_in: 25, how_many: 1, spot_id: "s1" }, { species: "Redfish", caught_at: "2026-10-03T13:00:00Z", how_many: 2, spot_id: "s2" }], trips: [] }; return BG_TASKS.map(t => [t.id, t.ok(x)]); })()`));
   ok(S.dawn && S.three && S["two-sp"] && S.big && S.spots && S.weekend && S.measure && !S.trip && !S.night && !S.five, "bingo squares check out: " + JSON.stringify(S));
   ok(ev(`bgState("2020-01").n`) === 1, "a month with nothing logged: only FREE");

@@ -753,7 +753,7 @@
     $("view-map").hidden = !isMap;
     $("view-list").hidden = which !== "list";
     $("view-insights").hidden = which !== "insights";
-    { const vl = $("view-learn"); if (vl) { vl.hidden = which !== "learn"; if (which === "learn" && typeof renderLearn === "function") renderLearn(); } }   // 📚 Learn (js/62): opened from the Home card, no tab
+    { const vl = $("view-learn"); if (vl) { vl.hidden = which !== "learn"; if (which === "learn") codeThen("learn", () => { if (!$("view-learn").hidden) renderLearn(); }); } }   // 📚 Learn (js/62): opened from the Home card, no tab
     { const vf = $("view-fcal"); if (vf) { vf.hidden = which !== "fcal"; if (which === "fcal" && typeof renderFishCal === "function") renderFishCal(); } }   // 📆 Good days (js/69): opened from a Home button, no tab
     $("view-seasons").hidden = which !== "seasons";
     $("view-tank").hidden = which !== "tank";
@@ -793,10 +793,10 @@
   function renderPlay() {
     document.querySelectorAll("#play-sw button").forEach(b => { const on = b.dataset.sub === playSub || (b.dataset.sub === "games" && playSub === "race"); b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); });
     $("play-tank").hidden = playSub !== "tank"; $("fk-card").hidden = playSub !== "fish"; $("race-card").hidden = playSub !== "race"; $("games-card").hidden = playSub !== "games";
-    if (playSub === "tank") renderTank();
+    if (playSub === "tank") codeThen("tank", () => { if (playSub === "tank") renderTank(); });   // js/73 is loaded the first time (js/48)
     else if (playSub === "fish" && typeof renderMyFish === "function") renderMyFish();
     else if (playSub === "race" && typeof renderRace === "function") renderRace();
-    else if (playSub === "games" && typeof renderGames === "function") renderGames();
+    else if (playSub === "games") codeThen("games", () => { if (playSub === "games") renderGames(); });
   }
   function showPlay(sub) {
     if (sub) { playSub = sub; try { localStorage.setItem("fm-play-sub", sub); } catch (e) { /* fine */ } }

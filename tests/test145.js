@@ -47,6 +47,6 @@ vm.runInContext(read("js/42-admin-undo.js").split("const REMOVED_KIND")[0] + "\n
   const r = read("js/11-accounts-social.js");
   ok(/adminWarn\(r\.target_user/.test(r) && /adminCan\("warn"\)/.test(r), "Reports screen has a Warn button for admins with the Warn box");
   ok(/adminWarnCounts/.test(r) && /adminWarnText/.test(r), "Reports lines show earlier warnings");
-  ok(read("index.html").includes("js/43-admin-warn.js") && read("sw.js").includes("./js/43-admin-warn.js"), "script is in index.html and the offline list");
+  ok(read("js/48-lazy-code.js").includes('"js/43-admin-warn.js"') && read("sw.js").includes("./js/43-admin-warn.js"), "script is in index.html and the offline list");
   console.log(bad ? "SOME FAILED" : "ALL OK"); process.exit(bad ? 1 : 0);
 })();

@@ -35,6 +35,6 @@ vm.runInContext(js + "\nthis.out = { adminHideSpot };", ctx);
   const u = read("js/42-admin-undo.js");
   ok(/hidden_spot: \["unhide_spot"/.test(u) && /photo: \["show_catch_photos"/.test(u) && /message: \["restore_content"/.test(u), "Removed section can bring all three back");
   ok(/spot_hidden/.test(read("js/39-admin-log.js")), "log has plain words for hiding");
-  ok(read("index.html").includes("js/44-admin-hide.js") && read("sw.js").includes("./js/44-admin-hide.js"), "script is in index.html and the offline list");
+  ok(read("js/48-lazy-code.js").includes('"js/44-admin-hide.js"') && read("sw.js").includes("./js/44-admin-hide.js"), "script is in index.html and the offline list");
   console.log(bad ? "SOME FAILED" : "ALL OK"); process.exit(bad ? 1 : 0);
 })();
