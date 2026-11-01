@@ -565,14 +565,14 @@
       else if (r.requested_by === me.id) btns.appendChild(el("span", "spot-meta", "Friend request sent"));
       else btns.appendChild(frBtn("Accept friend request", async () => { done(await acceptRequest(r)); }, "btn small"));
     }
-    const won = hof.filter(r => r.user_id === id), sp = spotsAll.filter(x => x.created_by === id && x.visibility === "public");
+    const won = hof.filter(r => r.user_id === id);
     box.appendChild(el("div", "pf-name pf-o", p ? (p.display_name || "@" + p.handle) : "Someone"));
     if (p) box.appendChild(el("div", "pf-handle pf-o", `@${p.handle}` + (!locked && p.home_area ? ` · ${p.home_area}` : "")));
     if (!locked && (ex.tagline || (p && p.bio))) box.appendChild(el("div", "pf-bio pf-o", [ex.tagline, p && p.bio].filter(Boolean).join(" — ")));
     if (!locked && ex.fav_species) box.appendChild(el("div", "pf-lines pf-o", "⭐ Favorite fish: " + ex.fav_species));
     if (!locked && profView && !profView.loading && !profView.error) {
       const counts = el("div", "pf-counts pf-o"), nC = profView.catches.length;
-      [[nC >= 30 ? "30+" : nC, "public catches"], [sp.length, sp.length === 1 ? "public spot" : "public spots"], [won.length, won.length === 1 ? "trophy" : "trophies"]].forEach(([n, l]) => { const c = el("span"); c.appendChild(el("b", null, String(n))); c.appendChild(document.createTextNode(" " + l)); counts.appendChild(c); });
+      [[nC >= 30 ? "30+" : nC, "public catches"], [won.length, won.length === 1 ? "trophy" : "trophies"]].forEach(([n, l]) => { const c = el("span"); c.appendChild(el("b", null, String(n))); c.appendChild(document.createTextNode(" " + l)); counts.appendChild(c); });
       box.appendChild(counts);
     }
     if (!mine && p) {
@@ -613,14 +613,7 @@
       box.appendChild(el("div", "label", `🏆 Trophies (${won.length})`)); box.lastChild.id = "prof-trophies";
       won.forEach(r => box.appendChild(el("div", null, `${MEDAL[r.rank]} ${r.title} — ${CT_BOARDS[r.board]}: ${hofVal(r)}`)));
     }
-    box.appendChild(el("div", "label", `Public spots (${sp.length})`));
-    if (!sp.length) box.appendChild(el("div", "spot-meta", "None shared yet."));
-    sp.forEach(x => {
-      const row = el("div", "feed-top"); row.style.cssText = "padding:6px 0;align-items:center";
-      row.appendChild(el("span", null, "🌎 " + x.name));
-      const b = frBtn("Show on map", () => { pubFocus = x.id; mapPublic = true; try { localStorage.setItem("fm-map-public", "1"); } catch (e) {} $("map-pub").classList.add("on"); showView("map"); }); row.appendChild(b);
-      box.appendChild(row);
-    });
+    // v259: no spot list here any more (Richard, Oct 31). 🌎 Public spots still show on the map.
     box.appendChild(el("div", "label", "Public catches"));
     if (profView && profView.loading) box.appendChild(el("div", "spot-meta", "Loading…"));
     else if (profView && profView.error) box.appendChild(el("div", "msg err", "Couldn't load their catches right now."));

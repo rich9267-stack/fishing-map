@@ -124,7 +124,6 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   d.getElementById("tab-feed").click(); await wait(200);
   d.getElementById("feed-mode-public").click(); await wait(300);
   d.querySelector("#pub-feed-list .feed-item button.feed-name").click(); await wait(400);
-  [...d.querySelectorAll("#pub-profile-body button")].find(b => b.textContent === "Show on map").click(); await wait(600);
-  console.log("show on map: map visible:", !d.getElementById("view-map").hidden, "| toggle on:", d.getElementById("map-pub").classList.contains("on"), "| popup open:", !!d.querySelector(".leaflet-popup"));
+  console.log("v259: profile has no spot list / Show on map:", ![...d.querySelectorAll("#pub-profile-body button")].some(b => b.textContent === "Show on map") && !/Public spots/.test(d.getElementById("pub-profile-body").textContent));
   process.exit(0);
 })();

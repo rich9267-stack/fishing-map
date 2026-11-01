@@ -85,6 +85,7 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   w.confirm = t => { confirms.push(t); return answer; };
   w.__shares = [{ id: 1, spot_id: "s1", owner: ME, friend: "other", created_at: new Date().toISOString(), revoked_at: null },
                 { id: 2, spot_id: "s9", owner: "other", friend: ME, created_at: new Date().toISOString(), revoked_at: null }];
+  ev(`lsSet("fm-friend-spots-open", true)`);   // v259: friends' spots sit in the folded 👥 Friends' spots group
   ev(`showView("list")`); await wait(200);
   ev(`shareLoad()`); await wait(200);
   const card = n => [...d.querySelectorAll(".spot")].find(e => e.querySelector(".spot-name").textContent.includes(n));

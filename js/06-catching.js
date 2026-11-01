@@ -745,7 +745,7 @@
     buildFilterPanel();
     renderSpots(); renderPins();
   }
-  function updateFilterStatus(shownCount) {
+  function updateFilterStatus(shownCount, total) {
     const n = activeFilterCount();
     $("filter-btn").textContent = n ? `⚙ Filter (${n})` : "⚙ Filter";
     $("filter-btn").classList.toggle("on", n > 0);
@@ -753,7 +753,7 @@
     st.hidden = !n;
     if (!n) return;
     st.innerHTML = "";
-    st.appendChild(el("span", null, `Showing ${shownCount} of ${(spots || []).length} spots`));
+    st.appendChild(el("span", null, total != null ? `Showing ${shownCount} of your ${total} spots` : `Showing ${shownCount} of ${(spots || []).length} spots`));
     const clear = el("button", "linkbtn", "Clear filters"); clear.type = "button";
     clear.addEventListener("click", clearFilters);
     st.appendChild(clear);

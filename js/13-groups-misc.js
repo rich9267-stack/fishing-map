@@ -566,6 +566,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-31g", title: "✨ Tidier What's new + your own spots", items: [
+      "✨ Tidier What's new — only updates you haven't seen, on any phone, and a ✕ to close.",
+      "📍 Your spots now lists only spots you saved. Friends' shared spots are in 👥 Friends' spots just below.",
+      "Profiles no longer list spots; public spots are still on the map."] },
     { id: "2026-10-31f", title: "📖 Past trips tell the whole story", items: [
       "Community → Trips now lists every planned trip you went on as soon as it ends, with who went, how long it lasted, how many fish, and the other spots you fished (only ones you can already see).",
       "Your own ▶ Start trips stay listed too, with their time and fish. A Start trip you joined to a planned trip shows under that trip."
@@ -1342,21 +1346,42 @@
       "🔍 Search and sort your spots, ↶ undo a delete, ⬇ export your catches, and save a map area for offline.",
       "🚩 Posts reported 3 times are blurred with a warning (tap to view anyway) until the admin checks them."] }
   ];
-  const wnSeen = () => { try { return localStorage.getItem("fm-wn"); } catch (e) { return null; } };
+  // Seen = the newest id shown to you, kept on this phone (fm-wn) AND on your account (app_prefs.wn_seen, setup/128, v259) — so a new phone doesn't replay the whole list.
+  let wnAcct = null;   // the account's copy, read once at start
+  const wnLocal = () => { try { return localStorage.getItem("fm-wn"); } catch (e) { return null; } };
+  const wnSeen = () => { const a = wnLocal(), b = wnAcct; return a && b ? (a > b ? a : b) : (a || b || null); };
   function wnShow(all) {
-    const seen = wnSeen(), list = all ? WHATS_NEW : WHATS_NEW.filter(e => !seen || e.id > seen);
+    const seen = wnSeen(), list = all ? WHATS_NEW : WHATS_NEW.filter(e => seen && e.id > seen);
     const box = $("wn-body"); box.innerHTML = "";
     (list.length ? list : WHATS_NEW.slice(0, 1)).forEach(e => { box.appendChild(el("h3", null, e.title)); const ul = el("ul"); e.items.forEach(t => ul.appendChild(el("li", null, t))); box.appendChild(ul); });
-    $("whatsnew").hidden = false;
+    $("whatsnew").hidden = false; $("whatsnew").querySelector(".wn-card").scrollTop = 0;
+    const x = $("wn-x"); if (x) x.focus({ preventScroll: true });
   }
-  function wnDone() { $("whatsnew").hidden = true; try { localStorage.setItem("fm-wn", WHATS_NEW[0].id); } catch (e) { /* fine */ } }
-  function wnCheck() {
+  async function wnSaveAcct(id) {
+    if (!db || !me || !id || (wnAcct && wnAcct >= id)) return;
+    try { const { error } = await db.from("app_prefs").upsert({ user_id: me.id, wn_seen: id, updated_at: new Date().toISOString() }, { onConflict: "user_id" }); if (!error) wnAcct = id; } catch (e) { /* the phone still remembers */ }
+  }
+  function wnDone() {
+    const was = !$("whatsnew").hidden; $("whatsnew").hidden = true;
+    if (!WHATS_NEW.length) return; const id = WHATS_NEW[0].id;
+    try { localStorage.setItem("fm-wn", id); } catch (e) { /* fine */ }
+    wnSaveAcct(id);
+    return was;
+  }
+  async function wnCheck() {
     if (!me || !WHATS_NEW.length) return;
-    if (!$("welcome").hidden) { wnDone(); return; }                  // brand-new people get the welcome tour instead
-    if (wnSeen() && wnSeen() >= WHATS_NEW[0].id) return;
-    wnShow(false);
+    try {
+      const { data } = await bootTake("app_prefs", () => db.from("app_prefs").select("palette,wn_seen").eq("user_id", me.id).maybeSingle(), true);
+      wnAcct = data && data.wn_seen || null;
+    } catch (e) { /* use this phone's copy */ }
+    if (!$("welcome").hidden) { wnDone(); return; }                  // brand-new people get the welcome tour instead, and never the old updates
+    const seen = wnSeen(), newest = WHATS_NEW[0].id;
+    if (seen && seen >= newest) { if (!wnAcct || wnAcct < newest) wnSaveAcct(newest); return; }   // seen here already: put it on the account too
+    wnShow(false);   // with no record anywhere this shows only the newest update; otherwise every one you haven't seen
   }
   $("wn-ok").addEventListener("click", wnDone);
+  $("wn-x").addEventListener("click", wnDone);
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("whatsnew").hidden) wnDone(); });
   $("wn-open").addEventListener("click", () => wnShow(true));
 
   // ---- Refreshing (the home-screen app has no reload button) ----

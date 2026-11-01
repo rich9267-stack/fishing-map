@@ -313,7 +313,8 @@
     const allTrips = Object.values(sessionsBySpot).flat().filter(x => x.ended_at);
     const gHrs = allTrips.reduce((n, x) => n + tripHours(x), 0);
     const groupRate = allTrips.length >= 3 ? allTrips.reduce((n, x) => n + tripFish(x), 0) / gHrs : null;
-    filteredSpots().forEach(s => {
+    const mineOnly = filteredSpots().filter(isMine);   // v259: only spots you saved (friends' are in 👥 Friends' spots)
+    mineOnly.forEach(s => {
       const own = (catchesBySpot[s.id] || []).filter(c => c.moon_phase || c.tide_stage || c.pressure_trend);
       const ownFish = own.reduce((n, c) => n + (c.how_many || 1), 0);
       let hist, basis;
@@ -341,6 +342,7 @@
     });
     ranked.sort((a, b) => (b.own - a.own) || (b.best.score - a.best.score));
     { const pk = $("best-peek"); if (pk) pk.textContent = ranked.length ? ranked[0].s.name : ""; }   // shown next to the title while the card is folded (js/25)
+    if (!spots.some(isMine)) { box.appendChild(el("div", "empty", "Save a spot to see your best spots today.")); return; }
     if (!ranked.length) {
       box.appendChild(el("div", "empty", "Not enough catches yet. Once a spot has about 3 fish logged (or the group has 5), it'll be ranked here."));
       return;
@@ -453,9 +455,12 @@
       list.appendChild(emptyBox("No spots yet — save the first spot you fish.", "+ Add a spot", () => { $("add-btn").click(); }));
       return;
     }
-    const shown = filteredSpots();
-    updateFilterStatus(shown.length);
-    if (!shown.length) list.appendChild(emptyBox("No spots match these filters.", "Clear filters", clearFilters));
+    // v259: "Your spots" = only spots you saved. Friends' shared spots sit in one folded "👥 Friends' spots" group at the bottom (the map, plans and Quick catch still use everyone's).
+    const all = filteredSpots(), shown = all.filter(isMine), theirs = all.filter(x => !isMine(x));
+    const ownTotal = spots.filter(isMine).length;
+    updateFilterStatus(shown.length, ownTotal);
+    if (!ownTotal) list.appendChild(emptyBox("No spots of your own yet — save the first spot you fish.", "+ Add a spot", () => { $("add-btn").click(); }));
+    else if (!shown.length) list.appendChild(emptyBox("No spots match these filters.", "Clear filters", clearFilters));
     // v224: grouped by state, each group folds (which are folded is remembered on this phone); a search or an open catch form opens its group
     const grp = {}, order = [];
     shown.forEach(s => {
@@ -475,9 +480,19 @@
       gh.appendChild(el("span", "spot-chev", isShut ? "›" : "▴")); gh.lastChild.setAttribute("aria-hidden", "true");
       gh.addEventListener("click", () => { isShut ? shut.delete(key) : shut.add(key); lsSet("fm-spot-groups-shut", [...shut]); renderSpots(); });
       list.appendChild(gh);
-      if (!isShut) grp[key].forEach(addSpot);
+      if (!isShut) grp[key].forEach(s => addSpot(s));
     });
-    function addSpot(s) {
+    if (theirs.length) {
+      const fOpen = lsGet("fm-friend-spots-open", false) || !!spotQuery || theirs.some(x => openCatchSpot === x.id);
+      const gh = el("button", "spot-group spot-group-friends"); gh.type = "button"; gh.setAttribute("aria-expanded", String(fOpen));
+      gh.appendChild(el("span", "spot-group-name", "👥 Friends' spots"));
+      gh.appendChild(el("span", "spot-group-n", String(theirs.length)));
+      gh.appendChild(el("span", "spot-chev", fOpen ? "▴" : "›")); gh.lastChild.setAttribute("aria-hidden", "true");
+      gh.addEventListener("click", () => { lsSet("fm-friend-spots-open", !fOpen); renderSpots(); const h = document.querySelector(".spot-group-friends"); if (h) h.focus(); });
+      list.appendChild(gh);
+      if (fOpen) theirs.forEach(s => addSpot(s, true));
+    }
+    function addSpot(s, friend) {
       // plans/ui-review.md item 1A: one short line per spot; tap it to open the full card (built as before, just folded)
       const item = el("div", "spot");
       const open = spotOpen.has(s.id) || openCatchSpot === s.id;
@@ -486,6 +501,7 @@
       head.setAttribute("aria-expanded", String(open)); head.setAttribute("aria-controls", "spot-body-" + s.id);
       const dot = el("span", "spot-dot"); dot.style.background = WATER_COLOR[s.water_type] || "#888"; dot.setAttribute("aria-hidden", "true"); head.appendChild(dot);
       head.appendChild(el("span", "spot-name", visIcon(s) + s.name));
+      if (friend) head.appendChild(el("span", "spot-by", "by " + ((typeof profName === "function" && profName(s.created_by)) || s.added_by || "a friend")));
       const fact = spotFact(s); if (fact) head.appendChild(el("span", "spot-fact", fact));
       head.appendChild(el("span", "spot-chev", open ? "▴" : "›")); head.lastChild.setAttribute("aria-hidden", "true");
       head.addEventListener("click", () => {
@@ -1029,6 +1045,7 @@
     map && map.closePopup();
     showView("list");
     spotOpen.add(id);   // open its card so the map link lands on the details
+    { const sp = (spots || []).find(x => x.id === id); if (sp && !isMine(sp)) lsSet("fm-friend-spots-open", true); }   // a friend's spot lives in 👥 Friends' spots
     if (logCatch) openCatchForm(id); else renderSpots();
     const node = document.querySelector(`.spot-cond[data-spot="${id}"]`);
     const item = node && node.closest(".spot");

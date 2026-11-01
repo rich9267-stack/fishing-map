@@ -182,7 +182,8 @@ const d = w.document, wait = ms => new Promise(r => setTimeout(r, ms));
   [...d.querySelectorAll("#games-body button")].find(b => /Try again/.test(b.textContent)).click(); await wait(300);
   ok(d.querySelector("#games-body .gf-pic img") && /1 of 5/.test(tx($("games-body"))), "Try again loads the photos");
   // ---- nothing in the database ----
-  ok(WRITES.length === 0, "nothing saved to the database by any game: " + JSON.stringify(WRITES.map(x => x[0])));
+  const gameW = WRITES.filter(x => !(x[0] === "app_prefs" && x[1] && x[1].wn_seen));   // v259: What's New "seen" is saved at app open, not by a game
+  ok(gameW.length === 0, "nothing saved to the database by any game: " + JSON.stringify(gameW.map(x => x[0])));
   const css = [...d.querySelectorAll("style")].map(s => s.textContent).join("\n");
   ok(/\.gl-step \{[^}]*width: 48px; height: 48px/.test(css) && /\.gl-slider \{[^}]*height: 44px/.test(css) && /\.bg-sq \{[^}]*min-height: 88px/.test(css), "tap targets 44px or more");
   console.log(bad ? "SOME FAILED" : "ALL OK"); process.exit(bad ? 1 : 0);
