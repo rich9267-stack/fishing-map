@@ -38,9 +38,11 @@
       const spot = (typeof spots !== "undefined" ? spots : []).find(x => x.id === pl.spot_id);
       const going = typeof planGoing === "function" ? planGoing(pl) : [{ user_id: pl.created_by }];
       going.forEach(x => { if (x.user_id && x.user_id !== meId) out.add(x.user_id); });
-      const label = spot ? spot.name.split(" ")[0] : "Trip";
+      // where the trip is now (latest catch spot you're allowed to see), else the meeting spot
+      const ns = typeof planNowSpot === "function" ? planNowSpot(pl) : null;
+      const label = ns && !ns.meeting ? (ns.label === "a spot nearby" ? "Nearby" : ns.label.split(" ")[0]) : spot ? spot.name.split(" ")[0] : "Trip";
       const b = story(label, ic("calendar"), () => { const pl2 = $("plan-line"); if (pl2) pl2.click(); }, "hn-friend hn-plan");
-      b.title = `Planned trip${spot ? " at " + spot.name : ""} · ${going.length} going`;
+      b.title = `Planned trip${spot ? " from " + spot.name : ""} · ${going.length} going` + (ns && !ns.meeting ? ` · latest catch at ${ns.label}` : "");
       strip.appendChild(b);
     });
     const t = el("div", "hn-water-t");

@@ -201,10 +201,10 @@
       if (t.kind === "official" && $("qc-vis").value !== "public") bad.push("set to 🌎 Public");
       if (t.require_photo && !qc.blob) bad.push("add a photo");
       if (t.species && species && species !== t.species.toLowerCase()) bad.push("only " + t.species + " counts");
-      if (t.plan_id) { // a trip contest only counts catches at the trip spot (within a mile)
+      if (t.plan_id) { // a trip contest: 🚤 boat trip or a Start trip joined to it = anywhere; else at the trip spot (within a mile)
         const tp = plans.find(x => x.id === t.plan_id), tps = tp && (spots || []).find(x => x.id === tp.spot_id);
-        const pickedId = $("qc-spot").value, picked = (spots || []).find(x => x.id === pickedId);
-        if (tp && tps) {
+        const pickedId = $("qc-spot").value, picked = (spots || []).find(x => x.id === pickedId), a1 = activeSession();
+        if (tp && tps && !tp.boat && !(a1 && a1.plan_id === tp.id)) {
           const near = pickedId === tp.spot_id || (hasLoc(tps) && ((hasLoc(picked) && miles(picked.lat, picked.lng, tps.lat, tps.lng) <= 1) || (qc.pos && miles(qc.pos.lat, qc.pos.lng, tps.lat, tps.lng) <= 1)));
           if (!near) bad.push("only catches at " + tps.name + " count");
         }

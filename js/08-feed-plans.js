@@ -204,6 +204,23 @@
     if (now < new Date(pl.plan_at).getTime()) return "planned";
     return now < planBackBy(pl) ? "on" : "ended";
   }
+  // Where a trip is now (trip-lifecycle step 5): the spot of the latest catch logged during the trip by someone on it. Only catches and
+  // spots this phone was already allowed to load count (the database decides that), so a friend sees it only when they can see both
+  // that catch and that spot; a spot whose exact place is hidden from you reads "a spot nearby". Nothing found = null (show the meeting spot).
+  function planNowSpot(pl) {
+    if (typeof catchesBySpot === "undefined" || planStatus(pl) !== "on") return null;
+    const going = new Set(planGoing(pl).map(x => x.user_id)), now = Date.now();
+    const from = Math.min(new Date(pl.plan_at).getTime(), pl.started_at ? new Date(pl.started_at).getTime() : Infinity) - 3600000;
+    const list = Object.values(catchesBySpot).flat().filter(c => c && !c.deleted_at && going.has(c.created_by)
+      && new Date(c.caught_at).getTime() >= from && new Date(c.caught_at).getTime() <= now + 300000)
+      .sort((a, b) => new Date(b.caught_at) - new Date(a.caught_at));
+    for (const c of list) {
+      const sp = (spots || []).find(x => x.id === c.spot_id);
+      if (!sp) continue;
+      return { spot: sp, at: c.caught_at, meeting: sp.id === pl.spot_id, label: sp.is_exact === false && !(me && sp.created_by === me.id) ? "a spot nearby" : sp.name };
+    }
+    return null;
+  }
   // Plan a trip → "Back by about": 2 / 4 / 6 hours, all day (10 h) or overnight (the next 8 AM at least 2 h after the start)
   function backByFrom(at, choice) {
     const t = new Date(at).getTime();
@@ -354,6 +371,8 @@
       { const st = planStatus(pl), bits = [];
         if (pl.boat) bits.push("🚤 Boat trip");
         if (st === "on") bits.push(pl.started_at ? "🎣 On the water now" : `🎣 On the water · back by about ${clock(new Date(planBackBy(pl)))}`);
+        const ns = st === "on" ? planNowSpot(pl) : null;
+        if (ns && !ns.meeting) bits.push(`📍 Latest catch at ${ns.label} (${clock(new Date(ns.at))})`);
         else if (pl.back_by) bits.push(`Back by about ${clock(new Date(planBackBy(pl)))}`);
         if (bits.length) item.appendChild(el("div", "spot-meta plan-status", bits.join(" · "))); }
       { const gb = el("div", "spot-meta"); gb.appendChild(document.createTextNode(`✋ Going (${going.length}): `)); gb.appendChild(personList(going.map(x => ({ id: x.user_id, label: x.name || "Someone" })))); item.appendChild(gb); }

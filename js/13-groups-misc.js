@@ -246,12 +246,15 @@
   const openPlanChats = new Set();
   const onTrip = (pl, rs) => !!(me && (pl.created_by === me.id || (rs || planRsvps[pl.id] || []).some(x => x.user_id === me.id)));
   const tripWindow = pl => { const t = new Date(pl.plan_at).getTime(); return [t - TRIP_BEFORE_H * 3600000, t + TRIP_AFTER_H * 3600000]; };
-  // the planned trip a catch made now would belong to (mine, in its window, at its spot or within a mile)
+  // the planned trip a catch made now would belong to: the one my ▶ Start trip is linked to (anywhere); else mine, in its window,
+  // and a 🚤 boat trip (anywhere) or at its spot / within a mile (same rules as the database, setup/126)
   function activeTripFor(spotId, pos) {
-    const now = Date.now();
+    const now = Date.now(), a0 = typeof activeSession === "function" ? activeSession() : null;
+    if (a0 && a0.plan_id) { const lp = plans.find(pl => pl.id === a0.plan_id); if (lp) return lp; }
     return plans.find(pl => {
       if (!onTrip(pl)) return false;
       const [a, b] = tripWindow(pl); if (now < a || now > b) return false;
+      if (pl.boat) return true;
       if (spotId && spotId === pl.spot_id) return true;
       const ps = (spots || []).find(x => x.id === pl.spot_id); if (!hasLoc(ps)) return false;
       const cs = (spots || []).find(x => x.id === spotId);
@@ -305,7 +308,7 @@
     const spot = (spots || []).find(x => x.id === pl.spot_id);
     body.appendChild(el("div", "label", "📖 Trip review"));
     body.appendChild(el("b", null, `${planWhen(new Date(pl.plan_at))}${spot ? " · " + spot.name : ""}`));
-    body.appendChild(el("div", "spot-meta", pl.solo ? "Your own trip: the catches you logged while it was running." : "📍 Exact catch locations are only visible to the people on this trip, and only here. Private catches stay private. Counts catches from 1 hour before to 12 hours after the start, at this spot or within a mile."));
+    body.appendChild(el("div", "spot-meta", pl.solo ? "Your own trip: the catches you logged while it was running." : "📍 Exact catch locations are only visible to the people on this trip, and only here. Private catches stay private. " + (pl.boat ? "🚤 Boat trip: counts catches anywhere from 1 hour before to 12 hours after the start (or the back-by time)." : "Counts catches from 1 hour before to 12 hours after the start at this spot or within a mile, plus catches anywhere on a ▶ Start trip joined to this trip.")));
     if (pl.solo) {
       const a = new Date(pl.solo.started_at), z = new Date(pl.solo.ended_at), hrs = Math.max(1 / 60, (z - a) / 3600000), tm = d => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       body.appendChild(el("div", "spot-meta", `🕑 ${tm(a)} – ${tm(z)} (${hrs < 1 ? Math.max(1, Math.round(hrs * 60)) + " min" : hrs.toFixed(1) + " hr"})`));
@@ -527,6 +530,11 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-10-31e", title: "📍 See where a trip is now", items: [
+      "While a planned trip is on, its card and the \"On the water now\" circle show the spot of the latest catch someone on the trip logged, if you can already see that catch and that spot. Spots hidden from you just say \"a spot nearby\".",
+      "🚤 Boat trips: in the trip's contest and trip review, catches anywhere during the trip count.",
+      "Shore trips still count catches at the spot or within a mile, plus catches anywhere while your ▶ Start trip is joined to the trip."
+    ] },
     { id: "2026-10-31d", title: "🎣 Back by + \"Still out?\"", items: [
       "Plan a trip now asks roughly when you'll be back: 2, 4 (the default) or 6 hours, all day, or overnight. There's also a 🚤 Boat trip box.",
       "If nobody has ▶ Start trip running when that time comes, everyone going gets a \"🎣 Still out?\" alert: ▶ Start trip, +1 hour, or Done. Anyone going can answer for the whole trip.",

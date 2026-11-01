@@ -494,7 +494,8 @@
     if (t.description) det.appendChild(el("div", null, t.description));
     if (t.plan_id) det.appendChild(el("div", "spot-meta", "🗓 Made for a planned trip — everyone going on it is entered automatically."));
     const rules = [];
-    if (t.plan_id) rules.push("📍 only catches at the trip spot (within 1 mile)");
+    if (t.plan_id) { const tp = (typeof plans !== "undefined" ? plans : []).find(x => x.id === t.plan_id);
+      rules.push(tp && tp.boat ? "🚤 boat trip: catches anywhere during the trip" : "📍 catches at the trip spot (within 1 mile), or anywhere on a ▶ Start trip joined to the trip"); }
     if (t.kind === "official") rules.push("Catch must be set to 🌎 Public");
     if (t.require_photo) rules.push("📷 photo on every catch");
     if (t.require_length) rules.push("📏 measured length");
