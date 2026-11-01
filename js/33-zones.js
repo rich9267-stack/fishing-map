@@ -10,8 +10,10 @@
   const ZN = { key: "fm-zones-v2", age: 7 * 86400000, nearMi: 0.5 };
   const zn = { rows: [], t: 0, read: false, loading: null, layer: null, open: {} };
 // v178: the softer ℹ️ "special fishing rules apply" areas (NOAA Marine Protected Areas where recreational fishing is restricted but not banned, e.g. the Florida Keys
-// sanctuary). One file kept with the app (data/zones-rules.json, made by tools/make-rules-zones.js, outlines rough to about a mile). Level "rules"; never beats a no-fishing area.
-const zr = { rows: [], loading: null, done: false, failAt: 0 };
+// sanctuary). Kept with the app (made by tools/make-rules-zones.js, outlines rough to about a mile). Level "rules"; never beats a no-fishing area.
+// v262 (speed plan step 3): split by state (data/zones-rules/<ST>.json). The small index.json lists each file's area boxes; a state's file is
+// fetched only when a spot / your position checked here falls inside one of its boxes (was one 5.8 MB file for everyone).
+const zr = { rows: [], idx: null, loading: null, failAt: 0, files: {}, fileLoading: {}, fileFail: {} };
 
   // ---- shape tests (flat maths is plenty at this size) ----
   function znRingHas(ring, lng, lat) {
@@ -54,6 +56,7 @@ const zr = { rows: [], loading: null, done: false, failAt: 0 };
     if (!isFinite(lat) || !isFinite(lng)) return { inside: null, near: null };
     const padLat = lim / 69, padLng = lim / (69.17 * Math.max(0.2, Math.cos(lat * Math.PI / 180)));
     let inside = null, near = null, rules = null;
+    if (rows === zn.rows) zrWant(lat, lng);
     for (const r of (rows === zn.rows ? zn.rows.concat(zr.rows) : rows)) {
       if (lat < r.min_lat - padLat || lat > r.max_lat + padLat || lng < r.min_lng - padLng || lng > r.max_lng + padLng) continue;
       if (r.level === "rules") { if (znGeomHas(r.geom, lng, lat) && (!rules || znSize(r) < znSize(rules))) rules = r; continue; }   // soft areas: inside only, no "near"
@@ -101,21 +104,46 @@ const zr = { rows: [], loading: null, done: false, failAt: 0 };
     try { localStorage.removeItem("fm-zones-v1"); } catch (e) { /* fine */ }   // the Florida-only copy: the national list replaces it
     try { const j = JSON.parse(localStorage.getItem(ZN.key) || "null"); if (j && Array.isArray(j.rows)) { zn.rows = j.rows; zn.t = j.t || 0; } } catch (e) { /* no copy yet */ }
   }
-  function zrEnsure() {
-    if (zr.done || zr.loading || !me) return;
+  function zrEnsure() {   // the index of state files (about 14 KB); the files themselves come with zrWant
+    if (zr.idx || zr.loading || !me) return;
     if (zr.failAt && Date.now() - zr.failAt < 300000) return;
     zr.loading = (async () => {
       try {
-        const res = await fetch("data/zones-rules.json");
+        const res = await fetch("data/zones-rules/index.json");
         if (!res.ok) throw new Error("http " + res.status);
         const j = await res.json();
-        if (!j || !Array.isArray(j.items)) throw new Error("bad file");
-        zr.rows = j.items.filter(o => o && o.n && o.g && Array.isArray(o.b) && o.b.length === 4).map((o, i) => ({ id: "r" + i, name: o.n, level: "rules", rule: o.f, protection: o.p, agency: o.a, url: o.u, anchor: o.an, vessel: o.v, geom: o.g, min_lat: o.b[0], min_lng: o.b[1], max_lat: o.b[2], max_lng: o.b[3] }));
-        zr.done = true; zr.failAt = 0;
-        znChanged();
+        if (!j || !j.files || typeof j.files !== "object") throw new Error("bad file");
+        zr.idx = j.files; zr.failAt = 0;
+        znChanged();   // redraw: the spots on screen now ask for their state's file
       } catch (e) { zr.failAt = Date.now(); /* offline first time: asked again in 5 minutes */ }
       finally { zr.loading = null; }
     })();
+  }
+  const zrIn = (b, lat, lng) => Array.isArray(b) && lat >= b[0] && lat <= b[2] && lng >= b[1] && lng <= b[3];
+  // The state files that have an area box around this point and aren't on hand yet: fetch them (each once; a failed one is tried again after 5 minutes)
+  function zrWant(lat, lng) {
+    if (!zr.idx || !me) return;
+    for (const f of Object.keys(zr.idx)) {
+      if (zr.files[f] || zr.fileLoading[f] || !/^[A-Z]{2,4}$/.test(f)) continue;
+      if (zr.fileFail[f] && Date.now() - zr.fileFail[f] < 300000) continue;
+      if (zr.idx[f].some(b => zrIn(b, lat, lng))) zrFile(f);
+    }
+  }
+  function zrFile(f) {
+    zr.fileLoading[f] = (async () => {
+      try {
+        const res = await fetch("data/zones-rules/" + f + ".json");
+        if (!res.ok) throw new Error("http " + res.status);
+        const j = await res.json();
+        if (!j || !Array.isArray(j.items)) throw new Error("bad file");
+        if (zr.files[f]) return;
+        zr.files[f] = true; delete zr.fileFail[f];
+        zr.rows = zr.rows.concat(j.items.filter(o => o && o.n && o.g && Array.isArray(o.b) && o.b.length === 4).map((o, i) => ({ id: "r" + f + i, name: o.n, level: "rules", rule: o.f, protection: o.p, agency: o.a, url: o.u, anchor: o.an, vessel: o.v, geom: o.g, min_lat: o.b[0], min_lng: o.b[1], max_lat: o.b[2], max_lng: o.b[3] })));
+        znChanged();
+      } catch (e) { zr.fileFail[f] = Date.now(); }
+      finally { delete zr.fileLoading[f]; }
+    })();
+    return zr.fileLoading[f];
   }
   function zonesEnsure() {
     zrEnsure();

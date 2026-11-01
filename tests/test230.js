@@ -10,7 +10,7 @@ const tick = () => new Promise(r => setTimeout(r, 5));
 
 const swText = read("sw.js"), m = swText.match(/^const DATA_VER = (.*);$/m);
 const VER = m && JSON.parse(m[1]);
-ok(VER && VER["zones-rules.json"] && VER["learn/knots.json"] && VER["ramps/GA.json"] && Object.values(VER).every(v => /^[0-9a-f]{8}$/.test(v)), "sw.js lists a fingerprint for every data file (" + (VER ? Object.keys(VER).length : 0) + ")");
+ok(VER && VER["zones-rules/index.json"] && VER["zones-rules/FL.json"] && VER["learn/knots.json"] && VER["ramps/GA.json"] && Object.values(VER).every(v => /^[0-9a-f]{8}$/.test(v)), "sw.js lists a fingerprint for every data file (" + (VER ? Object.keys(VER).length : 0) + ")");
 const crypto = require("crypto");
 ok(VER && VER["learn/knots.json"] === crypto.createHash("md5").update(fs.readFileSync(path.join(root, "data/learn/knots.json"))).digest("hex").slice(0, 8), "the fingerprints match the files (run sh bump.sh after changing data)");
 ok(/node tools\/data-versions\.js/.test(read("bump.sh")), "bump.sh refreshes the fingerprints");
