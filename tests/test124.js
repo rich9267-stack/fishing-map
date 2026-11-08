@@ -164,7 +164,7 @@ const J = s => JSON.parse(w.eval("JSON.stringify(" + s + ")"));
   };
   w.eval('spots.forEach(s => { s.visibility = s.id === "s2" ? "friends" : "public"; })');
   need(d.getElementById("off-admin") && box().hidden, "the box exists and starts hidden");
-  need(w.localStorage.getItem("fm-official-v3") !== null && w.localStorage.getItem("fm-official-v2") === null, "official places are kept as fm-official-v3 (old v2 copy dropped)");
+  need(w.localStorage.getItem("fm-official-v4") !== null && w.localStorage.getItem("fm-official-v2") === null && w.localStorage.getItem("fm-official-v3") === null, "official places are kept as fm-official-v4 (old copies dropped)");
   need(w.eval("OFFICIAL_AGE") === 86400000, "the phone refreshes official places every day");
 
   w.eval('openForm(true, spots.find(s => s.id === "s1"))');

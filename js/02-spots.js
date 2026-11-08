@@ -905,7 +905,7 @@
   // around where you are or where Find new water is looking, keeps each cell on this phone for a week, and merges the cells it has seen
   // into officialSpots. Used by Quick catch (names a new spot after the official place you're at) and by Find new water (✅ Official).
   let officialSpots = [];
-  const OFFICIAL_KEY = "fm-official-v3", OFFICIAL_CELL = 0.5, OFFICIAL_AGE = 86400000,   // 1 day: places an admin adds reach everyone within a day
+  const OFFICIAL_KEY = "fm-official-v4", OFFICIAL_CELL = 0.5, OFFICIAL_AGE = 86400000,   // 1 day: places an admin adds reach everyone within a day
     OFFICIAL_MAX_CELLS = 10;
   const OFFICIAL_KINDS = { ramp: "ramp", pier: "pier", jetty: "jetty", bridge: "bridge", park: "dock", dock: "dock" };
   const OFFICIAL_LABEL = { ramp: "Boat ramp", pier: "Pier", jetty: "Jetty", bridge: "Bridge", dock: "Fishing spot", park: "Park · bank fishing" };
@@ -995,7 +995,7 @@
   }
   (function officialRestore() {   // what this phone already knows (older copies are used until fresh ones arrive)
     try {
-      localStorage.removeItem("fm-official-v1"); localStorage.removeItem("fm-official-v2");
+      localStorage.removeItem("fm-official-v1"); localStorage.removeItem("fm-official-v2"); localStorage.removeItem("fm-official-v3");   // v4: Nov 8 Treasure Coast load — older copies had that square empty
       const c = JSON.parse(localStorage.getItem(OFFICIAL_KEY) || "null");
       if (c && c.cells) Object.keys(c.cells).forEach(k => { const v = c.cells[k]; if (v && Array.isArray(v.items) && isFinite(v.t)) officialCells[k] = v; });
     } catch (e) {}
