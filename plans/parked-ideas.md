@@ -1,23 +1,20 @@
-# Parked ideas (updated 2026-10-15 — not forgotten)
+# Parked ideas (tidied 2026-11-08 — not forgotten)
 
-The organization / QOL plan (docs/ux_cleanup_plan.md) is finished: bottom bar, Home strip, Settings page, file split, polish pass, dark-mode check. Also done since: official public spots, measuring-screen fix, tournament teams, tank simulator steps 1–8 (touch/moods, coins/gems, shop + customize, sound), artist brief drafted, screen-reader pass (main map; trip-review map pin labels v95; tank screens v96 — committed), Host pages (v97–v99), Gulf + Keys expansion (v100–v108), security before sharing with strangers (v109–v110: popup fix, Content-Security-Policy, Fish ID 30/day, public places snap, privacy page, CAPTCHA enabled and tested by Richard), v111 admin-made official places, v112 free color palettes, v113 Fish ID knows the Gulf/Keys fish + catfish kinds and which part of Florida the spot is in.
+Done or settled since the last list (Oct 15): Richard's parks already show in the map's official parks layer (no marking needed, Nov 8); continental US map (v155–v173), security leftovers (CAPTCHA, Confirm email, 2-step, setup/67 + 90), page tournaments pay no prizes / no Hall of Fame, no per-person caps on comments, reports or photos.
 
-## In progress
-- **⭐ Admin-made official places (v111, Oct 15)** — Edit spot → "⭐ Official place (admin only)" box: pick Park / Pier / Jetty / Boat ramp / Bridge / Dock → Make official. Public spots only. Richard to mark his parks (Harbor's Edge, NE 16th St Park, Officer Scott A. Winter Memorial, Sgt. Chris Reyka Memorial, Hillsboro Inlet, Everglades Holiday Park Canal, Sebastian Bridge, Atlantic Trail entrance…); not the parking lot; Alsdorf and Colohatchee ramps are already official.
-- **🛡 Security leftovers (Richard, checklist in repo docs/security.md):** confirm "Confirm email" is ON · password rules + redirect URLs · 2-step sign-in on Supabase/GitHub/Google · GitHub secret scanning · run setup/67 (lock-down of signed-out access; has UNDO) in the SQL Editor. **Decided Oct 15: no per-person caps on comments, reports or photos.**
+## Richard's jobs
+- **Real-phone testing:** tanks (swimming, schools, chases, full screen, hand feeding, shop, customize, chest, sound), measuring screen + 🔍 auto-find, official-spot naming in Quick catch, Me → Clubs & businesses, hosting a tournament as a page, Follow / Unfollow a page, map layers (satellite, red tide, depth lines, sightings), photo upload, Fish ID, phone alerts, light and dark mode. Tell Claude anything that looks off.
 
 ## Waiting on something
-- **Tank step 9 (artist pictures)** — brief is a doc in Richard's artifacts ("Fishing Map — Tank Artist Brief"). Plan: each candidate artist draws one trial fish (the snook), Richard picks one, then test batch (sheepshead, barracuda, chest, plant, gravel), then rounds. Richard fills in budget, payment, rights and contact before sending. Rough cost estimate (Claude's, not a quote): $3,000–8,500 for everything; Richard wants to keep the unique look of every fish (no shared base shapes).
+- **Tank artist pictures (tank step 9)** — on hold until Richard says go. Brief: "Fishing Map — Tank Artist Brief" in Richard's artifacts (trial fish = snook, then a test batch, then rounds). Rough estimate (Claude's, not a quote): $3,000–8,500; every fish keeps its own look.
+- **SFWMD canal gate data** — only if the client ID/secret arrives from datarequests@sfwmd.gov (Richard saves secrets in Supabase himself, never in chat).
 
 ## Still on the list, no order
-- **Games: compare with the Project games plan** (Oct 21) — Richard pastes `claude/games-plan.md` into a session; the Engineer lists differences from what v151–153 built, smallest fix first, changes nothing until Richard picks.
-- **Continental US map** (Oct 21) — draft plan in plans/us-expansion-plan.md; US weight data collected in docs/weight-data.md. Approved Oct 21 (decisions in the plan); next = step 1 (which state a spot is in).
-- **Host pages leftovers** — owner can't rename a page after asking (admin only); should page tournaments ever pay prizes / Hall of Fame (e.g. verified businesses)?
-- **Official spots beyond the Keys + Gulf coast** — refresh the data now and then; OSM piers not loaded.
+- **Atlantic Trail entrance on the map layers** (Richard, Nov 8) — the only one of his parks not in the official parks layer; find a source that lists it (or add it as an official place) so it shows like the others.
+- **Games vs. the games plan** — compare Project doc `claude/games-plan.md` with what v151–153 built; list differences, smallest fix first; change nothing until Richard picks.
 - **Gems for badges** — needs the badge rules moved to the server. Friend contests pay nothing (too easy to farm).
-- **Tank mood thresholds** are guesses — tune after Richard plays.
-- **Real-phone testing (Richard):** tanks (swimming, schools, chases, full screen, hand feeding, shop, customize, chest, sound), measuring screen, official-spot naming in Quick catch, the map keyboard/screen-reader changes, light and dark mode; Me → Clubs & businesses; Hosting as + creating a tournament as a page; Follow / Unfollow a page; everything still loads with the security policy — sign in, map + tiles + satellite, tides/weather, a photo upload, Fish ID, 🔍 auto-find in the measuring screen (OpenCV), red tide layer, depth lines, public sightings, phone alerts; tell Claude anything that looks off.
+- **Tuning after Richard plays** — tank mood levels; fish race classes, win rates, prizes, fees, daily caps (fish-rank-plan step 6/7); maybe a per-species size cap against cheating.
 - **Fish-tracking data source** — bring in later (Richard's idea).
-- **SFWMD canal gate data** — only if the client ID/secret arrives from datarequests@sfwmd.gov (Richard saves secrets in Supabase himself, never in chat).
-- **Dark-mode on real content** — the scan used fake data; re-check with real catches, photos and groups.
-- **Race tuning (fish-rank-plan step 6/7)** — class lines, win rates, prizes, fees and daily caps are guesses; tune after Richard plays; consider a per-species size cap against cheating.
+- **Dark mode on real content** — the earlier scan used fake data; re-check with real catches, photos and groups.
+- **Refresh official spots data now and then** — 2009 FWC ramp list, parks / piers / stations, state ramp snapshots (tools/make-ramp-snapshots.js), rules zones (tools/make-rules-zones.js).
+- **Page rename** — an owner can't rename a page after asking for it (admin only today).
