@@ -566,6 +566,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-11-08w", title: "🌦 Weather on Home", items: [
+      "The conditions card on Home now starts with the weather where you are: temperature, sky, feels-like, rain chance and the next 6 hours.",
+      "Shore and Boat say Good, Hard or Stay home from the wind, gusts, waves, thunder and weather alerts. A help, not a promise — always check the official forecast.",
+      "Tap Full weather (or the card) for the Weather screen. Pick your area, one of your spots or any spot near you; it remembers your pick."] },
     { id: "2026-10-31g", title: "✨ Tidier What's new + your own spots", items: [
       "✨ Tidier What's new — only updates you haven't seen, on any phone, and a ✕ to close.",
       "📍 Your spots now lists only spots you saved. Friends' shared spots are in 👥 Friends' spots just below.",

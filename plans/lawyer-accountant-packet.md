@@ -86,6 +86,9 @@ These were found by checking the texts against v173. Don't change anything yet; 
 38. Trips (v256): when planning, people pick roughly when they'll be back (and can tick 🚤 boat trip). At that time everyone going gets a "Still out?" phone alert naming the spot, and any one of them can extend the trip by an hour or end it for everyone. Question: is an automatic "you were due back" alert something we must say is NOT a safety or rescue service (the app already has a separate Heading out check-in)?
 39. Trips (v257): while a planned trip is on, anyone who can see the trip sees the spot of the latest catch logged on it, but only when they can already see both that catch and that spot (spots hidden from them read "a spot nearby"; private catches never show). On 🚤 boat trips, and for catches logged during a ▶ Start trip joined to the trip, the trip review now shows trip mates the exact catch places from anywhere during the trip (before: only within 1 mile of the trip spot). Question: is "trip mates see each other's exact catch places during the trip" covered by the current trip-review wording, now that it isn't limited to one spot?
 
+**🌦 Weather screen (planned Nov 8, not built yet; plan = Project doc claude/weather-plan.md)**
+40. New outside data: Open-Meteo forecast + marine (already used for wind/water temp; free tier is **non-commercial only**, under 10,000 calls a day, must credit "Weather data by Open-Meteo.com", CC BY 4.0), NWS forecasts and alerts incl. marine zones and rip currents, NOAA radar picture layer, NOAA tides. The app sends only the place (rounded) to these services, no names or accounts. It shows "Shore / Boat: Good / Hard / Stay home" from our own rules. Questions: (a) once doubloons or ads bring income, does Open-Meteo need its paid plan (the app as a whole becomes commercial)? (b) is "A help, not a promise — check the official marine forecast" enough if someone goes out on a "Good" and gets hurt? (c) any credit wording NOAA/NWS want?
+
 ## 4. Proposed new lines (drafts for the lawyer to fix, NOT live)
 - **Coins and gems:** "Coins and gems are points for fun. They have no cash value, can't be bought, sold or traded, and the owner may correct them (always logged)."
 - **Contests and races:** "No purchase needed. Prizes are coins only. We may cancel or correct a result for cheating or mistakes."
@@ -116,6 +119,7 @@ These were found by checking the texts against v173. Don't change anything yet; 
 | Supabase leaked-password check | in the paid plan | with the paid plan | off |
 | Google Gemini (Fish ID) | free tier; paid is per photo | only if the daily limit is reached | free |
 | Stripe | ≈ 2.9% + 30¢ per sale | only when doubloons are sold | not set up |
+| Open-Meteo weather (free tier = non-commercial only) | paid plan, price on request (confirm) | the day the app makes money | free |
 | Everything else (GitHub Pages, NOAA, NWS, OpenStreetMap, iNaturalist) | $0 | — | free |
 
 ## 6. After the appointments

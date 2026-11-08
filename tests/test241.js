@@ -47,8 +47,8 @@ const loaded = (w, part) => w.eval(`!!lazyDone["${part}"]`);
   // (a) the page itself: none of these files are in the start-up list, all of them are kept for offline use
   const page = fs.readFileSync(path.join(root, "index.html"), "utf8"), sw = fs.readFileSync(path.join(root, "sw.js"), "utf8");
   const LAZY = ["39-admin-log", "40-admin-page", "41-admin-people", "42-admin-undo", "43-admin-warn", "44-admin-hide", "45-admin-official", "47-admin-gated",
-    "57-fishid-review", "51-games", "52-games-more", "62-learn", "71-business-pages", "72-tank-art", "73-tank-screen"];
-  ok(LAZY.every(f => !page.includes(`"js/${f}.js?`)), "index.html no longer loads the 15 opened-later files at start");
+    "57-fishid-review", "51-games", "52-games-more", "62-learn", "71-business-pages", "72-tank-art", "73-tank-screen", "75-weather-screen"];
+  ok(LAZY.every(f => !page.includes(`"js/${f}.js?`)), "index.html no longer loads the 16 opened-later files at start");
   ok(LAZY.concat(["48-lazy-code"]).every(f => sw.includes(`"./js/${f}.js"`)), "…and sw.js still keeps every one of them on the phone (works offline)");
   ok(page.includes('"js/48-lazy-code.js?v='), "js/48 (the loader) is loaded at start");
   const lazyList = new Function(fs.readFileSync(path.join(root, "js/48-lazy-code.js"), "utf8").split("// The buttons")[0].replace(/const lazyDone[\s\S]*/, "") + "; return LAZY_CODE;")();

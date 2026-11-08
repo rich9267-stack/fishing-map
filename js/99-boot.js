@@ -6,5 +6,6 @@
   loadWeather();
   loadPressure();
   loadMoon();
+  if (typeof wxdHomeStart === "function") wxdHomeStart();   // 🌦 Home weather card (js/74)
   showAreaWater();   // js/13: water temperature for the area now (home waters, or where the phone is)
   gate();

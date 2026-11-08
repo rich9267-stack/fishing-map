@@ -1557,3 +1557,50 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
   .pf-more { margin: 6px 0 0; }
   .pf-more summary { cursor: pointer; color: var(--muted); font-size: .85rem; list-style: none; }
   .pf-more summary::-webkit-details-marker { display: none; }
+
+/* ---- 🌦 Weather: Home card (js/74) + Weather screen (js/75) ---- */
+.hn-wx { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.hn-wx-now { appearance: none; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; padding: 0; cursor: pointer; display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.hn-wx-tt { display: flex; flex-direction: column; gap: 2px; }
+.hn-wx-temp { font-size: 32px; font-weight: 800; line-height: 1; }
+.hn-wx-sub { font-size: 13px; color: var(--text-2); }
+.wx-go { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.wx-go-chip { border-radius: 10px; padding: 7px 10px; display: flex; flex-direction: column; gap: 1px; font-size: 11px; font-weight: 700; }
+.wx-go-chip b { font-size: 15px; }
+.lvl-good.wx-go-chip { background: #e6f3ea; color: #1a4d2b; }
+.lvl-hard.wx-go-chip { background: #fbeee2; color: #7a3a10; }
+.lvl-stay.wx-go-chip { background: #fbe4e4; color: #8a1c1c; }
+.hn-wx-tail { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.wx-hrs { display: flex; gap: 4px; overflow-x: auto; }
+.wx-hr { flex: 0 0 52px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--text-2); }
+.wx-hr b { font-size: 14px; color: var(--text); }
+.hn-wx-full { width: 100%; min-height: 44px; }
+#view-wx { padding-bottom: 90px; }
+.wx-sec { background: var(--card); padding: 14px 16px; border-bottom: 8px solid var(--section-gap, #F2F4F6); display: flex; flex-direction: column; gap: 10px; }
+.wx-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.wx-chip { appearance: none; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; border-radius: 18px; padding: 0 14px; min-height: 40px; cursor: pointer; }
+.wx-chip.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.wx-other { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
+.wx-other select { flex: 1; min-height: 40px; font: inherit; }
+.wx-upd { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px; font-size: 12px; color: var(--text-2); }
+.wx-alert { background: var(--alert-bg, #FFF6E5); color: var(--alert-text, #6B4A00); border-radius: 8px; padding: 8px 10px; font-weight: 700; font-size: 14px; }
+.wx-now-top { display: flex; align-items: center; gap: 14px; }
+.wx-big { font-size: 48px; font-weight: 800; line-height: 1; }
+.wx-sub { font-size: 14px; color: var(--text-2); }
+.wx-score { appearance: none; border: 0; border-radius: 12px; background: var(--section-gap, #F2F4F6); color: var(--text); font: inherit; text-align: left; padding: 10px 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; min-height: 44px; }
+.wx-score > span:nth-child(2) { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+.wx-score small { color: var(--text-2); font-size: 12px; }
+.wx-score-n { font-size: 28px; font-weight: 800; color: var(--accent); min-width: 28px; text-align: center; }
+.wx-go-row { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.wx-go-row > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.wx-go-row small { font-size: 13px; color: var(--text-2); }
+.wx-dot { width: 12px; height: 12px; border-radius: 6px; margin-top: 4px; flex: none; background: #1a6b38; }
+.lvl-hard .wx-dot { background: #c2621f; }
+.lvl-stay .wx-dot { background: #b42318; }
+.wx-oldbtn { margin: 10px 16px; min-height: 44px; }
+.wx-credit { font-size: 12px; color: var(--text-2); padding: 10px 16px 20px; }
+@media (prefers-color-scheme: dark) {
+  .lvl-good.wx-go-chip { background: #183a26; color: #bfe8cd; }
+  .lvl-hard.wx-go-chip { background: #3e2a16; color: #f6cfa8; }
+  .lvl-stay.wx-go-chip { background: #3f1b1b; color: #f5c2c2; }
+}

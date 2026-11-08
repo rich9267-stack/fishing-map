@@ -755,6 +755,7 @@
     $("view-insights").hidden = which !== "insights";
     { const vl = $("view-learn"); if (vl) { vl.hidden = which !== "learn"; if (which === "learn") codeThen("learn", () => { if (!$("view-learn").hidden) renderLearn(); }); } }   // 📚 Learn (js/62): opened from the Home card, no tab
     { const vf = $("view-fcal"); if (vf) { vf.hidden = which !== "fcal"; if (which === "fcal" && typeof renderFishCal === "function") renderFishCal(); } }   // 📆 Good days (js/69): opened from a Home button, no tab
+    { const vw = $("view-wx"); if (vw) { vw.hidden = which !== "wx"; if (which === "wx") codeThen("wx", () => { if (!$("view-wx").hidden) renderWxScreen(); }); } }   // 🌦 Weather screen (js/75): opened from the Home weather card, no tab
     $("view-seasons").hidden = which !== "seasons";
     $("view-tank").hidden = which !== "tank";
     $("tab-tank").classList.toggle("on", which === "tank");

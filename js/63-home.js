@@ -82,7 +82,7 @@
     '<svg class="hn-graph" id="hn-graph" viewBox="0 0 340 118" role="img" aria-label="Tide today"></svg>' +
     '<div class="hn-line" id="hn-line"></div>';
   cond.appendChild(cbtn); hn.appendChild(cond);
-  cbtn.addEventListener("click", () => { const t = document.querySelector('#today-strip .tile'); if (t) t.click(); });
+  cbtn.addEventListener("click", () => { if (typeof openWeather === "function") openWeather(); else { const t = document.querySelector('#today-strip .tile'); if (t) t.click(); } });   // v264: the full Weather screen (js/75)
 
   const hm = ms => { const m = Math.max(0, Math.round(ms / 60000)); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; };
   function tideAt(tides, t) {

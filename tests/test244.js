@@ -1,0 +1,40 @@
+// test244: weather plan step 2 (js/74 wxdVerdict) — Shore and Boat: Good / Hard / Stay home with reasons, from wind, gusts,
+// seas + period, thunder now or within 2 hours, rain, and NWS alerts (small craft, gale, special marine, tornado…); lakes ignore seas.
+const fs = require("fs"), path = require("path"), vm = require("vm");
+let bad = 0; const ok = (c, m) => { console.log((c ? "ok   " : "FAIL ") + m); if (!c) bad++; };
+const c = {}; vm.createContext(c);
+vm.runInContext(fs.readFileSync(path.join(__dirname, "../js/74-weather.js"), "utf8") + "\nthis.v = wxdVerdict; this.L = WXD_LIMITS;", c);
+const H = 3600000, h = x => Object.assign({ t: 0, mph: 8, gust: 12, code: 1, rainPct: 10, waveFt: 1.5, wavePer: 8 }, x);
+const lv = r => r.shore.level + "/" + r.boat.level;
+
+let r = c.v(h({}));
+ok(lv(r) === "good/good" && r.shore.word === "Good" && r.boat.why[0] === "No problems in the forecast", "calm day: Good / Good");
+r = c.v(h({ mph: 16, gust: 22, waveFt: 4.5, wavePer: 7 }));
+ok(lv(r) === "hard/hard" && r.boat.why.includes("Seas 4.5 ft every 7 sec") && r.shore.why[0] === "Wind 16 mph, gusts 22", "E 16, seas 4–5: Shore Hard (wind), Boat Hard (seas + wind)");
+r = c.v(h({ mph: 12, gust: 18, waveFt: 2.2, wavePer: 4 }));
+ok(lv(r) === "good/hard" && /choppy/.test(r.boat.why.join()), "2 ft but every 4 sec: choppy → Boat Hard");
+r = c.v(h({ mph: 12, gust: 18, waveFt: 6.5 }));
+ok(r.boat.level === "stay" && r.boat.word === "Stay home" && r.boat.why.length === 1 && /Seas 6.5/.test(r.boat.why[0]), "seas over 6 ft: Boat Stay home (only the worst reason shown)");
+r = c.v(h({ mph: 27, gust: 33 }));
+ok(lv(r) === "stay/stay", "wind 27 mph: Stay home for both");
+r = c.v(h({ mph: 14, gust: 32 }));
+ok(lv(r) === "hard/stay", "gusts 32: Shore Hard, Boat Stay home");
+r = c.v(h({ t: 0 }), { ahead: [h({ t: H, code: 95 })] });
+ok(lv(r) === "stay/stay" && /within 2 hours/.test(r.shore.why[0]), "thunder in 1 hour: Stay home");
+r = c.v(h({ t: 0 }), { ahead: [h({ t: 3 * H, code: 95 })] });
+ok(lv(r) === "good/good", "thunder only in 3 hours: not yet");
+r = c.v(h({ code: 96 }));
+ok(lv(r) === "stay/stay" && r.boat.why[0] === "Thunderstorms now", "thunderstorms now: Stay home");
+r = c.v(h({}), { alerts: ["Small Craft Advisory"] });
+ok(lv(r) === "good/hard" && r.boat.why[0] === "Small Craft Advisory", "Small Craft Advisory: Boat Hard, Shore still Good");
+r = c.v(h({}), { alerts: ["Gale Warning"] }); ok(lv(r) === "good/stay", "Gale Warning: Boat Stay home");
+r = c.v(h({}), { alerts: ["Special Marine Warning"] }); ok(lv(r) === "good/stay", "Special Marine Warning: Boat Stay home");
+r = c.v(h({}), { alerts: ["Tornado Warning"] }); ok(lv(r) === "stay/stay", "Tornado Warning: Stay home for both");
+r = c.v(h({}), { alerts: ["Tropical Storm Watch"] }); ok(lv(r) === "hard/hard", "Tropical Storm Watch (may happen): Hard for both");
+r = c.v(h({}), { alerts: ["Gale Watch", "Small Craft Advisory"] }); ok(lv(r) === "good/hard" && r.boat.why.length === 2, "Gale Watch + Small Craft Advisory: Boat Hard, both reasons");
+r = c.v(h({}), { alerts: ["High Surf Advisory"] }); ok(lv(r) === "hard/good", "High Surf Advisory: Shore Hard");
+r = c.v(h({ rainPct: 70 })); ok(lv(r) === "hard/hard" && /70% chance of rain/.test(r.shore.why[0]), "70% rain: Hard");
+r = c.v(h({ waveFt: 7 }), { lake: true }); ok(r.boat.level === "good" && r.lake, "on a lake the seas are ignored");
+r = c.v(h({ waveFt: null, mph: 18 })); ok(r.boat.level === "hard" && r.lake, "no wave data (inland): wind only, 18 mph = Boat Hard");
+ok(c.L.boat.hardSeas === 3 && c.L.boat.staySeas === 6, "the limits are in one table (3 ft Hard, over 6 ft Stay home)");
+console.log(bad ? `${bad} FAILED` : "ALL OK"); process.exit(bad ? 1 : 0);
