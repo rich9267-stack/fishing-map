@@ -1680,3 +1680,22 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
   .wxp-trend.tr-falling { color: #f0a46a; }
   .wxp-trend.tr-rising { color: #8cbcf0; }
 }
+/* 🌊 Tides + Water & waves (weather step 7, js/78) */
+.wxw-graph { width: 100%; height: auto; display: block; }
+.wxw-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 13px; }
+.wxw-tide.hi b { color: #1a6b38; }
+.wxw-tide.lo b { color: #a5521b; }
+.wxw-tide small { color: var(--text-2); }
+.wxw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.wxw-tile { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wxw-h { font-size: 11px; color: var(--text-2); font-weight: 700; }
+.wxw-big { font-size: 20px; }
+.wxw-sub { font-size: 12px; color: var(--text-2); }
+.wxw-tile.lvl-bad .wxw-big { color: #a5521b; }
+.wxw-tile.lvl-warn .wxw-big { color: #8a6a00; }
+@media (max-width: 340px) { .wxw-grid, .wxw-list { grid-template-columns: 1fr; } }
+@media (prefers-color-scheme: dark) {
+  .wxw-tide.hi b { color: #8fd8a8; }
+  .wxw-tide.lo b, .wxw-tile.lvl-bad .wxw-big { color: #f0a46a; }
+  .wxw-tile.lvl-warn .wxw-big { color: #e8c45a; }
+}

@@ -2,6 +2,34 @@
 // Layout only. Every old element and id is still there and does the real work (Start trip, Heading out, Plan a trip, Learn, the weather
 // and red-tide alerts, the tide/wind/water/moon text); the new pieces below copy what those show or press their buttons.
 // Pieces: "On the water now" circles · one alerts line · conditions with a tide line · "You're at" prompt · Plan/Learn buttons.
+// ---- 🌊 The tide line, shared by the Home card (below) and the Weather screen's Tides card (js/78, weather plan step 7) ----
+// tides = [{ when: Date, high, ft }] (ft missing → highs drawn at 1 ft, lows at 0); t0..t1 = the time shown; labels = [[text, time]];
+// nowT = where the dashed "now" line and dot go. Draws into a 340 × 118 viewBox. Returns "" when the tides don't cover enough of the time.
+function tideHeightAt(tides, t) {
+  let a = null, b = null;
+  for (let i = 0; i < tides.length - 1; i++) if (+tides[i].when <= t && +tides[i + 1].when > t) { a = tides[i]; b = tides[i + 1]; break; }
+  if (!a) return null;
+  const ha = isFinite(a.ft) ? a.ft : a.high ? 1 : 0, hb = isFinite(b.ft) ? b.ft : b.high ? 1 : 0;
+  const f = (t - a.when) / (b.when - a.when);
+  return ha + (hb - ha) * (1 - Math.cos(Math.PI * f)) / 2;
+}
+function tideCurveSvg(tides, t0, t1, labels, nowT) {
+  const N = 64, pts = [];
+  for (let i = 0; i <= N; i++) { const t = t0 + (t1 - t0) * i / N, h = tideHeightAt(tides, t); if (h != null) pts.push([t, h]); }
+  if (pts.length < 8) return "";
+  const W = 340, L = 8, R = 8, T = 10, B = 96, lo = Math.min(...pts.map(p => p[1])), hi = Math.max(...pts.map(p => p[1])), span = Math.max(0.5, hi - lo);
+  const X = t => L + (W - L - R) * (t - t0) / (t1 - t0), Y = h => B - (B - T - 8) * (h - lo) / span - 4;
+  let d = ""; pts.forEach((p, i) => { d += (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1); });
+  let s = `<path d="${d}" class="tide-curve" fill="none" stroke="var(--accent)" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if (nowT != null && nowT >= t0 && nowT <= t1) {
+    const hh = tideHeightAt(tides, nowT), x = X(nowT);
+    s += `<line class="tide-now" x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${T}" y2="${B}" stroke="var(--text-2)" stroke-width="1" stroke-dasharray="3 3"/>`;
+    if (hh != null) s += `<circle cx="${x.toFixed(1)}" cy="${Y(hh).toFixed(1)}" r="4.5" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>`;
+  }
+  (labels || []).forEach(([l, t]) => { s += `<text x="${X(t).toFixed(1)}" y="113" text-anchor="middle" font-size="10.5" fill="var(--text-2)">${l}</text>`; });
+  return s;
+}
+
 (function homeScreen() {
   const view = $("view-list"); if (!view) return;
   const ic = n => (typeof iconSvg === "function" ? iconSvg(n) : "");
@@ -85,13 +113,6 @@
   cbtn.addEventListener("click", () => { if (typeof openWeather === "function") openWeather(); else { const t = document.querySelector('#today-strip .tile'); if (t) t.click(); } });   // v264: the full Weather screen (js/75)
 
   const hm = ms => { const m = Math.max(0, Math.round(ms / 60000)); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; };
-  function tideAt(tides, t) {
-    let a = null, b = null;
-    for (let i = 0; i < tides.length - 1; i++) if (tides[i].when <= t && tides[i + 1].when > t) { a = tides[i]; b = tides[i + 1]; break; }
-    if (!a) return null;
-    const f = (t - a.when) / (b.when - a.when);
-    return a.ft + (b.ft - a.ft) * (1 - Math.cos(Math.PI * f)) / 2;
-  }
   function renderTide() {
     const tides = window.homeTides, lab = $("hn-tide-lab"), big = $("hn-tide-big"), cnt = $("hn-tide-in"), g = $("hn-graph");
     if (!tides || !tides.length) return;
@@ -102,21 +123,8 @@
       cnt.textContent = "in " + hm(next.when - now);
     }
     const day0 = typeof tzDayStart === "function" ? tzDayStart(now, tz) : new Date(new Date().setHours(0, 0, 0, 0));
-    const t0 = day0.getTime() + 6 * 3600000, t1 = day0.getTime() + 22 * 3600000, N = 64, pts = [];
-    for (let i = 0; i <= N; i++) { const t = t0 + (t1 - t0) * i / N, h = tideAt(tides, t); if (h != null) pts.push([t, h]); }
-    if (pts.length < 8) { g.innerHTML = ""; return; }
-    const W = 340, L = 8, R = 8, T = 10, B = 96, lo = Math.min(...pts.map(p => p[1])), hi = Math.max(...pts.map(p => p[1])), span = Math.max(0.5, hi - lo);
-    const X = t => L + (W - L - R) * (t - t0) / (t1 - t0), Y = h => B - (B - T - 8) * (h - lo) / span - 4;
-    let d = ""; pts.forEach((p, i) => { d += (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1); });
-    let s = `<path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>`;
-    const nowT = now.getTime();
-    if (nowT >= t0 && nowT <= t1) {
-      const hh = tideAt(tides, nowT), x = X(nowT);
-      s += `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${T}" y2="${B}" stroke="var(--text-2)" stroke-width="1" stroke-dasharray="3 3"/>`;
-      if (hh != null) s += `<circle cx="${x.toFixed(1)}" cy="${Y(hh).toFixed(1)}" r="4.5" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>`;
-    }
-    [["6a", 6], ["10a", 10], ["2p", 14], ["6p", 18], ["10p", 22]].forEach(([l, h]) => { s += `<text x="${X(day0.getTime() + h * 3600000).toFixed(1)}" y="113" text-anchor="middle" font-size="10.5" fill="var(--text-2)">${l}</text>`; });
-    g.innerHTML = s;
+    g.innerHTML = tideCurveSvg(tides, day0.getTime() + 6 * 3600000, day0.getTime() + 22 * 3600000,
+      [["6a", 6], ["10a", 10], ["2p", 14], ["6p", 18], ["10p", 22]].map(([l, h]) => [l, day0.getTime() + h * 3600000]), now.getTime());
   }
   window.homeCondRender = renderTide;
 

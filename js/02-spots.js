@@ -548,7 +548,7 @@
         `&datum=MLLW&station=${id}&time_zone=gmt&units=english&interval=hilo&format=json`;
       tideCache[id] = fetch(url).then(r => r.json()).then(d => {
         if (!d.predictions) throw new Error("No tide data");
-        return d.predictions.map(p => ({ when: parseNoaa(p.t), high: p.type === "H" }));
+        return d.predictions.map(p => ({ when: parseNoaa(p.t), high: p.type === "H", ft: parseFloat(p.v) }));   // ft: the Weather screen tide line (js/78)
       });
       tideCache[id].done = false;
       tideCache[id].then(t => { tideCache[id].done = t; refreshConditions(); },

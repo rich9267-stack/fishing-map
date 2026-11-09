@@ -105,11 +105,13 @@ function renderWxScreen(force) {
     if (typeof wxhSection === "function") body.appendChild(wxhSection(w, p));
     // Wind dial + pressure card, side by side (step 6, js/77)
     if (typeof wxpSection === "function") body.appendChild(wxpSection(w, p));
-    // until the tide and moon sections move here (steps 7–8): the old tide tables, moon & feeding times
-    const old = el("button", "btn ghost wx-oldbtn", "Tide tables, moon & feeding times"); old.type = "button"; old.id = "wx-old";
+    // Tides + Water & waves (step 7, js/78)
+    if (typeof wxwSections === "function") wxwSections(w, p).forEach(x => body.appendChild(x));
+    // until the moon section moves here (step 8): the old moon & feeding times (and the long tide tables)
+    const old = el("button", "btn ghost wx-oldbtn", "Moon, feeding times & tide tables"); old.type = "button"; old.id = "wx-old";
     old.addEventListener("click", () => { showView("list"); const d = $("cond-more"); if (d) { d.open = true; d.classList.add("as-sheet"); document.body.classList.add("cond-open"); } });
     if (!p.spot) body.appendChild(old);
-    body.appendChild(el("div", "wx-credit", "Weather data by Open-Meteo.com (CC BY 4.0) · National Weather Service · NOAA."));
+    body.appendChild(el("div", "wx-credit", "Weather data by Open-Meteo.com (CC BY 4.0) · National Weather Service · NOAA Tides & Currents."));
   }, () => {
     if (myTurn !== wxsBusy) return;
     load.textContent = navigator.onLine === false ? "No signal — the weather can't load right now." : "Couldn't load the weather right now. Try ↻ in a minute.";
