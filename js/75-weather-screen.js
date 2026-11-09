@@ -101,6 +101,8 @@ function renderWxScreen(force) {
     });
     go.appendChild(el("div", "spot-meta", "Stay home = a storm or marine warning, thunder close by, or wind over 25 mph" + (v.lake ? "" : " or seas over 6 ft") + ". A help, not a promise — always check the official forecast before you go."));
     body.appendChild(go);
+    // Hour by hour, 48 hours (step 5, js/76)
+    if (typeof wxhSection === "function") body.appendChild(wxhSection(w, p));
     // until the tide and moon sections move here (steps 7–8): the old tide tables, moon & feeding times
     const old = el("button", "btn ghost wx-oldbtn", "Tide tables, moon & feeding times"); old.type = "button"; old.id = "wx-old";
     old.addEventListener("click", () => { showView("list"); const d = $("cond-more"); if (d) { d.open = true; d.classList.add("as-sheet"); document.body.classList.add("cond-open"); } });

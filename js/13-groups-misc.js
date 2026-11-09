@@ -566,6 +566,10 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-11-08x", title: "🌦 Hour by hour weather", items: [
+      "The Weather screen now shows the next 48 hours: swipe across for each hour's sky, temperature, rain chance, wind direction, speed and gusts.",
+      "Wind, Temp, Rain and Waves buttons switch the small chart above the hours.",
+      "Each hour also marks high and low tide, sunrise and sunset, and the major and minor feeding times."] },
     { id: "2026-11-08w", title: "🌦 Weather on Home", items: [
       "The conditions card on Home now starts with the weather where you are: temperature, sky, feels-like, rain chance and the next 6 hours.",
       "Shore and Boat say Good, Hard or Stay home from the wind, gusts, waves, thunder and weather alerts. A help, not a promise — always check the official forecast.",

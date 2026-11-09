@@ -1048,12 +1048,14 @@
     return { phase, illum: Math.round(m.fraction * 100), emoji: MOON_EMOJI[phase] };
   }
   // Major = moon overhead or underfoot (about 2 hours); minor = moonrise or moonset (about 1 hour)
-  function solunarPeriods(day) {
-    const d0 = tzDayStart(day, areaTz());
+  // lat/lng/tz left out = the area now (LAT/LNG); the Weather screen (js/76) passes a spot's own place
+  function solunarPeriods(day, lat, lng, tz) {
+    const d0 = lat == null ? tzDayStart(day, areaTz()) : tzDayStart(day, tz);
+    if (lat == null) { lat = LAT; lng = LNG; }
     const d1 = new Date(d0.getTime() + 86400000);
     const out = [], STEP = 5 * 60000, t0 = d0.getTime() - 2 * 3600000;
     const alt = [];
-    for (let t = t0; t <= d1.getTime() + 2 * 3600000; t += STEP) alt.push(SunCalc.getMoonPosition(new Date(t), LAT, LNG).altitude);
+    for (let t = t0; t <= d1.getTime() + 2 * 3600000; t += STEP) alt.push(SunCalc.getMoonPosition(new Date(t), lat, lng).altitude);
     for (let k = 1; k < alt.length - 1; k++) {
       const t = new Date(t0 + k * STEP);
       if (t < d0 || t >= d1) continue;
@@ -1061,7 +1063,7 @@
       if (peak || trough) out.push({ type: "major", center: t, why: peak ? "moon overhead" : "moon underfoot",
         start: new Date(t - 3600000), end: new Date(+t + 3600000) });
     }
-    const mt = SunCalc.getMoonTimes(d0, LAT, LNG);
+    const mt = SunCalc.getMoonTimes(d0, lat, lng);
     [["rise", "moonrise"], ["set", "moonset"]].forEach(([k, why]) => {
       if (mt[k]) out.push({ type: "minor", center: mt[k], why, start: new Date(mt[k] - 1800000), end: new Date(+mt[k] + 1800000) });
     });

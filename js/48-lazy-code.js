@@ -9,7 +9,7 @@ const LAZY_CODE = {
   learn: ["js/62-learn.js"],
   biz: ["js/71-business-pages.js"],
   tank: ["js/72-tank-art.js", "js/73-tank-screen.js"],
-  wx: ["js/75-weather-screen.js"]
+  wx: ["js/75-weather-screen.js", "js/76-weather-hours.js"]
 };
 const lazyDone = {}, lazyWait = {}, lazyFileDone = {};
 function lazyVer() {   // the same ?v= number as the files loaded at start (bump.sh changes it), so a new version gets the new code
