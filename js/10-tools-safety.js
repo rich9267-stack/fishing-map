@@ -683,8 +683,8 @@
   // ---- 🛟 Safety: severe-weather banner + "Heading out / I'm back" check-in (float plan) ----
   // Weather: National Weather Service alerts for where you are (Boat mode GPS, else the map centre, else the middle of your spots).
   // Check-in: tell chosen friends where you're going and when you'll be back; if you don't check in, they get an alert.
-  const WX_URGENT = /^(Tornado Warning|Severe Thunderstorm Warning|Special Marine Warning|Flash Flood Warning|Hurricane Warning|Tropical Storm Warning|Storm Surge Warning|Extreme Wind Warning|Gale Warning|Storm Warning|Hurricane Force Wind Warning|Tsunami Warning|Waterspout Warning)$/;
-  const WX_NORMAL = /^(Tornado Watch|Severe Thunderstorm Watch|Flash Flood Watch|Hurricane Watch|Tropical Storm Watch|Storm Surge Watch|Gale Watch|Small Craft Advisory.*|Rip Current Statement|High Surf Advisory|High Surf Warning|Coastal Flood Warning|Coastal Flood Advisory|Dense Fog Advisory|Dense Fog Warning|Heat Advisory|Excessive Heat Warning)$/;
+  const WX_URGENT = /^(Tornado Warning|Severe Thunderstorm Warning|Special Marine Warning|Flash Flood Warning|Hurricane Warning|Tropical Storm Warning|Storm Surge Warning|Extreme Wind Warning|Gale Warning|Storm Warning|Hurricane Force Wind Warning|Hazardous Seas Warning|Tsunami Warning|Waterspout Warning)$/;
+  const WX_NORMAL = /^(Tornado Watch|Severe Thunderstorm Watch|Flash Flood Watch|Hurricane Watch|Tropical Storm Watch|Storm Surge Watch|Gale Watch|Storm Watch|Hazardous Seas Watch|Hurricane Force Wind Watch|Small Craft Advisory.*|Brisk Wind Advisory|Marine Weather Statement|Low Water Advisory|Rip Current Statement|Beach Hazards Statement|High Surf Advisory|High Surf Warning|Coastal Flood Warning|Coastal Flood Advisory|Dense Fog Advisory|Dense Fog Warning|Heat Advisory|Excessive Heat Warning)$/;
   const wx = { cache: {}, list: [], open: null, timer: null };
   const ci = { mine: null, watch: [], lastPing: 0, timer: null, pick: new Set(), hours: 4, sending: false };
   const CI_BUD_KEY = () => `fm-ci-buddies-${me ? me.id : "x"}`;
@@ -698,23 +698,30 @@
     if (mine.length) return { lat: mine.reduce((n, s) => n + s.lat, 0) / mine.length, lng: mine.reduce((n, s) => n + s.lng, 0) / mine.length };
     return { lat: 26.24, lng: -80.12 }; // Pompano Beach
   }
+  // v270: plus the alerts for the nearest coastal marine zone (Small Craft Advisory, Gale, Special Marine Warning…; js/81 wxaAlerts).
+  // pt.lake = a lake or canal: only a marine zone the place is inside. pt.info = also return { zones, down } (the Weather screen).
   async function wxFetch(pt, force) {
-    const key = pt.lat.toFixed(2) + "," + pt.lng.toFixed(2), c = wx.cache[key];
-    if (c && !force && Date.now() - c.t < 300000) return c.list;
+    const key = (pt.lake ? "L" : "") + pt.lat.toFixed(2) + "," + pt.lng.toFixed(2), c = wx.cache[key];
+    if (c && !force && Date.now() - c.t < 300000) return pt.info ? c : c.list;
+    const marine = typeof wxaAlerts === "function" ? wxaAlerts(pt.lat, pt.lng, { lake: !!pt.lake, force }) : Promise.resolve({ zones: [], list: [] });
+    let list, down = false;
     try {
       const r = await fetch(`https://api.weather.gov/alerts/active?point=${pt.lat.toFixed(4)},${pt.lng.toFixed(4)}`, { headers: { Accept: "application/geo+json" } });
       if (!r.ok) throw new Error("NWS " + r.status);
-      const list = ((await r.json()).features || []).map(f => f.properties || {}).filter(a => (WX_URGENT.test(a.event || "") || WX_NORMAL.test(a.event || "")) && a.messageType !== "Cancel")
-        .map(a => ({ event: a.event, urgent: WX_URGENT.test(a.event), ends: a.ends || a.expires, area: String(a.areaDesc || "").split(";")[0], headline: a.headline || "", text: String(a.description || "").replace(/\s+/g, " ").trim() }))
-        .sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
-      wx.cache[key] = { t: Date.now(), list }; return list;
-    } catch (e) { return c ? c.list : []; }
+      list = ((await r.json()).features || []).map(f => f.properties || {}).filter(a => (WX_URGENT.test(a.event || "") || WX_NORMAL.test(a.event || "")) && a.messageType !== "Cancel")
+        .map(a => ({ id: a.id || "", event: a.event, urgent: WX_URGENT.test(a.event), ends: a.ends || a.expires, area: String(a.areaDesc || "").split(";")[0], headline: a.headline || "", text: String(a.description || "").replace(/\s+/g, " ").trim() }));
+    } catch (e) { list = c ? c.list.filter(a => !a.marine) : []; down = true; }
+    const m = await marine;
+    list = typeof wxaMerge === "function" ? wxaMerge(list, m.list) : list.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
+    const out = { t: Date.now(), list, zones: m.zones || [], down: down || !!m.down };
+    if (!out.down) wx.cache[key] = out;
+    return pt.info ? out : list;
   }
   function wxRender() {
     const box = $("wx-banner"); box.innerHTML = "";
     wx.list.slice(0, 4).forEach((a, i) => {
       const d = el("div", "wx-item" + (a.urgent ? " urgent" : ""));
-      d.appendChild(el("b", null, (a.urgent ? "⛈️ " : "🌊 ") + a.event));
+      d.appendChild(el("b", null, (a.urgent ? "⛈️ " : a.marine ? "⚓ " : "🌊 ") + a.event));
       d.appendChild(el("span", null, (a.ends ? " — until " + fmtClock(a.ends) : "") + (a.area ? " · " + a.area : "")));
       if (wx.open === i) d.appendChild(el("div", "wx-more", a.text.slice(0, 600) + (a.text.length > 600 ? "…" : "") + "\nSource: National Weather Service"));
       d.addEventListener("click", () => { wx.open = wx.open === i ? null : i; wxRender(); });
@@ -723,12 +730,14 @@
     box.hidden = !wx.list.length;
     const bw = $("boat-wx"), top = wx.list[0];
     bw.hidden = !top; bw.className = top && top.urgent ? "urgent" : "";
-    if (top) bw.textContent = (top.urgent ? "⛈️ " : "🌊 ") + top.event + (top.ends ? " until " + fmtClock(top.ends) : "") + (wx.list.length > 1 ? ` (+${wx.list.length - 1} more)` : "");
+    if (top) bw.textContent = (top.urgent ? "⛈️ " : top.marine ? "⚓ " : "🌊 ") + top.event + (top.ends ? " until " + fmtClock(top.ends) : "") + (wx.list.length > 1 ? ` (+${wx.list.length - 1} more)` : "");
     safetyStripShow();
   }
   async function wxRefresh(force) {
     if (!me) return;
+    const before = wx.list.map(a => a.event).join("|");
     wx.list = await wxFetch(wxPoint(), force); wxRender();
+    if (before !== wx.list.map(a => a.event).join("|") && typeof window.wxdHomeRender === "function") window.wxdHomeRender();   // v270: Home's Shore/Boat chips follow the alerts
     if (typeof rtRefresh === "function") rtRefresh();   // 🔴 red tide banner (js/30) rides along with the weather check (it keeps its own 20-minute cache)
   }
 

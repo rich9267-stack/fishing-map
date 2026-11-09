@@ -124,9 +124,9 @@ const WXD_LIMITS = {
   thunderHours: 2          // thunder expected within this many hours = stay home (shore and boat)
 };
 const WXD_ALERT_STAY = /tornado|hurricane|tropical storm|severe thunderstorm|extreme wind|tsunami/i;
-const WXD_ALERT_BOAT_STAY = /gale|storm warning|special marine warning|hurricane force/i;
-const WXD_ALERT_BOAT_HARD = /small craft/i;
-const WXD_ALERT_SHORE_HARD = /high surf|coastal flood/i;
+const WXD_ALERT_BOAT_STAY = /gale|storm warning|storm watch|special marine warning|hurricane force|hazardous seas/i;
+const WXD_ALERT_BOAT_HARD = /small craft|brisk wind/i;
+const WXD_ALERT_SHORE_HARD = /high surf|coastal flood|rip current|beach hazard/i;   // v270: rip currents / beach hazards make the shore Hard (surf, wading, jetties)
 const WXD_WORD = { good: "Good", hard: "Hard", stay: "Stay home" };
 
 // h = one hour from wxdGet (mph, gust, code, rainPct, waveFt, wavePer); o.ahead = the next hours; o.alerts = NWS alert names; o.lake = no waves here

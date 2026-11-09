@@ -35,10 +35,10 @@ function wxwRange(vals) {
 function wxwFog(w, now) {
   return w.hours.find(h => h.t >= now - WXW_H && h.t <= now + 12 * WXW_H && ((h.code === 45 || h.code === 48) || (h.visMi != null && h.visMi < 1))) || null;
 }
-// Rip currents from the NWS alerts the app already checks (js/10; the beach and marine zones come in step 10)
+// Rip currents from the NWS alerts for the chosen place (v270: its land zone + nearest marine zone, js/75 p.alerts; else the app-wide list)
 function wxwRip(names) {
   const n = (names || []).map(x => String(x));
-  if (n.some(x => /rip current/i.test(x))) return { word: "High risk", lvl: "bad", sub: "from the NWS rip current alert" };
+  if (n.some(x => /rip current/i.test(x))) return { word: "High risk", lvl: "bad", sub: "NWS rip current statement" };
   if (n.some(x => /beach hazard/i.test(x))) return { word: "Take care", lvl: "warn", sub: "NWS beach hazards alert" };
   return { word: "No alert", lvl: "", sub: "no NWS beach alert now" };
 }
@@ -122,7 +122,7 @@ function wxwWater(w, p) {
   // rip currents (coast only)
   let us = true; try { if (typeof stateOf === "function") us = !!stateOf(p.lat, p.lng); } catch (e) { us = true; }
   if (!lake && us) {   // NWS alerts only exist in the US
-    const r = wxwRip(typeof wxdAlertNames === "function" ? wxdAlertNames() : []);
+    const r = wxwRip(Array.isArray(p.alerts) ? p.alerts : typeof wxdAlertNames === "function" ? wxdAlertNames() : []);
     grid.appendChild(wxwTile("wxw-rip", "RIP CURRENTS", r.word, r.sub, r.lvl));
   }
   // visibility

@@ -566,6 +566,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-11-09c", title: "⚓ Marine alerts", items: [
+      "The app now checks the National Weather Service marine zone off your area too, so a Small Craft Advisory, Gale Warning or Special Marine Warning shows in the Home alerts line and on the Weather screen (tap one to read it).",
+      "Those alerts change the Boat Go or stay home answer, and a rip current or beach hazards statement makes Shore \"Hard\" and turns the Rip currents tile orange. US only."] },
     { id: "2026-11-09b", title: "📅 Next 10 days", items: [
       "At the bottom of the Weather screen: each of the next 10 days with its sky, rain chance, low and high, wind, and a 0–10 fishing score from the moon, the tide swing and that day's wind.",
       "Tap a day to see its hours (every 3 hours), its tides with highs and lows, sunrise and sunset, and why it got that score. Days 8–10 are greyed because forecasts that far out are rougher guesses."] },

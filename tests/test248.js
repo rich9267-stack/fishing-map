@@ -108,10 +108,12 @@ async function open(wxDown) {
   ok(w.eval("wxwRange")([1.2, 1.4, 1.6]) === "1–2 ft" && w.eval("wxwRange")([0.2, 0.4]) === "Under 1 ft" && w.eval("wxwRange")([4.2, 4.9]) === "4–5 ft" && w.eval("wxwRange")([null]) === null, "wave range wording: 1–2 ft, Under 1 ft, 4–5 ft");
   ok(w.eval("wxwFog")({ hours: [{ t: Date.now() + 2 * H, code: 45 }] }, Date.now()) && !w.eval("wxwFog")({ hours: [{ t: Date.now() + 2 * H, code: 2, visMi: 9 }] }, Date.now()), "fog = fog code or under 1 mile in the next 12 h");
   // a rip current alert
-  w.eval('wx.list = [{ event: "Rip Current Statement" }]');
+  // v270: the screen asks the NWS for its own place (land zone + marine zone), so the alert comes from the (fake) NWS
+  const f0 = w.fetch;
+  w.fetch = async u => /alerts\/active\?point/.test(String(u)) ? { ok: true, json: async () => ({ features: [{ properties: { id: "r1", event: "Rip Current Statement", areaDesc: "Coastal Broward" } }] }) } : f0(u);
   $("wx-refresh").click(); await wait(800);
   ok(big("wxw-rip") === "High risk" && $("wxw-rip").classList.contains("lvl-bad"), "Rip Current Statement → High risk (orange)");
-  w.eval('wx.list = []');
+  w.fetch = f0;
   // a spot: its own station, moved by its tide timing
   [...w.document.querySelectorAll(".wx-chip")].find(b => b.textContent === "Pompano Pier").click(); await wait(800);
   ok($("wxw-graph").querySelector(".tide-curve") && /station/.test(txt("wxw-tide-src")), "spot: tide line from its own station");

@@ -1583,7 +1583,12 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
 .wx-other { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
 .wx-other select { flex: 1; min-height: 40px; font: inherit; }
 .wx-upd { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px; font-size: 12px; color: var(--text-2); }
-.wx-alert { background: var(--alert-bg, #FFF6E5); color: var(--alert-text, #6B4A00); border-radius: 8px; padding: 8px 10px; font-weight: 700; font-size: 14px; }
+.wx-alert { appearance: none; border: 0; width: 100%; text-align: left; font-family: inherit; display: flex; flex-direction: column; gap: 2px; cursor: pointer; min-height: 44px; background: var(--alert-bg, #FFF6E5); color: var(--alert-text, #6B4A00); border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+.wx-alert b { font-weight: 700; }
+.wx-alert.urgent { background: var(--danger-bg, #FDECEC); color: var(--danger-text, #8A1C1C); }
+.wx-alert-sub { font-size: 12px; font-weight: 500; opacity: .85; }
+.wx-alert-more { font-size: 13px; font-weight: 400; line-height: 1.4; margin-top: 4px; white-space: normal; }
+.wx-alert-none { font-size: 14px; color: var(--text-2); }
 .wx-now-top { display: flex; align-items: center; gap: 14px; }
 .wx-big { font-size: 48px; font-weight: 800; line-height: 1; }
 .wx-sub { font-size: 14px; color: var(--text-2); }

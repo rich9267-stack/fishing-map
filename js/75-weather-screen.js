@@ -27,6 +27,27 @@ function wxsSpotLists() {
   return { chips: mine.slice(0, 3), all: all.slice().sort((a, b) => String(a.name).localeCompare(String(b.name))) };
 }
 
+// The alerts box: each alert (tap to read), the marine zone it follows, or "No alerts"; outside the US one line
+function wxsAlertsBox(list, al, us, tz) {
+  const a = el("div", "wx-sec wx-alerts"); a.id = "wx-alerts";
+  if (!us) { a.appendChild(el("div", "spot-meta", "No official alerts or radar here (US only).")); return a; }
+  a.appendChild(el("div", "hn-lab", "ALERTS"));
+  if (!list.length) a.appendChild(el("div", "wx-alert-none", al && al.down ? "Couldn't check the alerts right now." : "No weather or marine alerts here now."));
+  list.slice(0, 5).forEach(x => {
+    const b = el("button", "wx-alert" + (x.urgent ? " urgent" : "")); b.type = "button"; b.setAttribute("aria-expanded", "false");
+    b.appendChild(el("b", null, (x.urgent ? "⛈️ " : x.marine ? "⚓ " : "⚠ ") + x.event));
+    b.appendChild(el("span", "wx-alert-sub", [x.ends ? "until " + clock(new Date(x.ends), tz) : "", x.area].filter(Boolean).join(" · ")));
+    const more = el("div", "wx-alert-more", (x.text || x.headline || "").slice(0, 700) + ((x.text || "").length > 700 ? "…" : "")); more.hidden = true;
+    b.appendChild(more);
+    b.addEventListener("click", () => { more.hidden = !more.hidden; b.setAttribute("aria-expanded", String(!more.hidden)); });
+    a.appendChild(b);
+  });
+  const zones = al && al.zones || [];
+  a.appendChild(el("div", "spot-meta", zones.length ? "Marine zone: " + zones.map(z => `${z.name} (${z.id})`).join(" · ") + ". From the National Weather Service."
+    : "No marine zone nearby. From the National Weather Service."));
+  return a;
+}
+
 let wxsBusy = 0;
 function renderWxScreen(force) {
   const body = $("wx-body"); if (!body) return;
@@ -53,7 +74,10 @@ function renderWxScreen(force) {
   const load = el("div", "wx-sec", "Loading the weather…"); load.id = "wx-loading";
   body.appendChild(load);
 
-  wxdGet(p.lat, p.lng, { force: !!force }).then(w => {
+  // v270 (step 10): the NWS alerts for this place — its land zone + the nearest coastal marine zone (js/10 wxFetch + js/81); US only
+  const us = typeof wxaInUs === "function" ? wxaInUs(p.lat, p.lng) : true;
+  const alertsP = us && typeof wxFetch === "function" ? wxFetch({ lat: p.lat, lng: p.lng, lake: p.lake, info: true }, !!force).catch(() => null) : Promise.resolve(null);
+  Promise.all([wxdGet(p.lat, p.lng, { force: !!force }), alertsP]).then(([w, al]) => {
     if (myTurn !== wxsBusy || $("view-wx").hidden) return;
     load.remove();
     if (!p.tz && w.tz) p.tz = w.tz;   // outside the US: the place's own time zone from the forecast (tzFor only knows US states)
@@ -63,14 +87,11 @@ function renderWxScreen(force) {
     upd.appendChild(el("span", null, (w.stale ? "Saved forecast from " : "Updated ") + clock(new Date(w.at), tz) + (w.stale ? " (no signal)" : "")));
     const rb = el("button", "btn ghost small", "↻ Refresh"); rb.type = "button"; rb.id = "wx-refresh"; rb.addEventListener("click", () => renderWxScreen(true));
     upd.appendChild(rb); body.appendChild(upd);
-    // alerts the app already checks (NWS)
-    const names = wxdAlertNames();
-    if (names.length) {
-      const a = el("div", "wx-sec wx-alerts");
-      names.slice(0, 4).forEach(x => a.appendChild(el("div", "wx-alert", "⚠ " + x)));
-      a.appendChild(el("div", "spot-meta", "From the National Weather Service. Tap the alerts line on Home to read them."));
-      body.appendChild(a);
-    }
+    // alerts for this place (NWS: land zone + nearest marine zone); outside the US there are none
+    const alist = us ? (al ? al.list : (typeof wx !== "undefined" && wx.list) || []) : [];
+    const names = alist.map(a => a.event);
+    p.alerts = names;   // the Rip currents tile (js/78) reads these
+    body.appendChild(wxsAlertsBox(alist, al, us, tz));
     // Now
     const now = el("div", "wx-sec wx-now"); now.id = "wx-now-card";
     now.innerHTML = `<div class="wx-now-top">${wxdIcon(n.code, n.isDay, 64)}<div><div class="wx-big" id="wx-temp">${n.tempF != null ? n.tempF + "°" : "–"}</div>` +
