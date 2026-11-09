@@ -6,8 +6,10 @@ const FC = { y: 0, m: 0, sel: null, tides: null, tideKey: "", req: 0 };
 const fcPad = n => String(n).padStart(2, "0");
 // The calendar day y-m-d as a moment in the middle of that day (16:00 UTC is daytime on every US coast)
 const fcNoon = (y, m, d) => new Date(Date.UTC(y, m, d, 16));
-function fcDayScore(y, m, d, tides) {
-  const noon = fcNoon(y, m, d), tz = areaTz(), start = tzDayStart(noon, tz), end = new Date(+start + 86400000);
+// place (optional, the Weather screen's 10 days, js/80) = { lat, lng, tz }; left out = the area now
+function fcDayScore(y, m, d, tides, place) {
+  const pl = place && isFinite(place.lat) ? place : null, la = pl ? pl.lat : LAT, ln = pl ? pl.lng : LNG;
+  const noon = fcNoon(y, m, d), tz = pl && pl.tz || areaTz(), start = tzDayStart(noon, tz), end = new Date(+start + 86400000);
   const why = []; let s = 3;
   const ph = SunCalc.getMoonIllumination(noon).phase, spring = Math.abs(Math.cos(2 * Math.PI * ph));
   const mo = moonAt(noon);
@@ -15,9 +17,9 @@ function fcDayScore(y, m, d, tides) {
   else if (spring > 0.45) { s += 1.2 * spring; why.push("Moon not far from " + (ph < 0.25 || ph > 0.75 ? "new" : "full") + " — fairly big tides"); }
   else why.push(cap(mo.phase) + " — small tides");
   let sr = null, ss = null;
-  try { const t = SunCalc.getTimes(noon, LAT, LNG); sr = t.sunrise; ss = t.sunset; } catch (e) { /* no sun data */ }
+  try { const t = SunCalc.getTimes(noon, la, ln); sr = t.sunrise; ss = t.sunset; } catch (e) { /* no sun data */ }
   const near = (t, x) => x && Math.abs(t - x) < 90 * 60000;
-  const per = solunarPeriods(noon);
+  const per = pl ? solunarPeriods(noon, la, ln, tz) : solunarPeriods(noon);
   const major = per.filter(p => p.type === "major"), minor = per.filter(p => p.type === "minor");
   const dd = p => near(p.center, sr) || near(p.center, ss);
   const mj = major.filter(dd).length, mn = minor.filter(dd).length;

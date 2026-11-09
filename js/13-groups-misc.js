@@ -566,6 +566,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-11-09b", title: "📅 Next 10 days", items: [
+      "At the bottom of the Weather screen: each of the next 10 days with its sky, rain chance, low and high, wind, and a 0–10 fishing score from the moon, the tide swing and that day's wind.",
+      "Tap a day to see its hours (every 3 hours), its tides with highs and lows, sunrise and sunset, and why it got that score. Days 8–10 are greyed because forecasts that far out are rougher guesses."] },
     { id: "2026-11-09a", title: "🌙 Sun, moon & feeding times", items: [
       "Below Water & waves on the Weather screen: first light, sunrise, sunset and last light for the place you picked.",
       "A picture of tonight's moon with its phase, how much is lit, and when the next new and full moon are — plus the major and minor feeding times with why (moon overhead, underfoot, rising or setting), marked when they line up with sunrise or sunset. Tap Tomorrow to plan ahead."] },

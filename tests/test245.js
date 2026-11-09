@@ -105,8 +105,7 @@ async function open(wxDown) {
   ok($("view-wx").hidden && !$("view-list").hidden, "‹ Home goes back");
   $("hn-cond").click(); await wait(300);
   ok(!$("view-wx").hidden, "tapping the tide part of the card opens the Weather screen too");
-  $("wx-old").click(); await wait(200);
-  ok(!$("view-list").hidden && $("cond-more").open, "the old long tide tables are still reachable from the screen");
+  ok(!$("wx-old"), "the old 'Tide tables for the next days' button is gone (Next 10 days shows each day's tides, v269)");
 
   // weather down
   w = await open(true);

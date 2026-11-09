@@ -1,6 +1,6 @@
 // ---- 🌦 Weather screen (weather plan step 3; Project doc claude/weather-plan.md): opened from the Home weather card ----
 // Loaded only when opened (js/48 LAZY_CODE "wx"). Shows the place chips (your area + your spots + any spot), Now, Fishing right now,
-// and Go or stay home (Shore / Boat). Later steps add hour by hour, wind & pressure, tides, water, sun & moon, 10 days, radar.
+// and Go or stay home (Shore / Boat). Below: hour by hour, wind & pressure, tides, water, sun & moon, next 10 days (js/76–80); radar comes later.
 // The chosen place is remembered on this phone (fm-wx-place). Data: wxdGet / wxdVerdict (js/74).
 const WXS_KEY = "fm-wx-place";
 function wxsPlace() {
@@ -110,10 +110,8 @@ function renderWxScreen(force) {
     if (typeof wxwSections === "function") wxwSections(w, p).forEach(x => body.appendChild(x));
     // Sun, moon & feeding times (step 8, js/79)
     if (typeof wxmSection === "function") body.appendChild(wxmSection(w, p));
-    // until Next 10 days (step 9) shows each day's tides: the old page with the long tide tables (its moon part is now the card above)
-    const old = el("button", "btn ghost wx-oldbtn", "Tide tables for the next days"); old.type = "button"; old.id = "wx-old";
-    old.addEventListener("click", () => { showView("list"); const d = $("cond-more"); if (d) { d.open = true; d.classList.add("as-sheet"); document.body.classList.add("cond-open"); } });
-    if (!p.spot) body.appendChild(old);
+    // Next 10 days with a day score; tap a day for its hours and tides (step 9, js/80)
+    if (typeof wxdySection === "function") body.appendChild(wxdySection(w, p));
     body.appendChild(el("div", "wx-credit", "Weather data by Open-Meteo.com (CC BY 4.0) · National Weather Service · NOAA Tides & Currents."));
   }, () => {
     if (myTurn !== wxsBusy) return;

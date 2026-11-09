@@ -127,9 +127,9 @@ async function open(wxDown) {
   [...w.document.querySelectorAll(".wx-chip")].find(b => b.textContent === "Thames Steps").click(); await wait(800);
   const L = w.eval("wxmSun")(new Date(), { lat: 51.5, lng: -0.12, tz: "Europe/London" });
   ok(txt("wxm-rise").includes(w.eval("clock")(L.rise, "Europe/London")), "London spot: sunrise in London time (" + txt("wxm-rise") + ")");
-  // the old button now only offers the long tide tables (its moon part is this card)
+  // back to the area
   [...w.document.querySelectorAll(".wx-chip")][0].click(); await wait(800);
-  ok($("wx-old") && $("wx-old").textContent === "Tide tables for the next days", "old button now says 'Tide tables for the next days'");
+  ok(!$("wx-old"), "the old tide tables button is gone (v269: Next 10 days shows each day's tides)");
   ok(w.document.querySelector(".wx-credit") && card.compareDocumentPosition(w.document.querySelector(".wx-credit")) & w.Node.DOCUMENT_POSITION_FOLLOWING, "credit line stays at the bottom");
   console.log(bad ? `${bad} FAILED` : "ALL OK"); process.exit(bad ? 1 : 0);
 })();
