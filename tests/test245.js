@@ -106,7 +106,7 @@ async function open(wxDown) {
   $("hn-cond").click(); await wait(300);
   ok(!$("view-wx").hidden, "tapping the tide part of the card opens the Weather screen too");
   $("wx-old").click(); await wait(200);
-  ok(!$("view-list").hidden && $("cond-more").open, "the old tide tables / moon page is still reachable from the screen");
+  ok(!$("view-list").hidden && $("cond-more").open, "the old long tide tables are still reachable from the screen");
 
   // weather down
   w = await open(true);

@@ -56,6 +56,7 @@ function renderWxScreen(force) {
   wxdGet(p.lat, p.lng, { force: !!force }).then(w => {
     if (myTurn !== wxsBusy || $("view-wx").hidden) return;
     load.remove();
+    if (!p.tz && w.tz) p.tz = w.tz;   // outside the US: the place's own time zone from the forecast (tzFor only knows US states)
     const n = w.now, tz = p.tz, h = wxdNowHour(w), d0 = w.days.find(d => d.t + 86400000 > Date.now()) || w.days[0] || {};
     // updated line + refresh
     const upd = el("div", "wx-upd");
@@ -107,8 +108,10 @@ function renderWxScreen(force) {
     if (typeof wxpSection === "function") body.appendChild(wxpSection(w, p));
     // Tides + Water & waves (step 7, js/78)
     if (typeof wxwSections === "function") wxwSections(w, p).forEach(x => body.appendChild(x));
-    // until the moon section moves here (step 8): the old moon & feeding times (and the long tide tables)
-    const old = el("button", "btn ghost wx-oldbtn", "Moon, feeding times & tide tables"); old.type = "button"; old.id = "wx-old";
+    // Sun, moon & feeding times (step 8, js/79)
+    if (typeof wxmSection === "function") body.appendChild(wxmSection(w, p));
+    // until Next 10 days (step 9) shows each day's tides: the old page with the long tide tables (its moon part is now the card above)
+    const old = el("button", "btn ghost wx-oldbtn", "Tide tables for the next days"); old.type = "button"; old.id = "wx-old";
     old.addEventListener("click", () => { showView("list"); const d = $("cond-more"); if (d) { d.open = true; d.classList.add("as-sheet"); document.body.classList.add("cond-open"); } });
     if (!p.spot) body.appendChild(old);
     body.appendChild(el("div", "wx-credit", "Weather data by Open-Meteo.com (CC BY 4.0) · National Weather Service · NOAA Tides & Currents."));

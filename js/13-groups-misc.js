@@ -566,6 +566,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-11-09a", title: "🌙 Sun, moon & feeding times", items: [
+      "Below Water & waves on the Weather screen: first light, sunrise, sunset and last light for the place you picked.",
+      "A picture of tonight's moon with its phase, how much is lit, and when the next new and full moon are — plus the major and minor feeding times with why (moon overhead, underfoot, rising or setting), marked when they line up with sunrise or sunset. Tap Tomorrow to plan ahead."] },
     { id: "2026-11-08z", title: "🌊 Tides, water & waves", items: [
       "Further down the Weather screen: the tide line you know from Home (6 AM today to 6 AM tomorrow) with the next 4 highs and lows and how many feet.",
       "Then water temperature, waves, swell, UV (with the hours to wear sunscreen), rip current alerts and visibility (fog). At lakes the tides, waves and rip currents are left out."] },
