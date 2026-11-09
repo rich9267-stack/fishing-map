@@ -566,6 +566,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-11-09d", title: "🌧 Rain radar", items: [
+      "The Weather screen has a small rain radar card: NOAA's radar around your place for the last hour, playing as a loop (⏸ to stop on the newest picture). Tap \"🗺 Open on the map\" to see it bigger.",
+      "On the Map, Layers → 🌧 Rain radar puts the same loop over the map, with the picture's time in the corner. US only (lower 48, Alaska, Hawaii, Puerto Rico, Guam)."] },
     { id: "2026-11-09c", title: "⚓ Marine alerts", items: [
       "The app now checks the National Weather Service marine zone off your area too, so a Small Craft Advisory, Gale Warning or Special Marine Warning shows in the Home alerts line and on the Weather screen (tap one to read it).",
       "Those alerts change the Boat Go or stay home answer, and a rip current or beach hazards statement makes Shore \"Hard\" and turns the Rip currents tile orange. US only."] },

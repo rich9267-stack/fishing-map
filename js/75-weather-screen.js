@@ -1,6 +1,6 @@
 // ---- 🌦 Weather screen (weather plan step 3; Project doc claude/weather-plan.md): opened from the Home weather card ----
 // Loaded only when opened (js/48 LAZY_CODE "wx"). Shows the place chips (your area + your spots + any spot), Now, Fishing right now,
-// and Go or stay home (Shore / Boat). Below: hour by hour, wind & pressure, tides, water, sun & moon, next 10 days (js/76–80); radar comes later.
+// and Go or stay home (Shore / Boat). Below: hour by hour, wind & pressure, tides, water, sun & moon, next 10 days (js/76–80); rain radar card (js/82, below Go or stay home).
 // The chosen place is remembered on this phone (fm-wx-place). Data: wxdGet / wxdVerdict (js/74).
 const WXS_KEY = "fm-wx-place";
 function wxsPlace() {
@@ -123,6 +123,8 @@ function renderWxScreen(force) {
     });
     go.appendChild(el("div", "spot-meta", "Stay home = a storm or marine warning, thunder close by, or wind over 25 mph" + (v.lake ? "" : " or seas over 6 ft") + ". A help, not a promise — always check the official forecast before you go."));
     body.appendChild(go);
+    // Rain radar, last hour as a loop (step 11, js/82; US only)
+    if (typeof wxrSection === "function") { const rc = wxrSection(w, p); if (rc) body.appendChild(rc); }
     // Hour by hour, 48 hours (step 5, js/76)
     if (typeof wxhSection === "function") body.appendChild(wxhSection(w, p));
     // Wind dial + pressure card, side by side (step 6, js/77)
@@ -133,7 +135,7 @@ function renderWxScreen(force) {
     if (typeof wxmSection === "function") body.appendChild(wxmSection(w, p));
     // Next 10 days with a day score; tap a day for its hours and tides (step 9, js/80)
     if (typeof wxdySection === "function") body.appendChild(wxdySection(w, p));
-    body.appendChild(el("div", "wx-credit", "Weather data by Open-Meteo.com (CC BY 4.0) · National Weather Service · NOAA Tides & Currents."));
+    body.appendChild(el("div", "wx-credit", "Weather data by Open-Meteo.com (CC BY 4.0) · National Weather Service · NOAA radar · NOAA Tides & Currents."));
   }, () => {
     if (myTurn !== wxsBusy) return;
     load.textContent = navigator.onLine === false ? "No signal — the weather can't load right now." : "Couldn't load the weather right now. Try ↻ in a minute.";

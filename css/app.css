@@ -1767,3 +1767,16 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
   .wxdy-row[data-lvl="slow"] .wxdy-score { color: #f0a46a; }
   .wxdy-score { color: #7fd0d8; }
 }
+/* 🌧 Rain radar (js/82, weather plan step 11): Weather screen card + map loop bar */
+.wxr-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.wxr-time { font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wxr-map { height: 190px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #dfe7ee; }
+.wxr-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wxr-row #wxr-open { margin-left: auto; }
+.wxr-key { font-size: .75rem; color: var(--muted); }
+.wxr-bar { display: inline-block; width: 70px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #04e9e7, #019ff4, #02fd02, #01c501, #fdf802, #fd9500, #fd0000, #bc0000, #f800fd); }
+.map-float .radar-bar { position: absolute; left: 10px; top: 66px; display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 20px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.22); font-size: .85rem; max-width: calc(100% - 94px); }
+.map-float .radar-bar[hidden] { display: none; }
+.map-float .sat-legend:not([hidden]) ~ .radar-bar { top: 136px; }
+.radar-play { min-width: 36px; min-height: 36px; border-radius: 18px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; cursor: pointer; }
+.radar-play[hidden] { display: none; }
