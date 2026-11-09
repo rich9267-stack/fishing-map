@@ -566,6 +566,9 @@
   // ---- ✨ What's new: a short list of changes, shown once per update (newest entry first) ----
   // To announce something: add an entry at the TOP of this list with a new id (the date works) — people who haven't seen it get the popup once.
   const WHATS_NEW = [
+    { id: "2026-11-08y", title: "🧭 Wind dial + pressure", items: [
+      "Below Hour by hour on the Weather screen: a wind dial showing where the wind comes from, its speed and gusts (and onshore or offshore at your spots that face the water).",
+      "Next to it, the air pressure now with Rising, Falling or Steady, a small line of the last 12 hours and the next 12, and a one-line fishing hint."] },
     { id: "2026-11-08x", title: "🌦 Hour by hour weather", items: [
       "The Weather screen now shows the next 48 hours: swipe across for each hour's sky, temperature, rain chance, wind direction, speed and gusts.",
       "Wind, Temp, Rain and Waves buttons switch the small chart above the hours.",

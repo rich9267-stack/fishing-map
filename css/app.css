@@ -1650,3 +1650,33 @@ ol.kr-review li.right b { color: var(--rising); } ol.kr-review li.wrong b { colo
   .mk-sunrise, .mk-sunset { color: #f0a46a; }
   .mk-major, .mk-minor { color: #8fd8a8; }
 }
+/* 🌦 Wind dial + pressure card (weather step 6, js/77) */
+.wxp { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.wxp-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.wxp-wind { align-items: center; text-align: center; }
+.wxp-h { font-size: 12px; color: var(--text-2); font-weight: 700; align-self: flex-start; }
+.wxp-dialbox { line-height: 0; }
+.wxp-ring { fill: none; stroke: var(--line); stroke-width: 8; }
+.wxp-cmp { font-size: 10px; fill: var(--text-2); }
+.wxp-arrow { fill: var(--accent); }
+.wxp-mph { font-size: 18px; font-weight: 800; fill: var(--text); }
+.wxp-unit { font-size: 10px; fill: var(--text-2); }
+.wxp-from { font-size: 13px; }
+.wxp-kind { font-size: 12px; color: var(--text-2); }
+.wxp-big { font-size: 22px; }
+.wxp-big span { font-size: 13px; font-weight: 600; }
+.wxp-trend { font-size: 13px; font-weight: 700; color: var(--text-2); }
+.wxp-trend.tr-falling { color: #a5521b; }
+.wxp-trend.tr-rising { color: #1f5fa8; }
+.wxp-chart { display: block; overflow: visible; }
+.wxp-past, .wxp-next { fill: none; stroke: var(--text); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.wxp-next { stroke-dasharray: 4 3; }
+.wxp-nowline { stroke: var(--text-2); stroke-dasharray: 2 2; vector-effect: non-scaling-stroke; }
+.wxp-lab { font-size: 9px; fill: var(--text-2); }
+.wxp-hint { font-size: 12px; color: var(--text-2); }
+.wxp-src { font-size: 10px; color: var(--text-2); }
+@media (max-width: 340px) { .wxp { grid-template-columns: 1fr; } }
+@media (prefers-color-scheme: dark) {
+  .wxp-trend.tr-falling { color: #f0a46a; }
+  .wxp-trend.tr-rising { color: #8cbcf0; }
+}

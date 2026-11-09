@@ -103,6 +103,8 @@ function renderWxScreen(force) {
     body.appendChild(go);
     // Hour by hour, 48 hours (step 5, js/76)
     if (typeof wxhSection === "function") body.appendChild(wxhSection(w, p));
+    // Wind dial + pressure card, side by side (step 6, js/77)
+    if (typeof wxpSection === "function") body.appendChild(wxpSection(w, p));
     // until the tide and moon sections move here (steps 7–8): the old tide tables, moon & feeding times
     const old = el("button", "btn ghost wx-oldbtn", "Tide tables, moon & feeding times"); old.type = "button"; old.id = "wx-old";
     old.addEventListener("click", () => { showView("list"); const d = $("cond-more"); if (d) { d.open = true; d.classList.add("as-sheet"); document.body.classList.add("cond-open"); } });
